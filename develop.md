@@ -734,7 +734,7 @@ erDiagram
 - [ ] **认证路由** (`auth.py`)
   - `POST /api/v1/auth/login` - 用户登录
   - `POST /api/v1/auth/refresh` - 刷新令牌
-  - `POST /api/v1/auth/logout` - 用户登出
+  - `POST /api/v1/auth/logout` - 用户登4；g出
   - `GET /api/v1/auth/me` - 获取当前用户信息
   - `PUT /api/v1/auth/change-password` - 修改密码
 

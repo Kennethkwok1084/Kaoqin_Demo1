@@ -203,9 +203,11 @@ async def root():
 
 
 # Include API routers
-# TODO: Add API routers when implemented
-# from app.api.v1 import auth, members, tasks, attendance
-# app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
+from app.api.v1 import auth
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
+
+# TODO: Add remaining API routers when implemented
+# from app.api.v1 import members, tasks, attendance
 # app.include_router(members.router, prefix="/api/v1/members", tags=["Members"])
 # app.include_router(tasks.router, prefix="/api/v1/tasks", tags=["Tasks"])
 # app.include_router(attendance.router, prefix="/api/v1/attendance", tags=["Attendance"])

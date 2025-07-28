@@ -61,8 +61,8 @@ def create_refresh_token(
     return encoded_jwt
 
 
-def verify_token(token: str, token_type: str = "access") -> Optional[str]:
-    """Verify JWT token and return subject."""
+def verify_token(token: str, token_type: str = "access") -> Optional[dict]:
+    """Verify JWT token and return payload."""
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
@@ -82,7 +82,7 @@ def verify_token(token: str, token_type: str = "access") -> Optional[str]:
         if subject is None:
             return None
             
-        return subject
+        return payload
     except JWTError:
         return None
 
