@@ -7,7 +7,7 @@ import enum
 from typing import List, TYPE_CHECKING
 
 from sqlalchemy import (
-    Boolean, Column, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
+    Boolean, Column, DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
 )
 from sqlalchemy.orm import relationship, Mapped
 
@@ -116,7 +116,7 @@ class Member(BaseModel):
     
     # Login tracking
     last_login = Column(
-        "last_login",
+        DateTime,
         nullable=True,
         comment="Last login timestamp"
     )

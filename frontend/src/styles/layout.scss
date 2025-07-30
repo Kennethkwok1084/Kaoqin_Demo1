@@ -1,0 +1,278 @@
+// 布局样式
+
+// 主容器
+.app-container {
+  height: 100vh;
+  overflow: hidden;
+}
+
+// 布局容器
+.layout-container {
+  @include flex-start;
+  height: 100%;
+  
+  &.collapsed {
+    .sidebar {
+      width: $sidebar-collapsed-width;
+    }
+    
+    .main-content {
+      margin-left: $sidebar-collapsed-width;
+    }
+  }
+}
+
+// 侧边栏
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: $sidebar-width;
+  height: 100vh;
+  background: $background-color-white;
+  border-right: 1px solid $border-color-light;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
+  transition: width $transition-base;
+  z-index: 1000;
+  overflow: hidden;
+  
+  &.collapsed {
+    width: $sidebar-collapsed-width;
+  }
+}
+
+// 主内容区域
+.main-content {
+  flex: 1;
+  margin-left: $sidebar-width;
+  height: 100vh;
+  @include flex-column;
+  transition: margin-left $transition-base;
+  overflow: hidden;
+}
+
+// 头部
+.app-header {
+  height: $header-height;
+  background: $background-color-white;
+  border-bottom: 1px solid $border-color-light;
+  @include flex-between;
+  padding: 0 $spacing-base;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  z-index: 999;
+  
+  .header-left {
+    @include flex-start;
+    gap: $spacing-base;
+  }
+  
+  .header-right {
+    @include flex-end;
+    gap: $spacing-small;
+  }
+}
+
+// 内容区域
+.content-area {
+  flex: 1;
+  padding: $spacing-base;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: $background-color-base;
+}
+
+// 页面容器
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  
+  &.full-width {
+    max-width: none;
+  }
+}
+
+// 页面头部
+.page-header {
+  @include flex-between;
+  margin-bottom: $spacing-large;
+  padding-bottom: $spacing-base;
+  border-bottom: 1px solid $border-color-lighter;
+  
+  .page-title {
+    font-size: $font-size-large;
+    font-weight: 600;
+    color: $text-color-primary;
+    margin: 0;
+  }
+  
+  .page-actions {
+    @include flex-end;
+    gap: $spacing-small;
+  }
+}
+
+// 内容区域网格
+.content-grid {
+  display: grid;
+  gap: $spacing-base;
+  
+  &.grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+    
+    @include respond-to(sm) {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  &.grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+    
+    @include respond-to(md) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    @include respond-to(sm) {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  &.grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+    
+    @include respond-to(lg) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    
+    @include respond-to(md) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    @include respond-to(sm) {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+// 卡片布局
+.card-container {
+  @include card;
+  
+  .card-header {
+    @include flex-between;
+    margin-bottom: $spacing-base;
+    padding-bottom: $spacing-small;
+    border-bottom: 1px solid $border-color-extra-light;
+    
+    .card-title {
+      font-size: $font-size-medium;
+      font-weight: 600;
+      color: $text-color-primary;
+      margin: 0;
+    }
+    
+    .card-actions {
+      @include flex-end;
+      gap: $spacing-extra-small;
+    }
+  }
+  
+  .card-body {
+    flex: 1;
+  }
+  
+  .card-footer {
+    margin-top: $spacing-base;
+    padding-top: $spacing-small;
+    border-top: 1px solid $border-color-extra-light;
+    @include flex-between;
+  }
+}
+
+// 表单布局
+.form-container {
+  @include card;
+  
+  .form-header {
+    margin-bottom: $spacing-large;
+    
+    .form-title {
+      font-size: $font-size-large;
+      font-weight: 600;
+      color: $text-color-primary;
+      margin: 0;
+    }
+    
+    .form-description {
+      margin-top: $spacing-extra-small;
+      color: $text-color-secondary;
+      font-size: $font-size-small;
+    }
+  }
+  
+  .form-actions {
+    margin-top: $spacing-large;
+    padding-top: $spacing-base;
+    border-top: 1px solid $border-color-extra-light;
+    @include flex-end;
+    gap: $spacing-small;
+  }
+}
+
+// 空状态
+.empty-state {
+  @include flex-column-center;
+  padding: $spacing-extra-large;
+  text-align: center;
+  color: $text-color-secondary;
+  
+  .empty-icon {
+    font-size: 48px;
+    margin-bottom: $spacing-base;
+    opacity: 0.5;
+  }
+  
+  .empty-text {
+    font-size: $font-size-medium;
+    margin-bottom: $spacing-small;
+  }
+  
+  .empty-description {
+    font-size: $font-size-small;
+    color: $text-color-placeholder;
+  }
+}
+
+// 响应式工具类
+.hidden-xs {
+  @include respond-to(xs) {
+    display: none !important;
+  }
+}
+
+.hidden-sm {
+  @include respond-to(sm) {
+    display: none !important;
+  }
+}
+
+.hidden-md {
+  @include respond-to(md) {
+    display: none !important;
+  }
+}
+
+.visible-xs {
+  display: none !important;
+  
+  @include respond-to(xs) {
+    display: block !important;
+  }
+}
+
+.visible-sm {
+  display: none !important;
+  
+  @include respond-to(sm) {
+    display: block !important;
+  }
+}

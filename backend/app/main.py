@@ -32,21 +32,25 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Startup
     logger.info("Starting up application...")
     
-    # Initialize database if in development mode
-    if settings.DEBUG:
-        await init_database()
-        logger.info("Database initialized")
-    
-    # Check database health
-    db_healthy = await check_database_health()
-    if not db_healthy:
-        logger.error("Database health check failed!")
+    # Skip all external connections in testing mode
+    if settings.TESTING:
+        logger.info("Running in testing mode - skipping external service connections")
     else:
-        logger.info("Database health check passed")
-    
-    # Initialize cache
-    await init_cache()
-    logger.info("Cache initialized")
+        # Initialize database if in development mode
+        if settings.DEBUG:
+            await init_database()
+            logger.info("Database initialized")
+        
+        # Check database health
+        db_healthy = await check_database_health()
+        if not db_healthy:
+            logger.error("Database health check failed!")
+        else:
+            logger.info("Database health check passed")
+        
+        # Initialize cache
+        await init_cache()
+        logger.info("Cache initialized")
     
     logger.info("Application startup complete")
     
@@ -54,8 +58,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     
     # Shutdown
     logger.info("Shutting down application...")
-    await cleanup_cache()
-    await close_database()
+    if not settings.TESTING:
+        await cleanup_cache()
+        await close_database()
     logger.info("Application shutdown complete")
 
 
@@ -210,11 +215,12 @@ async def root():
 
 
 # Include API routers
-from app.api.v1 import auth, members, tasks, attendance
+from app.api.v1 import auth, members, tasks, attendance, statistics
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(members.router, prefix="/api/v1/members", tags=["Members"])
 app.include_router(tasks.router, prefix="/api/v1/tasks", tags=["Tasks"])
 app.include_router(attendance.router, prefix="/api/v1/attendance", tags=["Attendance"])
+app.include_router(statistics.router, prefix="/api/v1/statistics", tags=["Statistics"])
 
 
 # Development utilities

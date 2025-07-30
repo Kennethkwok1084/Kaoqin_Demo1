@@ -1,0 +1,344 @@
+// 组件样式
+
+// 自定义按钮样式
+.btn-custom {
+  border-radius: $border-radius-base;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  
+  &.btn-gradient {
+    @include gradient-background($primary-color, lighten($primary-color, 10%));
+    color: white;
+    border: none;
+    
+    &:hover {
+      @include gradient-background(lighten($primary-color, 5%), lighten($primary-color, 15%));
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba($primary-color, 0.3);
+    }
+  }
+}
+
+// 统计卡片
+.stat-card {
+  @include card;
+  @include hover-lift;
+  text-align: center;
+  
+  .stat-icon {
+    font-size: 32px;
+    margin-bottom: $spacing-small;
+    
+    &.primary { color: $primary-color; }
+    &.success { color: $success-color; }
+    &.warning { color: $warning-color; }
+    &.danger { color: $danger-color; }
+    &.info { color: $info-color; }
+  }
+  
+  .stat-value {
+    font-size: $font-size-extra-large;
+    font-weight: 700;
+    color: $text-color-primary;
+    margin-bottom: $spacing-extra-small;
+  }
+  
+  .stat-label {
+    font-size: $font-size-small;
+    color: $text-color-secondary;
+  }
+  
+  .stat-change {
+    margin-top: $spacing-extra-small;
+    font-size: $font-size-extra-small;
+    
+    &.positive {
+      color: $success-color;
+      
+      &::before {
+        content: '↗';
+        margin-right: 2px;
+      }
+    }
+    
+    &.negative {
+      color: $danger-color;
+      
+      &::before {
+        content: '↘';
+        margin-right: 2px;
+      }
+    }
+  }
+}
+
+// 状态标签
+.status-tag {
+  padding: 4px 8px;
+  border-radius: $border-radius-base;
+  font-size: $font-size-extra-small;
+  font-weight: 500;
+  
+  &.status-success {
+    background: lighten($success-color, 45%);
+    color: darken($success-color, 10%);
+    border: 1px solid lighten($success-color, 30%);
+  }
+  
+  &.status-warning {
+    background: lighten($warning-color, 45%);
+    color: darken($warning-color, 10%);
+    border: 1px solid lighten($warning-color, 30%);
+  }
+  
+  &.status-danger {
+    background: lighten($danger-color, 45%);
+    color: darken($danger-color, 10%);
+    border: 1px solid lighten($danger-color, 30%);
+  }
+  
+  &.status-info {
+    background: lighten($info-color, 45%);
+    color: darken($info-color, 10%);
+    border: 1px solid lighten($info-color, 30%);
+  }
+  
+  &.status-default {
+    background: $background-color-light;
+    color: $text-color-secondary;
+    border: 1px solid $border-color-light;
+  }
+}
+
+// 优先级指示器
+.priority-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: $spacing-extra-small;
+  
+  &.priority-high { background: $danger-color; }
+  &.priority-medium { background: $warning-color; }
+  &.priority-low { background: $success-color; }
+  &.priority-urgent { 
+    background: $danger-color;
+    animation: pulse 1.5s infinite;
+  }
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+// 数据表格增强
+.data-table {
+  .table-actions {
+    @include flex-start;
+    gap: $spacing-extra-small;
+  }
+  
+  .table-filters {
+    @include flex-between;
+    margin-bottom: $spacing-base;
+    padding: $spacing-base;
+    background: $background-color-white;
+    border-radius: $border-radius-base;
+    border: 1px solid $border-color-lighter;
+    
+    .filter-left {
+      @include flex-start;
+      gap: $spacing-small;
+    }
+    
+    .filter-right {
+      @include flex-end;
+      gap: $spacing-small;
+    }
+  }
+}
+
+// 图表容器
+.chart-container {
+  @include card;
+  height: 400px;
+  
+  .chart-header {
+    @include flex-between;
+    margin-bottom: $spacing-base;
+    
+    .chart-title {
+      font-size: $font-size-medium;
+      font-weight: 600;
+      color: $text-color-primary;
+    }
+    
+    .chart-tools {
+      @include flex-end;
+      gap: $spacing-extra-small;
+    }
+  }
+  
+  .chart-content {
+    height: calc(100% - 60px);
+  }
+}
+
+// 步骤条增强
+.steps-container {
+  margin: $spacing-large 0;
+  
+  .step-content {
+    margin-top: $spacing-base;
+    min-height: 200px;
+  }
+  
+  .step-actions {
+    @include flex-between;
+    margin-top: $spacing-large;
+    padding-top: $spacing-base;
+    border-top: 1px solid $border-color-extra-light;
+  }
+}
+
+// 头像组
+.avatar-group {
+  @include flex-start;
+  
+  .el-avatar {
+    margin-left: -8px;
+    border: 2px solid $background-color-white;
+    
+    &:first-child {
+      margin-left: 0;
+    }
+    
+    &:hover {
+      z-index: 1;
+      transform: scale(1.1);
+    }
+  }
+  
+  .avatar-more {
+    @include flex-center;
+    background: $background-color-light;
+    color: $text-color-secondary;
+    font-size: $font-size-extra-small;
+    font-weight: 500;
+    margin-left: -8px;
+    border: 2px solid $background-color-white;
+    cursor: pointer;
+    
+    &:hover {
+      background: $primary-color;
+      color: white;
+    }
+  }
+}
+
+// 搜索框增强
+.search-input {
+  .el-input__wrapper {
+    border-radius: $border-radius-round;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    
+    &:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+  }
+}
+
+// 通知圆点
+.notification-dot {
+  position: relative;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8px;
+    height: 8px;
+    background: $danger-color;
+    border-radius: 50%;
+    border: 2px solid $background-color-white;
+  }
+  
+  &.has-count::after {
+    content: attr(data-count);
+    width: auto;
+    height: auto;
+    min-width: 16px;
+    min-height: 16px;
+    padding: 2px 4px;
+    font-size: 10px;
+    font-weight: bold;
+    color: white;
+    text-align: center;
+    line-height: 1;
+    border-radius: 8px;
+    top: -8px;
+    right: -8px;
+  }
+}
+
+// 加载骨架屏
+.skeleton-item {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: $border-radius-base;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+// 折叠面板增强
+.collapse-panel {
+  .panel-header {
+    @include flex-between;
+    padding: $spacing-base;
+    cursor: pointer;
+    border-bottom: 1px solid $border-color-extra-light;
+    transition: background-color 0.3s ease;
+    
+    &:hover {
+      background: $background-color-light;
+    }
+    
+    .panel-title {
+      font-weight: 500;
+      color: $text-color-primary;
+    }
+    
+    .panel-icon {
+      transition: transform 0.3s ease;
+      
+      &.expanded {
+        transform: rotate(180deg);
+      }
+    }
+  }
+}
+
+// 进度条增强
+.progress-bar {
+  .progress-info {
+    @include flex-between;
+    margin-bottom: $spacing-extra-small;
+    font-size: $font-size-small;
+    
+    .progress-label {
+      color: $text-color-primary;
+      font-weight: 500;
+    }
+    
+    .progress-percentage {
+      color: $text-color-secondary;
+    }
+  }
+}

@@ -172,10 +172,11 @@ class TestAttendanceCheckinCheckout:
 class TestAttendanceRecords:
     """测试考勤记录管理"""
     
-    def test_get_attendance_records(self, client, auth_headers_member, test_data_helper, test_member_user):
+    @pytest.mark.asyncio
+    async def test_get_attendance_records(self, client, auth_headers_member, test_data_helper, test_member_user, db_session):
         """测试获取考勤记录"""
         # 创建一些测试考勤记录
-        await test_data_helper.create_test_attendance_records(None, test_member_user.id, 7)
+        await test_data_helper.create_test_attendance_records(db_session, test_member_user.id, 7)
         
         response = client.get("/api/attendance/records", headers=auth_headers_member)
         
@@ -554,10 +555,11 @@ class TestAttendanceExceptions:
 class TestAttendanceStatistics:
     """测试考勤统计"""
     
-    def test_get_monthly_summary(self, client, auth_headers_member, test_data_helper, test_member_user):
+    @pytest.mark.asyncio
+    async def test_get_monthly_summary(self, client, auth_headers_member, test_data_helper, test_member_user, db_session):
         """测试获取月度考勤汇总"""
         # 创建本月考勤记录
-        await test_data_helper.create_test_attendance_records(None, test_member_user.id, 20)
+        await test_data_helper.create_test_attendance_records(db_session, test_member_user.id, 20)
         
         today = date.today()
         response = client.get(
@@ -587,10 +589,11 @@ class TestAttendanceStatistics:
         assert data["total_work_hours"] >= 0
         assert data["total_late_days"] >= 0
     
-    def test_get_attendance_statistics(self, client, auth_headers_admin, test_data_helper, test_member_user):
+    @pytest.mark.asyncio
+    async def test_get_attendance_statistics(self, client, auth_headers_admin, test_data_helper, test_member_user, db_session):
         """测试获取考勤统计"""
         # 创建测试数据
-        await test_data_helper.create_test_attendance_records(None, test_member_user.id, 15)
+        await test_data_helper.create_test_attendance_records(db_session, test_member_user.id, 15)
         
         today = date.today()
         week_ago = today - timedelta(days=7)

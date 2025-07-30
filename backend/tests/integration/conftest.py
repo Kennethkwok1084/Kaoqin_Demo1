@@ -4,6 +4,7 @@
 """
 
 import asyncio
+import os
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
@@ -11,8 +12,19 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
+# Set testing environment before importing app
+os.environ["TESTING"] = "1"
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test_integration.db"
+os.environ["DATABASE_URL_SYNC"] = "sqlite:///./test_integration.db"
+os.environ["REDIS_URL"] = "redis://localhost:6379/1"
+
 from app.main import app
 from app.core.config import settings
+
+# Override settings for testing
+settings.TESTING = True
+settings.DATABASE_URL = "sqlite+aiosqlite:///./test_integration.db"
+settings.DATABASE_URL_SYNC = "sqlite:///./test_integration.db"
 from app.core.database import get_async_session, get_sync_session
 from app.models import Base, Member, UserRole
 from app.core.security import get_password_hash
@@ -111,10 +123,13 @@ def client(setup_test_database):
 @pytest_asyncio.fixture
 async def test_admin_user(db_session):
     """创建测试管理员用户"""
+    import uuid
+    unique_id = str(uuid.uuid4())[:8]
+    
     admin_user = Member(
-        name="测试管理员",
-        student_id="admin001",
-        email="admin@test.com",
+        name=f"测试管理员{unique_id}",
+        student_id=f"admin{unique_id}",
+        email=f"admin{unique_id}@test.com",
         password_hash=get_password_hash("admin123456"),
         role=UserRole.ADMIN,
         is_active=True,
@@ -130,10 +145,13 @@ async def test_admin_user(db_session):
 @pytest_asyncio.fixture
 async def test_member_user(db_session):
     """创建测试普通成员"""
+    import uuid
+    unique_id = str(uuid.uuid4())[:8]
+    
     member_user = Member(
-        name="测试成员",
-        student_id="member001",
-        email="member@test.com",
+        name=f"测试成员{unique_id}",
+        student_id=f"member{unique_id}",
+        email=f"member{unique_id}@test.com",
         password_hash=get_password_hash("member123456"),
         role=UserRole.MEMBER,
         group_id=1,
@@ -151,10 +169,13 @@ async def test_member_user(db_session):
 @pytest_asyncio.fixture
 async def test_group_leader(db_session):
     """创建测试组长"""
+    import uuid
+    unique_id = str(uuid.uuid4())[:8]
+    
     leader_user = Member(
-        name="测试组长",
-        student_id="leader001",
-        email="leader@test.com",
+        name=f"测试组长{unique_id}",
+        student_id=f"leader{unique_id}",
+        email=f"leader{unique_id}@test.com",
         password_hash=get_password_hash("leader123456"),
         role=UserRole.GROUP_LEADER,
         group_id=1,
@@ -173,10 +194,10 @@ async def test_group_leader(db_session):
 def auth_headers_admin(client, test_admin_user):
     """获取管理员认证头"""
     login_data = {
-        "student_id": "admin001",
+        "student_id": test_admin_user.student_id,
         "password": "admin123456"
     }
-    response = client.post("/api/auth/login", json=login_data)
+    response = client.post("/api/v1/auth/login", json=login_data)
     assert response.status_code == 200
     
     token = response.json()["access_token"]
@@ -187,10 +208,10 @@ def auth_headers_admin(client, test_admin_user):
 def auth_headers_member(client, test_member_user):
     """获取成员认证头"""
     login_data = {
-        "student_id": "member001",
+        "student_id": test_member_user.student_id,
         "password": "member123456"
     }
-    response = client.post("/api/auth/login", json=login_data)
+    response = client.post("/api/v1/auth/login", json=login_data)
     assert response.status_code == 200
     
     token = response.json()["access_token"]
@@ -201,10 +222,10 @@ def auth_headers_member(client, test_member_user):
 def auth_headers_leader(client, test_group_leader):
     """获取组长认证头"""
     login_data = {
-        "student_id": "leader001",
+        "student_id": test_group_leader.student_id,
         "password": "leader123456"
     }
-    response = client.post("/api/auth/login", json=login_data)
+    response = client.post("/api/v1/auth/login", json=login_data)
     assert response.status_code == 200
     
     token = response.json()["access_token"]
@@ -230,10 +251,13 @@ def sample_task_data():
 @pytest.fixture
 def sample_member_data():
     """示例成员数据"""
+    import uuid
+    unique_id = str(uuid.uuid4())[:8]
+    
     return {
-        "name": "新测试成员",
-        "student_id": "new001",
-        "email": "new@test.com",
+        "name": f"新测试成员{unique_id}",
+        "student_id": f"new{unique_id}",
+        "email": f"new{unique_id}@test.com",
         "password": "newpassword123",
         "role": "member",
         "group_id": 1,
@@ -251,23 +275,22 @@ class TestDataHelper:
         """创建测试任务"""
         from app.models.task import RepairTask, TaskStatus, TaskPriority
         from datetime import datetime, timedelta
+        import uuid
         
         tasks = []
         for i in range(count):
+            unique_suffix = str(uuid.uuid4())[:8]
             task = RepairTask(
                 title=f"测试任务 {i+1}",
                 description=f"这是第{i+1}个测试任务",
-                task_number=f"T202501{i+1:04d}",
+                task_id=f"T{unique_suffix}{i+1:04d}",
                 status=TaskStatus.PENDING if i % 2 == 0 else TaskStatus.COMPLETED,
                 priority=TaskPriority.MEDIUM,
                 location=f"测试地点{i+1}",
-                assigned_to=member_id,
-                estimated_minutes=60 + i * 30,
-                actual_minutes=80 + i * 20 if i % 2 == 1 else None,
-                deadline=datetime.utcnow() + timedelta(days=i+1),
+                member_id=member_id,
                 reporter_name=f"报告人{i+1}",
                 reporter_contact=f"1381234567{i}",
-                is_rush=(i % 3 == 0)
+                report_time=datetime.utcnow() - timedelta(days=i+1)
             )
             db_session.add(task)
             tasks.append(task)

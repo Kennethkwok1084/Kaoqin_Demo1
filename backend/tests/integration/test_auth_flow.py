@@ -18,11 +18,11 @@ class TestAuthenticationFlow:
     def test_successful_login(self, client, test_member_user):
         """测试成功登录"""
         login_data = {
-            "student_id": "member001",
+            "student_id": test_member_user.student_id,
             "password": "member123456"
         }
         
-        response = client.post("/api/auth/login", json=login_data)
+        response = client.post("/api/v1/auth/login", json=login_data)
         
         assert response.status_code == 200
         data = response.json()
@@ -55,7 +55,7 @@ class TestAuthenticationFlow:
             "password": "wrongpassword"
         }
         
-        response = client.post("/api/auth/login", json=login_data)
+        response = client.post("/api/v1/auth/login", json=login_data)
         
         assert response.status_code == 401
         data = response.json()
@@ -69,7 +69,7 @@ class TestAuthenticationFlow:
             "password": "anypassword"
         }
         
-        response = client.post("/api/auth/login", json=login_data)
+        response = client.post("/api/v1/auth/login", json=login_data)
         
         assert response.status_code == 401
         data = response.json()
@@ -98,7 +98,7 @@ class TestAuthenticationFlow:
             "password": "password123"
         }
         
-        response = client.post("/api/auth/login", json=login_data)
+        response = client.post("/api/v1/auth/login", json=login_data)
         
         assert response.status_code == 403
         data = response.json()
@@ -161,14 +161,14 @@ class TestTokenRefresh:
             "student_id": "member001",
             "password": "member123456"
         }
-        login_response = client.post("/api/auth/login", json=login_data)
+        login_response = client.post("/api/v1/auth/login", json=login_data)
         assert login_response.status_code == 200
         
         refresh_token = login_response.json()["refresh_token"]
         
         # 使用refresh token获取新的access token
         refresh_data = {"refresh_token": refresh_token}
-        response = client.post("/api/auth/refresh", json=refresh_data)
+        response = client.post("/api/v1/auth/refresh", json=refresh_data)
         
         assert response.status_code == 200
         data = response.json()
@@ -187,7 +187,7 @@ class TestTokenRefresh:
     def test_refresh_token_invalid(self, client):
         """测试无效刷新令牌"""
         refresh_data = {"refresh_token": "invalid_refresh_token"}
-        response = client.post("/api/auth/refresh", json=refresh_data)
+        response = client.post("/api/v1/auth/refresh", json=refresh_data)
         
         assert response.status_code == 401
         data = response.json()
@@ -202,7 +202,7 @@ class TestTokenRefresh:
         )
         
         refresh_data = {"refresh_token": expired_refresh_token}
-        response = client.post("/api/auth/refresh", json=refresh_data)
+        response = client.post("/api/v1/auth/refresh", json=refresh_data)
         
         assert response.status_code == 401
         data = response.json()
@@ -219,7 +219,7 @@ class TestPasswordChange:
             "new_password": "newpassword123456"
         }
         
-        response = client.post("/api/auth/change-password", 
+        response = client.post("/api/v1/auth/change-password", 
                               json=password_data, 
                               headers=auth_headers_member)
         
@@ -233,7 +233,7 @@ class TestPasswordChange:
             "student_id": "member001",
             "password": "newpassword123456"
         }
-        login_response = client.post("/api/auth/login", json=login_data)
+        login_response = client.post("/api/v1/auth/login", json=login_data)
         assert login_response.status_code == 200
     
     def test_change_password_wrong_current(self, client, auth_headers_member):
@@ -243,7 +243,7 @@ class TestPasswordChange:
             "new_password": "newpassword123456"
         }
         
-        response = client.post("/api/auth/change-password", 
+        response = client.post("/api/v1/auth/change-password", 
                               json=password_data, 
                               headers=auth_headers_member)
         
@@ -259,7 +259,7 @@ class TestPasswordChange:
             "new_password": "123"  # 太弱的密码
         }
         
-        response = client.post("/api/auth/change-password", 
+        response = client.post("/api/v1/auth/change-password", 
                               json=password_data, 
                               headers=auth_headers_member)
         
@@ -272,7 +272,7 @@ class TestPasswordChange:
             "new_password": "newpassword123456"
         }
         
-        response = client.post("/api/auth/change-password", json=password_data)
+        response = client.post("/api/v1/auth/change-password", json=password_data)
         
         assert response.status_code == 401
 
@@ -361,7 +361,7 @@ class TestLogout:
     
     def test_logout_success(self, client, auth_headers_member):
         """测试成功登出"""
-        response = client.post("/api/auth/logout", headers=auth_headers_member)
+        response = client.post("/api/v1/auth/logout", headers=auth_headers_member)
         
         if response.status_code == 200:
             data = response.json()
@@ -373,7 +373,7 @@ class TestLogout:
     
     def test_logout_without_auth(self, client):
         """测试未认证登出"""
-        response = client.post("/api/auth/logout")
+        response = client.post("/api/v1/auth/logout")
         
         # 应该要求认证
         assert response.status_code == 401

@@ -102,10 +102,11 @@ class TestTasksCRUD:
         
         assert response2.status_code == 422
     
-    def test_get_tasks_list(self, client, auth_headers_admin, test_data_helper, test_member_user):
+    @pytest.mark.asyncio
+    async def test_get_tasks_list(self, client, auth_headers_admin, test_data_helper, test_member_user, db_session):
         """测试获取任务列表"""
         # 先创建一些测试任务
-        await test_data_helper.create_test_tasks(None, test_member_user.id, 3)
+        await test_data_helper.create_test_tasks(db_session, test_member_user.id, 3)
         
         response = client.get("/api/tasks/repair", headers=auth_headers_admin)
         
@@ -693,10 +694,11 @@ class TestTaskAutomation:
 class TestTaskStatistics:
     """测试任务统计"""
     
-    def test_get_task_statistics(self, client, auth_headers_admin, test_data_helper, test_member_user):
+    @pytest.mark.asyncio
+    async def test_get_task_statistics(self, client, auth_headers_admin, test_data_helper, test_member_user, db_session):
         """测试获取任务统计"""
         # 创建一些测试任务
-        await test_data_helper.create_test_tasks(None, test_member_user.id, 5)
+        await test_data_helper.create_test_tasks(db_session, test_member_user.id, 5)
         
         response = client.get("/api/tasks/statistics", headers=auth_headers_admin)
         

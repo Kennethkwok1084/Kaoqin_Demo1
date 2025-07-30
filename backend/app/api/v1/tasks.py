@@ -1129,6 +1129,507 @@ def _calculate_work_hour_breakdown(task: RepairTask) -> Dict[str, Any]:
     }
 
 
+# ============= 工时管理增强功能 =============
+
+@router.post("/work-hours/recalculate", response_model=Dict[str, Any])
+async def batch_recalculate_work_hours(
+    task_ids: Optional[List[int]] = Query(None, description="任务ID列表，为空则重算所有任务"),
+    member_id: Optional[int] = Query(None, description="重算指定成员的所有任务"),
+    date_from: Optional[datetime] = Query(None, description="重算指定时间范围的任务"),
+    date_to: Optional[datetime] = Query(None, description="重算指定时间范围的任务"),
+    current_user: Member = Depends(get_current_active_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    批量重新计算工时
+    
+    权限：仅管理员可执行批量重算
+    """
+    try:
+        # 构建查询条件
+        query = select(RepairTask).options(selectinload(RepairTask.tags))
+        
+        if task_ids:
+            query = query.where(RepairTask.id.in_(task_ids))
+        elif member_id:
+            query = query.where(RepairTask.member_id == member_id)
+        elif date_from or date_to:
+            if date_from:
+                query = query.where(RepairTask.created_at >= date_from)
+            if date_to:
+                query = query.where(RepairTask.created_at <= date_to)
+        
+        result = await db.execute(query)
+        tasks = result.scalars().all()
+        
+        if not tasks:
+            return create_response(
+                data={"recalculated_count": 0},
+                message="没有找到需要重算的任务"
+            )
+        
+        # 批量重新计算工时
+        recalculated_count = 0
+        errors = []
+        
+        for task in tasks:
+            try:
+                old_minutes = task.work_minutes
+                task.update_work_minutes()
+                
+                if task.work_minutes != old_minutes:
+                    recalculated_count += 1
+                    logger.info(f"Task {task.id} work hours updated: {old_minutes} -> {task.work_minutes}")
+                    
+            except Exception as e:
+                errors.append(f"任务 {task.id}: {str(e)}")
+                logger.error(f"Error recalculating work hours for task {task.id}: {str(e)}")
+        
+        await db.commit()
+        
+        result_data = {
+            "total_tasks": len(tasks),
+            "recalculated_count": recalculated_count,
+            "error_count": len(errors),
+            "errors": errors[:10]  # 只返回前10个错误
+        }
+        
+        logger.info(f"Batch work hours recalculation completed by {current_user.student_id}: {result_data}")
+        
+        return create_response(
+            data=result_data,
+            message=f"批量工时重算完成，共处理 {len(tasks)} 个任务，成功重算 {recalculated_count} 个"
+        )
+        
+    except Exception as e:
+        logger.error(f"Batch recalculate work hours error: {str(e)}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="批量工时重算失败"
+        )
+
+
+@router.post("/repair/{task_id}/recalculate-hours", response_model=Dict[str, Any])
+async def recalculate_single_task_hours(
+    task_id: int,
+    force_update: bool = Query(False, description="强制重新计算，即使工时未变化"),
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    重新计算单个任务工时
+    
+    权限：任务执行者和管理员可重新计算
+    """
+    try:
+        # 查询任务
+        query = select(RepairTask).options(
+            selectinload(RepairTask.tags)
+        ).where(RepairTask.id == task_id)
+        
+        result = await db.execute(query)
+        task = result.scalar_one_or_none()
+        
+        if not task:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="维修任务不存在"
+            )
+        
+        # 权限检查
+        is_task_owner = task.member_id == current_user.id
+        if not (is_task_owner or current_user.can_manage_group):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="无权限重新计算该任务工时"
+            )
+        
+        # 记录旧的工时
+        old_minutes = task.work_minutes
+        
+        # 重新计算工时
+        task.update_work_minutes()
+        
+        # 检查是否有变化
+        changed = task.work_minutes != old_minutes
+        
+        if changed or force_update:
+            await db.commit()
+            await db.refresh(task)
+        
+        # 构建详细的工时分解
+        breakdown = _calculate_work_hour_breakdown(task)
+        
+        result_data = {
+            "task_id": task.id,
+            "old_minutes": old_minutes,
+            "new_minutes": task.work_minutes,
+            "changed": changed,
+            "breakdown": breakdown,
+            "updated_at": task.updated_at.isoformat()
+        }
+        
+        logger.info(f"Task {task_id} work hours recalculated by {current_user.student_id}: {old_minutes} -> {task.work_minutes}")
+        
+        return create_response(
+            data=result_data,
+            message=f"任务工时重新计算完成" + (f"：{old_minutes}分钟 -> {task.work_minutes}分钟" if changed else "（无变化）")
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Recalculate single task hours error for task {task_id}: {str(e)}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="重新计算任务工时失败"
+        )
+
+
+@router.get("/work-hours/pending-review", response_model=Dict[str, Any])
+async def get_pending_work_hours_review(
+    page: int = Query(1, ge=1, description="页码"),
+    size: int = Query(20, ge=1, le=100, description="每页数量"),
+    task_type: Optional[TaskType] = Query(None, description="任务类型筛选"),
+    threshold_hours: float = Query(5.0, description="超过多少小时的任务需要审核"),
+    current_user: Member = Depends(get_current_active_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    获取需要工时审核的任务列表
+    
+    权限：仅管理员可查看
+    主要针对工时异常（过高或过低）的任务
+    """
+    try:
+        # 计算工时阈值（分钟）
+        threshold_minutes = threshold_hours * 60
+        
+        # 构建查询：查找工时异常的任务
+        query = select(RepairTask).options(
+            joinedload(RepairTask.member),
+            selectinload(RepairTask.tags)
+        ).where(
+            and_(
+                RepairTask.status == TaskStatus.COMPLETED,
+                or_(
+                    RepairTask.work_minutes > threshold_minutes,  # 工时过高
+                    RepairTask.work_minutes < 10,  # 工时过低（小于10分钟）
+                    RepairTask.rating is not None and RepairTask.rating <= 2  # 有差评
+                )
+            )
+        )
+        
+        if task_type:
+            query = query.where(RepairTask.task_type == task_type)
+        
+        # 计算总数
+        count_query = select(func.count()).select_from(query.subquery())
+        total_result = await db.execute(count_query)
+        total = total_result.scalar()
+        
+        # 分页查询
+        query = query.order_by(desc(RepairTask.work_minutes))
+        query = query.offset((page - 1) * size).limit(size)
+        
+        result = await db.execute(query)
+        tasks = result.scalars().all()
+        
+        # 构建响应数据
+        items = []
+        for task in tasks:
+            breakdown = _calculate_work_hour_breakdown(task)
+            
+            # 判断异常原因
+            anomaly_reasons = []
+            if task.work_minutes > threshold_minutes:
+                anomaly_reasons.append(f"工时过高({task.work_minutes}分钟)")
+            if task.work_minutes < 10:
+                anomaly_reasons.append(f"工时过低({task.work_minutes}分钟)")
+            if task.rating is not None and task.rating <= 2:
+                anomaly_reasons.append(f"评分过低({task.rating}星)")
+            
+            items.append({
+                "id": task.id,
+                "title": task.title,
+                "member_name": task.member.name if task.member else "未知",
+                "work_minutes": task.work_minutes,
+                "work_hours": round(task.work_minutes / 60.0, 2),
+                "rating": task.rating,
+                "status": task.status.value,
+                "task_type": task.task_type.value,
+                "created_at": task.created_at.isoformat(),
+                "completed_at": task.completed_at.isoformat() if task.completed_at else None,
+                "anomaly_reasons": anomaly_reasons,
+                "breakdown": breakdown
+            })
+        
+        # 分页信息
+        pages = (total + size - 1) // size
+        
+        response_data = {
+            "items": items,
+            "total": total,
+            "page": page,
+            "size": size,
+            "pages": pages,
+            "has_next": page < pages,
+            "has_prev": page > 1
+        }
+        
+        logger.info(f"Pending work hours review retrieved by {current_user.student_id}, total: {total}")
+        
+        return create_response(
+            data=response_data,
+            message=f"获取待审核工时任务成功，共 {total} 条记录"
+        )
+        
+    except Exception as e:
+        logger.error(f"Get pending work hours review error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取待审核工时列表失败"
+        )
+
+
+@router.put("/work-hours/{task_id}/adjust", response_model=Dict[str, Any])
+async def adjust_task_work_hours(
+    task_id: int,
+    adjusted_minutes: int = Query(..., ge=0, description="调整后的工时（分钟）"),
+    reason: str = Query(..., description="调整原因"),
+    current_user: Member = Depends(get_current_active_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    手动调整任务工时
+    
+    权限：仅管理员可手动调整工时
+    """
+    try:
+        # 查询任务
+        query = select(RepairTask).options(
+            selectinload(RepairTask.tags),
+            joinedload(RepairTask.member)
+        ).where(RepairTask.id == task_id)
+        
+        result = await db.execute(query)
+        task = result.scalar_one_or_none()
+        
+        if not task:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="维修任务不存在"
+            )
+        
+        # 记录调整前的工时
+        original_minutes = task.work_minutes
+        
+        # 计算需要添加的调整标签
+        adjustment = adjusted_minutes - task.base_work_minutes
+        
+        # 移除之前的手动调整标签（如果存在）
+        existing_adjustment_tags = [tag for tag in task.tags if tag.name.startswith("手动调整")]
+        for tag in existing_adjustment_tags:
+            task.tags.remove(tag)
+        
+        # 添加新的调整标签
+        if adjustment != 0:
+            adjustment_tag = TaskTag(
+                name=f"手动调整-{reason}",
+                tag_type="adjustment",
+                work_minutes_modifier=adjustment,
+                is_active=True,
+                created_by=current_user.id
+            )
+            db.add(adjustment_tag)
+            await db.flush()  # 确保标签ID可用
+            
+            task.tags.append(adjustment_tag)
+        
+        # 重新计算工时
+        task.update_work_minutes()
+        
+        # 记录调整日志
+        logger.info(f"Task {task_id} work hours manually adjusted by {current_user.student_id}: {original_minutes} -> {task.work_minutes} minutes, reason: {reason}")
+        
+        await db.commit()
+        await db.refresh(task)
+        
+        # 构建响应
+        breakdown = _calculate_work_hour_breakdown(task)
+        
+        result_data = {
+            "task_id": task.id,
+            "original_minutes": original_minutes,
+            "adjusted_minutes": task.work_minutes,
+            "adjustment_amount": task.work_minutes - original_minutes,
+            "reason": reason,
+            "adjusted_by": current_user.name,
+            "adjusted_at": datetime.utcnow().isoformat(),
+            "breakdown": breakdown
+        }
+        
+        return create_response(
+            data=result_data,
+            message=f"工时调整成功：{original_minutes}分钟 -> {task.work_minutes}分钟"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Adjust task work hours error for task {task_id}: {str(e)}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="手动调整工时失败"
+        )
+
+
+@router.get("/work-hours/statistics", response_model=Dict[str, Any])
+async def get_work_hours_statistics(
+    date_from: Optional[datetime] = Query(None, description="统计开始时间"),
+    date_to: Optional[datetime] = Query(None, description="统计结束时间"),
+    member_id: Optional[int] = Query(None, description="指定成员统计"),
+    group_by: str = Query("day", regex="^(day|week|month)$", description="分组方式"),
+    current_user: Member = Depends(get_current_active_group_leader),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    获取工时统计信息
+    
+    权限：组长及以上可查看
+    """
+    try:
+        # 设置默认时间范围（最近30天）
+        if not date_to:
+            date_to = datetime.utcnow()
+        if not date_from:
+            date_from = date_to - timedelta(days=30)
+        
+        # 构建基础查询
+        query = select(RepairTask).options(
+            joinedload(RepairTask.member)
+        ).where(
+            and_(
+                RepairTask.created_at >= date_from,
+                RepairTask.created_at <= date_to,
+                RepairTask.status == TaskStatus.COMPLETED
+            )
+        )
+        
+        if member_id:
+            query = query.where(RepairTask.member_id == member_id)
+        
+        result = await db.execute(query)
+        tasks = result.scalars().all()
+        
+        # 统计数据
+        total_tasks = len(tasks)
+        total_work_minutes = sum(task.work_minutes for task in tasks)
+        total_work_hours = round(total_work_minutes / 60.0, 2)
+        
+        # 按任务类型统计
+        type_stats = {}
+        for task in tasks:
+            task_type = task.task_type.value
+            if task_type not in type_stats:
+                type_stats[task_type] = {"count": 0, "total_minutes": 0}
+            type_stats[task_type]["count"] += 1
+            type_stats[task_type]["total_minutes"] += task.work_minutes
+        
+        # 转换类型统计格式
+        for type_name, stats in type_stats.items():
+            stats["total_hours"] = round(stats["total_minutes"] / 60.0, 2)
+            stats["avg_hours"] = round(stats["total_hours"] / stats["count"], 2) if stats["count"] > 0 else 0
+        
+        # 按时间分组统计
+        time_stats = {}
+        for task in tasks:
+            if group_by == "day":
+                time_key = task.created_at.strftime("%Y-%m-%d")
+            elif group_by == "week":
+                # 获取周的开始日期
+                week_start = task.created_at - timedelta(days=task.created_at.weekday())
+                time_key = week_start.strftime("%Y-%m-%d")
+            else:  # month
+                time_key = task.created_at.strftime("%Y-%m")
+            
+            if time_key not in time_stats:
+                time_stats[time_key] = {"count": 0, "total_minutes": 0}
+            time_stats[time_key]["count"] += 1
+            time_stats[time_key]["total_minutes"] += task.work_minutes
+        
+        # 转换时间统计格式并排序
+        time_series = []
+        for time_key in sorted(time_stats.keys()):
+            stats = time_stats[time_key]
+            time_series.append({
+                "period": time_key,
+                "task_count": stats["count"],
+                "total_hours": round(stats["total_minutes"] / 60.0, 2),
+                "avg_hours": round(stats["total_minutes"] / 60.0 / stats["count"], 2) if stats["count"] > 0 else 0
+            })
+        
+        # 按成员统计（如果是管理员查看所有人时）
+        member_stats = []
+        if not member_id and current_user.is_admin:
+            member_groups = {}
+            for task in tasks:
+                member_key = task.member_id
+                if member_key not in member_groups:
+                    member_groups[member_key] = {
+                        "member_name": task.member.name if task.member else "未知",
+                        "tasks": []
+                    }
+                member_groups[member_key]["tasks"].append(task)
+            
+            for member_key, group_data in member_groups.items():
+                member_tasks = group_data["tasks"]
+                member_total_minutes = sum(task.work_minutes for task in member_tasks)
+                member_stats.append({
+                    "member_id": member_key,
+                    "member_name": group_data["member_name"],
+                    "task_count": len(member_tasks),
+                    "total_hours": round(member_total_minutes / 60.0, 2),
+                    "avg_hours": round(member_total_minutes / 60.0 / len(member_tasks), 2) if member_tasks else 0
+                })
+            
+            # 按总工时排序
+            member_stats.sort(key=lambda x: x["total_hours"], reverse=True)
+        
+        response_data = {
+            "period": {
+                "from": date_from.isoformat(),
+                "to": date_to.isoformat(),
+                "group_by": group_by
+            },
+            "summary": {
+                "total_tasks": total_tasks,
+                "total_work_hours": total_work_hours,
+                "average_hours_per_task": round(total_work_hours / total_tasks, 2) if total_tasks > 0 else 0
+            },
+            "by_task_type": type_stats,
+            "time_series": time_series,
+            "by_member": member_stats
+        }
+        
+        logger.info(f"Work hours statistics retrieved by {current_user.student_id}")
+        
+        return create_response(
+            data=response_data,
+            message="工时统计数据获取成功"
+        )
+        
+    except Exception as e:
+        logger.error(f"Get work hours statistics error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取工时统计失败"
+        )
+
+
 # 健康检查
 @router.get("/health", response_model=Dict[str, Any])
 async def tasks_health_check():

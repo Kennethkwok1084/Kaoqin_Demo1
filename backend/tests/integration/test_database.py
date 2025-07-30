@@ -21,11 +21,13 @@ class TestDatabaseConnection:
     async def setup(self, db_session):
         self.db = db_session
     
+    @pytest.mark.asyncio
     async def test_database_connection(self):
         """测试数据库连接是否正常"""
         result = await self.db.execute(text("SELECT 1"))
         assert result.scalar() == 1
     
+    @pytest.mark.asyncio
     async def test_tables_created(self):
         """测试所有表是否正确创建"""
         # 检查主要表是否存在
@@ -54,6 +56,7 @@ class TestMemberModel:
     async def setup(self, db_session):
         self.db = db_session
     
+    @pytest.mark.asyncio
     async def test_create_member(self):
         """测试创建成员"""
         member = Member(
@@ -79,6 +82,7 @@ class TestMemberModel:
         assert member.is_active is True
         assert member.created_at is not None
     
+    @pytest.mark.asyncio
     async def test_member_unique_constraint(self):
         """测试成员学号唯一约束"""
         # 创建第一个成员
@@ -103,6 +107,7 @@ class TestMemberModel:
         with pytest.raises(IntegrityError):
             await self.db.commit()
     
+    @pytest.mark.asyncio
     async def test_member_properties(self):
         """测试成员属性方法"""
         admin = Member(
@@ -151,6 +156,7 @@ class TestTaskModel:
         self.db = db_session
         self.member = test_member_user
     
+    @pytest.mark.asyncio
     async def test_create_repair_task(self):
         """测试创建维修任务"""
         from datetime import datetime, timedelta
@@ -158,17 +164,15 @@ class TestTaskModel:
         task = RepairTask(
             title="网络维修任务",
             description="修复网络故障",
-            task_number="T202501280001",
+            task_id="T202501280001",
             status=TaskStatus.PENDING,
             priority=TaskPriority.HIGH,
-            task_type=TaskType.REPAIR,
+            task_type=TaskType.OFFLINE,
             location="图书馆",
-            assigned_to=self.member.id,
-            estimated_minutes=120,
-            deadline=datetime.utcnow() + timedelta(days=1),
+            member_id=self.member.id,
             reporter_name="张老师",
             reporter_contact="13812345678",
-            is_rush=True
+            report_time=datetime.utcnow()
         )
         
         self.db.add(task)
@@ -178,10 +182,10 @@ class TestTaskModel:
         assert task.id is not None
         assert task.title == "网络维修任务"
         assert task.status == TaskStatus.PENDING
-        assert task.assigned_to == self.member.id
-        assert task.is_rush is True
+        assert task.member_id == self.member.id
         assert task.created_at is not None
     
+    @pytest.mark.asyncio
     async def test_task_member_relationship(self):
         """测试任务与成员的关系"""
         from datetime import datetime, timedelta
@@ -189,12 +193,11 @@ class TestTaskModel:
         task = RepairTask(
             title="关系测试任务",
             description="测试任务与成员关系",
-            task_number="T202501280002",
+            task_id="T202501280002",
             status=TaskStatus.IN_PROGRESS,
             priority=TaskPriority.MEDIUM,
-            assigned_to=self.member.id,
-            estimated_minutes=60,
-            deadline=datetime.utcnow() + timedelta(days=2)
+            member_id=self.member.id,
+            report_time=datetime.utcnow()
         )
         
         self.db.add(task)
@@ -213,6 +216,7 @@ class TestTaskModel:
         assert loaded_task.member.id == self.member.id
         assert loaded_task.member.name == self.member.name
     
+    @pytest.mark.asyncio
     async def test_task_number_unique(self):
         """测试任务编号唯一性"""
         from datetime import datetime, timedelta
@@ -220,9 +224,9 @@ class TestTaskModel:
         task1 = RepairTask(
             title="任务1",
             description="第一个任务",
-            task_number="T202501280003",
-            assigned_to=self.member.id,
-            deadline=datetime.utcnow() + timedelta(days=1)
+            task_id="T202501280003",
+            member_id=self.member.id,
+            report_time=datetime.utcnow()
         )
         self.db.add(task1)
         await self.db.commit()
@@ -231,9 +235,9 @@ class TestTaskModel:
         task2 = RepairTask(
             title="任务2",
             description="第二个任务",
-            task_number="T202501280003",  # 相同编号
-            assigned_to=self.member.id,
-            deadline=datetime.utcnow() + timedelta(days=1)
+            task_id="T202501280003",  # 相同编号
+            member_id=self.member.id,
+            report_time=datetime.utcnow()
         )
         self.db.add(task2)
         
@@ -249,6 +253,7 @@ class TestAttendanceModel:
         self.db = db_session
         self.member = test_member_user
     
+    @pytest.mark.asyncio
     async def test_create_attendance_record(self):
         """测试创建考勤记录"""
         from datetime import datetime, date
@@ -276,6 +281,7 @@ class TestAttendanceModel:
         assert record.status == "正常"
         assert record.is_late_checkin is False
     
+    @pytest.mark.asyncio
     async def test_attendance_unique_constraint(self):
         """测试考勤记录唯一约束（每人每天只能有一条记录）"""
         from datetime import datetime, date
@@ -306,6 +312,7 @@ class TestAttendanceModel:
         with pytest.raises(IntegrityError):
             await self.db.commit()
     
+    @pytest.mark.asyncio
     async def test_create_attendance_exception(self):
         """测试创建考勤异常"""
         from datetime import datetime, date
@@ -330,6 +337,7 @@ class TestAttendanceModel:
         assert exception.status == AttendanceExceptionStatus.PENDING
         assert exception.applied_at is not None
     
+    @pytest.mark.asyncio
     async def test_attendance_member_relationship(self):
         """测试考勤记录与成员关系"""
         from datetime import datetime, date
@@ -367,6 +375,7 @@ class TestModelRelationships:
         self.member = test_member_user
         self.helper = test_data_helper
     
+    @pytest.mark.asyncio
     async def test_member_tasks_relationship(self):
         """测试成员与任务的关系"""
         # 创建测试任务
@@ -380,14 +389,15 @@ class TestModelRelationships:
         
         # 验证任务关系
         repair_tasks = await self.db.execute(
-            select(RepairTask).where(RepairTask.assigned_to == member.id)
+            select(RepairTask).where(RepairTask.member_id == member.id)
         )
         task_list = repair_tasks.scalars().all()
         
         assert len(task_list) == 3
         for task in task_list:
-            assert task.assigned_to == member.id
+            assert task.member_id == member.id
     
+    @pytest.mark.asyncio
     async def test_member_attendance_relationship(self):
         """测试成员与考勤记录的关系"""
         # 创建测试考勤记录
@@ -403,6 +413,7 @@ class TestModelRelationships:
         for record in record_list:
             assert record.member_id == self.member.id
     
+    @pytest.mark.asyncio
     async def test_cascade_deletion(self):
         """测试级联删除"""
         # 创建任务和考勤记录
@@ -411,7 +422,7 @@ class TestModelRelationships:
         
         # 验证记录存在
         tasks_before = await self.db.execute(
-            select(RepairTask).where(RepairTask.assigned_to == self.member.id)
+            select(RepairTask).where(RepairTask.member_id == self.member.id)
         )
         assert len(tasks_before.scalars().all()) == 2
         

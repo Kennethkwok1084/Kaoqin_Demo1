@@ -1,0 +1,224 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: [3.12, 3.13]
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client
+
+    - name: Install Python dependencies
+      run: |
+        cd backend
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+        pip install pytest pytest-asyncio pytest-cov pytest-html aiosqlite
+
+    - name: Set environment variables
+      run: |
+        echo "ENVIRONMENT=test" >> $GITHUB_ENV
+        echo "TESTING=1" >> $GITHUB_ENV
+        echo "DATABASE_URL=postgresql://test_user:test_password@localhost:5432/test_db" >> $GITHUB_ENV
+        echo "REDIS_URL=redis://localhost:6379/0" >> $GITHUB_ENV
+
+    - name: Run linting
+      run: |
+        cd backend
+        # 安装代码质量工具
+        pip install black isort flake8 mypy
+        
+        # 代码格式检查
+        black --check --diff app tests
+        isort --check-only --diff app tests
+        
+        # 代码风格检查
+        flake8 app tests --max-line-length=100 --exclude=migrations
+        
+        # 类型检查
+        mypy app --ignore-missing-imports
+
+    - name: Run database migrations
+      run: |
+        cd backend
+        # 创建数据库表
+        python -c "
+        import asyncio
+        from app.core.database import Base, async_engine
+        
+        async def create_tables():
+            async with async_engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+        
+        asyncio.run(create_tables())
+        "
+
+    - name: Run integration tests
+      run: |
+        cd backend
+        python run_integration_tests.py --verbose
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results-${{ matrix.python-version }}
+        path: |
+          backend/tests/reports/
+          backend/htmlcov/
+          backend/coverage.json
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      if: matrix.python-version == '3.13'
+      with:
+        file: ./backend/coverage.json
+        fail_ci_if_error: true
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Install dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+        pip install safety bandit
+
+    - name: Run security scan
+      run: |
+        cd backend
+        # 检查已知安全漏洞
+        safety check
+        
+        # 代码安全扫描
+        bandit -r app -f json -o security-report.json || true
+
+    - name: Upload security report
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-report
+        path: backend/security-report.json
+
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    needs: [test, security-scan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/attendance-backend:latest
+          ${{ secrets.DOCKER_USERNAME }}/attendance-backend:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Deploy to staging
+      if: github.ref == 'refs/heads/develop'
+      run: |
+        echo "Deploying to staging environment..."
+        # 这里可以添加部署到staging环境的脚本
+
+    - name: Deploy to production
+      if: github.ref == 'refs/heads/main'
+      run: |
+        echo "Deploying to production environment..." 
+        # 这里可以添加部署到production环境的脚本
+
+  notification:
+    runs-on: ubuntu-latest
+    needs: [test, security-scan, build-and-deploy]
+    if: always()
+    
+    steps:
+    - name: Notify on success
+      if: needs.test.result == 'success' && needs.security-scan.result == 'success'
+      run: |
+        echo "✅ CI/CD pipeline completed successfully!"
+        # 可以添加Slack/Teams通知
+
+    - name: Notify on failure
+      if: needs.test.result == 'failure' || needs.security-scan.result == 'failure'
+      run: |
+        echo "❌ CI/CD pipeline failed!"
+        # 可以添加失败通知

@@ -209,57 +209,184 @@ frontend/
 ├── src/
 │   ├── main.ts                # 应用入口
 │   ├── App.vue                # 根组件
+│   ├── views/                 # 页面视图
+│   │   ├── auth/             # 认证页面
+│   │   │   ├── Login.vue     # 登录页面
+│   │   │   └── Register.vue  # 注册页面
+│   │   ├── layout/           # 布局组件
+│   │   │   ├── AppLayout.vue # 主布局
+│   │   │   ├── Header.vue    # 头部组件
+│   │   │   ├── Sidebar.vue   # 侧边栏
+│   │   │   └── Footer.vue    # 页脚
+│   │   ├── dashboard/        # 仪表盘
+│   │   │   └── Dashboard.vue # 系统概览
+│   │   ├── tasks/            # 任务管理
+│   │   │   ├── TaskList.vue      # 任务列表
+│   │   │   ├── TaskDetail.vue    # 任务详情
+│   │   │   ├── TaskForm.vue      # 任务表单
+│   │   │   └── TaskImport.vue    # 数据导入
+│   │   ├── members/          # 成员管理
+│   │   │   ├── MemberList.vue    # 成员列表
+│   │   │   ├── MemberDetail.vue  # 成员详情
+│   │   │   └── MemberForm.vue    # 成员表单
+│   │   ├── attendance/       # 考勤管理
+│   │   │   ├── CheckIn.vue       # 签到页面
+│   │   │   ├── AttendanceList.vue # 考勤记录
+│   │   │   └── AttendanceStats.vue # 考勤统计
+│   │   ├── statistics/       # 统计分析
+│   │   │   ├── Overview.vue      # 系统统计
+│   │   │   ├── Reports.vue       # 报表中心
+│   │   │   └── WorkHours.vue     # 工时管理
+│   │   └── profile/          # 个人中心
+│   │       ├── Profile.vue       # 个人信息
+│   │       └── Settings.vue      # 系统设置
 │   ├── components/            # 通用组件
 │   │   ├── common/           # 基础组件
-│   │   │   ├── BaseButton.vue
-│   │   │   ├── BaseCard.vue
-│   │   │   └── BaseTable.vue
+│   │   │   ├── BaseButton.vue    # 按钮组件
+│   │   │   ├── BaseCard.vue      # 卡片组件
+│   │   │   ├── BaseTable.vue     # 表格组件
+│   │   │   ├── BasePagination.vue # 分页组件
+│   │   │   ├── BaseDialog.vue    # 对话框组件
+│   │   │   ├── BaseUpload.vue    # 上传组件
+│   │   │   └── GlobalLoading.vue # 全局加载
 │   │   ├── charts/           # 图表组件
-│   │   │   ├── LineChart.vue
-│   │   │   ├── BarChart.vue
-│   │   │   └── PieChart.vue
+│   │   │   ├── LineChart.vue     # 折线图
+│   │   │   ├── BarChart.vue      # 柱状图
+│   │   │   ├── PieChart.vue      # 饼图
+│   │   │   └── StatCard.vue      # 统计卡片
 │   │   └── forms/            # 表单组件
-│   │       ├── TaskForm.vue
-│   │       └── MemberForm.vue
-│   ├── views/                 # 页面视图
-│   │   ├── Dashboard.vue     # 仪表盘
-│   │   ├── Tasks/            # 任务管理
-│   │   │   ├── TaskList.vue
-│   │   │   ├── TaskDetail.vue
-│   │   │   └── TaskImport.vue
-│   │   ├── Members/          # 成员管理
-│   │   │   ├── MemberList.vue
-│   │   │   └── MemberDetail.vue
-│   │   └── Statistics/       # 统计分析
-│   │       ├── Overview.vue
-│   │       └── Reports.vue
+│   │       ├── SearchForm.vue    # 搜索表单
+│   │       ├── FilterForm.vue    # 筛选表单
+│   │       └── DateRangePicker.vue # 日期范围选择
 │   ├── stores/               # Pinia状态管理
+│   │   ├── index.ts         # Store入口
+│   │   ├── global.ts        # 全局状态
 │   │   ├── auth.ts          # 认证状态
+│   │   ├── user.ts          # 用户状态
 │   │   ├── tasks.ts         # 任务状态
-│   │   └── members.ts       # 成员状态
+│   │   ├── members.ts       # 成员状态
+│   │   ├── attendance.ts    # 考勤状态
+│   │   └── statistics.ts    # 统计状态
 │   ├── router/               # 路由配置
-│   │   └── index.ts
+│   │   ├── index.ts         # 路由入口
+│   │   ├── guards.ts        # 路由守卫
+│   │   └── routes.ts        # 路由定义
+│   ├── api/                 # API接口
+│   │   ├── index.ts         # API入口
+│   │   ├── client.ts        # HTTP客户端
+│   │   ├── auth.ts          # 认证接口
+│   │   ├── tasks.ts         # 任务接口
+│   │   ├── members.ts       # 成员接口
+│   │   ├── attendance.ts    # 考勤接口
+│   │   └── statistics.ts    # 统计接口
 │   ├── utils/                # 工具函数
-│   │   ├── api.ts           # API客户端
+│   │   ├── index.ts         # 工具入口
 │   │   ├── auth.ts          # 认证工具
-│   │   ├── validators.ts    # 表单验证
+│   │   ├── storage.ts       # 存储工具
+│   │   ├── validators.ts    # 验证器
+│   │   ├── formatters.ts    # 格式化器
+│   │   ├── constants.ts     # 常量定义
 │   │   └── helpers.ts       # 辅助函数
 │   ├── types/                # TypeScript类型
+│   │   ├── index.ts         # 类型入口
 │   │   ├── api.ts           # API类型
 │   │   ├── auth.ts          # 认证类型
+│   │   ├── common.ts        # 通用类型
 │   │   └── models.ts        # 数据模型类型
+│   ├── styles/               # 样式文件
+│   │   ├── index.scss       # 样式入口
+│   │   ├── variables.scss   # SCSS变量
+│   │   ├── mixins.scss      # SCSS混入
+│   │   ├── reset.scss       # 样式重置
+│   │   ├── layout.scss      # 布局样式
+│   │   ├── components.scss  # 组件样式
+│   │   └── utilities.scss   # 工具样式
 │   └── assets/               # 静态资源
-│       ├── styles/          # 样式文件
 │       ├── images/          # 图片资源
-│       └── icons/           # 图标资源
+│       ├── icons/           # 图标资源
+│       └── fonts/           # 字体资源
 ├── public/                   # 公共资源
+│   ├── favicon.ico          # 网站图标
+│   ├── manifest.json        # PWA配置
+│   └── robots.txt           # 爬虫配置
 ├── capacitor.config.ts       # Capacitor配置
 ├── package.json             # 依赖配置
 ├── vite.config.ts           # Vite配置
 ├── tsconfig.json            # TypeScript配置
+├── .env                     # 环境变量
+├── .env.development         # 开发环境变量
+├── .env.production          # 生产环境变量
 ├── .eslintrc.js             # ESLint配置
+├── .prettierrc              # Prettier配置
+├── .stylelintrc.js          # Stylelint配置
+├── vitest.config.ts         # Vitest配置
+├── playwright.config.ts     # Playwright配置
 └── Dockerfile               # Docker配置
 ```
+
+## 前端开发计划
+
+### 第一阶段：基础架构搭建 (高优先级)
+1. **项目初始化和配置**
+   - ✅ Vue 3 + Vite + TypeScript 基础配置
+   - ✅ Element Plus UI组件库集成
+   - ✅ 样式系统和设计规范建立
+   - ✅ 环境变量和构建配置
+
+2. **核心系统架构**
+   - 🔄 Pinia状态管理配置
+   - 🔄 Vue Router路由系统
+   - 🔄 Axios HTTP客户端和拦截器
+   - 🔄 身份认证系统和路由守卫
+
+3. **基础布局组件**
+   - 主应用布局 (Header/Sidebar/Footer)
+   - 响应式设计适配
+   - 导航和菜单系统
+
+### 第二阶段：核心功能开发 (中优先级)
+4. **仪表板页面**
+   - 系统概览统计
+   - 数据可视化图表
+   - 实时数据展示
+
+5. **任务管理模块**
+   - 任务列表和筛选
+   - 任务详情和编辑
+   - 任务表单组件
+   - 工时计算和管理
+
+6. **成员管理模块**
+   - 成员列表和CRUD操作
+   - 角色权限管理
+   - 成员信息详情
+
+7. **考勤管理模块**
+   - 签到/签退功能
+   - 考勤记录查询
+   - 考勤统计分析
+
+8. **统计报表模块**
+   - 数据统计图表
+   - 报表生成和导出
+   - 月度/年度报表
+
+### 第三阶段：高级功能和优化 (低优先级)
+9. **数据导入功能**
+   - Excel文件上传
+   - 数据预览和验证
+   - 批量导入处理
+
+10. **移动端适配**
+    - 响应式设计优化
+    - 移动端交互适配
+    - Capacitor移动应用配置
+
+11. **测试和部署**
+    - 单元测试编写
+    - E2E测试配置
+    - 生产环境部署配置
+    - 性能优化和代码分割
 
 ## 业务逻辑与规则
 

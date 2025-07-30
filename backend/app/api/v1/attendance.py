@@ -7,7 +7,7 @@ import logging
 from datetime import datetime, date, timedelta
 from typing import List, Optional, Dict, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Path, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
@@ -213,7 +213,7 @@ async def get_attendance_record(
 
 @router.get("/summary/{month}", response_model=AttendanceSummaryResponse, summary="获取月度考勤汇总")
 async def get_monthly_summary(
-    month: str = Query(..., description="月份，格式：YYYY-MM"),
+    month: str = Path(..., description="月份，格式：YYYY-MM"),
     member_id: Optional[int] = Query(None, description="成员ID（管理员可查看其他人汇总）"),
     current_user: Member = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)

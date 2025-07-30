@@ -1,0 +1,104 @@
+// 主色调
+$primary-color: #409EFF;
+$success-color: #67C23A;
+$warning-color: #E6A23C;
+$danger-color: #F56C6C;
+$info-color: #909399;
+
+// 辅助色调
+$primary-light-1: #53a8ff;
+$primary-light-2: #66b1ff;
+$primary-light-3: #79bbff;
+$primary-light-4: #8cc5ff;
+$primary-light-5: #a0cfff;
+$primary-light-6: #b3d8ff;
+$primary-light-7: #c6e2ff;
+$primary-light-8: #d9ecff;
+$primary-light-9: #ecf5ff;
+
+// 中性色
+$text-color-primary: #303133;
+$text-color-regular: #606266;
+$text-color-secondary: #909399;
+$text-color-placeholder: #C0C4CC;
+
+$border-color-base: #DCDFE6;
+$border-color-light: #E4E7ED;
+$border-color-lighter: #EBEEF5;
+$border-color-extra-light: #F2F6FC;
+
+// 背景色
+$background-color-base: #F5F7FA;
+$background-color-light: #FAFAFA;
+$background-color-white: #FFFFFF;
+
+// 阴影
+$box-shadow-base: 0 2px 4px rgba(0, 0, 0, .12), 0 0 6px rgba(0, 0, 0, .04);
+$box-shadow-dark: 0 2px 4px rgba(0, 0, 0, .12), 0 0 6px rgba(0, 0, 0, .12);
+$box-shadow-light: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+
+// 边框半径
+$border-radius-base: 4px;
+$border-radius-small: 2px;
+$border-radius-round: 20px;
+$border-radius-circle: 100%;
+
+// 字体大小
+$font-size-extra-large: 20px;
+$font-size-large: 18px;
+$font-size-medium: 16px;
+$font-size-base: 14px;
+$font-size-small: 13px;
+$font-size-extra-small: 12px;
+
+// 间距
+$spacing-extra-small: 4px;
+$spacing-small: 8px;
+$spacing-base: 16px;
+$spacing-medium: 20px;
+$spacing-large: 24px;
+$spacing-extra-large: 32px;
+
+// 布局相关
+$header-height: 60px;
+$sidebar-width: 240px;
+$sidebar-collapsed-width: 64px;
+$footer-height: 50px;
+
+// 响应式断点
+$breakpoint-xs: 480px;
+$breakpoint-sm: 768px;
+$breakpoint-md: 992px;
+$breakpoint-lg: 1200px;
+$breakpoint-xl: 1920px;
+
+// Z-index 层级
+$z-index-loading: 2000;
+$z-index-message: 3000;
+$z-index-dialog: 3000;
+$z-index-popover: 4000;
+
+// 过渡动画
+$transition-base: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+$transition-fade: opacity 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+$transition-slide: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+
+// 卡片样式
+$card-padding: $spacing-base;
+$card-border-radius: $border-radius-base;
+$card-box-shadow: $box-shadow-light;
+
+// 表格样式
+$table-header-bg: #FAFAFA;
+$table-stripe-bg: #FAFAFA;
+$table-hover-bg: #F5F7FA;
+$table-border-color: $border-color-lighter;
+
+// 状态色彩映射
+$status-colors: (
+  'success': $success-color,
+  'warning': $warning-color,
+  'danger': $danger-color,
+  'info': $info-color,
+  'primary': $primary-color
+);

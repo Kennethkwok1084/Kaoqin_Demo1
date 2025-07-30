@@ -19,7 +19,9 @@
       "Bash(find:*)",
       "mcp__filesystem__get_file_info",
       "mcp__memory__create_entities",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(npm:*)",
+      "Bash(node:*)"
     ],
     "deny": []
   }

@@ -58,9 +58,8 @@ class TaskTagCreate(TaskTagBase):
                 "is_online": False,
                 "description": "校园网络设备维修任务",
                 "is_active": True
-            })
-
-        }
+            }
+        })
 
 
 class TaskTagResponse(TaskTagBase):
@@ -73,8 +72,9 @@ class TaskTagResponse(TaskTagBase):
     created_at: datetime = Field(..., description="创建时间")
     updated_at: datetime = Field(..., description="更新时间")
     
-    model_config = ConfigDict(from_attributes=True)
-        schema_extra = {
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
             "example": {
                 "id": 1,
                 "name": "网络维修",
@@ -88,6 +88,7 @@ class TaskTagResponse(TaskTagBase):
                 "updated_at": "2025-01-27T10:30:00"
             }
         }
+    )
 
 
 class TaskBase(BaseModel):
@@ -189,9 +190,8 @@ class TaskCreate(TaskBase):
                 "reporter_name": "张老师",
                 "reporter_contact": "13812345678",
                 "is_rush": True
-            })
-
-        }
+            }
+        })
 
 
 class TaskUpdate(BaseModel):
@@ -266,9 +266,8 @@ class TaskUpdate(BaseModel):
                 "actual_minutes": 90,
                 "completion_note": "已更换故障交换机，网络恢复正常",
                 "priority": "medium"
-            })
-
-        }
+            }
+        })
 
 
 class TaskResponse(TaskBase):
@@ -295,8 +294,9 @@ class TaskResponse(TaskBase):
     creator_name: Optional[str] = Field(None, description="创建者姓名")
     assignee_name: Optional[str] = Field(None, description="执行者姓名")
     
-    model_config = ConfigDict(from_attributes=True)
-        schema_extra = {
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
             "example": {
                 "id": 1,
                 "task_number": "T202501270001",
@@ -323,6 +323,7 @@ class TaskResponse(TaskBase):
                 "assignee_name": "张三"
             }
         }
+    )
 
 
 class TaskDetailResponse(TaskResponse):
@@ -333,8 +334,9 @@ class TaskDetailResponse(TaskResponse):
     work_hour_breakdown: Dict[str, Any] = Field(default={}, description="工时分解详情")
     status_history: List[Dict[str, Any]] = Field(default=[], description="状态变更历史")
     
-    model_config = ConfigDict(from_attributes=True)
-        schema_extra = {
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
             "example": {
                 "id": 1,
                 "task_number": "T202501270001",
@@ -355,6 +357,7 @@ class TaskDetailResponse(TaskResponse):
                 ]
             }
         }
+    )
 
 
 class TaskListResponse(BaseModel):
@@ -381,10 +384,9 @@ class TaskListResponse(BaseModel):
                 "filters_applied": {
                     "status": "pending",
                     "task_type": "repair"
-                })
-
+                }
             }
-        }
+        })
 
 
 class TaskSearchParams(BaseModel):
@@ -454,7 +456,7 @@ class TaskSearchParams(BaseModel):
         description="截止时间结束"
     )
     
-    @model_validator(mode=\'after\')
+    @model_validator(mode='after')
     def validate_date_ranges(self):
         """验证日期范围"""
         date_from = values.get('date_from')
@@ -479,9 +481,8 @@ class TaskSearchParams(BaseModel):
                 "is_rush": True,
                 "date_from": "2025-01-01T00:00:00",
                 "date_to": "2025-01-31T23:59:59"
-            })
-
-        }
+            }
+        })
 
 
 class TaskStatusUpdate(BaseModel):
@@ -500,7 +501,7 @@ class TaskStatusUpdate(BaseModel):
         description="实际工时（仅完成时需要）"
     )
     
-    @model_validator(mode=\'after\')
+    @model_validator(mode='after')
     def validate_completion_data(self):
         """验证完成数据"""
         status = values.get('status')
@@ -516,9 +517,8 @@ class TaskStatusUpdate(BaseModel):
                 "status": "completed",
                 "completion_note": "维修完成，设备恢复正常",
                 "actual_minutes": 90
-            })
-
-        }
+            }
+        })
 
 
 class TaskAssignment(BaseModel):
@@ -535,9 +535,8 @@ class TaskAssignment(BaseModel):
             "example": {
                 "assigned_to": 2,
                 "assignment_note": "请优先处理此紧急任务"
-            })
-
-        }
+            }
+        })
 
 
 class TaskStatistics(BaseModel):
@@ -569,8 +568,7 @@ class TaskStatistics(BaseModel):
                     "repair": 80,
                     "monitoring": 50,
                     "assistance": 20
-                })
-,
+                },
                 "priority_distribution": {
                     "low": 40,
                     "medium": 70,
@@ -581,7 +579,7 @@ class TaskStatistics(BaseModel):
                     {"month": "2025-01", "completed": 35, "avg_hours": 2.8}
                 ]
             }
-        }
+        })
 
 
 class TaskImportRequest(BaseModel):
@@ -610,13 +608,12 @@ class TaskImportRequest(BaseModel):
                         "task_type": "repair",
                         "location": "教学楼A座",
                         "priority": "medium"
-                    })
-
+                    }
                 ],
                 "auto_assign": True,
                 "default_priority": "medium"
             }
-        }
+        })
 
 
 class TaskImportResult(BaseModel):
@@ -637,15 +634,14 @@ class TaskImportResult(BaseModel):
                 "failed_imports": 1,
                 "warnings": 1,
                 "errors": [
-                    {"row": 3, "error": "任务标题不能为空"})
-
+                    {"row": 3, "error": "任务标题不能为空"}
                 ],
                 "warnings_list": [
                     {"row": 5, "warning": "未指定执行者，已设为待分配"}
                 ],
                 "imported_tasks": []
             }
-        }
+        })
 
 
 class WorkHourCalculation(BaseModel):
@@ -680,9 +676,8 @@ class WorkHourCalculation(BaseModel):
                 "review_rating": 4,
                 "is_late_response": False,
                 "is_late_completion": False
-            })
-
-        }
+            }
+        })
 
 
 class WorkHourResult(BaseModel):
@@ -710,7 +705,6 @@ class WorkHourResult(BaseModel):
                     "calculation_rules": "线下维修任务基础100分钟",
                     "applied_bonuses": ["紧急任务奖励", "好评奖励"],
                     "applied_penalties": []
-                })
-
+                }
             }
-        }
+        })
