@@ -5,7 +5,11 @@ Handles all application settings using Pydantic Settings.
 
 import secrets
 from typing import Any, Dict, List, Optional, Union
-from pydantic import AnyHttpUrl, BaseSettings, EmailStr, Field, validator
+from pydantic import AnyHttpUrl, EmailStr, Field, validator
+try:
+    from pydantic_settings import BaseSettings
+except ImportError:
+    from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -38,6 +42,14 @@ class Settings(BaseSettings):
             return v
         # Fallback construction if needed
         return "postgresql+asyncpg://kwok:Onjuju1084@localhost:5432/attendence_dev"
+    
+    @validator("DATABASE_URL_SYNC", pre=True)
+    def assemble_db_connection_sync(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
+        if isinstance(v, str):
+            return v
+        # Fallback construction - convert async URL to sync
+        async_url = values.get("DATABASE_URL", "postgresql+asyncpg://kwok:Onjuju1084@localhost:5432/attendence_dev")
+        return async_url.replace("postgresql+asyncpg://", "postgresql://")
     
     # Authentication Configuration
     SECRET_KEY: str = Field(
@@ -133,10 +145,12 @@ class Settings(BaseSettings):
     MIN_RATING_FOR_POSITIVE: int = 4
     MAX_RATING_FOR_NEGATIVE: int = 2
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
-        env_file_encoding = "utf-8"
+    model_config = {
+        "env_file": ".env",
+        "case_sensitive": True,
+        "env_file_encoding": "utf-8",
+        "extra": "ignore"
+    }
 
 
 # Global settings instance

@@ -1,15 +1,17 @@
 """
-Attendance model for monthly attendance tracking.
-Calculates and stores work hour summaries for each member.
+Attendance models for daily attendance tracking and exception management.
+Includes attendance records, exceptions, and related enums.
 """
 
-from datetime import datetime
+from datetime import datetime, date, time
 from typing import TYPE_CHECKING, Optional
+from enum import Enum
 
 from sqlalchemy import (
-    Column, Float, ForeignKey, Integer, String, UniqueConstraint, Index, Text
+    Column, Float, ForeignKey, Integer, String, UniqueConstraint, Index, Text,
+    Boolean, Date, DateTime, Time, Enum as SQLEnum
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped
 
 from app.models.base import BaseModel
 
@@ -17,12 +19,18 @@ if TYPE_CHECKING:
     from app.models.member import Member
 
 
+class AttendanceExceptionStatus(Enum):
+    """考勤异常状态枚举"""
+    PENDING = "pending"      # 待审核
+    APPROVED = "approved"    # 已批准
+    REJECTED = "rejected"    # 已拒绝
+
+
 class AttendanceRecord(BaseModel):
     """
-    Monthly attendance record model.
+    Daily attendance record model.
     
-    Stores calculated work hours for each member by month.
-    Includes all task types and carries forward remaining hours.
+    Records daily check-in/check-out times and calculates work hours.
     """
     
     __tablename__ = "attendance_records"
@@ -36,322 +44,356 @@ class AttendanceRecord(BaseModel):
         comment="Member ID"
     )
     
-    # Time period
-    month = Column(
-        String(7),  # YYYY-MM format
+    # Attendance date
+    attendance_date = Column(
+        Date,
         nullable=False,
         index=True,
-        comment="Month in YYYY-MM format"
+        comment="Attendance date"
+    )
+    
+    # Check-in/out times
+    checkin_time = Column(
+        DateTime,
+        nullable=True,
+        comment="Check-in time"
+    )
+    
+    checkout_time = Column(
+        DateTime,
+        nullable=True,
+        comment="Check-out time"
+    )
+    
+    # Calculated work hours
+    work_hours = Column(
+        Float,
+        default=0.0,
+        comment="Total work hours"
+    )
+    
+    # Status and location
+    status = Column(
+        String(20),
+        default="未签到",
+        comment="Attendance status"
+    )
+    
+    location = Column(
+        String(200),
+        nullable=True,
+        comment="Check-in/out location"
+    )
+    
+    notes = Column(
+        Text,
+        nullable=True,
+        comment="Attendance notes"
+    )
+    
+    # Late check-in tracking
+    is_late_checkin = Column(
+        Boolean,
+        default=False,
+        comment="Whether check-in was late"
+    )
+    
+    late_checkin_minutes = Column(
+        Integer,
+        nullable=True,
+        comment="Minutes late for check-in"
+    )
+    
+    # Early checkout tracking
+    is_early_checkout = Column(
+        Boolean,
+        default=False,
+        comment="Whether checkout was early"
+    )
+    
+    early_checkout_minutes = Column(
+        Integer,
+        nullable=True,
+        comment="Minutes early for checkout"
+    )
+    
+    # Relationships
+    member: Mapped["Member"] = relationship(
+        "Member",
+        back_populates="attendance_records"
+    )
+    
+    # Indexes and constraints
+    __table_args__ = (
+        UniqueConstraint(
+            "member_id", "attendance_date",
+            name="uq_attendance_member_date"
+        ),
+        Index("idx_attendance_date_member", "attendance_date", "member_id"),
+    )
+    
+    def __repr__(self) -> str:
+        return f"<AttendanceRecord(member_id={self.member_id}, date={self.attendance_date})>"
+
+
+class AttendanceException(BaseModel):
+    """
+    Attendance exception request model.
+    
+    Handles requests for attendance anomalies like late arrival,
+    early departure, missed check-in/out, leave requests, etc.
+    """
+    
+    __tablename__ = "attendance_exceptions"
+    
+    # Member reference
+    member_id = Column(
+        Integer,
+        ForeignKey("members.id"),
+        nullable=False,
+        index=True,
+        comment="Member ID who made the request"
+    )
+    
+    # Exception details
+    exception_type = Column(
+        String(50),
+        nullable=False,
+        comment="Type of exception (迟到/早退/忘记打卡/请假等)"
+    )
+    
+    exception_date = Column(
+        Date,
+        nullable=False,
+        index=True,
+        comment="Date of the exception"
+    )
+    
+    reason = Column(
+        Text,
+        nullable=False,
+        comment="Reason for the exception"
+    )
+    
+    supporting_documents = Column(
+        Text,
+        nullable=True,
+        comment="Supporting documents or evidence"
+    )
+    
+    # Request status and processing
+    status = Column(
+        SQLEnum(AttendanceExceptionStatus),
+        default=AttendanceExceptionStatus.PENDING,
+        nullable=False,
+        index=True,
+        comment="Processing status"
+    )
+    
+    applied_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+        comment="When the request was submitted"
+    )
+    
+    # Review information
+    reviewer_id = Column(
+        Integer,
+        ForeignKey("members.id"),
+        nullable=True,
+        comment="ID of the reviewer (admin)"
+    )
+    
+    reviewer_comments = Column(
+        Text,
+        nullable=True,
+        comment="Comments from the reviewer"
+    )
+    
+    reviewed_at = Column(
+        DateTime,
+        nullable=True,
+        comment="When the request was reviewed"
+    )
+    
+    # Relationships
+    member: Mapped["Member"] = relationship(
+        "Member",
+        back_populates="attendance_exceptions",
+        foreign_keys=[member_id]
+    )
+    
+    reviewer: Mapped[Optional["Member"]] = relationship(
+        "Member",
+        foreign_keys=[reviewer_id],
+        post_update=True
+    )
+    
+    # Indexes
+    __table_args__ = (
+        Index("idx_exception_member_date", "member_id", "exception_date"),
+        Index("idx_exception_status_date", "status", "applied_at"),
+    )
+    
+    def __repr__(self) -> str:
+        return f"<AttendanceException(member_id={self.member_id}, type={self.exception_type}, date={self.exception_date})>"
+
+
+class MonthlyAttendanceSummary(BaseModel):
+    """
+    Monthly attendance summary model.
+    
+    Stores calculated work hours and attendance statistics for each member by month.
+    This is derived from daily attendance records and task completion data.
+    """
+    
+    __tablename__ = "monthly_attendance_summaries"
+    
+    # Member reference
+    member_id = Column(
+        Integer,
+        ForeignKey("members.id"),
+        nullable=False,
+        index=True,
+        comment="Member ID"
+    )
+    
+    # Time period
+    year = Column(
+        Integer,
+        nullable=False,
+        comment="Year"
+    )
+    
+    month = Column(
+        Integer,
+        nullable=False,
+        comment="Month (1-12)"
     )
     
     # Work hour categories (in hours, float for precision)
     repair_task_hours = Column(
         Float,
         default=0.0,
-        nullable=False,
-        comment="Repair task hours for the month"
+        comment="Hours from repair tasks"
     )
     
-    monitoring_hours = Column(
+    monitoring_task_hours = Column(
         Float,
         default=0.0,
-        nullable=False,
-        comment="Monitoring task hours for the month"
+        comment="Hours from monitoring tasks"
     )
     
-    assistance_hours = Column(
+    assistance_task_hours = Column(
         Float,
         default=0.0,
-        nullable=False,
-        comment="Assistance task hours for the month"
+        comment="Hours from assistance tasks"
     )
     
-    # Carried hours from previous month
-    carried_hours = Column(
+    overtime_hours = Column(
         Float,
         default=0.0,
-        nullable=False,
-        comment="Hours carried from previous month"
+        comment="Overtime hours"
+    )
+    
+    bonus_hours = Column(
+        Float,
+        default=0.0,
+        comment="Bonus hours (rush tasks, positive reviews)"
+    )
+    
+    penalty_hours = Column(
+        Float,
+        default=0.0,
+        comment="Penalty hours (late response, negative reviews)"
     )
     
     # Calculated totals
-    total_hours = Column(
+    total_work_hours = Column(
         Float,
         default=0.0,
-        nullable=False,
-        comment="Total work hours (all categories + carried)"
+        comment="Total calculated work hours"
     )
     
-    # Hours that can be carried to next month
-    remaining_hours = Column(
+    total_attendance_hours = Column(
         Float,
         default=0.0,
-        nullable=False,
-        comment="Remaining hours for next month"
+        comment="Total hours from attendance records"
     )
     
-    # Detailed breakdown (JSON-like text field for flexibility)
-    details = Column(
+    # Attendance statistics
+    total_work_days = Column(
+        Integer,
+        default=0,
+        comment="Total work days in the month"
+    )
+    
+    attended_days = Column(
+        Integer,
+        default=0,
+        comment="Days with attendance records"
+    )
+    
+    late_days = Column(
+        Integer,
+        default=0,
+        comment="Days with late check-in"
+    )
+    
+    early_checkout_days = Column(
+        Integer,
+        default=0,
+        comment="Days with early checkout"
+    )
+    
+    # Performance metrics
+    task_completion_count = Column(
+        Integer,
+        default=0,
+        comment="Number of completed tasks"
+    )
+    
+    average_task_rating = Column(
+        Float,
+        nullable=True,
+        comment="Average rating for completed tasks"
+    )
+    
+    # Summary and notes
+    summary_notes = Column(
         Text,
         nullable=True,
-        comment="Detailed calculation breakdown (JSON format)"
-    )
-    
-    # Calculation metadata
-    calculation_date = Column(
-        "calculation_date",
-        nullable=True,
-        comment="When the calculation was performed"
-    )
-    
-    is_final = Column(
-        "is_final",
-        default=False,
-        nullable=False,
-        comment="Whether this record is finalized"
+        comment="Monthly summary notes"
     )
     
     # Relationships
-    member: "Member" = relationship("Member", back_populates="attendance_records")
+    member: Mapped["Member"] = relationship(
+        "Member",
+        back_populates="monthly_summaries"
+    )
     
     # Constraints and indexes
     __table_args__ = (
-        UniqueConstraint('member_id', 'month', name='uq_attendance_member_month'),
-        Index('idx_attendance_month', 'month'),
-        Index('idx_attendance_member_month', 'member_id', 'month'),
-        {'comment': 'Monthly attendance records table'}
+        UniqueConstraint(
+            "member_id", "year", "month",
+            name="uq_attendance_summary_member_month"
+        ),
+        Index("idx_summary_year_month", "year", "month"),
+        Index("idx_summary_member_year", "member_id", "year"),
     )
+    
+    @property
+    def month_string(self) -> str:
+        """Get month in YYYY-MM format."""
+        return f"{self.year:04d}-{self.month:02d}"
+    
+    @property
+    def attendance_rate(self) -> float:
+        """Calculate attendance rate."""
+        if self.total_work_days == 0:
+            return 0.0
+        return (self.attended_days / self.total_work_days) * 100
     
     def __repr__(self) -> str:
-        """String representation."""
-        return f"<AttendanceRecord(id={self.id}, member_id={self.member_id}, month='{self.month}', total_hours={self.total_hours})>"
-    
-    @property
-    def year(self) -> int:
-        """Get year from month string."""
-        return int(self.month.split('-')[0])
-    
-    @property
-    def month_number(self) -> int:
-        """Get month number from month string."""
-        return int(self.month.split('-')[1])
-    
-    @property
-    def month_datetime(self) -> datetime:
-        """Get datetime object for the month."""
-        return datetime(self.year, self.month_number, 1)
-    
-    def calculate_total_hours(self) -> float:
-        """Calculate total hours from all categories."""
-        return (
-            self.repair_task_hours +
-            self.monitoring_hours +
-            self.assistance_hours +
-            self.carried_hours
-        )
-    
-    def update_total_hours(self) -> None:
-        """Update total hours calculation."""
-        self.total_hours = self.calculate_total_hours()
-    
-    def get_work_hours_breakdown(self) -> dict:
-        """Get breakdown of work hours by category."""
-        return {
-            "repair_tasks": round(self.repair_task_hours, 1),
-            "monitoring": round(self.monitoring_hours, 1),
-            "assistance": round(self.assistance_hours, 1),
-            "carried": round(self.carried_hours, 1),
-            "total": round(self.total_hours, 1),
-            "remaining": round(self.remaining_hours, 1)
-        }
-    
-    def minutes_to_hours(self, minutes: int) -> float:
-        """Convert minutes to hours (rounded to 1 decimal)."""
-        return round(minutes / 60.0, 1)
-    
-    def hours_to_minutes(self, hours: float) -> int:
-        """Convert hours to minutes."""
-        return int(hours * 60)
-    
-    @classmethod
-    def get_month_string(cls, year: int, month: int) -> str:
-        """Get month string in YYYY-MM format."""
-        return f"{year:04d}-{month:02d}"
-    
-    @classmethod
-    def get_current_month_string(cls) -> str:
-        """Get current month string."""
-        now = datetime.utcnow()
-        return cls.get_month_string(now.year, now.month)
-    
-    @classmethod
-    def get_previous_month_string(cls, month_str: str) -> str:
-        """Get previous month string."""
-        year, month = map(int, month_str.split('-'))
-        if month == 1:
-            return cls.get_month_string(year - 1, 12)
-        else:
-            return cls.get_month_string(year, month - 1)
-    
-    @classmethod
-    def get_next_month_string(cls, month_str: str) -> str:
-        """Get next month string."""
-        year, month = map(int, month_str.split('-'))
-        if month == 12:
-            return cls.get_month_string(year + 1, 1)
-        else:
-            return cls.get_month_string(year, month + 1)
-
-
-class AttendanceConfiguration(BaseModel):
-    """
-    Configuration for attendance calculations.
-    
-    Stores system-wide settings for work hour calculations.
-    """
-    
-    __tablename__ = "attendance_configurations"
-    
-    # Configuration key
-    config_key = Column(
-        String(50),
-        unique=True,
-        nullable=False,
-        index=True,
-        comment="Configuration key"
-    )
-    
-    # Configuration value
-    config_value = Column(
-        String(200),
-        nullable=False,
-        comment="Configuration value"
-    )
-    
-    # Description
-    description = Column(
-        Text,
-        nullable=True,
-        comment="Configuration description"
-    )
-    
-    # Data type hint
-    value_type = Column(
-        String(20),
-        default="string",
-        nullable=False,
-        comment="Value data type (int, float, string, bool)"
-    )
-    
-    # Whether this config is active
-    is_active = Column(
-        "is_active",
-        default=True,
-        nullable=False,
-        comment="Whether this configuration is active"
-    )
-    
-    # Constraints
-    __table_args__ = (
-        UniqueConstraint('config_key', name='uq_attendance_config_key'),
-        {'comment': 'Attendance calculation configurations'}
-    )
-    
-    def __repr__(self) -> str:
-        """String representation."""
-        return f"<AttendanceConfiguration(key='{self.config_key}', value='{self.config_value}')>"
-    
-    def get_typed_value(self):
-        """Get value converted to appropriate type."""
-        if self.value_type == "int":
-            return int(self.config_value)
-        elif self.value_type == "float":
-            return float(self.config_value)
-        elif self.value_type == "bool":
-            return self.config_value.lower() in ("true", "1", "yes", "on")
-        else:
-            return self.config_value
-    
-    @classmethod
-    def get_config(cls, session, key: str, default=None):
-        """Get configuration value by key."""
-        config = session.query(cls).filter(
-            cls.config_key == key,
-            cls.is_active == True
-        ).first()
-        
-        if config:
-            return config.get_typed_value()
-        return default
-    
-    @classmethod
-    def set_config(cls, session, key: str, value, description: str = None, value_type: str = "string"):
-        """Set configuration value."""
-        config = session.query(cls).filter(cls.config_key == key).first()
-        
-        if config:
-            config.config_value = str(value)
-            config.description = description or config.description
-            config.value_type = value_type
-            config.is_active = True
-        else:
-            config = cls(
-                config_key=key,
-                config_value=str(value),
-                description=description,
-                value_type=value_type,
-                is_active=True
-            )
-            session.add(config)
-        
-        return config
-
-
-# Predefined configuration keys
-ATTENDANCE_CONFIG_KEYS = {
-    "online_task_minutes": {
-        "default": 40,
-        "description": "Base minutes for online tasks",
-        "type": "int"
-    },
-    "offline_task_minutes": {
-        "default": 100,
-        "description": "Base minutes for offline tasks",
-        "type": "int"
-    },
-    "rush_task_bonus": {
-        "default": 15,
-        "description": "Bonus minutes for rush tasks",
-        "type": "int"
-    },
-    "positive_review_bonus": {
-        "default": 30,
-        "description": "Bonus minutes for positive reviews",
-        "type": "int"
-    },
-    "late_response_penalty": {
-        "default": 30,
-        "description": "Penalty minutes for late response",
-        "type": "int"
-    },
-    "late_completion_penalty": {
-        "default": 30,
-        "description": "Penalty minutes for late completion",
-        "type": "int"
-    },
-    "negative_review_penalty": {
-        "default": 60,
-        "description": "Penalty minutes for negative reviews",
-        "type": "int"
-    },
-    "response_timeout_hours": {
-        "default": 24,
-        "description": "Hours before response is considered late",
-        "type": "int"
-    },
-    "completion_timeout_hours": {
-        "default": 48,
-        "description": "Hours before completion is considered late",
-        "type": "int"
-    }
-}
+        return f"<MonthlyAttendanceSummary(member_id={self.member_id}, month={self.month_string})>"

@@ -4,6 +4,7 @@ Main application factory and configuration.
 """
 
 import logging
+import logging.config
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
@@ -18,6 +19,7 @@ from app.core.config import settings, get_cors_origins, get_log_config
 from app.core.database import init_database, close_database, check_database_health
 from app.core.exceptions import BaseCustomException, create_http_exception
 from app.core.security import get_security_headers
+from app.core.cache import init_cache, cleanup_cache
 
 # Configure logging
 logging.config.dictConfig(get_log_config())
@@ -42,12 +44,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     else:
         logger.info("Database health check passed")
     
+    # Initialize cache
+    await init_cache()
+    logger.info("Cache initialized")
+    
     logger.info("Application startup complete")
     
     yield
     
     # Shutdown
     logger.info("Shutting down application...")
+    await cleanup_cache()
     await close_database()
     logger.info("Application shutdown complete")
 
@@ -203,14 +210,11 @@ async def root():
 
 
 # Include API routers
-from app.api.v1 import auth
+from app.api.v1 import auth, members, tasks, attendance
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
-
-# TODO: Add remaining API routers when implemented
-# from app.api.v1 import members, tasks, attendance
-# app.include_router(members.router, prefix="/api/v1/members", tags=["Members"])
-# app.include_router(tasks.router, prefix="/api/v1/tasks", tags=["Tasks"])
-# app.include_router(attendance.router, prefix="/api/v1/attendance", tags=["Attendance"])
+app.include_router(members.router, prefix="/api/v1/members", tags=["Members"])
+app.include_router(tasks.router, prefix="/api/v1/tasks", tags=["Tasks"])
+app.include_router(attendance.router, prefix="/api/v1/attendance", tags=["Attendance"])
 
 
 # Development utilities

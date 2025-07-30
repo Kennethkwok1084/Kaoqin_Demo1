@@ -133,6 +133,52 @@ async def get_group_leader_or_admin(
     return current_user
 
 
+async def get_current_active_admin(
+    current_user: Member = Depends(get_current_user)
+) -> Member:
+    """
+    Get current user and verify admin role and active status.
+    
+    Args:
+        current_user: Current authenticated user
+        
+    Returns:
+        Member: Current user (if admin and active)
+        
+    Raises:
+        HTTPException: If user is not admin or not active
+    """
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required"
+        )
+    return current_user
+
+
+async def get_current_active_group_leader(
+    current_user: Member = Depends(get_current_user)
+) -> Member:
+    """
+    Get current user and verify group leader or admin role and active status.
+    
+    Args:
+        current_user: Current authenticated user
+        
+    Returns:
+        Member: Current user (if group leader/admin and active)
+        
+    Raises:
+        HTTPException: If user is not group leader/admin or not active
+    """
+    if not current_user.can_manage_group:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Group leader or admin privileges required"
+        )
+    return current_user
+
+
 class CommonQueryParams:
     """Common query parameters for list endpoints."""
     

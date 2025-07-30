@@ -11,7 +11,7 @@ from sqlalchemy import (
     Boolean, Column, DateTime, Enum, ForeignKey, Integer, String, Text, Table,
     Float, UniqueConstraint, Index
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped
 
 from app.models.base import BaseModel
 
@@ -108,7 +108,7 @@ class TaskTag(BaseModel):
     )
     
     # Relationships
-    tasks: List["RepairTask"] = relationship(
+    tasks: Mapped[List["RepairTask"]] = relationship(
         "RepairTask",
         secondary=task_tag_association,
         back_populates="tags",
@@ -273,9 +273,9 @@ class RepairTask(BaseModel):
     )
     
     # Relationships
-    member: "Member" = relationship("Member", back_populates="repair_tasks")
+    member: Mapped["Member"] = relationship("Member", back_populates="repair_tasks")
     
-    tags: List[TaskTag] = relationship(
+    tags: Mapped[List[TaskTag]] = relationship(
         TaskTag,
         secondary=task_tag_association,
         back_populates="tasks",
@@ -461,7 +461,7 @@ class MonitoringTask(BaseModel):
     )
     
     # Relationships
-    member: "Member" = relationship("Member", back_populates="monitoring_tasks")
+    member: Mapped["Member"] = relationship("Member", back_populates="monitoring_tasks")
     
     # Constraints and indexes
     __table_args__ = (
@@ -556,7 +556,7 @@ class AssistanceTask(BaseModel):
     )
     
     # Relationships
-    member: "Member" = relationship("Member", back_populates="assistance_tasks")
+    member: Mapped["Member"] = relationship("Member", back_populates="assistance_tasks")
     
     # Constraints and indexes
     __table_args__ = (

@@ -143,6 +143,17 @@ class DataEncryption:
 encryption = DataEncryption()
 
 
+# Convenience functions for encryption
+def encrypt_data(data: str) -> str:
+    """Encrypt string data using global encryption instance."""
+    return encryption.encrypt(data)
+
+
+def decrypt_data(encrypted_data: str) -> str:
+    """Decrypt string data using global encryption instance."""
+    return encryption.decrypt(encrypted_data)
+
+
 # Token utilities
 def generate_password_reset_token(email: str) -> str:
     """Generate password reset token."""

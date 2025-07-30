@@ -7,7 +7,19 @@
       "Bash(ls:*)",
       "Bash(.venv/Scripts/activate)",
       "Bash(pip install:*)",
-      "Bash(source:*)"
+      "Bash(source:*)",
+      "Bash(.venvScriptsactivate)",
+      "Bash(venv/Scripts/activate:*)",
+      "Bash(grep:*)",
+      "Bash(sed:*)",
+      "mcp__filesystem__directory_tree",
+      "mcp__filesystem__list_directory",
+      "mcp__filesystem__read_multiple_files",
+      "mcp__filesystem__read_file",
+      "Bash(find:*)",
+      "mcp__filesystem__get_file_info",
+      "mcp__memory__create_entities",
+      "Bash(mv:*)"
     ],
     "deny": []
   }

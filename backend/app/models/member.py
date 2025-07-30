@@ -9,13 +9,13 @@ from typing import List, TYPE_CHECKING
 from sqlalchemy import (
     Boolean, Column, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped
 
 from app.models.base import BaseModel
 
 if TYPE_CHECKING:
     from app.models.task import RepairTask, MonitoringTask, AssistanceTask
-    from app.models.attendance import AttendanceRecord
+    from app.models.attendance import AttendanceRecord, AttendanceException, MonthlyAttendanceSummary
 
 
 class UserRole(enum.Enum):
@@ -129,29 +129,44 @@ class Member(BaseModel):
     )
     
     # Relationships
-    repair_tasks: List["RepairTask"] = relationship(
+    repair_tasks: Mapped[List["RepairTask"]] = relationship(
         "RepairTask",
         back_populates="member",
         cascade="all, delete-orphan",
         lazy="dynamic"
     )
     
-    monitoring_tasks: List["MonitoringTask"] = relationship(
+    monitoring_tasks: Mapped[List["MonitoringTask"]] = relationship(
         "MonitoringTask",
         back_populates="member",
         cascade="all, delete-orphan",
         lazy="dynamic"
     )
     
-    assistance_tasks: List["AssistanceTask"] = relationship(
+    assistance_tasks: Mapped[List["AssistanceTask"]] = relationship(
         "AssistanceTask",
         back_populates="member",
         cascade="all, delete-orphan",
         lazy="dynamic"
     )
     
-    attendance_records: List["AttendanceRecord"] = relationship(
+    attendance_records: Mapped[List["AttendanceRecord"]] = relationship(
         "AttendanceRecord",
+        back_populates="member",
+        cascade="all, delete-orphan",
+        lazy="dynamic"
+    )
+    
+    attendance_exceptions: Mapped[List["AttendanceException"]] = relationship(
+        "AttendanceException",
+        back_populates="member",
+        foreign_keys="AttendanceException.member_id",
+        cascade="all, delete-orphan",
+        lazy="dynamic"
+    )
+    
+    monthly_summaries: Mapped[List["MonthlyAttendanceSummary"]] = relationship(
+        "MonthlyAttendanceSummary",
         back_populates="member",
         cascade="all, delete-orphan",
         lazy="dynamic"

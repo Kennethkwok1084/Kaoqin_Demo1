@@ -11,8 +11,8 @@ from app.models.task import (
     task_tag_association
 )
 from app.models.attendance import (
-    AttendanceRecord, AttendanceConfiguration,
-    ATTENDANCE_CONFIG_KEYS
+    AttendanceRecord, AttendanceException, AttendanceExceptionStatus,
+    MonthlyAttendanceSummary
 )
 
 # All model classes for easy import
@@ -41,6 +41,7 @@ __all__ = [
     
     # Attendance models
     "AttendanceRecord",
-    "AttendanceConfiguration",
-    "ATTENDANCE_CONFIG_KEYS",
+    "AttendanceException",
+    "AttendanceExceptionStatus",
+    "MonthlyAttendanceSummary",
 ]

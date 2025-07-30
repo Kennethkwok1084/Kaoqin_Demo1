@@ -5,7 +5,7 @@
 
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 from enum import Enum
 
 from app.models.task import TaskStatus, TaskType, TaskPriority
@@ -22,7 +22,7 @@ class TaskTagBase(BaseModel):
     )
     color: str = Field(
         ..., 
-        regex=r'^#[0-9A-Fa-f]{6}$',
+        pattern=r'^#[0-9A-Fa-f]{6}$',
         description="标签颜色（16进制）"
     )
     work_minutes: int = Field(
@@ -50,8 +50,7 @@ class TaskTagCreate(TaskTagBase):
         description="是否启用"
     )
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(json_schema_extra={
             "example": {
                 "name": "网络维修",
                 "color": "#FF6B6B",
@@ -59,7 +58,8 @@ class TaskTagCreate(TaskTagBase):
                 "is_online": False,
                 "description": "校园网络设备维修任务",
                 "is_active": True
-            }
+            })
+
         }
 
 
@@ -73,8 +73,7 @@ class TaskTagResponse(TaskTagBase):
     created_at: datetime = Field(..., description="创建时间")
     updated_at: datetime = Field(..., description="更新时间")
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
         schema_extra = {
             "example": {
                 "id": 1,
@@ -119,7 +118,10 @@ class TaskBase(BaseModel):
         description="任务地点"
     )
     
-    @validator('title')
+    @field_validator('title')
+
+    
+    @classmethod
     def validate_title(cls, v):
         """验证任务标题"""
         if not v or not v.strip():
@@ -163,15 +165,17 @@ class TaskCreate(TaskBase):
         description="是否为紧急任务"
     )
     
-    @validator('deadline') 
+    @field_validator('deadline')
+
+    
+    @classmethod
     def validate_deadline(cls, v):
         """验证截止时间"""
         if v and v <= datetime.now():
             raise ValueError('截止时间必须在当前时间之后')
         return v
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(json_schema_extra={
             "example": {
                 "title": "图书馆3楼网络故障维修",
                 "description": "图书馆3楼网络设备无法正常连接，需要检查交换机状态",
@@ -185,7 +189,8 @@ class TaskCreate(TaskBase):
                 "reporter_name": "张老师",
                 "reporter_contact": "13812345678",
                 "is_rush": True
-            }
+            })
+
         }
 
 
@@ -245,21 +250,24 @@ class TaskUpdate(BaseModel):
         description="是否为紧急任务"
     )
     
-    @validator('title')
+    @field_validator('title')
+
+    
+    @classmethod
     def validate_title(cls, v):
         """验证任务标题"""
         if v is not None and (not v or not v.strip()):
             raise ValueError('任务标题不能为空')
         return v.strip() if v else v
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(json_schema_extra={
             "example": {
                 "status": "completed",
                 "actual_minutes": 90,
                 "completion_note": "已更换故障交换机，网络恢复正常",
                 "priority": "medium"
-            }
+            })
+
         }
 
 
@@ -287,8 +295,7 @@ class TaskResponse(TaskBase):
     creator_name: Optional[str] = Field(None, description="创建者姓名")
     assignee_name: Optional[str] = Field(None, description="执行者姓名")
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
         schema_extra = {
             "example": {
                 "id": 1,
@@ -326,8 +333,7 @@ class TaskDetailResponse(TaskResponse):
     work_hour_breakdown: Dict[str, Any] = Field(default={}, description="工时分解详情")
     status_history: List[Dict[str, Any]] = Field(default=[], description="状态变更历史")
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
         schema_extra = {
             "example": {
                 "id": 1,
@@ -363,8 +369,7 @@ class TaskListResponse(BaseModel):
     has_prev: bool = Field(..., description="是否有上一页")
     filters_applied: Dict[str, Any] = Field(default={}, description="应用的筛选条件")
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(json_schema_extra={
             "example": {
                 "items": [],
                 "total": 150,
@@ -376,7 +381,8 @@ class TaskListResponse(BaseModel):
                 "filters_applied": {
                     "status": "pending",
                     "task_type": "repair"
-                }
+                })
+
             }
         }
 
@@ -448,8 +454,8 @@ class TaskSearchParams(BaseModel):
         description="截止时间结束"
     )
     
-    @root_validator
-    def validate_date_ranges(cls, values):
+    @model_validator(mode=\'after\')
+    def validate_date_ranges(self):
         """验证日期范围"""
         date_from = values.get('date_from')
         date_to = values.get('date_to')
@@ -463,8 +469,7 @@ class TaskSearchParams(BaseModel):
         
         return values
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(json_schema_extra={
             "example": {
                 "title": "网络",
                 "status": "pending",
@@ -474,7 +479,8 @@ class TaskSearchParams(BaseModel):
                 "is_rush": True,
                 "date_from": "2025-01-01T00:00:00",
                 "date_to": "2025-01-31T23:59:59"
-            }
+            })
+
         }
 
 
@@ -494,8 +500,8 @@ class TaskStatusUpdate(BaseModel):
         description="实际工时（仅完成时需要）"
     )
     
-    @root_validator
-    def validate_completion_data(cls, values):
+    @model_validator(mode=\'after\')
+    def validate_completion_data(self):
         """验证完成数据"""
         status = values.get('status')
         actual_minutes = values.get('actual_minutes')
@@ -505,13 +511,13 @@ class TaskStatusUpdate(BaseModel):
         
         return values
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(json_schema_extra={
             "example": {
                 "status": "completed",
                 "completion_note": "维修完成，设备恢复正常",
                 "actual_minutes": 90
-            }
+            })
+
         }
 
 
@@ -525,12 +531,12 @@ class TaskAssignment(BaseModel):
         description="分配备注"
     )
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(json_schema_extra={
             "example": {
                 "assigned_to": 2,
                 "assignment_note": "请优先处理此紧急任务"
-            }
+            })
+
         }
 
 
@@ -549,8 +555,7 @@ class TaskStatistics(BaseModel):
     priority_distribution: Dict[str, int] = Field(..., description="优先级分布")
     monthly_trends: List[Dict[str, Any]] = Field(..., description="月度趋势")
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(json_schema_extra={
             "example": {
                 "total_tasks": 150,
                 "pending_tasks": 25,
@@ -564,7 +569,8 @@ class TaskStatistics(BaseModel):
                     "repair": 80,
                     "monitoring": 50,
                     "assistance": 20
-                },
+                })
+,
                 "priority_distribution": {
                     "low": 40,
                     "medium": 70,
@@ -583,8 +589,8 @@ class TaskImportRequest(BaseModel):
     
     tasks: List[TaskCreate] = Field(
         ..., 
-        min_items=1,
-        max_items=1000,
+        min_length=1,
+        max_length=1000,
         description="任务数据列表"
     )
     auto_assign: bool = Field(
@@ -596,8 +602,7 @@ class TaskImportRequest(BaseModel):
         description="默认优先级"
     )
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(json_schema_extra={
             "example": {
                 "tasks": [
                     {
@@ -605,7 +610,8 @@ class TaskImportRequest(BaseModel):
                         "task_type": "repair",
                         "location": "教学楼A座",
                         "priority": "medium"
-                    }
+                    })
+
                 ],
                 "auto_assign": True,
                 "default_priority": "medium"
@@ -624,15 +630,15 @@ class TaskImportResult(BaseModel):
     warnings_list: List[Dict[str, Any]] = Field(..., description="警告详情")
     imported_tasks: List[TaskResponse] = Field(..., description="成功导入的任务")
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(json_schema_extra={
             "example": {
                 "total_processed": 10,
                 "successful_imports": 8,
                 "failed_imports": 1,
                 "warnings": 1,
                 "errors": [
-                    {"row": 3, "error": "任务标题不能为空"}
+                    {"row": 3, "error": "任务标题不能为空"})
+
                 ],
                 "warnings_list": [
                     {"row": 5, "warning": "未指定执行者，已设为待分配"}
@@ -667,15 +673,15 @@ class WorkHourCalculation(BaseModel):
         description="是否延迟完成"
     )
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(json_schema_extra={
             "example": {
                 "task_id": 1,
                 "actual_minutes": 90,
                 "review_rating": 4,
                 "is_late_response": False,
                 "is_late_completion": False
-            }
+            })
+
         }
 
 
@@ -691,8 +697,7 @@ class WorkHourResult(BaseModel):
     final_minutes: int = Field(..., description="最终工时")
     calculation_details: Dict[str, Any] = Field(..., description="计算详情")
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(json_schema_extra={
             "example": {
                 "base_minutes": 100,
                 "rush_bonus": 15,
@@ -705,6 +710,7 @@ class WorkHourResult(BaseModel):
                     "calculation_rules": "线下维修任务基础100分钟",
                     "applied_bonuses": ["紧急任务奖励", "好评奖励"],
                     "applied_penalties": []
-                }
+                })
+
             }
         }

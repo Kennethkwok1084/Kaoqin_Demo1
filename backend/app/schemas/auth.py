@@ -1,106 +1,31 @@
 """
-Authentication-related Pydantic schemas.
-Request and response models for authentication endpoints.
+身份认证相关的Pydantic模式定义
+包含登录、令牌、用户信息的请求和响应模型
 """
 
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field, EmailStr, validator
+from pydantic import BaseModel, Field, ConfigDict
 
 from app.models.member import UserRole
-
-
-class LoginRequest(BaseModel):
-    """Request model for user login."""
-    
-    student_id: str = Field(
-        ..., 
-        min_length=1, 
-        max_length=20,
-        description="Student ID for authentication"
-    )
-    password: str = Field(
-        ..., 
-        min_length=1,
-        description="User password"
-    )
-    
-    class Config:
-        schema_extra = {
-            "example": {
-                "student_id": "2021001001",
-                "password": "MySecurePassword123!"
-            }
-        }
-
-
-class TokenResponse(BaseModel):
-    """Response model for token-related endpoints."""
-    
-    access_token: str = Field(..., description="JWT access token")
-    refresh_token: Optional[str] = Field(None, description="JWT refresh token")
-    token_type: str = Field(default="bearer", description="Token type")
-    expires_in: int = Field(..., description="Token expiration time in seconds")
-    
-    class Config:
-        schema_extra = {
-            "example": {
-                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                "token_type": "bearer",
-                "expires_in": 3600
-            }
-        }
-
-
-class UserProfileResponse(BaseModel):
-    """Response model for user profile."""
-    
-    id: int = Field(..., description="User ID")
-    name: str = Field(..., description="User name")
-    student_id: str = Field(..., description="Student ID")
-    group_id: Optional[int] = Field(None, description="Group ID")
-    class_name: Optional[str] = Field(None, description="Class name")
-    email: Optional[str] = Field(None, description="Email address")
-    role: str = Field(..., description="User role")
-    is_active: bool = Field(..., description="Whether user is active")
-    is_verified: bool = Field(..., description="Whether email is verified")
-    last_login: Optional[datetime] = Field(None, description="Last login time")
-    created_at: datetime = Field(..., description="Account creation time")
-    updated_at: datetime = Field(..., description="Last update time")
-    
-    class Config:
-        orm_mode = True
-        schema_extra = {
-            "example": {
-                "id": 1,
-                "name": "张三",
-                "student_id": "2021001001",
-                "group_id": 1,
-                "class_name": "计算机科学与技术2101",
-                "email": "zhangsan@example.com",
-                "role": "member",
-                "is_active": True,
-                "is_verified": True,
-                "last_login": "2025-01-27T10:30:00",
-                "created_at": "2025-01-01T00:00:00",
-                "updated_at": "2025-01-27T10:30:00"
-            }
-        }
 
 
 class LoginResponse(BaseModel):
     """Response model for successful login."""
     
+    success: bool = Field(..., description="Login success status")
+    message: str = Field(..., description="Success message")
     access_token: str = Field(..., description="JWT access token")
-    refresh_token: str = Field(..., description="JWT refresh token") 
+    refresh_token: str = Field(..., description="JWT refresh token")
     token_type: str = Field(default="bearer", description="Token type")
     expires_in: int = Field(..., description="Token expiration time in seconds")
-    user: UserProfileResponse = Field(..., description="User profile")
+    user: dict = Field(..., description="User profile information")
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
+                "success": True,
+                "message": "登录成功",
                 "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                 "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                 "token_type": "bearer",
@@ -113,201 +38,194 @@ class LoginResponse(BaseModel):
                 }
             }
         }
-
-
-class RefreshTokenRequest(BaseModel):
-    """Request model for token refresh."""
-    
-    refresh_token: str = Field(
-        ..., 
-        description="Valid refresh token"
     )
-    
-    class Config:
-        schema_extra = {
-            "example": {
-                "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-            }
-        }
 
 
 class ChangePasswordRequest(BaseModel):
-    """Request model for password change."""
+    """Request model for changing password - alias for PasswordChangeRequest."""
     
-    current_password: str = Field(
-        ..., 
-        min_length=1,
-        description="Current password"
-    )
+    current_password: str = Field(..., description="Current password")
     new_password: str = Field(
         ..., 
-        min_length=8,
-        max_length=128,
-        description="New password (must meet strength requirements)"
-    )
-    
-    @validator('new_password')
-    def validate_password_strength(cls, password):
-        """Validate password strength."""
-        from app.core.security import validate_password_strength
-        
-        is_strong, errors = validate_password_strength(password)
-        if not is_strong:
-            raise ValueError(f"Password does not meet requirements: {', '.join(errors)}")
-        
-        return password
-    
-    class Config:
-        schema_extra = {
-            "example": {
-                "current_password": "OldPassword123!",
-                "new_password": "NewSecurePassword456!"
-            }
-        }
-
-
-class UserProfileUpdate(BaseModel):
-    """Request model for user profile updates."""
-    
-    name: Optional[str] = Field(
-        None, 
-        min_length=1, 
-        max_length=50,
-        description="User name"
-    )
-    class_name: Optional[str] = Field(
-        None, 
-        max_length=50,
-        description="Class name"
-    )
-    email: Optional[EmailStr] = Field(
-        None,
-        description="Email address"
-    )
-    
-    class Config:
-        schema_extra = {
-            "example": {
-                "name": "张三丰",
-                "class_name": "计算机科学与技术2102",
-                "email": "zhangsan@newdomain.com"
-            }
-        }
-
-
-class PasswordResetRequest(BaseModel):
-    """Request model for password reset."""
-    
-    email: EmailStr = Field(
-        ...,
-        description="User email address"
-    )
-    
-    class Config:
-        schema_extra = {
-            "example": {
-                "email": "user@example.com"
-            }
-        }
-
-
-class PasswordResetConfirm(BaseModel):
-    """Request model for password reset confirmation."""
-    
-    token: str = Field(
-        ...,
-        description="Password reset token"
-    )
-    new_password: str = Field(
-        ...,
         min_length=8,
         max_length=128,
         description="New password"
     )
     
-    @validator('new_password')
-    def validate_password_strength(cls, password):
-        """Validate password strength."""
-        from app.core.security import validate_password_strength
-        
-        is_strong, errors = validate_password_strength(password)
-        if not is_strong:
-            raise ValueError(f"Password does not meet requirements: {', '.join(errors)}")
-        
-        return password
-    
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
-                "token": "reset_token_here",
+                "current_password": "OldPassword123!",
                 "new_password": "NewSecurePassword123!"
             }
         }
+    )
 
 
-class TokenVerificationResponse(BaseModel):
-    """Response model for token verification."""
+class UserProfileUpdate(BaseModel):
+    """Request model for updating user profile."""
     
-    valid: bool = Field(..., description="Whether token is valid")
-    user_id: Optional[int] = Field(None, description="User ID if token is valid")
-    expires_at: Optional[int] = Field(None, description="Token expiration timestamp")
-    user: Optional[UserProfileResponse] = Field(None, description="User profile if token is valid")
+    name: Optional[str] = Field(None, max_length=50, description="User name")
+    email: Optional[str] = Field(None, description="Email address")
+    class_name: Optional[str] = Field(None, max_length=50, description="Class name")
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
-                "valid": True,
-                "user_id": 1,
-                "expires_at": 1706356800,
-                "user": {
-                    "id": 1,
-                    "name": "张三",
-                    "student_id": "2021001001",
-                    "role": "member"
-                }
+                "name": "张三丰",
+                "email": "zhangsan@newdomain.com",
+                "class_name": "计算机科学与技术2102"
             }
         }
+    )
 
 
-class UserPermissions(BaseModel):
-    """Model for user permissions."""
+class LoginRequest(BaseModel):
+    """Login request model."""
     
-    is_admin: bool = Field(..., description="Whether user is admin")
-    is_group_leader: bool = Field(..., description="Whether user is group leader")
-    can_manage_group: bool = Field(..., description="Whether user can manage group")
-    can_import_data: bool = Field(..., description="Whether user can import data")
-    can_mark_rush_tasks: bool = Field(..., description="Whether user can mark rush tasks")
+    student_id: str = Field(
+        ..., 
+        min_length=1, 
+        max_length=20,
+        description="Student ID"
+    )
+    password: str = Field(
+        ..., 
+        min_length=1,
+        description="User password"
+    )
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
-                "is_admin": False,
-                "is_group_leader": True,
-                "can_manage_group": True,
-                "can_import_data": False,
-                "can_mark_rush_tasks": False
+                "student_id": "2021001001",
+                "password": "MySecurePassword123!"
             }
         }
+    )
 
 
-class DetailedUserProfile(UserProfileResponse):
-    """Extended user profile with permissions."""
+class TokenResponse(BaseModel):
+    """Response model for token-related endpoints."""
     
-    permissions: UserPermissions = Field(..., description="User permissions")
+    access_token: str = Field(..., description="JWT access token")
+    refresh_token: Optional[str] = Field(None, description="JWT refresh token")
+    token_type: str = Field(default="bearer", description="Token type")
+    expires_in: int = Field(..., description="Token expiration time in seconds")
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "token_type": "bearer",
+                "expires_in": 3600
+            }
+        }
+    )
+
+
+class UserProfileResponse(BaseModel):
+    """Response model for user profile."""
+    
+    id: int = Field(..., description="User ID")
+    name: str = Field(..., description="User name")
+    student_id: str = Field(..., description="Student ID")
+    email: Optional[str] = Field(None, description="Email address")
+    role: str = Field(..., description="User role")
+    group_id: Optional[int] = Field(None, description="Group ID")
+    class_name: Optional[str] = Field(None, description="Class name")
+    is_active: bool = Field(..., description="Whether user is active")
+    is_verified: bool = Field(..., description="Whether email is verified")
+    last_login: Optional[datetime] = Field(None, description="Last login time")
+    login_count: int = Field(..., description="Login count")
+    created_at: datetime = Field(..., description="Account creation time")
+    
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
             "example": {
                 "id": 1,
                 "name": "张三",
                 "student_id": "2021001001",
-                "role": "group_leader",
-                "permissions": {
-                    "is_admin": False,
-                    "is_group_leader": True,
-                    "can_manage_group": True,
-                    "can_import_data": False,
-                    "can_mark_rush_tasks": False
-                }
+                "email": "zhangsan@example.com",
+                "role": "member",
+                "group_id": 1,
+                "class_name": "计算机科学与技术2101",
+                "is_active": True,
+                "is_verified": True,
+                "last_login": "2025-01-27T10:30:00",
+                "login_count": 15,
+                "created_at": "2025-01-01T00:00:00"
             }
         }
+    )
+
+
+class RefreshTokenRequest(BaseModel):
+    """Request model for refreshing tokens."""
+    
+    refresh_token: str = Field(..., description="Refresh token")
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            }
+        }
+    )
+
+
+class PasswordChangeRequest(BaseModel):
+    """Request model for changing password."""
+    
+    current_password: str = Field(..., description="Current password")
+    new_password: str = Field(
+        ..., 
+        min_length=8,
+        max_length=128,
+        description="New password"
+    )
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "current_password": "OldPassword123!",
+                "new_password": "NewSecurePassword123!"
+            }
+        }
+    )
+
+
+class LogoutResponse(BaseModel):
+    """Response model for logout."""
+    
+    message: str = Field(..., description="Logout message")
+    logged_out_at: datetime = Field(..., description="Logout timestamp")
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "message": "成功退出登录",
+                "logged_out_at": "2025-01-27T15:30:00"
+            }
+        }
+    )
+
+
+class AuthStatusResponse(BaseModel):
+    """Response model for authentication status check."""
+    
+    authenticated: bool = Field(..., description="Whether user is authenticated")
+    user_id: Optional[int] = Field(None, description="User ID if authenticated")
+    expires_at: Optional[datetime] = Field(None, description="Token expiration time")
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "authenticated": True,
+                "user_id": 1,
+                "expires_at": "2025-01-27T16:30:00"
+            }
+        }
+    )

@@ -41,6 +41,8 @@ class MemberBase(BaseModel):
     )
     
     @field_validator('name')
+
+    
     @classmethod
     def validate_name(cls, v):
         """验证姓名格式"""
@@ -55,6 +57,8 @@ class MemberBase(BaseModel):
         return v.strip()
     
     @field_validator('student_id')
+
+    
     @classmethod
     def validate_student_id(cls, v):
         """验证学号格式"""
@@ -101,8 +105,36 @@ class MemberCreate(MemberBase):
         description="是否已验证邮箱"
     )
     
-    model_config = ConfigDict(
-        json_schema_extra={
+    @field_validator('password')
+
+    
+    @classmethod
+    def validate_password(cls, v):
+        """验证密码强度"""
+        from app.core.security import validate_password_strength
+        
+        is_strong, errors = validate_password_strength(v)
+        if not is_strong:
+            raise ValueError(f"密码不符合要求: {', '.join(errors)}")
+        
+        return v
+    
+    @field_validator('phone')
+
+    
+    @classmethod
+    def validate_phone(cls, v):
+        """验证手机号格式"""
+        if not v:
+            return v
+        
+        from app.core.security import validate_phone_format
+        if not validate_phone_format(v):
+            raise ValueError('手机号格式不正确')
+        
+        return v
+    
+    model_config = ConfigDict(json_schema_extra={
             "example": {
                 "name": "张三",
                 "student_id": "2021001001",
@@ -115,9 +147,8 @@ class MemberCreate(MemberBase):
                 "phone": "13812345678",
                 "is_active": True,
                 "is_verified": False
-            }
+            })
         }
-    )
 
 
 class MemberUpdate(BaseModel):
@@ -155,6 +186,8 @@ class MemberUpdate(BaseModel):
     )
     
     @field_validator('name')
+
+    
     @classmethod
     def validate_name(cls, v):
         """验证姓名格式"""
@@ -169,8 +202,19 @@ class MemberUpdate(BaseModel):
             return v.strip()
         return v
     
-    model_config = ConfigDict(
-        json_schema_extra={
+    @field_validator('phone')
+
+    
+    @classmethod
+    def validate_phone(cls, v):
+        """验证手机号格式"""
+        if v is not None and v:
+            from app.core.security import validate_phone_format
+            if not validate_phone_format(v):
+                raise ValueError('手机号格式不正确')
+        return v
+    
+    model_config = ConfigDict(json_schema_extra={
             "example": {
                 "name": "张三丰",
                 "group_id": 2,
@@ -178,9 +222,8 @@ class MemberUpdate(BaseModel):
                 "email": "zhangsan@newdomain.com",
                 "dormitory": "2号楼201",
                 "phone": "13987654321"
-            }
+            })
         }
-    )
 
 
 class MemberAdminUpdate(MemberUpdate):
@@ -199,17 +242,15 @@ class MemberAdminUpdate(MemberUpdate):
         description="是否已验证邮箱"
     )
     
-    model_config = ConfigDict(
-        json_schema_extra={
+    model_config = ConfigDict(json_schema_extra={
             "example": {
                 "name": "张三",
                 "role": "group_leader",
                 "is_active": True,
                 "is_verified": True,
                 "group_id": 1
-            }
+            })
         }
-    )
 
 
 class MemberResponse(MemberBase):
@@ -225,6 +266,23 @@ class MemberResponse(MemberBase):
     updated_at: datetime = Field(..., description="更新时间")
     
     model_config = ConfigDict(from_attributes=True)
+        schema_extra = {
+            "example": {
+                "id": 1,
+                "name": "张三",
+                "student_id": "2021001001",
+                "group_id": 1,
+                "class_name": "计算机科学与技术2101",
+                "email": "zhangsan@example.com",
+                "role": "member",
+                "is_active": True,
+                "is_verified": True,
+                "last_login": "2025-01-27T10:30:00",
+                "login_count": 15,
+                "created_at": "2025-01-01T00:00:00",
+                "updated_at": "2025-01-27T10:30:00"
+            }
+        }
 
 
 class MemberDetailResponse(MemberResponse):
@@ -234,6 +292,25 @@ class MemberDetailResponse(MemberResponse):
     phone: Optional[str] = Field(None, description="手机号码（部分隐藏）")
     
     model_config = ConfigDict(from_attributes=True)
+        schema_extra = {
+            "example": {
+                "id": 1,
+                "name": "张三",
+                "student_id": "2021001001",
+                "group_id": 1,
+                "class_name": "计算机科学与技术2101",
+                "email": "zhangsan@example.com",
+                "dormitory": "1号楼101",
+                "phone": "138****5678",
+                "role": "member",
+                "is_active": True,
+                "is_verified": True,
+                "last_login": "2025-01-27T10:30:00",
+                "login_count": 15,
+                "created_at": "2025-01-01T00:00:00",
+                "updated_at": "2025-01-27T10:30:00"
+            }
+        }
 
 
 class MemberListResponse(BaseModel):
@@ -246,6 +323,26 @@ class MemberListResponse(BaseModel):
     pages: int = Field(..., description="总页数")
     has_next: bool = Field(..., description="是否有下一页")
     has_prev: bool = Field(..., description="是否有上一页")
+    
+    model_config = ConfigDict(json_schema_extra={
+            "example": {
+                "items": [
+                    {
+                        "id": 1,
+                        "name": "张三",
+                        "student_id": "2021001001",
+                        "role": "member",
+                        "is_active": True
+                    })
+                ],
+                "total": 50,
+                "page": 1,
+                "size": 20,
+                "pages": 3,
+                "has_next": True,
+                "has_prev": False
+            }
+        }
 
 
 class MemberRoleUpdate(BaseModel):
@@ -253,13 +350,11 @@ class MemberRoleUpdate(BaseModel):
     
     role: UserRole = Field(..., description="新角色")
     
-    model_config = ConfigDict(
-        json_schema_extra={
+    model_config = ConfigDict(json_schema_extra={
             "example": {
                 "role": "group_leader"
-            }
+            })
         }
-    )
 
 
 class MemberStatusUpdate(BaseModel):
@@ -272,14 +367,12 @@ class MemberStatusUpdate(BaseModel):
         description="操作原因"
     )
     
-    model_config = ConfigDict(
-        json_schema_extra={
+    model_config = ConfigDict(json_schema_extra={
             "example": {
                 "is_active": False,
                 "reason": "违反规定，暂时停用"
-            }
+            })
         }
-    )
 
 
 class MemberSearchParams(BaseModel):
@@ -317,6 +410,15 @@ class MemberSearchParams(BaseModel):
         None,
         description="验证状态筛选"
     )
+    
+    model_config = ConfigDict(json_schema_extra={
+            "example": {
+                "name": "张",
+                "role": "member",
+                "group_id": 1,
+                "is_active": True
+            })
+        }
 
 
 class MemberStatistics(BaseModel):
@@ -331,6 +433,27 @@ class MemberStatistics(BaseModel):
     member_count: int = Field(..., description="普通成员数量")
     group_distribution: dict = Field(..., description="组别分布")
     recent_logins: List[dict] = Field(..., description="近期登录统计")
+    
+    model_config = ConfigDict(json_schema_extra={
+            "example": {
+                "total_members": 50,
+                "active_members": 45,
+                "inactive_members": 5,
+                "verified_members": 40,
+                "admin_count": 2,
+                "group_leader_count": 5,
+                "member_count": 43,
+                "group_distribution": {
+                    "1": 20,
+                    "2": 15,
+                    "3": 15
+                }),
+                "recent_logins": [
+                    {"date": "2025-01-27", "count": 15},
+                    {"date": "2025-01-26", "count": 12}
+                ]
+            }
+        }
 
 
 class PasswordResetRequest(BaseModel):
@@ -344,14 +467,26 @@ class PasswordResetRequest(BaseModel):
         description="新密码"
     )
     
-    model_config = ConfigDict(
-        json_schema_extra={
+    @field_validator('new_password')
+
+    
+    @classmethod
+    def validate_password(cls, v):
+        """验证密码强度"""
+        from app.core.security import validate_password_strength
+        
+        is_strong, errors = validate_password_strength(v)
+        if not is_strong:
+            raise ValueError(f"密码不符合要求: {', '.join(errors)}")
+        
+        return v
+    
+    model_config = ConfigDict(json_schema_extra={
             "example": {
                 "member_id": 1,
                 "new_password": "NewSecurePassword123!"
-            }
+            })
         }
-    )
 
 
 class BulkMemberOperation(BaseModel):
@@ -419,6 +554,21 @@ class MemberImportRequest(BaseModel):
         default=False,
         description="是否发送欢迎邮件"
     )
+    
+    model_config = ConfigDict(json_schema_extra={
+            "example": {
+                "members": [
+                    {
+                        "name": "张三",
+                        "student_id": "2021001001",
+                        "password": "TempPassword123!",
+                        "group_id": 1
+                    })
+                ],
+                "skip_duplicates": True,
+                "send_welcome_email": False
+            }
+        }
 
 
 class MemberImportResult(BaseModel):
@@ -430,3 +580,16 @@ class MemberImportResult(BaseModel):
     skipped_duplicates: int = Field(..., description="跳过的重复数")
     errors: List[dict] = Field(..., description="错误详情")
     imported_members: List[MemberResponse] = Field(..., description="成功导入的成员")
+    
+    model_config = ConfigDict(json_schema_extra={
+            "example": {
+                "total_processed": 10,
+                "successful_imports": 8,
+                "failed_imports": 1,
+                "skipped_duplicates": 1,
+                "errors": [
+                    {"row": 3, "error": "学号重复"})
+                ],
+                "imported_members": []
+            }
+        }
