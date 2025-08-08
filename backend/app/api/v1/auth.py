@@ -87,6 +87,9 @@ async def login(
         user.update_login_info()
         await db.commit()
         
+        # Refresh user object to avoid lazy loading issues
+        await db.refresh(user)
+        
         # Create tokens
         access_token = create_access_token(
             subject=user.id,

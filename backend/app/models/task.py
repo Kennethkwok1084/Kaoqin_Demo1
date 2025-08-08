@@ -9,7 +9,7 @@ from typing import List, TYPE_CHECKING, Optional
 
 from sqlalchemy import (
     Boolean, Column, DateTime, Enum, ForeignKey, Integer, String, Text, Table,
-    Float, UniqueConstraint, Index
+    Float, UniqueConstraint, Index, JSON
 )
 from sqlalchemy.orm import relationship, Mapped
 
@@ -50,6 +50,18 @@ class TaskType(enum.Enum):
     """Task type for work hour calculation."""
     ONLINE = "online"     # 线上任务 (40分钟)
     OFFLINE = "offline"   # 线下任务 (100分钟)
+
+
+class TaskTagType(enum.Enum):
+    """Task tag type enumeration for work hour calculation."""
+    RUSH_ORDER = "rush_order"                    # 爆单标记
+    NON_DEFAULT_RATING = "non_default_rating"    # 非默认好评
+    TIMEOUT_RESPONSE = "timeout_response"        # 超时响应
+    TIMEOUT_PROCESSING = "timeout_processing"    # 超时处理
+    BAD_RATING = "bad_rating"                    # 差评
+    BONUS = "bonus"                              # 一般奖励标签
+    PENALTY = "penalty"                          # 一般惩罚标签
+    CATEGORY = "category"                        # 分类标签
 
 
 # Association table for task tags (many-to-many)
@@ -102,9 +114,10 @@ class TaskTag(BaseModel):
     
     # Tag type for categorization
     tag_type = Column(
-        String(30),
-        nullable=True,
-        comment="Tag type (bonus, penalty, category)"
+        Enum(TaskTagType),
+        default=TaskTagType.CATEGORY,
+        nullable=False,
+        comment="Tag type for categorization and work hour calculation"
     )
     
     # Relationships
@@ -117,7 +130,93 @@ class TaskTag(BaseModel):
     
     def __repr__(self) -> str:
         """String representation."""
-        return f"<TaskTag(id={self.id}, name='{self.name}', modifier={self.work_minutes_modifier})>"
+        return f"<TaskTag(id={self.id}, name='{self.name}', type='{self.tag_type.value}', modifier={self.work_minutes_modifier})>"
+    
+    @classmethod
+    def create_rush_order_tag(cls) -> "TaskTag":
+        """创建爆单标签"""
+        return cls(
+            name="爆单任务",
+            description="爆单任务标记，独立计算工时15分钟",
+            work_minutes_modifier=15,
+            tag_type=TaskTagType.RUSH_ORDER,
+            is_active=True
+        )
+    
+    @classmethod
+    def create_non_default_rating_tag(cls) -> "TaskTag":
+        """创建非默认好评标签"""
+        return cls(
+            name="非默认好评",
+            description="用户给出非默认好评，奖励30分钟",
+            work_minutes_modifier=30,
+            tag_type=TaskTagType.NON_DEFAULT_RATING,
+            is_active=True
+        )
+    
+    @classmethod
+    def create_timeout_response_tag(cls) -> "TaskTag":
+        """创建超时响应标签"""
+        return cls(
+            name="超时响应",
+            description="响应超过24小时，扣除30分钟",
+            work_minutes_modifier=-30,
+            tag_type=TaskTagType.TIMEOUT_RESPONSE,
+            is_active=True
+        )
+    
+    @classmethod
+    def create_timeout_processing_tag(cls) -> "TaskTag":
+        """创建超时处理标签"""
+        return cls(
+            name="超时处理",
+            description="处理超过48小时，扣除30分钟",
+            work_minutes_modifier=-30,
+            tag_type=TaskTagType.TIMEOUT_PROCESSING,
+            is_active=True
+        )
+    
+    @classmethod
+    def create_bad_rating_tag(cls) -> "TaskTag":
+        """创建差评标签"""
+        return cls(
+            name="差评",
+            description="用户差评（2星及以下），扣除60分钟",
+            work_minutes_modifier=-60,
+            tag_type=TaskTagType.BAD_RATING,
+            is_active=True
+        )
+    
+    @classmethod
+    def get_standard_tags(cls) -> List["TaskTag"]:
+        """获取标准标签列表"""
+        return [
+            cls.create_rush_order_tag(),
+            cls.create_non_default_rating_tag(), 
+            cls.create_timeout_response_tag(),
+            cls.create_timeout_processing_tag(),
+            cls.create_bad_rating_tag()
+        ]
+    
+    def is_rush_order_tag(self) -> bool:
+        """判断是否为爆单标签"""
+        return self.tag_type == TaskTagType.RUSH_ORDER
+    
+    def is_penalty_tag(self) -> bool:
+        """判断是否为惩罚标签"""
+        return self.tag_type in [
+            TaskTagType.TIMEOUT_RESPONSE,
+            TaskTagType.TIMEOUT_PROCESSING, 
+            TaskTagType.BAD_RATING,
+            TaskTagType.PENALTY
+        ]
+    
+    def is_bonus_tag(self) -> bool:
+        """判断是否为奖励标签"""
+        return self.tag_type in [
+            TaskTagType.NON_DEFAULT_RATING,
+            TaskTagType.BONUS
+        ]
 
 
 class RepairTask(BaseModel):
@@ -272,6 +371,38 @@ class RepairTask(BaseModel):
         comment="Whether task was matched during import"
     )
     
+    # 重构新增字段：完整数据导入支持
+    original_data = Column(
+        JSON,
+        nullable=True,
+        comment="A表原始数据完整保存"
+    )
+    
+    matched_member_data = Column(
+        JSON,
+        nullable=True,
+        comment="B表匹配的成员数据"
+    )
+    
+    is_rush_order = Column(
+        Boolean,
+        default=False,
+        nullable=False,
+        comment="爆单标记，独立计算工时"
+    )
+    
+    work_order_status = Column(
+        String(50),
+        nullable=True,
+        comment="A表工单状态（用于状态映射）"
+    )
+    
+    repair_form = Column(
+        String(50),
+        nullable=True,
+        comment="B表检修形式（用于线上/线下判断）"
+    )
+    
     # Relationships
     member: Mapped["Member"] = relationship("Member", back_populates="repair_tasks")
     
@@ -344,8 +475,40 @@ class RepairTask(BaseModel):
             return settings.DEFAULT_OFFLINE_TASK_MINUTES
     
     def calculate_work_minutes(self) -> int:
-        """Calculate total work minutes including modifiers."""
-        # Start with base minutes
+        """
+        Calculate total work minutes including modifiers.
+        重构后的工时计算逻辑：
+        - 爆单任务：固定15分钟，但仍可与异常扣时叠加
+        - 非爆单任务：基础工时 + 附加标签工时 - 异常扣时
+        """
+        # 爆单任务独立计算
+        if self.is_rush_order:
+            rush_minutes = 15  # 爆单任务固定15分钟
+            
+            # 爆单任务仍然可以与异常扣时叠加
+            penalty_minutes = 0
+            
+            # 应用异常扣时标签
+            for tag in self.tags:
+                if tag.is_active and tag.is_penalty_tag():
+                    penalty_minutes += abs(tag.work_minutes_modifier)  # 扣时标签为负数，这里取绝对值
+            
+            # Apply time-based penalties
+            if self.is_overdue_response:
+                from app.core.config import settings
+                penalty_minutes += settings.LATE_RESPONSE_PENALTY_MINUTES
+            
+            if self.is_overdue_completion:
+                from app.core.config import settings
+                penalty_minutes += settings.LATE_COMPLETION_PENALTY_MINUTES
+            
+            if self.is_negative_review:
+                from app.core.config import settings
+                penalty_minutes += settings.NEGATIVE_REVIEW_PENALTY_MINUTES
+            
+            return max(0, rush_minutes - penalty_minutes)
+        
+        # 非爆单任务：传统叠加计算
         base_minutes = self.get_base_work_minutes()
         total_minutes = base_minutes
         
@@ -386,6 +549,82 @@ class RepairTask(BaseModel):
         if tag in self.tags:
             self.tags.remove(tag)
             self.update_work_minutes()
+    
+    # 重构新增方法：数据完整性支持
+    
+    def set_original_data(self, data: dict) -> None:
+        """设置A表原始数据"""
+        self.original_data = data
+    
+    def set_matched_member_data(self, member_data: dict) -> None:
+        """设置B表匹配的成员数据"""
+        self.matched_member_data = member_data
+    
+    def mark_as_rush_order(self, is_rush: bool = True) -> None:
+        """标记/取消爆单任务"""
+        self.is_rush_order = is_rush
+        self.update_work_minutes()  # 重新计算工时
+    
+    def set_task_type_by_repair_form(self, repair_form: str) -> None:
+        """根据B表检修形式设置任务类型"""
+        if not repair_form:
+            return
+        
+        self.repair_form = repair_form
+        repair_form_lower = repair_form.lower()
+        
+        # 根据检修形式判断线上/线下
+        if "远程" in repair_form_lower or "线上" in repair_form_lower:
+            self.task_type = TaskType.ONLINE
+        elif "现场" in repair_form_lower or "线下" in repair_form_lower or "实地" in repair_form_lower:
+            self.task_type = TaskType.OFFLINE
+        else:
+            # 默认为线上任务
+            self.task_type = TaskType.ONLINE
+        
+        # 更新基础工时
+        self.base_work_minutes = self.get_base_work_minutes()
+        self.update_work_minutes()
+    
+    def set_status_by_work_order_status(self, work_order_status: str) -> None:
+        """根据A表工单状态设置任务状态"""
+        if not work_order_status:
+            return
+        
+        self.work_order_status = work_order_status
+        status_lower = work_order_status.lower()
+        
+        # 状态映射规则
+        if "已完成" in status_lower or "完成" in status_lower:
+            self.status = TaskStatus.COMPLETED
+        elif "进行中" in status_lower or "处理中" in status_lower:
+            self.status = TaskStatus.IN_PROGRESS  
+        elif "待处理" in status_lower or "未处理" in status_lower:
+            self.status = TaskStatus.PENDING
+        elif "已取消" in status_lower or "取消" in status_lower:
+            self.status = TaskStatus.CANCELLED
+        else:
+            # 默认状态
+            self.status = TaskStatus.PENDING
+    
+    def get_rush_order_info(self) -> dict:
+        """获取爆单任务信息"""
+        return {
+            "is_rush_order": self.is_rush_order,
+            "rush_work_minutes": 15 if self.is_rush_order else 0,
+            "normal_work_minutes": self.calculate_work_minutes() if not self.is_rush_order else 0
+        }
+    
+    def get_import_data_summary(self) -> dict:
+        """获取导入数据摘要"""
+        return {
+            "has_original_data": bool(self.original_data),
+            "has_matched_member_data": bool(self.matched_member_data),
+            "is_matched": self.is_matched,
+            "import_batch_id": self.import_batch_id,
+            "work_order_status": self.work_order_status,
+            "repair_form": self.repair_form
+        }
 
 
 class MonitoringTask(BaseModel):

@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
       "Bash(mkdir:*)",
@@ -21,7 +22,18 @@
       "mcp__memory__create_entities",
       "Bash(mv:*)",
       "Bash(npm:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(timeout 10s npm run dev)",
+      "Bash(timeout 5s npm run build)",
+      "mcp__filesystem__create_directory",
+      "mcp__filesystem__write_file",
+      "mcp__filesystem__edit_file",
+      "Bash(uv run:*)",
+      "Bash(curl:*)",
+      "Bash(uv list:*)",
+      "Bash(uv pip:*)",
+      "Bash(uv sync:*)",
+      "Bash(uv add:*)"
     ],
     "deny": []
   }

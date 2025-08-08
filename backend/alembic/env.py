@@ -38,7 +38,7 @@ def get_url():
     """Get database URL from environment or config."""
     # Try to get URL from environment first
     try:
-        return get_database_url_sync()
+        return get_database_url()  # Use async URL for migrations
     except Exception:
         # Fallback to config file
         return config.get_main_option("sqlalchemy.url")

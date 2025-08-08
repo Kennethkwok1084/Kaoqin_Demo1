@@ -5,6 +5,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 import App from './App.vue'
 import router from './router'
+import { useAuthStore } from '@/stores/auth'
 
 // 样式导入
 import 'element-plus/dist/index.css'
@@ -25,7 +26,8 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 }
 
 // 安装插件
-app.use(createPinia())
+const pinia = createPinia()
+app.use(pinia)
 app.use(router)
 app.use(ElementPlus, {
   size: 'default',
@@ -41,5 +43,8 @@ app.config.errorHandler = (err, instance, info) => {
   // 这里可以集成错误监控服务
 }
 
-// 挂载应用
-app.mount('#app')
+// 初始化认证状态并挂载应用
+const authStore = useAuthStore()
+authStore.initAuth().finally(() => {
+  app.mount('#app')
+})

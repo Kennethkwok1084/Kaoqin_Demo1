@@ -1,0 +1,445 @@
+@use './variables.scss' as *;
+@use './mixins.scss' as *;
+
+// 响应式工具类
+
+// 显示/隐藏工具类
+.hidden-xs {
+  @include mobile-only {
+    display: none !important;
+  }
+}
+
+.hidden-sm {
+  @include tablet-only {
+    display: none !important;
+  }
+}
+
+.hidden-md {
+  @include desktop-only {
+    display: none !important;
+  }
+}
+
+.visible-xs {
+  display: none !important;
+  
+  @include mobile-only {
+    display: block !important;
+  }
+}
+
+.visible-xs-flex {
+  display: none !important;
+  
+  @include mobile-only {
+    display: flex !important;
+  }
+}
+
+.visible-xs-inline {
+  display: none !important;
+  
+  @include mobile-only {
+    display: inline !important;
+  }
+}
+
+.visible-xs-inline-block {
+  display: none !important;
+  
+  @include mobile-only {
+    display: inline-block !important;
+  }
+}
+
+// 移动端文字大小调整
+.text-responsive {
+  @include mobile-only {
+    font-size: $font-size-small;
+    line-height: 1.4;
+  }
+  
+  @include tablet-only {
+    font-size: $font-size-base;
+    line-height: 1.5;
+  }
+}
+
+.title-responsive {
+  @include mobile-only {
+    font-size: $font-size-large;
+    line-height: 1.3;
+  }
+  
+  @include tablet-only {
+    font-size: $font-size-extra-large;
+    line-height: 1.4;
+  }
+}
+
+// 移动端间距调整
+.padding-responsive {
+  @include mobile-only {
+    padding: $spacing-small !important;
+  }
+  
+  @include tablet-only {
+    padding: $spacing-base !important;
+  }
+}
+
+.margin-responsive {
+  @include mobile-only {
+    margin: $spacing-small !important;
+  }
+  
+  @include tablet-only {
+    margin: $spacing-base !important;
+  }
+}
+
+// 移动端宽度工具类
+.w-full-mobile {
+  @include mobile-only {
+    width: 100% !important;
+  }
+}
+
+.w-auto-mobile {
+  @include mobile-only {
+    width: auto !important;
+  }
+}
+
+// 移动端Flex工具类
+.flex-column-mobile {
+  @include mobile-only {
+    flex-direction: column !important;
+  }
+}
+
+.flex-row-mobile {
+  @include mobile-only {
+    flex-direction: row !important;
+  }
+}
+
+.justify-center-mobile {
+  @include mobile-only {
+    justify-content: center !important;
+  }
+}
+
+.justify-start-mobile {
+  @include mobile-only {
+    justify-content: flex-start !important;
+  }
+}
+
+.align-center-mobile {
+  @include mobile-only {
+    align-items: center !important;
+  }
+}
+
+// 移动端表格响应式
+.table-responsive {
+  @include responsive-table;
+}
+
+// 移动端卡片响应式
+.card-stack-mobile {
+  @include mobile-card-stack;
+}
+
+// 移动端按钮适配
+.btn-mobile {
+  @include touch-target;
+  
+  @include mobile-only {
+    width: 100%;
+    margin-bottom: $spacing-small;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.btn-group-mobile {
+  @include mobile-only {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-small;
+    
+    .el-button {
+      margin: 0;
+      flex: 1;
+    }
+  }
+}
+
+// 移动端输入框适配
+.input-mobile {
+  @include mobile-input;
+}
+
+// 移动端搜索框
+.search-mobile {
+  @include mobile-only {
+    .el-input {
+      .el-input__inner {
+        @include mobile-input;
+        height: 44px;
+        padding: 0 $spacing-base;
+      }
+    }
+  }
+}
+
+// 移动端表单适配
+.form-mobile {
+  @include mobile-only {
+    .el-form-item {
+      margin-bottom: $spacing-base;
+      
+      .el-form-item__label {
+        font-size: $font-size-base;
+        line-height: 1.5;
+        padding-bottom: $spacing-small;
+      }
+      
+      .el-form-item__content {
+        .el-input,
+        .el-select,
+        .el-date-picker {
+          width: 100%;
+        }
+        
+        .el-input__inner,
+        .el-input__wrapper {
+          @include mobile-input;
+          height: 44px;
+        }
+      }
+    }
+    
+    .el-form-item--small {
+      .el-form-item__content {
+        .el-input__inner,
+        .el-input__wrapper {
+          height: 40px;
+        }
+      }
+    }
+  }
+}
+
+// 移动端弹窗适配
+.dialog-mobile {
+  @include mobile-only {
+    .el-dialog {
+      width: 95% !important;
+      margin: 5vh auto !important;
+      max-height: 90vh;
+      
+      .el-dialog__header {
+        padding: $spacing-base;
+        
+        .el-dialog__title {
+          font-size: $font-size-large;
+          font-weight: 600;
+        }
+        
+        .el-dialog__headerbtn {
+          @include touch-target(36px);
+        }
+      }
+      
+      .el-dialog__body {
+        padding: $spacing-base;
+        max-height: calc(90vh - 120px);
+        overflow-y: auto;
+        @include mobile-scroll;
+      }
+      
+      .el-dialog__footer {
+        padding: $spacing-base;
+        
+        .el-button {
+          @include touch-target;
+          margin: 0 $spacing-small $spacing-small 0;
+          
+          &:last-child {
+            margin-right: 0;
+          }
+        }
+      }
+    }
+  }
+}
+
+// 移动端抽屉适配
+.drawer-mobile {
+  @include mobile-only {
+    .el-drawer {
+      .el-drawer__header {
+        padding: $spacing-base;
+        
+        .el-drawer__title {
+          font-size: $font-size-large;
+          font-weight: 600;
+        }
+        
+        .el-drawer__close-btn {
+          @include touch-target(36px);
+        }
+      }
+      
+      .el-drawer__body {
+        padding: $spacing-base;
+        @include mobile-scroll;
+      }
+    }
+  }
+}
+
+// 移动端导航适配
+.nav-mobile {
+  @include mobile-only {
+    .el-menu {
+      .el-menu-item,
+      .el-submenu__title {
+        height: 50px;
+        line-height: 50px;
+        font-size: $font-size-base;
+        @include touch-target(50px);
+      }
+      
+      .el-submenu {
+        .el-menu-item {
+          height: 45px;
+          line-height: 45px;
+          padding-left: 50px !important;
+        }
+      }
+    }
+  }
+}
+
+// 移动端面包屑适配
+.breadcrumb-mobile {
+  @include mobile-only {
+    .el-breadcrumb {
+      .el-breadcrumb__item {
+        .el-breadcrumb__inner {
+          font-size: $font-size-small;
+          
+          &.is-link {
+            @include touch-target(32px);
+          }
+        }
+      }
+    }
+  }
+}
+
+// 移动端分页适配
+.pagination-mobile {
+  @include mobile-only {
+    .el-pagination {
+      .el-pager li,
+      .btn-prev,
+      .btn-next {
+        @include touch-target(36px);
+        font-size: $font-size-small;
+      }
+      
+      .el-pagination__sizes,
+      .el-pagination__jump {
+        display: none;
+      }
+    }
+  }
+}
+
+// 移动端标签页适配
+.tabs-mobile {
+  @include mobile-only {
+    .el-tabs {
+      .el-tabs__header {
+        .el-tabs__nav-wrap {
+          .el-tabs__nav-scroll {
+            .el-tabs__nav {
+              .el-tabs__item {
+                height: 44px;
+                line-height: 44px;
+                font-size: $font-size-base;
+                padding: 0 $spacing-base;
+                @include touch-target(44px);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// 移动端步骤条适配
+.steps-mobile {
+  @include mobile-only {
+    .el-steps {
+      .el-step {
+        .el-step__head {
+          .el-step__icon {
+            width: 32px;
+            height: 32px;
+            font-size: $font-size-base;
+          }
+        }
+        
+        .el-step__main {
+          .el-step__title {
+            font-size: $font-size-small;
+            line-height: 1.4;
+          }
+          
+          .el-step__description {
+            font-size: $font-size-extra-small;
+            line-height: 1.3;
+          }
+        }
+      }
+    }
+  }
+}
+
+// 安全区域适配
+.safe-area {
+  @include safe-area-padding;
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+// 移动端触摸优化
+.touch-scroll {
+  @include mobile-scroll;
+}
+
+// 移动端字体优化
+.font-mobile {
+  @include mobile-only {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+}

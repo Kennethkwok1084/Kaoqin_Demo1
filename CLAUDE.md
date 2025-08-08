@@ -167,7 +167,97 @@ When backend is running, access API documentation at:
 - **Enhanced Testing**: Comprehensive integration tests for all new APIs
 - **API Verification**: 100% import success rate, all new routes properly registered
 
-## 🚨 核心业务功能实现状态更新
+## 重要开发规则
+
+**严令禁止使用emoji**: 任何代码、脚本、配置文件中都不能出现emoji字符，包括但不限于：
+- Python代码中的print语句
+- 测试脚本
+- 配置文件
+- 数据库脚本
+- 任何可执行代码
+
+违反此规则会导致编码错误和系统异常。
+
+## 问题分析
+
+### 具体问题列表
+
+1. `await db.refresh(current_user)` 可能导致异步上下文问题
+2. 在日志记录中仍可能触发延迟加载
+3. 错误处理不够完善，例如 client.ts:49 响应拦截器错误：
+   ```
+   AxiosError {message: 'Request failed with status code 500', name: 'AxiosError', code: 'ERR_BAD_RESPONSE', config: {…}, request: XMLHttpRequest, …}
+   ```
+4. 导入失败错误处理详细信息：
+   ```
+   (匿名)    @    client.ts:49
+   Promise.then        
+   importMembers    @    members.ts:184
+   handleImport    @    ImportMemberDialog.vue:536
+   handleClick    @    use-button.ts:72
+   
+   ImportMemberDialog.vue:545 
+    导入失败: 
+   AxiosError {message: 'Request failed with status code 500', name: 'AxiosError', code: 'ERR_BAD_RESPONSE', config: {…}, request: XMLHttpRequest, …}
+   ```
+
+### 问题诊断和建议
+
+1. **异步上下文问题**
+   - 使用 `db.refresh()` 时可能会遇到异步执行上下文不一致的问题
+   - 建议使用更安全的异步上下文管理方式
+   - 检查并优化异步函数的执行顺序和错误处理
+
+2. **日志记录延迟加载**
+   - 检查日志记录过程中是否存在不必要的延迟加载操作
+   - 使用预加载或更高效的数据查询策略
+   - 审查 ORM 查询方法，避免隐式的懒加载
+
+3. **错误处理机制**
+   - 在 `client.ts` 中完善 Axios 拦截器的错误处理
+   - 增加详细的错误日志记录
+   - 在前端实现更友好的错误提示和重试机制
+
+4. **导入功能错误处理**
+   - 检查后端 API 的错误响应处理
+   - 在 `ImportMemberDialog.vue` 中添加更robust的错误捕获
+   - 实现更详细的错误信息展示和日志记录
+
+### 推荐解决方案
+
+```python
+# 异步上下文优化示例
+async def get_user_with_refresh(db: Session, user_id: int):
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if user:
+            # 使用更安全的刷新方法
+            db.refresh(user, ['related_field1', 'related_field2'])
+        return user
+    except Exception as e:
+        # 添加详细的错误日志
+        logging.error(f"Error refreshing user: {e}")
+        raise
+
+# 前端错误拦截器示例 (client.ts)
+axios.interceptors.response.use(
+    response => response,
+    error => {
+        const errorMessage = error.response?.data?.message || '未知错误';
+        const errorStatus = error.response?.status || 'N/A';
+        
+        // 详细的错误日志
+        console.error(`[API Error] Status: ${errorStatus}, Message: ${errorMessage}`);
+        
+        // 全局错误处理
+        ElMessage.error(`请求失败：${errorMessage}`);
+        
+        return Promise.reject(error);
+    }
+)
+```
+
+## 核心业务功能实现状态更新
 
 ### 1. 工时计算引擎 (状态更新: 已完成)
 
@@ -176,233 +266,10 @@ When backend is running, access API documentation at:
 - ✅ **评价自动处理**: 已实现评价提交后自动计算奖励/惩罚的触发机制  
 - ✅ **批量工时重算**: 已实现批量重新计算历史任务工时的功能 (POST /api/v1/tasks/work-hours/recalculate)
 
-#### 1.2 复杂工时规则引擎 ✅ COMPLETED
-- ✅ **工时审核机制**: 已实现管理员手动调整和审核工时的功能 (GET/PUT /api/v1/tasks/work-hours/pending-review)
-- ✅ **工时统计分析**: 已实现详细的工时统计和分析功能 (GET /api/v1/tasks/work-hours/statistics)
-- 🚧 **规则配置管理**: 暂时硬编码，可通过手动调整实现 (后续可优化为动态配置)
+## Database Connection Details
 
-### 2. 数据导入功能 (状态更新: 已完成)
-
-#### 2.1 Excel数据导入服务 ✅ COMPLETED  
-- ✅ **文件处理服务**: 已完整实现Excel文件读取和解析 (app/services/import_service.py)
-- ✅ **A/B表匹配算法**: 已实现基于"报告人姓名+联系方式"的自动匹配逻辑
-- ✅ **数据验证清洗**: 已实现导入数据的格式验证和清洗机制
-
-#### 2.2 批量数据处理 ✅ COMPLETED
-- ✅ **模糊匹配算法**: 已实现处理姓名和联系方式的细微差异
-- ✅ **重复数据检测**: 已实现避免重复导入相同任务
-- ✅ **匹配结果预览**: 已实现导入前展示匹配结果供确认
-
-### 3. 统计分析服务 (状态更新: 已完成)
-
-#### 3.1 高级统计算法 ✅ COMPLETED
-- ✅ **效率趋势分析**: 已实现个人和团队效率变化趋势计算 (GET /api/v1/statistics/efficiency)
-- ✅ **工作量分布分析**: 已实现按时间、地点、类型的工作量分布统计 (GET /api/v1/statistics/overview)
-- ✅ **完成模式分析**: 已实现任务完成时间模式和效率评分算法
-
-#### 3.2 实时统计数据缓存 🚧 PARTIAL
-- ❌ **Redis缓存层**: 暂未实现，当前为实时计算 (后续优化项)
-- ❌ **增量更新机制**: 暂未实现，当前为全量查询 (后续优化项)
-- ✅ **统计API完整性**: 已实现所有核心统计功能和数据导出
-
-### 4. 考勤相关API (状态更新: 已完成)
-
-#### 4.1 考勤记录管理API ✅ COMPLETED
-- ✅ **签到签退接口**: 已完整实现 `/api/v1/attendance/checkin`, `/checkout` 等接口
-- ✅ **考勤记录查询**: 已实现个人和管理员查询考勤记录的接口
-- ✅ **考勤异常处理**: 已实现请假、迟到、早退的申请和审批接口
-
-#### 4.2 考勤报表API ✅ COMPLETED
-- ✅ **月度报表生成**: 已实现个人和团队月度考勤报表接口 (GET /api/v1/statistics/monthly-report)
-- ✅ **异常统计分析**: 已实现各类考勤异常的统计接口
-- ✅ **出勤率计算**: 已实现出勤率和工时达成率的计算接口
-
-### 5. 业务流程自动化 (状态更新: 部分完成)
-
-#### 5.1 任务生命周期自动化 🚧 PARTIAL
-- ✅ **任务状态管理**: 已实现完整的任务状态流转和管理
-- ✅ **工时自动计算**: 已实现任务完成后的自动工时计算和调整
-- ❌ **智能任务分配**: 暂未实现基于工作量和能力的自动分配算法 (后续优化项)
-- ❌ **超时提醒机制**: 暂未实现任务临近截止时间的自动提醒 (后续优化项)
-- ❌ **紧急任务升级**: 暂未实现紧急任务的自动升级和通知机制 (后续优化项)
-
-#### 5.2 通知系统 ❌ PENDING
-- ❌ **任务分配通知**: 新任务分配时缺乏通知执行者的机制 (后续开发项)
-- ❌ **状态变更通知**: 任务状态变更时缺乏通知相关人员 (后续开发项)
-- ❌ **异常报警系统**: 系统异常和数据异常缺乏报警机制 (后续开发项)
-
-## 新增API端点文档
-
-### 工时管理API (NEW)
-- `POST /api/v1/tasks/work-hours/recalculate` - 批量重新计算工时
-- `POST /api/v1/tasks/repair/{task_id}/recalculate-hours` - 单任务工时重算
-- `GET /api/v1/tasks/work-hours/pending-review` - 获取待审核工时任务列表
-- `PUT /api/v1/tasks/work-hours/{task_id}/adjust` - 手动调整任务工时
-- `GET /api/v1/tasks/work-hours/statistics` - 获取工时统计信息
-
-### 统计分析API (NEW)  
-- `GET /api/v1/statistics/overview` - 获取系统概览统计
-- `GET /api/v1/statistics/efficiency` - 获取工作效率分析
-- `GET /api/v1/statistics/monthly-report` - 生成月度综合报表
-- `GET /api/v1/statistics/export` - 导出统计数据
-
-### 健康检查API (ENHANCED)
-- `GET /api/v1/tasks/health` - 任务管理服务健康检查
-- `GET /api/v1/statistics/health` - 统计分析服务健康检查
-
-## 🎯 后续优化建议 (按优先级排序)
-
-#### 🔥 高优先级 (下个版本 - 2周内)
-1. **性能优化**
-   - Redis缓存层实现：统计数据缓存和增量更新
-   - 数据库查询优化：索引优化和分页性能提升
-   - 技术栈：Redis + 数据库索引优化
-
-2. **通知系统实现**
-   - WebSocket实时通知 + 邮件通知
-   - 任务分配、状态变更、异常报警通知
-   - 技术栈：FastAPI WebSocket + SMTP
-
-#### 📋 中优先级 (1个月内)
-3. **智能化功能**
-   - 任务智能分配算法：基于工作量和能力
-   - 超时预警和自动升级机制
-   - 工作效率预测和建议
-
-4. **用户体验增强**
-   - 前端界面开发：Vue 3 + Element Plus
-   - 移动端适配：Capacitor 跨平台部署
-   - API文档完善：Swagger UI 增强
-
-#### ⚡ 低优先级 (后期优化)
-5. **高级功能**
-   - 工作流引擎：可配置的业务流程
-   - 数据归档机制：历史数据管理
-   - 高级分析算法：机器学习预测
-
-### 🔧 推荐技术实现方案
-
-```python
-# 需要新增的技术栈
-dependencies = [
-    "celery>=5.3.0",           # 异步任务和定时任务
-    "redis>=5.0.0",            # 缓存和消息队列
-    "pandas>=2.1.0",           # Excel数据处理
-    "openpyxl>=3.1.0",         # Excel文件读写
-    "websockets>=12.0",        # 实时通知
-    "APScheduler>=3.10.0",     # 定时任务调度
-]
-```
-
-### 🔥 High Priority Tasks (Phase 1)
-
-#### Backend Core Implementation  
-- ✅ **API Routes & Endpoints** - Auth ✅, Members ✅, Tasks ✅
-- ✅ **Pydantic Schemas** - All complete: Auth ✅, Member ✅, Task ✅, Attendance ✅
-- ✅ **Members Management API** - CRUD operations, role management (`/api/v1/members`)
-- ✅ **Tasks Management API** - Repair/monitoring tasks API (`/api/v1/tasks`)
-- ✅ **Business Logic Services** - Implemented `task_service`, `stats_service`
-- ✅ **Authentication System** - Complete JWT token generation/validation, password hashing, permissions
-- 🔥 **Work Hours Engine** - 需要实现自动化计算引擎和规则配置系统
-- 🔥 **Data Import Service** - 需要实现Excel导入和A/B表匹配服务
-- 🔥 **Attendance API** - 需要创建考勤记录管理接口
-
-#### Frontend Core Implementation  
-- [ ] **Package Setup** - Configure package.json with Vue 3, Capacitor, Element Plus dependencies
-- [ ] **Authentication UI** - Login/logout forms, token management, route guards
-- [ ] **State Management** - Create Pinia stores for auth, tasks, members, attendance
-- [ ] **API Client** - Build Axios client for backend communication and error handling
-- [ ] **Router Setup** - Configure Vue Router with authentication guards
-
-### 📋 Medium Priority Tasks (Phase 2)
-
-#### Backend Features
-- [ ] **Excel Data Import** - Build A/B table processing and matching service
-- [ ] **AES Encryption** - Implement encryption utilities for sensitive data  
-- [ ] **Dependencies** - Create dependency injection for database sessions
-- [ ] **Environment Config** - Create .env.example and configuration files
-- [ ] **Test Suite** - Write unit, integration, and API tests
-
-#### Frontend Components
-- [ ] **Task Management** - TaskList, TaskDetail, TaskForm, TaskImport components
-- [ ] **Member Management** - MemberList, MemberDetail, MemberForm components  
-- [ ] **Dashboard** - Statistics overview with ECharts data visualization
-- [ ] **Attendance Views** - Statistics views with export functionality
-- [ ] **Common Components** - Reusable UI components (BaseButton, BaseCard, BaseTable)
-- [ ] **TypeScript Types** - Define types for API models and component props
-
-#### Infrastructure
-- [ ] **Database Seeds** - Create sample data for development and testing
-- [ ] **Database Testing** - Test migrations and schema functionality
-- [ ] **Docker Config** - Create development and production containerization
-- [ ] **Security Implementation** - CORS, CSP, rate limiting, input validation
-
-### 🔧 Low Priority Tasks (Phase 3)
-
-- [ ] **Mobile Deployment** - Configure Capacitor for iOS/Android testing
-- [ ] **Development Scripts** - Create setup automation tools
-- [ ] **CI/CD Pipeline** - GitHub Actions for automated testing and deployment
-- [ ] **Code Quality** - ESLint, Prettier, Black, mypy configuration
-- [ ] **API Documentation** - Enhanced documentation with examples
-
-## Progress Tracking
-
-### Daily Progress Log
-**Last Updated**: 2025-07-28
-
-#### 2025-01-29 (最新进程)
-- ✅ 完成认证系统API实现 (`app/api/v1/auth.py`)
-- ✅ 完成成员管理API完整实现 (`app/api/v1/members.py` - 34.8KB)
-- ✅ 完成任务管理API完整实现 (`app/api/v1/tasks.py` - 42.1KB)  
-- ✅ 完成业务逻辑服务层 (`app/services/task_service.py`, `app/services/stats_service.py`)
-- ✅ 完成SQLAlchemy 2.0兼容性修复 (Mapped类型注解)
-- ✅ 完成主路由配置更新 (`app/main.py`)
-- ✅ 完成核心功能验证测试 (75%测试通过率)
-- ✅ **已完成**: 后端核心架构和API层实现完毕
-- 📋 **当前状态**: 项目75%完成，后端就绪，前端缺失
-
-#### 2025-01-27
-- ✅ Project structure analysis completed
-- ✅ Comprehensive todo list created with 30 actionable items
-- ✅ Progress tracking system established
-
-### Development Milestones
-
-#### Milestone 1: Backend Foundation (Target: Week 1)
-- Complete API routes implementation
-- Implement authentication system
-- Set up business logic services
-- Deploy basic API with Swagger documentation
-
-#### Milestone 2: Frontend Foundation (Target: Week 2)  
-- Complete frontend package setup
-- Implement authentication UI
-- Create core components and routing
-- Establish API integration
-
-#### Milestone 3: Core Features (Target: Week 3-4)
-- Work hours calculation engine
-- Task and member management
-- Data import functionality
-- Basic testing coverage
-
-#### Milestone 4: Polish & Deploy (Target: Week 5-6)
-- Comprehensive testing
-- Security implementation
-- Docker deployment
-- Documentation completion
-
-## Implementation Notes
-
-The project has excellent foundational work:
-- **Database schema** is production-ready with proper indexes and constraints
-- **Model definitions** follow best practices with proper relationships
-- **Configuration system** is well-structured with environment-based settings
-- **Project structure** follows FastAPI and Vue 3 conventions
-
-**Key Implementation Focus**:
-1. **Authentication First** - Secure the application before building features
-2. **API-Driven Development** - Complete backend APIs before frontend integration  
-3. **Test-Driven Approach** - Write tests alongside implementation
-4. **Progressive Enhancement** - Start with core features, add complexity gradually
-5. **Notice** - Always respose in Chinese/中文 ,Program display language is Chinese/中文.
+### PostgreSQL Database Configuration
+- **IP Address**: 192.168.31.124 (not localhost)
+- **Database Name**: attendence_dev
+- **Database Username**: kwok
+- **Database Password**: Onjuju1084

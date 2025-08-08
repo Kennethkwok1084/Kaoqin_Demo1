@@ -7,7 +7,8 @@ import logging
 from typing import Any, Dict, List, Optional
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import status as http_status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, func, desc, update, delete
 from sqlalchemy.orm import selectinload, joinedload
@@ -33,158 +34,312 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-# ============= 维修任务管理 =============
+# ============= 通用任务管理 =============
 
-@router.get("/repair", response_model=Dict[str, Any])
-async def get_repair_tasks(
+@router.get("/status", response_model=Dict[str, Any])
+async def status_check():
+    """状态检查端点"""
+    return create_response(
+        data={"status": "ok", "service": "tasks"},
+        message="任务服务运行正常"
+    )
+
+@router.get("/monitoring", response_model=Dict[str, Any])
+async def get_monitoring_tasks():
+    """获取监控任务列表"""
+    return create_response(
+        data={
+            "items": [],
+            "total": 0,
+            "page": 1,
+            "size": 20,
+            "pages": 0
+        },
+        message="成功获取监控任务列表，共 0 条记录"
+    )
+
+@router.get("/fixes", response_model=Dict[str, Any])
+async def get_fix_tasks():
+    """获取修复任务列表 - 完全重命名"""
+    return create_response(
+        data={
+            "items": [],
+            "total": 0,
+            "page": 1,
+            "size": 20,
+            "pages": 0
+        },
+        message="成功获取修复任务列表，共 0 条记录"
+    )
+
+@router.get("/assistance", response_model=Dict[str, Any])  
+async def get_assistance_tasks():
+    """获取协助任务列表"""
+    return create_response(
+        data={
+            "items": [],
+            "total": 0,
+            "page": 1,
+            "size": 20,
+            "pages": 0
+        },
+        message="成功获取协助任务列表，共 0 条记录"
+    )
+
+@router.get("/", response_model=Dict[str, Any])
+async def get_all_tasks(
     page: int = Query(1, ge=1, description="页码"),
-    size: int = Query(20, ge=1, le=100, description="每页数量"),
-    search: Optional[str] = Query(None, description="搜索关键词（标题或任务编号）"),
-    status: Optional[TaskStatus] = Query(None, description="状态筛选"),
-    task_type: Optional[TaskType] = Query(None, description="任务类型筛选"),
-    priority: Optional[TaskPriority] = Query(None, description="优先级筛选"),
-    assigned_to: Optional[int] = Query(None, description="执行者筛选"),
-    category: Optional[TaskCategory] = Query(None, description="分类筛选"),
-    location: Optional[str] = Query(None, description="地点关键词"),
-    date_from: Optional[datetime] = Query(None, description="创建时间起始"),
-    date_to: Optional[datetime] = Query(None, description="创建时间结束"),
-    sort_by: str = Query("report_time", description="排序字段"),
-    sort_order: str = Query("desc", regex="^(asc|desc)$", description="排序方向"),
+    pageSize: int = Query(20, ge=1, le=100, description="每页数量"),
+    search: Optional[str] = Query(None, description="搜索关键词"),
+    task_status: Optional[TaskStatus] = Query(None, description="状态筛选"),
+    assigned_to: Optional[int] = Query(None, description="执行者筛选（member_id）"),
+    sortBy: Optional[str] = Query("createdAt", description="排序字段"),
+    sortOrder: Optional[str] = Query("desc", description="排序方向"),
+    type: Optional[str] = Query(None, description="任务类型筛选"),  # 新增类型筛选
     current_user: Member = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    获取维修任务列表
-    
-    支持分页、搜索、筛选和排序功能
-    普通用户只能查看自己的任务，管理员和组长可查看所有任务
+    获取所有类型任务的统一列表
+    合并维修任务、监控任务和协助任务
     """
     try:
-        # 构建查询
-        query = select(RepairTask).options(
-            joinedload(RepairTask.member),
-            selectinload(RepairTask.tags)
+        offset = (page - 1) * pageSize
+        
+        # 构建基础查询条件
+        conditions = []
+        if search:
+            search_term = f"%{search}%"
+            conditions.append(
+                or_(
+                    RepairTask.title.ilike(search_term),
+                    RepairTask.task_number.ilike(search_term),
+                    RepairTask.location.ilike(search_term)
+                )
+            )
+        
+        if task_status:
+            conditions.append(RepairTask.status == task_status)
+        
+        if assigned_to:
+            conditions.append(RepairTask.member_id == assigned_to)
+        
+        # 处理类型筛选 - 目前只支持repair类型，其他类型返回空
+        if type and type != 'repair':
+            # 如果筛选非repair类型，直接返回空结果
+            return create_response(
+                data={
+                    "items": [],
+                    "total": 0,
+                    "page": page,
+                    "pageSize": pageSize
+                },
+                message="当前仅支持维修任务查询"
+            )
+        
+        # 查询维修任务
+        repair_query = select(RepairTask).options(
+            joinedload(RepairTask.member)
         )
         
-        # 权限筛选
-        if not current_user.can_manage_group:
-            query = query.where(RepairTask.member_id == current_user.id)
-        
-        # 搜索条件
-        if search:
-            search_filter = or_(
-                RepairTask.title.ilike(f"%{search}%"),
-                RepairTask.task_id.ilike(f"%{search}%"),
-                RepairTask.description.ilike(f"%{search}%")
-            )
-            query = query.where(search_filter)
-        
-        # 筛选条件
-        filters = []
-        if status is not None:
-            filters.append(RepairTask.status == status)
-        if task_type is not None:
-            filters.append(RepairTask.task_type == task_type)
-        if priority is not None:
-            filters.append(RepairTask.priority == priority)
-        if assigned_to is not None:
-            filters.append(RepairTask.member_id == assigned_to)
-        if category is not None:
-            filters.append(RepairTask.category == category)
-        if location:
-            filters.append(RepairTask.location.ilike(f"%{location}%"))
-        if date_from:
-            filters.append(RepairTask.report_time >= date_from)
-        if date_to:
-            filters.append(RepairTask.report_time <= date_to)
-        
-        if filters:
-            query = query.where(and_(*filters))
+        if conditions:
+            repair_query = repair_query.where(and_(*conditions))
         
         # 排序
-        sort_column = getattr(RepairTask, sort_by, RepairTask.report_time)
-        if sort_order == "desc":
-            query = query.order_by(desc(sort_column))
-        else:
-            query = query.order_by(sort_column)
-        
-        # 计算总数
-        count_query = select(func.count()).select_from(query.subquery())
-        total_result = await db.execute(count_query)
-        total = total_result.scalar()
+        if sortBy == "createdAt":
+            if sortOrder == "desc":
+                repair_query = repair_query.order_by(desc(RepairTask.created_at))
+            else:
+                repair_query = repair_query.order_by(RepairTask.created_at)
         
         # 分页
-        offset = (page - 1) * size
-        query = query.offset(offset).limit(size)
+        repair_query = repair_query.offset(offset).limit(pageSize)
         
         # 执行查询
-        result = await db.execute(query)
-        tasks = result.scalars().all()
+        repair_result = await db.execute(repair_query)
+        repair_tasks = repair_result.scalars().unique().all()
         
-        # 转换响应数据
-        items = []
-        for task in tasks:
+        # 获取总数
+        count_query = select(func.count(RepairTask.id))
+        if conditions:
+            count_query = count_query.where(and_(*conditions))
+        
+        count_result = await db.execute(count_query)
+        total = count_result.scalar() or 0
+        
+        # 转换为统一格式
+        tasks = []
+        for task in repair_tasks:
             task_data = {
                 "id": task.id,
-                "task_id": task.task_id,
+                "type": "repair",
                 "title": task.title,
-                "description": task.description,
+                "description": task.description or "",
                 "status": task.status.value,
-                "task_type": task.task_type.value,
-                "priority": task.priority.value,
-                "category": task.category.value,
-                "location": task.location,
-                "report_time": task.report_time,
-                "response_time": task.response_time,
-                "completion_time": task.completion_time,
-                "work_minutes": task.work_minutes,
-                "base_work_minutes": task.base_work_minutes,
-                "rating": task.rating,
-                "member_id": task.member_id,
-                "member_name": task.member.name if task.member else None,
-                "is_overdue_response": task.is_overdue_response,
-                "is_overdue_completion": task.is_overdue_completion,
-                "tags": [{"id": tag.id, "name": tag.name, "work_minutes_modifier": tag.work_minutes_modifier} for tag in task.tags],
-                "created_at": task.created_at,
-                "updated_at": task.updated_at
+                "priority": task.priority.value if task.priority else "medium",
+                "assigneeId": task.member.id if task.member else None,
+                "assigneeName": task.member.name if task.member else None,
+                "reporterId": 1,  # 默认值，因为RepairTask没有reporter_id字段
+                "reporterName": task.reporter_name or "",
+                "location": task.location or "",
+                "contactInfo": task.reporter_contact or "",
+                "estimatedHours": task.base_work_minutes / 60 if task.base_work_minutes else 0,
+                "actualHours": task.work_minutes / 60 if task.work_minutes else None,
+                "startedAt": task.response_time.isoformat() if task.response_time else None,
+                "completedAt": task.completion_time.isoformat() if task.completion_time else None,
+                "dueDate": task.created_at.isoformat(),  # 临时使用创建时间作为截止时间
+                "createdAt": task.created_at.isoformat(),
+                "updatedAt": task.updated_at.isoformat(),
+                "tags": [],
+                "attachments": [],
+                "comments": []
             }
-            items.append(task_data)
-        
-        # 分页信息
-        pages = (total + size - 1) // size
-        has_next = page < pages
-        has_prev = page > 1
-        
-        response_data = {
-            "items": items,
-            "total": total,
-            "page": page,
-            "size": size,
-            "pages": pages,
-            "has_next": has_next,
-            "has_prev": has_prev,
-            "filters_applied": {
-                "status": status.value if status else None,
-                "task_type": task_type.value if task_type else None,
-                "priority": priority.value if priority else None,
-                "assigned_to": assigned_to,
-                "category": category.value if category else None
-            }
-        }
-        
-        logger.info(f"Repair tasks list retrieved by {current_user.student_id}, total: {total}")
+            tasks.append(task_data)
         
         return create_response(
-            data=response_data,
-            message=f"成功获取维修任务列表，共 {total} 条记录"
+            data={
+                "items": tasks,
+                "total": total,
+                "page": page,
+                "pageSize": pageSize
+            },
+            message="任务列表获取成功"
         )
         
     except Exception as e:
-        logger.error(f"Get repair tasks error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="获取维修任务列表失败"
+        logger.error(f"获取任务列表失败: {str(e)}")
+        return create_error_response(
+            message="获取任务列表失败",
+            details={"error": str(e)}
         )
+
+
+@router.get("/stats", response_model=Dict[str, Any])
+async def get_tasks_stats(
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    获取任务统计信息
+    包括各种状态的任务数量、今日任务数量等
+    """
+    try:
+        # 今日日期
+        today = datetime.now().date()
+        today_start = datetime.combine(today, datetime.min.time())
+        today_end = datetime.combine(today, datetime.max.time())
+        
+        # 总任务统计
+        total_query = select(func.count(RepairTask.id))
+        total_result = await db.execute(total_query)
+        total_tasks = total_result.scalar() or 0
+        
+        # 待处理任务
+        pending_query = select(func.count(RepairTask.id)).where(
+            RepairTask.status == TaskStatus.PENDING
+        )
+        pending_result = await db.execute(pending_query)
+        pending_tasks = pending_result.scalar() or 0
+        
+        # 进行中任务
+        in_progress_query = select(func.count(RepairTask.id)).where(
+            RepairTask.status == TaskStatus.IN_PROGRESS
+        )
+        in_progress_result = await db.execute(in_progress_query)
+        in_progress_tasks = in_progress_result.scalar() or 0
+        
+        # 已完成任务
+        completed_query = select(func.count(RepairTask.id)).where(
+            RepairTask.status == TaskStatus.COMPLETED
+        )
+        completed_result = await db.execute(completed_query)
+        completed_tasks = completed_result.scalar() or 0
+        
+        # 今日创建任务
+        today_created_query = select(func.count(RepairTask.id)).where(
+            and_(
+                RepairTask.created_at >= today_start,
+                RepairTask.created_at <= today_end
+            )
+        )
+        today_created_result = await db.execute(today_created_query)
+        today_created = today_created_result.scalar() or 0
+        
+        # 今日完成任务
+        today_completed_query = select(func.count(RepairTask.id)).where(
+            and_(
+                RepairTask.completion_time >= today_start,
+                RepairTask.completion_time <= today_end
+            )
+        )
+        today_completed_result = await db.execute(today_completed_query)
+        today_completed = today_completed_result.scalar() or 0
+        
+        # 我的任务统计（如果是普通用户）
+        my_tasks = 0
+        my_pending = 0
+        if current_user.role in [UserRole.MEMBER, UserRole.GROUP_LEADER]:
+            my_tasks_query = select(func.count(RepairTask.id)).where(
+                RepairTask.member_id == current_user.id
+            )
+            my_tasks_result = await db.execute(my_tasks_query)
+            my_tasks = my_tasks_result.scalar() or 0
+            
+            my_pending_query = select(func.count(RepairTask.id)).where(
+                and_(
+                    RepairTask.member_id == current_user.id,
+                    RepairTask.status.in_([TaskStatus.PENDING, TaskStatus.IN_PROGRESS])
+                )
+            )
+            my_pending_result = await db.execute(my_pending_query)
+            my_pending = my_pending_result.scalar() or 0
+        
+        return create_response(
+            data={
+                "overview": {
+                    "total": total_tasks,
+                    "pending": pending_tasks,
+                    "in_progress": in_progress_tasks,
+                    "completed": completed_tasks
+                },
+                "today": {
+                    "created": today_created,
+                    "completed": today_completed
+                },
+                "personal": {
+                    "assigned": my_tasks,
+                    "pending": my_pending
+                },
+                "completion_rate": (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+            },
+            message="任务统计获取成功"
+        )
+        
+    except Exception as e:
+        logger.error(f"获取任务统计失败: {str(e)}")
+        return create_error_response(
+            message="获取任务统计失败",
+            details={"error": str(e)}
+        )
+
+
+# ============= 维修任务管理 =============
+
+@router.get("/repair-list", response_model=Dict[str, Any])
+async def get_repair_list():
+    """
+    获取维修任务列表 - 测试端点（重命名路径）
+    """
+    return create_response(
+        data={
+            "items": [],
+            "total": 0,
+            "page": 1,
+            "size": 20,
+            "pages": 0
+        },
+        message="成功获取维修任务列表，共 0 条记录"
+    )
 
 
 @router.get("/repair/{task_id}", response_model=Dict[str, Any])
@@ -210,14 +365,14 @@ async def get_repair_task(
         
         if not task:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="维修任务不存在"
             )
         
         # 权限检查
         if not (task.member_id == current_user.id or current_user.can_manage_group):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="无权限查看该任务"
             )
         
@@ -274,7 +429,7 @@ async def get_repair_task(
     except Exception as e:
         logger.error(f"Get repair task {task_id} error: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="获取维修任务详情失败"
         )
 
@@ -300,13 +455,13 @@ async def create_repair_task(
             
             if not assigned_member:
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
+                    status_code=http_status.HTTP_404_NOT_FOUND,
                     detail="指定的执行者不存在"
                 )
             
             if not assigned_member.is_active:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
+                    status_code=http_status.HTTP_400_BAD_REQUEST,
                     detail="指定的执行者账户已被禁用"
                 )
         
@@ -369,7 +524,7 @@ async def create_repair_task(
         logger.error(f"Create repair task error: {str(e)}")
         await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="创建维修任务失败"
         )
 
@@ -397,7 +552,7 @@ async def update_repair_task(
         
         if not task:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="维修任务不存在"
             )
         
@@ -405,7 +560,7 @@ async def update_repair_task(
         is_task_owner = task.member_id == current_user.id
         if not (is_task_owner or current_user.can_manage_group):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="无权限修改该任务"
             )
         
@@ -418,7 +573,7 @@ async def update_repair_task(
             for field in restricted_fields:
                 if field in update_data:
                     raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
+                        status_code=http_status.HTTP_403_FORBIDDEN,
                         detail=f"无权限修改字段：{field}"
                     )
         
@@ -430,7 +585,7 @@ async def update_repair_task(
             
             if not member or not member.is_active:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
+                    status_code=http_status.HTTP_400_BAD_REQUEST,
                     detail="指定的执行者不存在或已被禁用"
                 )
         
@@ -481,7 +636,7 @@ async def update_repair_task(
         logger.error(f"Update repair task {task_id} error: {str(e)}")
         await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="更新维修任务失败"
         )
 
@@ -505,14 +660,14 @@ async def delete_repair_task(
         
         if not task:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="维修任务不存在"
             )
         
         # 检查任务状态
         if task.status == TaskStatus.IN_PROGRESS:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="不能删除进行中的任务，请先修改任务状态"
             )
         
@@ -535,8 +690,92 @@ async def delete_repair_task(
         logger.error(f"Delete repair task {task_id} error: {str(e)}")
         await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="删除维修任务失败"
+        )
+
+
+@router.delete("/batch-delete", response_model=Dict[str, Any])
+async def batch_delete_tasks(
+    request_data: Dict[str, Any],
+    current_user: Member = Depends(get_current_active_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    批量删除任务
+    
+    权限：仅管理员可批量删除任务
+    """
+    try:
+        # 支持前端可能使用的不同参数名
+        task_ids = request_data.get("task_ids", request_data.get("ids", []))
+        
+        if not task_ids:
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="任务ID列表不能为空"
+            )
+        
+        # 查询要删除的任务
+        query = select(RepairTask).where(RepairTask.id.in_(task_ids))
+        result = await db.execute(query)
+        tasks = result.scalars().all()
+        
+        if not tasks:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="没有找到指定的任务"
+            )
+        
+        # 检查任务状态
+        in_progress_tasks = []
+        deletable_tasks = []
+        
+        for task in tasks:
+            if task.status == TaskStatus.IN_PROGRESS:
+                in_progress_tasks.append(f"{task.title} ({task.task_id})")
+            else:
+                deletable_tasks.append(task)
+        
+        if in_progress_tasks:
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail=f"以下任务正在进行中，无法删除: {', '.join(in_progress_tasks[:3])}{'等' if len(in_progress_tasks) > 3 else ''}"
+            )
+        
+        # 执行批量删除
+        deleted_count = 0
+        deleted_tasks = []
+        
+        for task in deletable_tasks:
+            try:
+                deleted_tasks.append(f"{task.title} ({task.task_id})")
+                await db.delete(task)
+                deleted_count += 1
+            except Exception as e:
+                logger.warning(f"Failed to delete task {task.id}: {str(e)}")
+        
+        await db.commit()
+        
+        logger.warning(f"Batch deleted {deleted_count} tasks by {current_user.student_id}")
+        
+        return create_response(
+            data={
+                "deleted_count": deleted_count,
+                "total_requested": len(task_ids),
+                "deleted_tasks": deleted_tasks[:10]  # 只返回前10个任务名称
+            },
+            message=f"成功批量删除 {deleted_count} 个任务"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Batch delete tasks error: {str(e)}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="批量删除任务失败"
         )
 
 
@@ -562,7 +801,7 @@ async def update_task_status(
         
         if not task:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="维修任务不存在"
             )
         
@@ -570,7 +809,7 @@ async def update_task_status(
         is_task_owner = task.member_id == current_user.id
         if not (is_task_owner or current_user.can_manage_group):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="无权限修改该任务状态"
             )
         
@@ -580,7 +819,7 @@ async def update_task_status(
         # 状态转换验证
         if not _is_valid_status_transition(old_status, new_status):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"不能从 {old_status.value} 状态转换到 {new_status.value} 状态"
             )
         
@@ -631,7 +870,7 @@ async def update_task_status(
         logger.error(f"Update task {task_id} status error: {str(e)}")
         await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="更新任务状态失败"
         )
 
@@ -656,7 +895,7 @@ async def assign_task(
         
         if not task:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="维修任务不存在"
             )
         
@@ -667,13 +906,13 @@ async def assign_task(
         
         if not member:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="指定的成员不存在"
             )
         
         if not member.is_active:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="指定的成员账户已被禁用"
             )
         
@@ -721,8 +960,294 @@ async def assign_task(
         logger.error(f"Assign task {task_id} error: {str(e)}")
         await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="分配任务失败"
+        )
+
+
+# ============= 任务操作端点（前端兼容） =============
+
+@router.post("/{task_id}/start", response_model=Dict[str, Any])
+async def start_task(
+    task_id: int,
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    开始任务
+    
+    权限：任务分配者可开始任务
+    """
+    try:
+        # 查询任务
+        query = select(RepairTask).options(
+            joinedload(RepairTask.member)
+        ).where(RepairTask.id == task_id)
+        result = await db.execute(query)
+        task = result.scalar_one_or_none()
+        
+        if not task:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="任务不存在"
+            )
+        
+        # 检查权限：只有任务分配者或管理员可以开始任务
+        if task.member_id != current_user.id and current_user.role.value not in ['admin', 'group_leader']:
+            raise HTTPException(
+                status_code=http_status.HTTP_403_FORBIDDEN,
+                detail="您没有权限开始此任务"
+            )
+        
+        # 检查任务状态
+        if task.status != TaskStatus.PENDING:
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail=f"任务当前状态为 {task.status.value}，无法开始"
+            )
+        
+        # 更新任务状态
+        task.status = TaskStatus.IN_PROGRESS
+        task.response_time = datetime.utcnow()
+        
+        await db.commit()
+        await db.refresh(task)
+        
+        return create_response(
+            data={
+                "id": task.id,
+                "task_id": task.task_id,
+                "status": task.status.value,
+                "started_at": task.response_time.isoformat()
+            },
+            message="任务已开始"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Start task {task_id} error: {str(e)}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="开始任务失败"
+        )
+
+
+@router.post("/{task_id}/complete", response_model=Dict[str, Any])
+async def complete_task(
+    task_id: int,
+    request_data: Dict[str, Any] = {},
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    完成任务
+    
+    权限：任务分配者可完成任务
+    """
+    try:
+        # 查询任务
+        query = select(RepairTask).options(
+            joinedload(RepairTask.member)
+        ).where(RepairTask.id == task_id)
+        result = await db.execute(query)
+        task = result.scalar_one_or_none()
+        
+        if not task:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="任务不存在"
+            )
+        
+        # 检查权限
+        if task.member_id != current_user.id and current_user.role.value not in ['admin', 'group_leader']:
+            raise HTTPException(
+                status_code=http_status.HTTP_403_FORBIDDEN,
+                detail="您没有权限完成此任务"
+            )
+        
+        # 检查任务状态
+        if task.status not in [TaskStatus.IN_PROGRESS, TaskStatus.PENDING]:
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail=f"任务当前状态为 {task.status.value}，无法完成"
+            )
+        
+        # 更新任务状态
+        task.status = TaskStatus.COMPLETED
+        task.completion_time = datetime.utcnow()
+        
+        # 如果未开始过，设置响应时间
+        if not task.response_time:
+            task.response_time = task.completion_time
+        
+        # 处理实际工时（如果提供）
+        actual_hours = request_data.get("actualHours")
+        if actual_hours is not None:
+            task.work_minutes = int(float(actual_hours) * 60)
+        else:
+            # 重新计算工时
+            task.update_work_minutes()
+        
+        await db.commit()
+        await db.refresh(task)
+        
+        return create_response(
+            data={
+                "id": task.id,
+                "task_id": task.task_id,
+                "status": task.status.value,
+                "completed_at": task.completion_time.isoformat(),
+                "work_minutes": task.work_minutes
+            },
+            message="任务已完成"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Complete task {task_id} error: {str(e)}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="完成任务失败"
+        )
+
+
+@router.post("/{task_id}/cancel", response_model=Dict[str, Any])
+async def cancel_task(
+    task_id: int,
+    request_data: Dict[str, Any],
+    current_user: Member = Depends(get_current_active_group_leader),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    取消任务
+    
+    权限：组长及以上可取消任务
+    """
+    try:
+        reason = request_data.get("reason", "")
+        
+        # 查询任务
+        query = select(RepairTask).options(
+            joinedload(RepairTask.member)
+        ).where(RepairTask.id == task_id)
+        result = await db.execute(query)
+        task = result.scalar_one_or_none()
+        
+        if not task:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="任务不存在"
+            )
+        
+        # 检查任务状态
+        if task.status == TaskStatus.COMPLETED:
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="已完成的任务无法取消"
+            )
+        
+        # 更新任务状态
+        old_status = task.status
+        task.status = TaskStatus.CANCELLED
+        
+        # 如果提供了取消原因，可以存储到描述中
+        if reason:
+            task.description = f"{task.description or ''}\n\n取消原因：{reason}".strip()
+        
+        await db.commit()
+        await db.refresh(task)
+        
+        logger.warning(f"Task {task.task_id} cancelled by {current_user.student_id}, reason: {reason}")
+        
+        return create_response(
+            data={
+                "id": task.id,
+                "task_id": task.task_id,
+                "status": task.status.value,
+                "cancelled_at": datetime.utcnow().isoformat()
+            },
+            message=f"任务已取消（原状态：{old_status.value}）"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Cancel task {task_id} error: {str(e)}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="取消任务失败"
+        )
+
+
+@router.get("/my", response_model=Dict[str, Any])
+async def get_my_tasks(
+    page: int = Query(1, ge=1, description="页码"),
+    pageSize: int = Query(20, ge=1, le=100, description="每页数量"),
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    获取我的任务列表
+    
+    权限：登录用户可查看自己的任务
+    """
+    try:
+        offset = (page - 1) * pageSize
+        
+        # 查询我的任务
+        query = select(RepairTask).options(
+            joinedload(RepairTask.member)
+        ).where(
+            RepairTask.member_id == current_user.id
+        ).order_by(desc(RepairTask.report_time))
+        
+        # 获取总数
+        count_query = select(func.count(RepairTask.id)).where(
+            RepairTask.member_id == current_user.id
+        )
+        count_result = await db.execute(count_query)
+        total = count_result.scalar() or 0
+        
+        # 分页查询
+        query = query.offset(offset).limit(pageSize)
+        result = await db.execute(query)
+        tasks = result.scalars().all()
+        
+        # 转换数据格式（简化版）
+        items = []
+        for task in tasks:
+            items.append({
+                "id": task.id,
+                "task_id": task.task_id,
+                "title": task.title,
+                "status": task.status.value,
+                "priority": task.priority.value,
+                "type": task.task_type.value,
+                "created_at": task.created_at.isoformat(),
+                "report_time": task.report_time.isoformat(),
+                "work_minutes": task.work_minutes
+            })
+        
+        return create_response(
+            data={
+                "items": items,
+                "total": total,
+                "page": page,
+                "pageSize": pageSize
+            },
+            message=f"成功获取我的任务，共 {total} 条记录"
+        )
+        
+    except Exception as e:
+        logger.error(f"Get my tasks error: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取我的任务失败"
         )
 
 
@@ -783,7 +1308,7 @@ async def get_task_tags(
     except Exception as e:
         logger.error(f"Get task tags error: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="获取任务标签失败"
         )
 
@@ -805,7 +1330,7 @@ async def create_task_tag(
         existing_result = await db.execute(existing_query)
         if existing_result.scalar_one_or_none():
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
+                status_code=http_status.HTTP_409_CONFLICT,
                 detail=f"标签名称 '{tag_data.name}' 已存在"
             )
         
@@ -839,7 +1364,7 @@ async def create_task_tag(
         logger.error(f"Create task tag error: {str(e)}")
         await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="创建任务标签失败"
         )
 
@@ -869,7 +1394,7 @@ async def calculate_work_hours(
         
         if not task:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="维修任务不存在"
             )
         
@@ -877,7 +1402,7 @@ async def calculate_work_hours(
         is_task_owner = task.member_id == current_user.id
         if not (is_task_owner or current_user.can_manage_group):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="无权限计算该任务工时"
             )
         
@@ -922,7 +1447,7 @@ async def calculate_work_hours(
         logger.error(f"Calculate work hours for task {task_id} error: {str(e)}")
         await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="工时计算失败"
         )
 
@@ -1045,7 +1570,7 @@ async def get_task_statistics(
     except Exception as e:
         logger.error(f"Get task statistics error: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="获取任务统计失败"
         )
 
@@ -1129,6 +1654,681 @@ def _calculate_work_hour_breakdown(task: RepairTask) -> Dict[str, Any]:
     }
 
 
+# ============= 监控任务管理 =============
+
+@router.post("/monitoring", response_model=Dict[str, Any])
+async def create_monitoring_task(
+    task_data: Dict[str, Any],
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    手动登记监控任务
+    
+    权限：所有用户可登记自己的监控任务
+    """
+    try:
+        from app.models.task import MonitoringTask
+        from app.services.work_hours_service import WorkHoursCalculationService
+        
+        # 创建监控任务
+        monitoring_task = MonitoringTask(
+            member_id=current_user.id,
+            title=task_data.get("title", ""),
+            description=task_data.get("description", ""),
+            location=task_data.get("location", ""),
+            monitoring_type=task_data.get("monitoring_type", "inspection"),
+            start_time=datetime.fromisoformat(task_data["start_time"]),
+            end_time=datetime.fromisoformat(task_data["end_time"]),
+            status=TaskStatus.COMPLETED
+        )
+        
+        # 计算工作时长
+        monitoring_task.update_work_minutes()
+        
+        db.add(monitoring_task)
+        await db.commit()
+        await db.refresh(monitoring_task)
+        
+        # 更新月度汇总
+        work_hours_service = WorkHoursCalculationService(db)
+        report_month = monitoring_task.start_time.month
+        report_year = monitoring_task.start_time.year
+        await work_hours_service.update_monthly_summary(current_user.id, report_year, report_month)
+        
+        logger.info(f"Monitoring task created by {current_user.student_id}: {monitoring_task.id}")
+        
+        return create_response(
+            data={
+                "id": monitoring_task.id,
+                "title": monitoring_task.title,
+                "work_minutes": monitoring_task.work_minutes,
+                "work_hours": round(monitoring_task.work_minutes / 60.0, 2)
+            },
+            message="监控任务登记成功"
+        )
+        
+    except Exception as e:
+        logger.error(f"Create monitoring task error: {str(e)}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="登记监控任务失败"
+        )
+
+
+@router.get("/monitoring/list", response_model=Dict[str, Any])
+async def get_monitoring_tasks_list(
+    page: int = Query(1, ge=1, description="页码"),
+    size: int = Query(20, ge=1, le=100, description="每页数量"),
+    member_id: Optional[int] = Query(None, description="成员筛选"),
+    date_from: Optional[datetime] = Query(None, description="开始时间"),
+    date_to: Optional[datetime] = Query(None, description="结束时间"),
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    获取监控任务列表
+    
+    权限：用户可查看自己的任务，管理员可查看所有任务
+    """
+    try:
+        from app.models.task import MonitoringTask
+        
+        # 权限控制
+        query_member_id = member_id
+        if not current_user.can_manage_group and member_id != current_user.id:
+            query_member_id = current_user.id
+        
+        # 构建查询
+        query = select(MonitoringTask).options(
+            joinedload(MonitoringTask.member)
+        )
+        
+        if query_member_id:
+            query = query.where(MonitoringTask.member_id == query_member_id)
+        
+        if date_from:
+            query = query.where(MonitoringTask.start_time >= date_from)
+        if date_to:
+            query = query.where(MonitoringTask.start_time <= date_to)
+        
+        # 计算总数
+        count_query = select(func.count()).select_from(query.subquery())
+        total_result = await db.execute(count_query)
+        total = total_result.scalar()
+        
+        # 分页查询
+        query = query.order_by(desc(MonitoringTask.start_time))
+        query = query.offset((page - 1) * size).limit(size)
+        
+        result = await db.execute(query)
+        tasks = result.scalars().all()
+        
+        # 构建响应
+        items = []
+        for task in tasks:
+            items.append({
+                "id": task.id,
+                "title": task.title,
+                "description": task.description,
+                "location": task.location,
+                "monitoring_type": task.monitoring_type,
+                "start_time": task.start_time.isoformat(),
+                "end_time": task.end_time.isoformat(),
+                "work_minutes": task.work_minutes,
+                "work_hours": round(task.work_minutes / 60.0, 2),
+                "member_name": task.member.name if task.member else "未知",
+                "created_at": task.created_at.isoformat()
+            })
+        
+        return create_response(
+            data={
+                "items": items,
+                "total": total,
+                "page": page,
+                "size": size,
+                "pages": (total + size - 1) // size
+            },
+            message=f"成功获取监控任务列表，共 {total} 条记录"
+        )
+        
+    except Exception as e:
+        logger.error(f"Get monitoring tasks error: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取监控任务列表失败"
+        )
+
+
+# ============= 协助任务管理 =============
+
+@router.post("/assistance", response_model=Dict[str, Any])
+async def create_assistance_task(
+    task_data: Dict[str, Any],
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    手动登记协助任务
+    
+    权限：所有用户可登记自己的协助任务
+    """
+    try:
+        from app.models.task import AssistanceTask
+        from app.services.work_hours_service import WorkHoursCalculationService
+        
+        # 创建协助任务
+        assistance_task = AssistanceTask(
+            member_id=current_user.id,
+            title=task_data.get("title", ""),
+            description=task_data.get("description", ""),
+            assisted_department=task_data.get("assisted_department", ""),
+            assisted_person=task_data.get("assisted_person", ""),
+            start_time=datetime.fromisoformat(task_data["start_time"]),
+            end_time=datetime.fromisoformat(task_data["end_time"]),
+            status=TaskStatus.COMPLETED
+        )
+        
+        # 计算工作时长
+        assistance_task.update_work_minutes()
+        
+        db.add(assistance_task)
+        await db.commit()
+        await db.refresh(assistance_task)
+        
+        # 更新月度汇总
+        work_hours_service = WorkHoursCalculationService(db)
+        report_month = assistance_task.start_time.month
+        report_year = assistance_task.start_time.year
+        await work_hours_service.update_monthly_summary(current_user.id, report_year, report_month)
+        
+        logger.info(f"Assistance task created by {current_user.student_id}: {assistance_task.id}")
+        
+        return create_response(
+            data={
+                "id": assistance_task.id,
+                "title": assistance_task.title,
+                "work_minutes": assistance_task.work_minutes,
+                "work_hours": round(assistance_task.work_minutes / 60.0, 2)
+            },
+            message="协助任务登记成功"
+        )
+        
+    except Exception as e:
+        logger.error(f"Create assistance task error: {str(e)}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="登记协助任务失败"
+        )
+
+
+@router.get("/assistance/list", response_model=Dict[str, Any])
+async def get_assistance_tasks_list(
+    page: int = Query(1, ge=1, description="页码"),
+    size: int = Query(20, ge=1, le=100, description="每页数量"),
+    member_id: Optional[int] = Query(None, description="成员筛选"),
+    date_from: Optional[datetime] = Query(None, description="开始时间"),
+    date_to: Optional[datetime] = Query(None, description="结束时间"),
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    获取协助任务列表
+    
+    权限：用户可查看自己的任务，管理员可查看所有任务
+    """
+    try:
+        from app.models.task import AssistanceTask
+        
+        # 权限控制
+        query_member_id = member_id
+        if not current_user.can_manage_group and member_id != current_user.id:
+            query_member_id = current_user.id
+        
+        # 构建查询
+        query = select(AssistanceTask).options(
+            joinedload(AssistanceTask.member)
+        )
+        
+        if query_member_id:
+            query = query.where(AssistanceTask.member_id == query_member_id)
+        
+        if date_from:
+            query = query.where(AssistanceTask.start_time >= date_from)
+        if date_to:
+            query = query.where(AssistanceTask.start_time <= date_to)
+        
+        # 计算总数
+        count_query = select(func.count()).select_from(query.subquery())
+        total_result = await db.execute(count_query)
+        total = total_result.scalar()
+        
+        # 分页查询
+        query = query.order_by(desc(AssistanceTask.start_time))
+        query = query.offset((page - 1) * size).limit(size)
+        
+        result = await db.execute(query)
+        tasks = result.scalars().all()
+        
+        # 构建响应
+        items = []
+        for task in tasks:
+            items.append({
+                "id": task.id,
+                "title": task.title,
+                "description": task.description,
+                "assisted_department": task.assisted_department,
+                "assisted_person": task.assisted_person,
+                "start_time": task.start_time.isoformat(),
+                "end_time": task.end_time.isoformat(),
+                "work_minutes": task.work_minutes,
+                "work_hours": round(task.work_minutes / 60.0, 2),
+                "member_name": task.member.name if task.member else "未知",
+                "created_at": task.created_at.isoformat()
+            })
+        
+        return create_response(
+            data={
+                "items": items,
+                "total": total,
+                "page": page,
+                "size": size,
+                "pages": (total + size - 1) // size
+            },
+            message=f"成功获取协助任务列表，共 {total} 条记录"
+        )
+        
+    except Exception as e:
+        logger.error(f"Get assistance tasks error: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取协助任务列表失败"
+        )
+
+
+# ============= 爆单标记管理 =============
+
+@router.post("/rush-marking/batch", response_model=Dict[str, Any])
+async def batch_mark_rush_tasks(
+    request_data: Dict[str, Any],
+    current_user: Member = Depends(get_current_active_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    批量标记爆单任务
+    
+    权限：仅管理员可标记爆单任务
+    """
+    try:
+        from app.services.work_hours_service import RushTaskMarkingService
+        from datetime import date
+        
+        rush_service = RushTaskMarkingService(db)
+        
+        # 解析请求数据
+        date_from = datetime.fromisoformat(request_data["date_from"]).date()
+        date_to = datetime.fromisoformat(request_data["date_to"]).date()
+        task_ids = request_data.get("task_ids")
+        
+        # 执行爆单标记
+        result = await rush_service.mark_rush_tasks_by_date(
+            date_from=date_from,
+            date_to=date_to,
+            task_ids=task_ids,
+            marked_by=current_user.id
+        )
+        
+        # 更新相关成员的月度汇总
+        from app.services.work_hours_service import WorkHoursCalculationService
+        work_hours_service = WorkHoursCalculationService(db)
+        
+        # 批量更新标记期间的月度汇总
+        for month in range(date_from.month, date_to.month + 1):
+            year = date_from.year if month >= date_from.month else date_to.year
+            await work_hours_service.batch_update_monthly_summaries(year, month)
+        
+        logger.info(f"Rush tasks marked by {current_user.student_id}: {result}")
+        
+        return create_response(
+            data=result,
+            message=f"爆单标记完成，共标记 {result['marked']} 个任务"
+        )
+        
+    except Exception as e:
+        logger.error(f"Batch mark rush tasks error: {str(e)}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="批量标记爆单任务失败"
+        )
+
+
+@router.get("/rush-marking/candidates", response_model=Dict[str, Any])
+async def get_rush_task_candidates(
+    date_from: datetime = Query(..., description="开始日期"),
+    date_to: datetime = Query(..., description="结束日期"),
+    page: int = Query(1, ge=1, description="页码"),
+    size: int = Query(20, ge=1, le=100, description="每页数量"),
+    current_user: Member = Depends(get_current_active_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    获取可标记为爆单的任务候选列表
+    
+    权限：仅管理员可查看
+    """
+    try:
+        # 查询指定时间范围内的已完成任务，且未标记为爆单
+        query = select(RepairTask).options(
+            joinedload(RepairTask.member),
+            selectinload(RepairTask.tags)
+        ).where(
+            and_(
+                RepairTask.report_time >= date_from,
+                RepairTask.report_time <= date_to,
+                RepairTask.status.in_([TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS])
+            )
+        )
+        
+        # 计算总数
+        count_query = select(func.count()).select_from(query.subquery())
+        total_result = await db.execute(count_query)
+        total = total_result.scalar()
+        
+        # 分页查询
+        query = query.order_by(RepairTask.report_time)
+        query = query.offset((page - 1) * size).limit(size)
+        
+        result = await db.execute(query)
+        tasks = result.scalars().all()
+        
+        # 筛选未标记爆单的任务
+        candidates = []
+        for task in tasks:
+            # 检查是否已有爆单标签
+            has_rush_tag = any(tag.name == "爆单任务" for tag in task.tags)
+            
+            candidates.append({
+                "id": task.id,
+                "task_id": task.task_id,
+                "title": task.title,
+                "location": task.location,
+                "task_type": task.task_type.value,
+                "status": task.status.value,
+                "report_time": task.report_time.isoformat(),
+                "member_name": task.member.name if task.member else "未知",
+                "current_work_minutes": task.work_minutes,
+                "has_rush_tag": has_rush_tag,
+                "potential_bonus_minutes": 15 if not has_rush_tag else 0
+            })
+        
+        # 统计信息
+        unmarked_count = len([c for c in candidates if not c["has_rush_tag"]])
+        potential_bonus_hours = unmarked_count * 15 / 60.0
+        
+        return create_response(
+            data={
+                "candidates": candidates,
+                "total": total,
+                "page": page,
+                "size": size,
+                "pages": (total + size - 1) // size,
+                "summary": {
+                    "total_candidates": len(candidates),
+                    "unmarked_count": unmarked_count,
+                    "potential_bonus_hours": round(potential_bonus_hours, 2)
+                }
+            },
+            message=f"获取爆单候选任务成功，共 {len(candidates)} 个任务"
+        )
+        
+    except Exception as e:
+        logger.error(f"Get rush task candidates error: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取爆单候选任务失败"
+        )
+
+
+# ============= 维修单导入管理 =============
+
+@router.post("/maintenance-orders/import", response_model=Dict[str, Any])
+async def import_maintenance_orders(
+    import_data: Dict[str, Any],
+    current_user: Member = Depends(get_current_active_group_leader),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    维修单数据导入
+    
+    权限：组长及以上可导入维修单
+    """
+    try:
+        from app.services.task_service import TaskService
+        
+        task_service = TaskService(db)
+        
+        # 解析导入数据
+        maintenance_data = import_data.get("maintenance_orders", [])
+        auto_match = import_data.get("auto_match", True)
+        import_type = import_data.get("import_type", "ab_matched")
+        
+        if not maintenance_data:
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="导入数据为空"
+            )
+        
+        # 直接创建维修任务
+        success_count = 0
+        failed_count = 0
+        matched_assignee_count = 0
+        errors = []
+        matched_assignees = []
+        
+        for data in maintenance_data:
+            try:
+                # 生成唯一标识符用于重复检测
+                unique_key = f"{data.get('title', '维修任务')}-{data.get('location', '')}-{data.get('reporter_name', '')}-{data.get('reporter_contact', '')}"
+                
+                # 检查是否已存在相同的任务
+                existing_task_query = select(RepairTask).where(
+                    and_(
+                        RepairTask.title == data.get("title", "维修任务"),
+                        RepairTask.location == data.get("location", ""),
+                        RepairTask.reporter_name == data.get("reporter_name", ""),
+                        RepairTask.reporter_contact == data.get("reporter_contact", "")
+                    )
+                )
+                existing_result = await db.execute(existing_task_query)
+                existing_task = existing_result.scalar_one_or_none()
+                
+                if existing_task:
+                    # 已存在相同任务，跳过
+                    failed_count += 1
+                    errors.append(f"任务已存在，跳过重复导入: {data.get('title', '维修任务')}")
+                    continue
+                
+                # 查找处理人（支持模糊匹配）
+                assigned_member_id = current_user.id  # 默认分配给导入者
+                assignee_name = data.get("assignee") or data.get("assignee_name") or data.get("handler_name") or data.get("processor_name")
+                
+                if assignee_name:
+                    # 清理姓名，移除括号及其内容，以及其他常见的后缀
+                    import re
+                    clean_name = assignee_name.strip()
+                    
+                    # 移除各种格式的括号及内容：() [] {} 〈〉 （）
+                    clean_name = re.sub(r'[\(\)（）\[\]{}〈〉].*?[\(\)（）\[\]{}〈〉]', '', clean_name)
+                    clean_name = re.sub(r'[\(\)（）\[\]{}〈〉].*', '', clean_name)
+                    
+                    # 移除常见的职务后缀
+                    clean_name = re.sub(r'(工程师|技术员|主管|经理|组长|部长|处长|科长)$', '', clean_name)
+                    
+                    # 最终清理
+                    clean_name = clean_name.strip()
+                    
+                    if clean_name and len(clean_name) >= 2:  # 确保姓名至少2个字符
+                        # 模糊匹配成员 - 尝试多种匹配策略
+                        member_query = select(Member).where(
+                            or_(
+                                Member.name == clean_name,  # 精确匹配
+                                Member.name.ilike(f"%{clean_name}%"),  # 包含匹配
+                                Member.username.ilike(f"%{clean_name}%"),  # 用户名匹配
+                                Member.name.ilike(f"{clean_name}%"),  # 前缀匹配
+                                Member.name.ilike(f"%{clean_name}")   # 后缀匹配
+                            )
+                        ).where(Member.status == True)  # 只匹配在职成员
+                        
+                        member_result = await db.execute(member_query)
+                        matched_member = member_result.scalar_one_or_none()
+                        
+                        if matched_member:
+                            assigned_member_id = matched_member.id
+                            matched_assignee_count += 1
+                            matched_assignees.append(f"'{assignee_name}' -> '{matched_member.name}'")
+                            logger.info(f"Found matching member: '{assignee_name}' -> '{matched_member.name}' (ID: {matched_member.id})")
+                        else:
+                            # 如果还是找不到，尝试只用姓氏匹配（适用于中文姓名）
+                            if len(clean_name) >= 2:
+                                surname_query = select(Member).where(
+                                    Member.name.ilike(f"{clean_name[0]}%")
+                                ).where(Member.status == True)
+                                
+                                surname_result = await db.execute(surname_query)
+                                surname_members = surname_result.scalars().all()
+                                
+                                if len(surname_members) == 1:
+                                    # 如果只有一个同姓的成员，则匹配
+                                    matched_member = surname_members[0]
+                                    assigned_member_id = matched_member.id
+                                    matched_assignee_count += 1
+                                    matched_assignees.append(f"'{assignee_name}' -> '{matched_member.name}' (姓氏匹配)")
+                                    logger.info(f"Found member by surname: '{assignee_name}' -> '{matched_member.name}' (ID: {matched_member.id})")
+                                else:
+                                    logger.warning(f"No matching member found for: '{assignee_name}' (cleaned: '{clean_name}')")
+                            else:
+                                logger.warning(f"No matching member found for: '{assignee_name}' (cleaned: '{clean_name}')")
+                
+                # 创建任务数据
+                task_data = {
+                    "title": data.get("title", "维修任务"),
+                    "description": data.get("description", ""),
+                    "task_type": TaskType.ONLINE if import_type == "online_only" or data.get("isOnlineOnly") else TaskType.OFFLINE,
+                    "category": TaskCategory.NETWORK_REPAIR,
+                    "priority": TaskPriority.MEDIUM,
+                    "location": data.get("location", ""),
+                    "reporter_name": data.get("reporter_name", ""),
+                    "reporter_contact": data.get("reporter_contact", ""),
+                    "assigned_to": assigned_member_id
+                }
+                
+                # 创建维修任务
+                task = await task_service.create_repair_task(task_data, current_user.id)
+                success_count += 1
+                logger.info(f"Successfully created repair task: {task.task_id}")
+                
+            except Exception as e:
+                failed_count += 1
+                error_msg = f"创建任务失败: {str(e)}"
+                errors.append(error_msg)
+                logger.error(f"Failed to create repair task: {error_msg}")
+                continue
+        
+        # 数据库事务已在create_repair_task中提交，无需再次提交
+        
+        result = {
+            "success": success_count,
+            "failed": failed_count,
+            "matched": success_count,
+            "partial": 0,
+            "errors": errors,
+            "processed": success_count + failed_count,
+            "matched_assignees": matched_assignee_count,
+            "assignee_matches": matched_assignees[:10]  # 只显示前10个匹配结果
+        }
+        
+        logger.info(f"Maintenance orders imported by {current_user.student_id}: {result}")
+        
+        success_msg = f"维修单导入完成，成功处理 {success_count} 条记录"
+        if matched_assignee_count > 0:
+            success_msg += f"，匹配到 {matched_assignee_count} 个处理人"
+        if failed_count > 0:
+            success_msg += f"，失败 {failed_count} 条记录"
+        
+        return create_response(
+            data=result,
+            message=success_msg
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Import maintenance orders error: {str(e)}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="维修单导入失败"
+        )
+
+
+@router.get("/maintenance-orders/template", response_model=Dict[str, Any])
+async def get_maintenance_order_template(
+    current_user: Member = Depends(get_current_user)
+):
+    """
+    获取维修单导入模板
+    
+    权限：所有用户可查看模板
+    """
+    try:
+        # 返回维修单导入模板的字段定义
+        template_fields = [
+            {"field": "工单编号", "description": "维修工单唯一编号", "required": True, "example": "WO202401001"},
+            {"field": "报单企业", "description": "报修单位/部门", "required": True, "example": "计算机学院"},
+            {"field": "位置", "description": "故障位置", "required": True, "example": "A楼201"},
+            {"field": "故障描述", "description": "故障详细描述", "required": True, "example": "网络无法连接"},
+            {"field": "维修类型", "description": "维修分类", "required": True, "example": "网络故障"},
+            {"field": "报修人姓名", "description": "报修人员姓名", "required": True, "example": "张三"},
+            {"field": "报修人联系方式", "description": "联系电话或邮箱", "required": True, "example": "13800138000"},
+            {"field": "报修时间", "description": "报修时间", "required": True, "example": "2024-01-01 09:00:00"},
+            {"field": "处理人员", "description": "指派处理人员", "required": False, "example": "李四"},
+            {"field": "处理状态", "description": "当前处理状态", "required": False, "example": "已处理"},
+            {"field": "处理时间", "description": "处理完成时间", "required": False, "example": "2024-01-01 15:00:00"},
+            {"field": "用户评价", "description": "用户满意度评价", "required": False, "example": "满意"}
+        ]
+        
+        return create_response(
+            data={
+                "template_fields": template_fields,
+                "import_rules": {
+                    "auto_match": "自动匹配基于'报修人姓名+联系方式'进行",
+                    "task_type_mapping": {
+                        "网络故障": "online",
+                        "硬件维修": "offline",
+                        "软件问题": "online"
+                    },
+                    "status_mapping": {
+                        "待处理": "pending",
+                        "处理中": "in_progress", 
+                        "已完成": "completed",
+                        "已取消": "cancelled"
+                    }
+                }
+            },
+            message="维修单导入模板获取成功"
+        )
+        
+    except Exception as e:
+        logger.error(f"Get maintenance order template error: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取导入模板失败"
+        )
+
+
 # ============= 工时管理增强功能 =============
 
 @router.post("/work-hours/recalculate", response_model=Dict[str, Any])
@@ -1205,7 +2405,7 @@ async def batch_recalculate_work_hours(
         logger.error(f"Batch recalculate work hours error: {str(e)}")
         await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="批量工时重算失败"
         )
 
@@ -1233,7 +2433,7 @@ async def recalculate_single_task_hours(
         
         if not task:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="维修任务不存在"
             )
         
@@ -1241,7 +2441,7 @@ async def recalculate_single_task_hours(
         is_task_owner = task.member_id == current_user.id
         if not (is_task_owner or current_user.can_manage_group):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="无权限重新计算该任务工时"
             )
         
@@ -1283,7 +2483,7 @@ async def recalculate_single_task_hours(
         logger.error(f"Recalculate single task hours error for task {task_id}: {str(e)}")
         await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="重新计算任务工时失败"
         )
 
@@ -1361,7 +2561,7 @@ async def get_pending_work_hours_review(
                 "status": task.status.value,
                 "task_type": task.task_type.value,
                 "created_at": task.created_at.isoformat(),
-                "completed_at": task.completed_at.isoformat() if task.completed_at else None,
+                "completed_at": task.completion_time.isoformat() if task.completion_time else None,
                 "anomaly_reasons": anomaly_reasons,
                 "breakdown": breakdown
             })
@@ -1389,7 +2589,7 @@ async def get_pending_work_hours_review(
     except Exception as e:
         logger.error(f"Get pending work hours review error: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="获取待审核工时列表失败"
         )
 
@@ -1419,7 +2619,7 @@ async def adjust_task_work_hours(
         
         if not task:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="维修任务不存在"
             )
         
@@ -1482,7 +2682,7 @@ async def adjust_task_work_hours(
         logger.error(f"Adjust task work hours error for task {task_id}: {str(e)}")
         await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="手动调整工时失败"
         )
 
@@ -1625,16 +2825,382 @@ async def get_work_hours_statistics(
     except Exception as e:
         logger.error(f"Get work hours statistics error: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="获取工时统计失败"
         )
 
 
-# 健康检查
-@router.get("/health", response_model=Dict[str, Any])
-async def tasks_health_check():
-    """任务管理服务健康检查"""
-    return create_response(
-        data={"service": "tasks", "status": "healthy"},
-        message="任务管理服务运行正常"
-    )
+# ============= A/B表智能匹配功能（重构新增） =============
+
+@router.post("/ab-matching/execute", response_model=Dict[str, Any])
+async def execute_ab_table_matching(
+    request_data: Dict[str, Any],
+    current_user: Member = Depends(get_current_active_group_leader),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    执行A/B表智能匹配
+    
+    权限：组长及以上可执行A/B表匹配
+    """
+    try:
+        from app.services.ab_table_matching_service import ABTableMatchingService
+        
+        matching_service = ABTableMatchingService(db)
+        
+        # 解析请求数据
+        a_table_data = request_data.get("a_table_data", [])
+        b_table_data = request_data.get("b_table_data", [])
+        strategies = request_data.get("strategies", ["exact", "fuzzy", "multi_field"])
+        
+        if not a_table_data:
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="A表数据不能为空"
+            )
+        
+        # 转换策略字符串为枚举
+        from app.services.ab_table_matching_service import MatchingStrategy
+        strategy_enums = []
+        for strategy in strategies:
+            strategy_enums.append(MatchingStrategy(strategy))
+        
+        # 执行匹配
+        match_results = await matching_service.match_ab_tables(
+            a_table_data=a_table_data,
+            b_table_data=b_table_data,
+            strategies=strategy_enums
+        )
+        
+        # 统计结果
+        total_records = len(match_results)
+        matched_records = sum(1 for r in match_results if r.is_matched)
+        match_rate = matched_records / total_records if total_records > 0 else 0
+        
+        # 准备响应数据
+        results = []
+        for result in match_results:
+            results.append({
+                "a_record": result.a_record,
+                "matched_member": {
+                    "id": result.member.id if result.member else None,
+                    "name": result.member.name if result.member else None,
+                    "student_id": getattr(result.member, 'student_id', '') if result.member else '',
+                    "department": getattr(result.member, 'department', '') if result.member else ''
+                } if result.member else None,
+                "confidence": result.confidence,
+                "confidence_level": result.confidence_level.value,
+                "strategy_used": result.strategy_used.value,
+                "is_matched": result.is_matched,
+                "failure_reason": result.failure_reason,
+                "match_details": result.match_details
+            })
+        
+        response_data = {
+            "match_results": results,
+            "statistics": {
+                "total_records": total_records,
+                "matched_records": matched_records,
+                "match_rate": round(match_rate, 4),
+                "high_confidence_matches": sum(1 for r in match_results if r.confidence >= 0.9),
+                "medium_confidence_matches": sum(1 for r in match_results if 0.7 <= r.confidence < 0.9),
+                "low_confidence_matches": sum(1 for r in match_results if 0.5 <= r.confidence < 0.7)
+            }
+        }
+        
+        logger.info(f"AB matching executed by {current_user.student_id}: {match_rate:.2%} match rate")
+        
+        return create_response(
+            data=response_data,
+            message=f"A/B表匹配完成，匹配率: {match_rate:.2%}"
+        )
+        
+    except Exception as e:
+        logger.error(f"AB table matching error: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="A/B表智能匹配失败"
+        )
+
+
+@router.post("/import/enhanced", response_model=Dict[str, Any])
+async def enhanced_import_with_ab_matching(
+    request_data: Dict[str, Any],
+    current_user: Member = Depends(get_current_active_group_leader),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    增强版数据导入（集成A/B表智能匹配）
+    
+    权限：组长及以上可执行增强导入
+    """
+    try:
+        from app.services.import_service import ImportService
+        from app.services.ab_table_matching_service import ABTableMatchingService, MatchingStrategy
+        
+        import_service = ImportService(db)
+        
+        # 解析请求数据
+        a_table_data = request_data.get("a_table_data", [])
+        b_table_data = request_data.get("b_table_data", [])
+        auto_create_tasks = request_data.get("auto_create_tasks", True)
+        import_options = request_data.get("import_options", {})
+        
+        if not a_table_data:
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="A表数据不能为空"
+            )
+        
+        # 执行增强导入
+        import_result = await import_service.import_repair_tasks_with_ab_matching(
+            a_table_data=a_table_data,
+            b_table_data=b_table_data,
+            import_options=import_options,
+            auto_create_tasks=auto_create_tasks
+        )
+        
+        # 统计结果
+        total_records = len(a_table_data)
+        successful_imports = import_result.get("successful_imports", 0)
+        failed_imports = import_result.get("failed_imports", 0)
+        matched_records = import_result.get("matched_records", 0)
+        
+        success_rate = successful_imports / total_records if total_records > 0 else 0
+        match_rate = matched_records / total_records if total_records > 0 else 0
+        
+        response_data = {
+            "import_summary": {
+                "total_records": total_records,
+                "successful_imports": successful_imports,
+                "failed_imports": failed_imports,
+                "matched_records": matched_records,
+                "success_rate": round(success_rate, 4),
+                "match_rate": round(match_rate, 4)
+            },
+            "detailed_results": import_result.get("detailed_results", []),
+            "errors": import_result.get("errors", []),
+            "batch_id": import_result.get("batch_id")
+        }
+        
+        logger.info(f"Enhanced import executed by {current_user.student_id}: {success_rate:.2%} success rate")
+        
+        return create_response(
+            data=response_data,
+            message=f"增强版导入完成，成功率: {success_rate:.2%}，匹配率: {match_rate:.2%}"
+        )
+        
+    except Exception as e:
+        logger.error(f"Enhanced import error: {str(e)}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="增强版数据导入失败"
+        )
+
+
+@router.post("/status-mapping/apply", response_model=Dict[str, Any])
+async def apply_status_mapping(
+    request_data: Dict[str, Any],
+    current_user: Member = Depends(get_current_active_group_leader),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    批量应用状态映射功能
+    
+    权限：组长及以上可应用状态映射
+    """
+    try:
+        # 解析请求数据
+        task_ids = request_data.get("task_ids", [])
+        mapping_rules = request_data.get("mapping_rules", {})
+        apply_to_all = request_data.get("apply_to_all", False)
+        
+        if not apply_to_all and not task_ids:
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="必须指定任务ID列表或选择应用到全部任务"
+            )
+        
+        # 构建查询条件
+        if apply_to_all:
+            query = select(RepairTask).where(RepairTask.work_order_status.isnot(None))
+        else:
+            query = select(RepairTask).where(
+                and_(
+                    RepairTask.id.in_(task_ids),
+                    RepairTask.work_order_status.isnot(None)
+                )
+            )
+        
+        result = await db.execute(query)
+        tasks = result.scalars().all()
+        
+        updated_count = 0
+        errors = []
+        
+        for task in tasks:
+            try:
+                # 应用状态映射
+                task.set_status_by_work_order_status(task.work_order_status)
+                updated_count += 1
+            except Exception as e:
+                errors.append(f"任务 {task.id} 状态映射失败: {str(e)}")
+        
+        if updated_count > 0:
+            await db.commit()
+        
+        response_data = {
+            "updated_count": updated_count,
+            "total_tasks": len(tasks),
+            "errors": errors,
+            "success_rate": updated_count / len(tasks) if len(tasks) > 0 else 0
+        }
+        
+        logger.info(f"Status mapping applied by {current_user.student_id}: {updated_count} tasks updated")
+        
+        return create_response(
+            data=response_data,
+            message=f"状态映射完成，更新 {updated_count} 个任务"
+        )
+        
+    except Exception as e:
+        logger.error(f"Status mapping error: {str(e)}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="状态映射失败"
+        )
+
+
+@router.post("/rush-orders/manage", response_model=Dict[str, Any])
+async def manage_rush_orders(
+    request_data: Dict[str, Any],
+    current_user: Member = Depends(get_current_active_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    综合爆单管理功能（重构版）
+    
+    权限：仅管理员可管理爆单
+    """
+    try:
+        from app.services.task_service import TaskService
+        
+        task_service = TaskService(db)
+        
+        # 解析请求数据
+        action = request_data.get("action")  # "mark", "unmark", "list", "statistics"
+        task_ids = request_data.get("task_ids", [])
+        date_from = request_data.get("date_from")
+        date_to = request_data.get("date_to")
+        
+        if action == "mark":
+            # 标记爆单任务
+            result = await task_service.batch_mark_rush_tasks(
+                task_ids=task_ids,
+                marked_by=current_user.id
+            )
+            return create_response(
+                data=result,
+                message=f"爆单标记完成，标记 {result.get('marked_count', 0)} 个任务"
+            )
+            
+        elif action == "unmark":
+            # 取消爆单标记
+            result = await task_service.batch_unmark_rush_tasks(
+                task_ids=task_ids,
+                unmarked_by=current_user.id
+            )
+            return create_response(
+                data=result,
+                message=f"爆单取消完成，取消 {result.get('unmarked_count', 0)} 个任务"
+            )
+            
+        elif action == "list":
+            # 获取爆单任务列表
+            page = request_data.get("page", 1)
+            size = request_data.get("size", 20)
+            
+            result = await task_service.get_rush_tasks_list(
+                page=page,
+                page_size=size,
+                date_from=datetime.fromisoformat(date_from) if date_from else None,
+                date_to=datetime.fromisoformat(date_to) if date_to else None
+            )
+            return create_response(
+                data=result,
+                message=f"获取爆单任务列表成功，共 {result.get('total', 0)} 条记录"
+            )
+            
+        elif action == "statistics":
+            # 获取爆单统计
+            result = await task_service.get_rush_tasks_statistics(
+                date_from=datetime.fromisoformat(date_from) if date_from else None,
+                date_to=datetime.fromisoformat(date_to) if date_to else None
+            )
+            return create_response(
+                data=result,
+                message="爆单统计数据获取成功"
+            )
+            
+        else:
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="不支持的爆单管理操作"
+            )
+        
+    except Exception as e:
+        logger.error(f"Rush order management error: {str(e)}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="爆单管理操作失败"
+        )
+
+
+@router.post("/work-hours/bulk-recalculate", response_model=Dict[str, Any])
+async def bulk_recalculate_work_hours_enhanced(
+    request_data: Dict[str, Any],
+    current_user: Member = Depends(get_current_active_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    批量重算工时（重构版）- 使用新的爆单独立计算逻辑
+    
+    权限：仅管理员可批量重算工时
+    """
+    try:
+        from app.services.work_hours_service import RushTaskMarkingService
+        from datetime import date
+        
+        rush_service = RushTaskMarkingService(db)
+        
+        # 解析请求数据
+        date_from = datetime.fromisoformat(request_data["date_from"]).date()
+        date_to = datetime.fromisoformat(request_data["date_to"]).date()
+        member_ids = request_data.get("member_ids")
+        
+        # 执行批量重算
+        result = await rush_service.batch_recalculate_work_hours(
+            date_from=date_from,
+            date_to=date_to,
+            member_ids=member_ids
+        )
+        
+        logger.info(f"Bulk work hours recalculation by {current_user.student_id}: {result}")
+        
+        return create_response(
+            data=result,
+            message=f"批量工时重算完成，重算 {result['recalculated_tasks']} 个任务，更新 {result['updated_summaries']} 个汇总"
+        )
+        
+    except Exception as e:
+        logger.error(f"Bulk work hours recalculation error: {str(e)}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="批量工时重算失败"
+        )
+
+

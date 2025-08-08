@@ -16,10 +16,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, func
 from sqlalchemy.orm import selectinload
 
-from app.models.task import RepairTask, TaskType, TaskCategory, TaskPriority, TaskStatus
+from app.models.task import RepairTask, TaskType, TaskCategory, TaskPriority, TaskStatus, TaskTag, TaskTagType
 from app.models.member import Member
 from app.core.config import settings, get_upload_path
 from app.services.task_service import TaskService
+from app.services.ab_table_matching_service import ABTableMatchingService, MatchingStrategy
 
 logger = logging.getLogger(__name__)
 
@@ -62,30 +63,60 @@ class DataImportService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.task_service = TaskService(db)
+        self.ab_matching_service = ABTableMatchingService(db)
         
-        # A表和B表的列映射配置
+        # A表和B表的列映射配置（重构扩展）
         self.column_mappings = {
-            # A表（维修任务表）可能的列名
+            # A表（维修任务表）可能的列名 - 支持完整字段导入
             "task_table": {
-                "task_id": ["任务编号", "工单编号", "task_id", "id"],
-                "title": ["标题", "问题描述", "故障描述", "title", "description"],
-                "reporter_name": ["报告人", "申请人", "报修人", "reporter", "applicant"],
-                "reporter_contact": ["联系方式", "联系电话", "手机号", "电话", "contact", "phone"],
-                "location": ["地点", "位置", "地址", "location", "address"],
-                "report_time": ["报告时间", "申请时间", "报修时间", "创建时间", "report_time", "create_time"],
-                "repair_type": ["维修类型", "故障类型", "repair_type", "type"],
-                "priority": ["优先级", "紧急程度", "priority", "urgency"],
-                "status": ["状态", "处理状态", "status"],
-                "department": ["部门", "单位", "department", "unit"]
+                "task_id": ["任务编号", "工单编号", "task_id", "id", "单号"],
+                "title": ["标题", "问题描述", "故障描述", "title", "description", "问题", "故障内容"],
+                "reporter_name": ["报告人", "申请人", "报修人", "reporter", "applicant", "联系人", "申请者"],
+                "reporter_contact": ["联系方式", "联系电话", "手机号", "电话", "contact", "phone", "联系人电话"],
+                "location": ["地点", "位置", "地址", "location", "address", "故障地点", "报修地点"],
+                "report_time": ["报告时间", "申请时间", "报修时间", "创建时间", "report_time", "create_time", "提交时间"],
+                "repair_type": ["维修类型", "故障类型", "repair_type", "type", "问题类型", "报修类型"],
+                "priority": ["优先级", "紧急程度", "priority", "urgency", "重要程度"],
+                "status": ["状态", "处理状态", "工单状态", "status", "当前状态", "进度"],
+                "department": ["部门", "单位", "department", "unit", "所属部门"],
+                # 新增字段支持
+                "repair_form": ["检修形式", "处理方式", "维修方式", "repair_form", "处理形式"],
+                "completion_time": ["完成时间", "处理完成时间", "completion_time", "完结时间"],
+                "response_time": ["响应时间", "接单时间", "response_time", "处理开始时间"],
+                "feedback": ["用户反馈", "客户评价", "feedback", "满意度", "评价内容"],
+                "rating": ["评分", "满意度评分", "rating", "星级", "评价等级"],
+                "assigned_to": ["处理人", "分配给", "assigned_to", "负责人", "处理员"]
             },
-            # B表（人员信息表）可能的列名
+            # B表（人员信息表）可能的列名 - 扩展匹配字段
             "member_table": {
-                "name": ["姓名", "报告人", "申请人", "name", "reporter"],
-                "contact": ["联系方式", "联系电话", "手机号", "电话", "contact", "phone"],
-                "email": ["邮箱", "电子邮件", "email"],
-                "department": ["部门", "单位", "department", "unit"],
-                "position": ["职位", "岗位", "position", "job_title"],
-                "employee_id": ["工号", "员工编号", "employee_id", "id"]
+                "name": ["姓名", "报告人", "申请人", "name", "reporter", "真实姓名"],
+                "contact": ["联系方式", "联系电话", "手机号", "电话", "contact", "phone", "手机"],
+                "email": ["邮箱", "电子邮件", "email", "邮件地址"],
+                "department": ["部门", "单位", "department", "unit", "所属部门"],
+                "position": ["职位", "岗位", "position", "job_title", "职务"],
+                "employee_id": ["工号", "员工编号", "employee_id", "id", "学号"],
+                "class_name": ["班级", "班组", "class", "class_name", "小组"],
+                # B表特有字段
+                "repair_form": ["检修形式", "处理方式", "维修方式", "工作形式"],
+                "skill_level": ["技能等级", "专业水平", "skill_level"],
+                "work_area": ["工作区域", "负责区域", "work_area"]
+            },
+            # 混合表（包含A和B表信息）
+            "mixed_table": {
+                # 继承A表和B表的所有字段映射
+                **{k: v for k, v in [
+                    *[("task_" + k, v) for k, v in {
+                        "task_id": ["任务编号", "工单编号", "task_id", "id", "单号"],
+                        "title": ["标题", "问题描述", "故障描述", "title", "description", "问题", "故障内容"],
+                        "status": ["状态", "处理状态", "工单状态", "status", "当前状态", "进度"],
+                        "repair_type": ["维修类型", "故障类型", "repair_type", "type", "问题类型", "报修类型"],
+                    }.items()],
+                    *[("member_" + k, v) for k, v in {
+                        "name": ["姓名", "报告人", "申请人", "name", "reporter", "真实姓名"],
+                        "contact": ["联系方式", "联系电话", "手机号", "电话", "contact", "phone", "手机"],
+                        "repair_form": ["检修形式", "处理方式", "维修方式", "工作形式"],
+                    }.items()]
+                ]}
             }
         }
     
@@ -347,69 +378,151 @@ class DataImportService:
             return datetime_str
     
     async def _match_ab_tables(self, data: List[Dict[str, Any]], table_info: Dict[str, Any]) -> Dict[str, List[Dict[str, Any]]]:
-        """A/B表匹配算法"""
-        logger.info("Starting A/B table matching...")
+        """A/B表智能匹配算法（重构版）"""
+        logger.info("Starting intelligent A/B table matching...")
+        
+        try:
+            # 使用智能匹配服务进行匹配
+            matching_strategies = [
+                MatchingStrategy.EXACT,
+                MatchingStrategy.MULTI_FIELD,
+                MatchingStrategy.FUZZY
+            ]
+            
+            match_results = await self.ab_matching_service.match_ab_tables(
+                data, None, matching_strategies
+            )
+            
+            # 转换匹配结果为标准格式
+            matched_data = []
+            unmatched_data = []
+            
+            for result in match_results:
+                if result.is_matched and result.member:
+                    # 匹配成功，创建标准化任务数据
+                    task_data = self._create_standardized_task_data(
+                        result.a_record, 
+                        result.member, 
+                        table_info
+                    )
+                    
+                    # 添加匹配信息
+                    task_data["_match_confidence"] = result.confidence
+                    task_data["_match_strategy"] = result.strategy_used.value
+                    task_data["_match_details"] = result.match_details
+                    
+                    matched_data.append(task_data)
+                else:
+                    # 匹配失败
+                    unmatched_record = {
+                        **result.a_record,
+                        "_match_reason": result.failure_reason or "匹配失败",
+                        "_match_confidence": result.confidence,
+                        "_match_details": result.match_details
+                    }
+                    unmatched_data.append(unmatched_record)
+            
+            # 统计匹配结果
+            match_stats = {
+                "total_records": len(data),
+                "matched_records": len(matched_data),
+                "unmatched_records": len(unmatched_data),
+                "match_rate": len(matched_data) / len(data) if data else 0.0,
+                "average_confidence": sum(r.confidence for r in match_results) / len(match_results) if match_results else 0.0,
+                "high_confidence_matches": sum(1 for r in match_results if r.confidence >= 0.9),
+                "medium_confidence_matches": sum(1 for r in match_results if 0.7 <= r.confidence < 0.9),
+                "low_confidence_matches": sum(1 for r in match_results if 0.5 <= r.confidence < 0.7)
+            }
+            
+            logger.info(f"Intelligent matching completed: {match_stats}")
+            
+            # 如果匹配率低于预期，记录警告
+            if match_stats["match_rate"] < 0.8:
+                logger.warning(f"低匹配率警告: {match_stats['match_rate']:.2%}，可能需要检查数据质量")
+            
+            return {
+                "matched": matched_data,
+                "unmatched": unmatched_data,
+                "match_stats": match_stats
+            }
+            
+        except Exception as e:
+            logger.error(f"Intelligent A/B table matching error: {str(e)}")
+            # 降级到简单匹配
+            return await self._fallback_simple_matching(data, table_info)
+    
+    async def _fallback_simple_matching(self, data: List[Dict[str, Any]], table_info: Dict[str, Any]) -> Dict[str, List[Dict[str, Any]]]:
+        """降级简单匹配算法"""
+        logger.info("Using fallback simple matching...")
         
         matched_data = []
         unmatched_data = []
         
-        # 获取现有成员数据用于匹配
-        member_query = select(Member).where(Member.is_active == True)
-        member_result = await self.db.execute(member_query)
-        existing_members = {
-            self._create_match_key(m.name, m.phone): m 
-            for m in member_result.scalars().all()
-            if m.name and m.phone
-        }
-        
-        logger.info(f"Found {len(existing_members)} existing members for matching")
-        
-        for row in data:
-            try:
-                # 提取姓名和联系方式
-                name = self._extract_field_value(row, "reporter_name", table_info)
-                contact = self._extract_field_value(row, "reporter_contact", table_info)
-                
-                if not name or not contact:
+        try:
+            # 获取现有成员数据用于匹配
+            member_query = select(Member).where(Member.is_active == True)
+            member_result = await self.db.execute(member_query)
+            existing_members = {
+                self._create_match_key(m.name, getattr(m, 'phone', '')): m 
+                for m in member_result.scalars().all()
+                if m.name and hasattr(m, 'phone') and m.phone
+            }
+            
+            logger.info(f"Found {len(existing_members)} existing members for fallback matching")
+            
+            for row in data:
+                try:
+                    # 提取姓名和联系方式
+                    name = self._extract_field_value(row, "reporter_name", table_info)
+                    contact = self._extract_field_value(row, "reporter_contact", table_info)
+                    
+                    if not name or not contact:
+                        unmatched_data.append({
+                            **row,
+                            "_match_reason": "缺少姓名或联系方式"
+                        })
+                        continue
+                    
+                    # 创建匹配键
+                    match_key = self._create_match_key(name, contact)
+                    
+                    # 尝试精确匹配
+                    matched_member = existing_members.get(match_key)
+                    
+                    # 如果精确匹配失败，尝试模糊匹配
+                    if not matched_member:
+                        matched_member = self._fuzzy_match_member(name, contact, existing_members)
+                    
+                    if matched_member:
+                        # 匹配成功，创建标准化的任务数据
+                        task_data = self._create_standardized_task_data(row, matched_member, table_info)
+                        matched_data.append(task_data)
+                    else:
+                        unmatched_data.append({
+                            **row,
+                            "_match_reason": f"未找到匹配的成员: {name} ({contact})"
+                        })
+                    
+                except Exception as e:
+                    logger.warning(f"Error in fallback matching row: {str(e)}")
                     unmatched_data.append({
                         **row,
-                        "_match_reason": "缺少姓名或联系方式"
+                        "_match_reason": f"匹配过程出错: {str(e)}"
                     })
-                    continue
-                
-                # 创建匹配键
-                match_key = self._create_match_key(name, contact)
-                
-                # 尝试精确匹配
-                matched_member = existing_members.get(match_key)
-                
-                # 如果精确匹配失败，尝试模糊匹配
-                if not matched_member:
-                    matched_member = self._fuzzy_match_member(name, contact, existing_members)
-                
-                if matched_member:
-                    # 匹配成功，创建标准化的任务数据
-                    task_data = self._create_standardized_task_data(row, matched_member, table_info)
-                    matched_data.append(task_data)
-                else:
-                    unmatched_data.append({
-                        **row,
-                        "_match_reason": f"未找到匹配的成员: {name} ({contact})"
-                    })
-                
-            except Exception as e:
-                logger.warning(f"Error matching row: {str(e)}")
-                unmatched_data.append({
-                    **row,
-                    "_match_reason": f"匹配过程出错: {str(e)}"
-                })
-        
-        logger.info(f"Matching completed: {len(matched_data)} matched, {len(unmatched_data)} unmatched")
-        
-        return {
-            "matched": matched_data,
-            "unmatched": unmatched_data
-        }
+            
+            logger.info(f"Fallback matching completed: {len(matched_data)} matched, {len(unmatched_data)} unmatched")
+            
+            return {
+                "matched": matched_data,
+                "unmatched": unmatched_data
+            }
+            
+        except Exception as e:
+            logger.error(f"Fallback matching error: {str(e)}")
+            return {
+                "matched": [],
+                "unmatched": data
+            }
     
     def _extract_field_value(self, row: Dict[str, Any], field_type: str, table_info: Dict[str, Any]) -> Optional[str]:
         """从行数据中提取指定字段的值"""
@@ -480,12 +593,19 @@ class DataImportService:
         return None
     
     def _create_standardized_task_data(self, row: Dict[str, Any], member: Member, table_info: Dict[str, Any]) -> Dict[str, Any]:
-        """创建标准化的任务数据"""
+        """
+        创建标准化的任务数据（重构版）
+        支持A表所有字段完整导入和B表匹配数据保存
+        """
         # 提取各个字段
         title = self._extract_field_value(row, "title", table_info) or "导入的维修任务"
         location = self._extract_field_value(row, "location", table_info)
         report_time_str = self._extract_field_value(row, "report_time", table_info)
         repair_type = self._extract_field_value(row, "repair_type", table_info)
+        
+        # 新增字段提取
+        work_order_status = self._extract_field_value(row, "status", table_info)  # A表工单状态
+        repair_form = self._extract_field_value(row, "repair_form", table_info)   # B表检修形式
         
         # 解析报告时间
         report_time = datetime.utcnow()
@@ -496,12 +616,11 @@ class DataImportService:
             except Exception:
                 pass
         
-        # 判断任务类型
-        task_type = TaskType.ONLINE
-        if repair_type:
-            offline_keywords = ["现场", "上门", "实地", "offline", "onsite"]
-            if any(keyword in repair_type.lower() for keyword in offline_keywords):
-                task_type = TaskType.OFFLINE
+        # 根据B表检修形式判断任务类型（重构逻辑）
+        task_type = self._determine_task_type_by_repair_form(repair_form, repair_type)
+        
+        # 根据A表工单状态映射任务状态（重构逻辑）
+        task_status = self._map_work_order_status_to_task_status(work_order_status)
         
         # 判断任务类别
         category = TaskCategory.NETWORK_REPAIR
@@ -509,29 +628,114 @@ class DataImportService:
             if "网络" in repair_type or "network" in repair_type.lower():
                 category = TaskCategory.NETWORK_REPAIR
             elif "设备" in repair_type or "硬件" in repair_type or "equipment" in repair_type.lower():
-                category = TaskCategory.EQUIPMENT_REPAIR
+                category = TaskCategory.HARDWARE_REPAIR
             elif "软件" in repair_type or "系统" in repair_type or "software" in repair_type.lower():
-                category = TaskCategory.SOFTWARE_REPAIR
+                category = TaskCategory.SOFTWARE_SUPPORT
+        
+        # 准备B表匹配数据
+        matched_member_data = {
+            "member_id": member.id,
+            "name": member.name,
+            "phone": getattr(member, 'phone', None),
+            "email": getattr(member, 'email', None),
+            "department": getattr(member, 'department', None),
+            "class_name": getattr(member, 'class_name', None),
+            "match_time": datetime.utcnow().isoformat(),
+            "match_method": "auto_import"
+        }
         
         return {
             "title": title,
-            "description": f"从Excel导入的任务。原始数据: {str(row)[:200]}",
+            "description": f"从Excel导入的任务。原始工单状态: {work_order_status}",
             "category": category,
             "priority": TaskPriority.MEDIUM,
             "task_type": task_type,
+            "status": task_status,
             "location": location,
             "assigned_to": member.id,
             "reporter_name": member.name,
-            "reporter_contact": member.phone,
+            "reporter_contact": getattr(member, 'phone', None),
             "report_time": report_time,
+            
+            # 重构新增字段
+            "original_data": row,  # A表原始数据完整保存
+            "matched_member_data": matched_member_data,  # B表匹配数据
+            "work_order_status": work_order_status,  # 工单状态
+            "repair_form": repair_form,  # 检修形式
+            "is_matched": True,  # 标记为已匹配
+            
+            # 兼容性字段
             "_original_data": row,
-            "_matched_member": {
-                "id": member.id,
-                "name": member.name,
-                "phone": member.phone,
-                "email": member.email
-            }
+            "_matched_member": matched_member_data
         }
+    
+    def _determine_task_type_by_repair_form(self, repair_form: str, repair_type: str = None) -> TaskType:
+        """
+        根据B表检修形式判断任务类型（重构逻辑）
+        优先使用B表检修形式，降级使用A表维修类型
+        """
+        # 优先检查B表检修形式
+        if repair_form:
+            repair_form_lower = repair_form.lower()
+            if "远程" in repair_form_lower or "线上" in repair_form_lower:
+                return TaskType.ONLINE
+            elif "现场" in repair_form_lower or "线下" in repair_form_lower or "实地" in repair_form_lower:
+                return TaskType.OFFLINE
+        
+        # 降级使用A表维修类型
+        if repair_type:
+            repair_type_lower = repair_type.lower()
+            offline_keywords = ["现场", "上门", "实地", "offline", "onsite", "线下"]
+            if any(keyword in repair_type_lower for keyword in offline_keywords):
+                return TaskType.OFFLINE
+        
+        # 默认为线上任务
+        return TaskType.ONLINE
+    
+    def _map_work_order_status_to_task_status(self, work_order_status: str) -> TaskStatus:
+        """
+        根据A表工单状态映射到系统任务状态（重构逻辑）
+        支持可配置的状态映射规则
+        """
+        if not work_order_status:
+            return TaskStatus.PENDING
+        
+        status_lower = work_order_status.lower()
+        
+        # 状态映射规则（可在配置中自定义）
+        status_mapping = {
+            # 完成状态
+            "已完成": TaskStatus.COMPLETED,
+            "完成": TaskStatus.COMPLETED,
+            "finished": TaskStatus.COMPLETED,
+            "completed": TaskStatus.COMPLETED,
+            
+            # 进行中状态
+            "进行中": TaskStatus.IN_PROGRESS,
+            "处理中": TaskStatus.IN_PROGRESS,
+            "in_progress": TaskStatus.IN_PROGRESS,
+            "processing": TaskStatus.IN_PROGRESS,
+            
+            # 待处理状态
+            "待处理": TaskStatus.PENDING,
+            "未处理": TaskStatus.PENDING,
+            "pending": TaskStatus.PENDING,
+            "new": TaskStatus.PENDING,
+            
+            # 取消状态
+            "已取消": TaskStatus.CANCELLED,
+            "取消": TaskStatus.CANCELLED,
+            "cancelled": TaskStatus.CANCELLED,
+            "canceled": TaskStatus.CANCELLED,
+        }
+        
+        # 精确匹配
+        for status_key, mapped_status in status_mapping.items():
+            if status_key in status_lower:
+                return mapped_status
+        
+        # 默认为待处理
+        return TaskStatus.PENDING
     
     def _validate_import_data(self, data: List[Dict[str, Any]]) -> Dict[str, List[str]]:
         """验证导入数据"""
@@ -604,8 +808,8 @@ class DataImportService:
                     else:
                         skipped_count += 1
                 else:
-                    # 创建新任务
-                    task = await self.task_service.create_repair_task(row, creator_id)
+                    # 创建新任务（重构版）
+                    task = await self._create_repair_task_from_import_data(row, creator_id)
                     created_count += 1
                 
             except Exception as e:
@@ -710,3 +914,166 @@ class DataImportService:
                     os.unlink(temp_file_path)
                 except Exception as e:
                     logger.warning(f"Failed to delete temp file: {str(e)}")
+    
+    async def _create_repair_task_from_import_data(self, import_data: Dict[str, Any], creator_id: int) -> RepairTask:
+        """
+        从导入数据创建维修任务（重构版）
+        支持新数据模型的完整字段设置
+        """
+        try:
+            # 生成任务编号
+            task_id = await self._generate_task_id()
+            
+            # 创建基础任务对象
+            task = RepairTask(
+                task_id=task_id,
+                title=import_data.get("title", "导入的维修任务"),
+                description=import_data.get("description"),
+                category=import_data.get("category", TaskCategory.NETWORK_REPAIR),
+                priority=import_data.get("priority", TaskPriority.MEDIUM),
+                task_type=import_data.get("task_type", TaskType.ONLINE),
+                status=import_data.get("status", TaskStatus.PENDING),
+                location=import_data.get("location"),
+                member_id=import_data.get("assigned_to"),
+                report_time=import_data.get("report_time", datetime.utcnow()),
+                response_time=import_data.get("response_time"),
+                completion_time=import_data.get("completion_time"),
+                reporter_name=import_data.get("reporter_name"),
+                reporter_contact=import_data.get("reporter_contact"),
+                feedback=import_data.get("feedback"),
+                rating=import_data.get("rating"),
+                
+                # 重构新增字段
+                original_data=import_data.get("original_data"),
+                matched_member_data=import_data.get("matched_member_data"),
+                is_rush_order=import_data.get("is_rush_order", False),
+                work_order_status=import_data.get("work_order_status"),
+                repair_form=import_data.get("repair_form"),
+                
+                # 导入跟踪字段
+                is_matched=import_data.get("is_matched", False),
+                import_batch_id=f"import_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{creator_id}"
+            )
+            
+            # 设置基础工时
+            task.base_work_minutes = task.get_base_work_minutes()
+            
+            self.db.add(task)
+            await self.db.flush()  # 获取任务ID
+            
+            # 根据导入数据添加相应标签
+            await self._add_import_tags_to_task(task, import_data)
+            
+            # 计算最终工时
+            task.update_work_minutes()
+            
+            logger.info(f"Created repair task from import: {task.task_id}")
+            return task
+            
+        except Exception as e:
+            logger.error(f"Create repair task from import data error: {str(e)}")
+            raise
+    
+    async def _add_import_tags_to_task(self, task: RepairTask, import_data: Dict[str, Any]):
+        """
+        根据导入数据为任务添加相应标签
+        """
+        try:
+            # 检查是否需要添加非默认好评标签
+            if import_data.get("rating", 0) >= 4 and import_data.get("feedback"):
+                feedback = import_data["feedback"]
+                default_keywords = ["系统默认好评", "默认", "自动好评"]
+                if not any(keyword in feedback.lower() for keyword in default_keywords):
+                    tag = await self._get_or_create_standard_tag("非默认好评")
+                    if tag and tag not in task.tags:
+                        task.tags.append(tag)
+            
+            # 检查是否需要添加差评标签
+            if import_data.get("rating", 0) <= 2:
+                tag = await self._get_or_create_standard_tag("差评")
+                if tag and tag not in task.tags:
+                    task.tags.append(tag)
+            
+            # 检查是否需要添加超时标签（基于时间差）
+            report_time = import_data.get("report_time")
+            response_time = import_data.get("response_time")
+            completion_time = import_data.get("completion_time")
+            
+            if report_time and response_time:
+                # 检查响应超时
+                if isinstance(report_time, str):
+                    from dateutil import parser
+                    report_time = parser.parse(report_time)
+                if isinstance(response_time, str):
+                    from dateutil import parser
+                    response_time = parser.parse(response_time)
+                
+                response_hours = (response_time - report_time).total_seconds() / 3600
+                if response_hours > 24:  # 超过24小时响应
+                    tag = await self._get_or_create_standard_tag("超时响应")
+                    if tag and tag not in task.tags:
+                        task.tags.append(tag)
+            
+            if response_time and completion_time:
+                # 检查处理超时
+                if isinstance(response_time, str):
+                    from dateutil import parser
+                    response_time = parser.parse(response_time)
+                if isinstance(completion_time, str):
+                    from dateutil import parser
+                    completion_time = parser.parse(completion_time)
+                
+                processing_hours = (completion_time - response_time).total_seconds() / 3600
+                if processing_hours > 48:  # 超过48小时处理
+                    tag = await self._get_or_create_standard_tag("超时处理")
+                    if tag and tag not in task.tags:
+                        task.tags.append(tag)
+            
+        except Exception as e:
+            logger.warning(f"Error adding import tags to task: {str(e)}")
+    
+    async def _get_or_create_standard_tag(self, tag_name: str) -> Optional[TaskTag]:
+        """获取或创建标准标签"""
+        try:
+            # 先查找现有标签
+            tag_query = select(TaskTag).where(TaskTag.name == tag_name)
+            tag_result = await self.db.execute(tag_query)
+            tag = tag_result.scalar_one_or_none()
+            
+            if tag:
+                return tag
+            
+            # 创建新标签（使用TaskTag的工厂方法）
+            if tag_name == "非默认好评":
+                tag = TaskTag.create_non_default_rating_tag()
+            elif tag_name == "差评":
+                tag = TaskTag.create_bad_rating_tag()
+            elif tag_name == "超时响应":
+                tag = TaskTag.create_timeout_response_tag()
+            elif tag_name == "超时处理":
+                tag = TaskTag.create_timeout_processing_tag()
+            elif tag_name == "爆单任务":
+                tag = TaskTag.create_rush_order_tag()
+            else:
+                return None
+            
+            self.db.add(tag)
+            await self.db.flush()
+            return tag
+            
+        except Exception as e:
+            logger.error(f"Error getting or creating standard tag '{tag_name}': {str(e)}")
+            return None
+    
+    async def _generate_task_id(self) -> str:
+        """生成任务编号"""
+        today = datetime.now().strftime("%Y%m%d")
+        
+        # 查询今天已有的任务数量
+        count_query = select(func.count()).where(
+            RepairTask.task_id.like(f"R{today}%")
+        )
+        count_result = await self.db.execute(count_query)
+        count = count_result.scalar()
+        
+        return f"R{today}{str(count + 1).zfill(4)}"

@@ -57,9 +57,10 @@ async def get_current_user(
     try:
         # Verify and decode token
         payload = verify_token(credentials.credentials)
-        user_id: int = payload.get("sub")
-        if user_id is None:
+        user_id_str = payload.get("sub")
+        if user_id_str is None:
             raise credentials_exception
+        user_id = int(user_id_str)  # Convert string to integer
     except Exception:
         raise credentials_exception
     
@@ -148,7 +149,9 @@ async def get_current_active_admin(
     Raises:
         HTTPException: If user is not admin or not active
     """
-    if not current_user.is_admin:
+    # 直接检查role字段而不是使用计算属性，避免潜在的greenlet问题
+    from app.models.member import UserRole
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin privileges required"

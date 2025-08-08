@@ -203,6 +203,19 @@ async def health_check():
     }
 
 
+@app.get("/api/health", tags=["Health"])
+async def api_health_check():
+    """API health check endpoint."""
+    db_healthy = await check_database_health()
+    
+    return {
+        "status": "healthy" if db_healthy else "unhealthy",
+        "api_version": "v1",
+        "database": "connected" if db_healthy else "disconnected",
+        "endpoints": "operational"
+    }
+
+
 @app.get("/", tags=["Root"])
 async def root():
     """Root endpoint."""

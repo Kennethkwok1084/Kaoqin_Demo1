@@ -1,6 +1,7 @@
-@import './variables.scss';
-@import './mixins.scss';
-@import './reset.scss';
-@import './layout.scss';
-@import './components.scss';
-@import './utilities.scss';
+@use './variables.scss' as *;
+@use './mixins.scss' as *;
+@use './reset.scss';
+@use './layout.scss';
+@use './components.scss';
+@use './utilities.scss';
+@use './responsive.scss';

@@ -1,0 +1,16 @@
+{
+  "name": "考勤管理系统",
+  "short_name": "考勤系统",
+  "description": "大学网络维护团队考勤管理系统",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#409eff",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "32x32",
+      "type": "image/x-icon"
+    }
+  ]
+}

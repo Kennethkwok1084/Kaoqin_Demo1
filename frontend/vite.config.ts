@@ -4,16 +4,10 @@ import { resolve } from 'path'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
-import eslint from 'vite-plugin-eslint'
-
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     vue(),
-    eslint({
-      include: ['src/**/*.ts', 'src/**/*.vue', 'src/*.ts'],
-      exclude: ['node_modules']
-    }),
     AutoImport({
       resolvers: [ElementPlusResolver()],
       imports: [
@@ -54,7 +48,7 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        additionalData: '@use "@/styles/variables.scss" as *;'
+        additionalData: '@use "@/styles/variables.scss" as *; @use "@/styles/mixins.scss" as *;'
       }
     }
   },

@@ -245,7 +245,7 @@ class MonthlyAttendanceSummary(BaseModel):
     Monthly attendance summary model.
     
     Stores calculated work hours and attendance statistics for each member by month.
-    This is derived from daily attendance records and task completion data.
+    Based on new attendance rules from readme.md and agents_updated.md
     """
     
     __tablename__ = "monthly_attendance_summaries"
@@ -272,54 +272,91 @@ class MonthlyAttendanceSummary(BaseModel):
         comment="Month (1-12)"
     )
     
-    # Work hour categories (in hours, float for precision)
+    # Core work hour categories (按agents_updated.md六、工时字段定义)
     repair_task_hours = Column(
         Float,
         default=0.0,
-        comment="Hours from repair tasks"
+        comment="本月报修任务累计时长（小时）"
     )
     
-    monitoring_task_hours = Column(
+    monitoring_hours = Column(
         Float,
         default=0.0,
-        comment="Hours from monitoring tasks"
+        comment="本月监控任务累计时长（小时）"
     )
     
-    assistance_task_hours = Column(
+    assistance_hours = Column(
         Float,
         default=0.0,
-        comment="Hours from assistance tasks"
+        comment="本月协助任务累计时长（小时）"
     )
     
-    overtime_hours = Column(
+    carried_hours = Column(
         Float,
         default=0.0,
-        comment="Overtime hours"
+        comment="上月结转的剩余时长（小时）"
     )
     
-    bonus_hours = Column(
+    total_hours = Column(
         Float,
         default=0.0,
-        comment="Bonus hours (rush tasks, positive reviews)"
+        comment="实际总工时（小时）"
     )
     
+    remaining_hours = Column(
+        Float,
+        default=0.0,
+        comment="扣除后可结转至下月的剩余工时"
+    )
+    
+    # 详细分类统计（用于分析和展示）
+    online_repair_hours = Column(
+        Float,
+        default=0.0,
+        comment="线上报修任务时长（40分钟/单）"
+    )
+    
+    offline_repair_hours = Column(
+        Float,
+        default=0.0,
+        comment="线下报修任务时长（100分钟/单）"
+    )
+    
+    rush_task_hours = Column(
+        Float,
+        default=0.0,
+        comment="爆单任务额外时长（15分钟/单）"
+    )
+    
+    positive_review_hours = Column(
+        Float,
+        default=0.0,
+        comment="非默认好评额外时长（30分钟/单）"
+    )
+    
+    # 惩罚扣时统计
     penalty_hours = Column(
         Float,
         default=0.0,
-        comment="Penalty hours (late response, negative reviews)"
+        comment="异常扣时总计（小时）"
     )
     
-    # Calculated totals
-    total_work_hours = Column(
+    late_response_penalty_hours = Column(
         Float,
         default=0.0,
-        comment="Total calculated work hours"
+        comment="超时响应扣时（30分钟/单/人）"
     )
     
-    total_attendance_hours = Column(
+    late_completion_penalty_hours = Column(
         Float,
         default=0.0,
-        comment="Total hours from attendance records"
+        comment="超时处理扣时（30分钟/人）"
+    )
+    
+    negative_review_penalty_hours = Column(
+        Float,
+        default=0.0,  
+        comment="差评扣时（60分钟/单/人）"
     )
     
     # Attendance statistics

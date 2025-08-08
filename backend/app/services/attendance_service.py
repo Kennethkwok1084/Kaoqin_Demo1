@@ -12,12 +12,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, func, desc, extract
 from sqlalchemy.orm import selectinload, joinedload
 
-from app.models.attendance import AttendanceRecord, AttendanceException, AttendanceExceptionStatus
+from app.models.attendance import AttendanceRecord, AttendanceException, AttendanceExceptionStatus, MonthlyAttendanceSummary
 from app.models.member import Member
 from app.schemas.attendance import (
     AttendanceRecordCreate, AttendanceSummaryResponse, 
     AttendanceStatisticsResponse, AttendanceExceptionResponse
 )
+from app.services.work_hours_service import WorkHoursCalculationService
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,7 @@ class AttendanceService:
     
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.work_hours_service = WorkHoursCalculationService(db)
         
         # 考勤配置
         self.work_start_time = time(9, 0)  # 上班时间 09:00
@@ -263,7 +265,7 @@ class AttendanceService:
         month: int
     ) -> AttendanceSummaryResponse:
         """
-        获取月度考勤汇总
+        获取月度考勤汇总（集成新的工时计算逻辑）
         
         Args:
             member_id: 员工ID
@@ -274,6 +276,11 @@ class AttendanceService:
             AttendanceSummaryResponse: 月度汇总数据
         """
         try:
+            # 获取或更新月度工时汇总
+            monthly_summary = await self.work_hours_service.update_monthly_summary(
+                member_id, year, month
+            )
+            
             # 计算月份的第一天和最后一天
             first_day = date(year, month, 1)
             last_day = date(year, month, monthrange(year, month)[1])
@@ -292,7 +299,7 @@ class AttendanceService:
             
             # 统计计算
             total_work_days = len([r for r in records if r.checkin_time])
-            total_work_hours = sum(r.work_hours or 0 for r in records)
+            total_attendance_hours = sum(r.work_hours or 0 for r in records)
             total_late_days = len([r for r in records if r.is_late_checkin])
             total_early_days = len([r for r in records if r.is_early_checkout])
             total_late_minutes = sum(r.late_checkin_minutes or 0 for r in records)
@@ -328,6 +335,7 @@ class AttendanceService:
                 exception_summary[exc_type]["count"] += 1
                 exception_summary[exc_type][exc.status.value] += 1
             
+            # 构建响应，包含新的工时分类数据
             return AttendanceSummaryResponse(
                 member_id=member_id,
                 year=year,
@@ -335,13 +343,40 @@ class AttendanceService:
                 total_work_days=total_work_days,
                 expected_work_days=expected_work_days,
                 attendance_rate=round(attendance_rate, 2),
-                total_work_hours=round(total_work_hours, 2),
-                average_work_hours=round(total_work_hours / total_work_days, 2) if total_work_days > 0 else 0,
+                
+                # 使用新的工时计算结果
+                total_work_hours=round(monthly_summary.total_hours, 2),
+                repair_task_hours=round(monthly_summary.repair_task_hours, 2),
+                monitoring_hours=round(monthly_summary.monitoring_hours, 2),
+                assistance_hours=round(monthly_summary.assistance_hours, 2),
+                carried_hours=round(monthly_summary.carried_hours, 2),
+                remaining_hours=round(monthly_summary.remaining_hours, 2),
+                
+                # 详细工时分类
+                online_repair_hours=round(monthly_summary.online_repair_hours, 2),
+                offline_repair_hours=round(monthly_summary.offline_repair_hours, 2),
+                rush_task_hours=round(monthly_summary.rush_task_hours, 2),
+                positive_review_hours=round(monthly_summary.positive_review_hours, 2),
+                
+                # 惩罚统计
+                penalty_hours=round(monthly_summary.penalty_hours, 2),
+                late_response_penalty_hours=round(monthly_summary.late_response_penalty_hours, 2),
+                late_completion_penalty_hours=round(monthly_summary.late_completion_penalty_hours, 2),
+                negative_review_penalty_hours=round(monthly_summary.negative_review_penalty_hours, 2),
+                
+                # 出勤统计
+                total_attendance_hours=round(total_attendance_hours, 2),
+                average_work_hours=round(monthly_summary.total_hours / total_work_days, 2) if total_work_days > 0 else 0,
                 total_late_days=total_late_days,
                 total_early_days=total_early_days,
                 total_late_minutes=total_late_minutes,
                 total_early_minutes=total_early_minutes,
                 exception_summary=exception_summary,
+                
+                # 满勤状态
+                is_full_attendance=monthly_summary.total_hours >= 30.0,
+                monthly_requirement=30.0,
+                
                 records=[
                     {
                         "date": r.attendance_date.isoformat(),

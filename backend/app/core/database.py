@@ -108,8 +108,9 @@ async def check_database_health() -> bool:
     Used in health check endpoints.
     """
     try:
+        from sqlalchemy import text
         async with AsyncSessionLocal() as session:
-            await session.execute("SELECT 1")
+            await session.execute(text("SELECT 1"))
             return True
     except Exception as e:
         logger.error(f"Database health check failed: {e}")

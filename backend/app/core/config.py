@@ -75,13 +75,16 @@ class Settings(BaseSettings):
     )
     
     # CORS Configuration
-    CORS_ORIGINS: List[AnyHttpUrl] = [
+    CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
+        "http://localhost:3001",
         "http://localhost:5173", 
-        "http://127.0.0.1:3000"
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+        "http://127.0.0.1:5173"
     ]
     CORS_ALLOW_CREDENTIALS: bool = True
-    CORS_ALLOW_METHODS: List[str] = ["*"]
+    CORS_ALLOW_METHODS: List[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     CORS_ALLOW_HEADERS: List[str] = ["*"]
     
     @validator("CORS_ORIGINS", pre=True)
@@ -180,7 +183,7 @@ def is_production() -> bool:
 
 def get_cors_origins() -> List[str]:
     """Get CORS origins as string list."""
-    return [str(origin) for origin in settings.CORS_ORIGINS]
+    return settings.CORS_ORIGINS
 
 
 def get_upload_path() -> str:
