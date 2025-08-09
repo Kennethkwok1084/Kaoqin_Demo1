@@ -316,6 +316,12 @@ class RepairTask(BaseModel):
         comment="Task completion time"
     )
     
+    due_date = Column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Task due date (usually equals completion_time from import data)"
+    )
+    
     # User feedback
     feedback = Column(
         Text,

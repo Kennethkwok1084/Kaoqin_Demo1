@@ -2180,7 +2180,7 @@ async def import_maintenance_orders(
                                 Member.name.ilike(f"{clean_name}%"),  # 前缀匹配
                                 Member.name.ilike(f"%{clean_name}")   # 后缀匹配
                             )
-                        ).where(Member.status == True)  # 只匹配在职成员
+                        ).where(Member.is_active == True)  # 只匹配在职成员
                         
                         member_result = await db.execute(member_query)
                         matched_member = member_result.scalar_one_or_none()
@@ -2195,7 +2195,7 @@ async def import_maintenance_orders(
                             if len(clean_name) >= 2:
                                 surname_query = select(Member).where(
                                     Member.name.ilike(f"{clean_name[0]}%")
-                                ).where(Member.status == True)
+                                ).where(Member.is_active == True)
                                 
                                 surname_result = await db.execute(surname_query)
                                 surname_members = surname_result.scalars().all()
@@ -2212,17 +2212,88 @@ async def import_maintenance_orders(
                             else:
                                 logger.warning(f"No matching member found for: '{assignee_name}' (cleaned: '{clean_name}')")
                 
+                # 处理时间字段
+                import_report_time = data.get("report_time") or data.get("report_date")
+                import_response_time = data.get("response_time") or data.get("start_time")
+                import_completion_time = data.get("completion_time") or data.get("end_time") or data.get("finish_time")
+                
+                # 解析时间字段
+                report_time = datetime.utcnow()  # 默认为当前时间
+                response_time = None
+                completion_time = None
+                
+                try:
+                    if import_report_time:
+                        from dateutil import parser
+                        if isinstance(import_report_time, str):
+                            report_time = parser.parse(import_report_time)
+                        else:
+                            report_time = import_report_time
+                except Exception:
+                    pass
+                
+                try:
+                    if import_response_time:
+                        from dateutil import parser
+                        if isinstance(import_response_time, str):
+                            response_time = parser.parse(import_response_time)
+                        else:
+                            response_time = import_response_time
+                except Exception:
+                    pass
+                
+                try:
+                    if import_completion_time:
+                        from dateutil import parser
+                        if isinstance(import_completion_time, str):
+                            completion_time = parser.parse(import_completion_time)
+                        else:
+                            completion_time = import_completion_time
+                except Exception:
+                    pass
+                
+                # 根据检修形式判断任务类型
+                repair_form = data.get("repair_form") or data.get("maintenance_type") or data.get("fix_type")
+                task_type = TaskType.ONLINE  # 默认线上
+                if repair_form:
+                    repair_form_lower = repair_form.lower()
+                    if "现场" in repair_form_lower or "线下" in repair_form_lower or "实地" in repair_form_lower:
+                        task_type = TaskType.OFFLINE
+                elif data.get("isOffline") or data.get("is_offline"):
+                    task_type = TaskType.OFFLINE
+                
+                # 根据工单状态映射任务状态
+                work_order_status = data.get("status") or data.get("work_order_status") or data.get("state")
+                task_status = TaskStatus.PENDING  # 默认待处理
+                if work_order_status:
+                    status_lower = work_order_status.lower()
+                    if "已完成" in status_lower or "完成" in status_lower or "finished" in status_lower:
+                        task_status = TaskStatus.COMPLETED
+                    elif "进行中" in status_lower or "处理中" in status_lower or "processing" in status_lower:
+                        task_status = TaskStatus.IN_PROGRESS
+                    elif "已取消" in status_lower or "取消" in status_lower or "cancelled" in status_lower:
+                        task_status = TaskStatus.CANCELLED
+
                 # 创建任务数据
                 task_data = {
                     "title": data.get("title", "维修任务"),
                     "description": data.get("description", ""),
-                    "task_type": TaskType.ONLINE if import_type == "online_only" or data.get("isOnlineOnly") else TaskType.OFFLINE,
+                    "task_type": task_type,
                     "category": TaskCategory.NETWORK_REPAIR,
                     "priority": TaskPriority.MEDIUM,
+                    "status": task_status,
                     "location": data.get("location", ""),
                     "reporter_name": data.get("reporter_name", ""),
                     "reporter_contact": data.get("reporter_contact", ""),
-                    "assigned_to": assigned_member_id
+                    "assigned_to": assigned_member_id,
+                    "report_time": report_time,
+                    "response_time": response_time,
+                    "completion_time": completion_time,
+                    "due_date": completion_time,  # 截止时间设置为完工时间
+                    "rating": data.get("rating"),
+                    "feedback": data.get("feedback"),
+                    "repair_form": repair_form,
+                    "work_order_status": work_order_status
                 }
                 
                 # 创建维修任务

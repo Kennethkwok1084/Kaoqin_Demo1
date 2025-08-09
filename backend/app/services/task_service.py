@@ -58,12 +58,20 @@ class TaskService:
                 category=task_data.get("category", TaskCategory.NETWORK_REPAIR),
                 priority=task_data.get("priority", TaskPriority.MEDIUM),
                 task_type=task_data.get("task_type", TaskType.ONLINE),
+                status=task_data.get("status", TaskStatus.PENDING),
                 location=task_data.get("location"),
                 member_id=task_data.get("assigned_to"),
-                report_time=datetime.utcnow(),
+                report_time=task_data.get("report_time", datetime.utcnow()),
+                response_time=task_data.get("response_time"),
+                completion_time=task_data.get("completion_time"),
+                due_date=task_data.get("due_date"),
                 reporter_name=task_data.get("reporter_name"),
                 reporter_contact=task_data.get("reporter_contact"),
-                status=TaskStatus.PENDING
+                rating=task_data.get("rating"),
+                feedback=task_data.get("feedback"),
+                repair_form=task_data.get("repair_form"),
+                work_order_status=task_data.get("work_order_status"),
+                is_rush_order=task_data.get("is_rush_order", False)
             )
             
             # 设置基础工时
@@ -77,8 +85,14 @@ class TaskService:
                 await self._add_tags_to_task(task, task_data["tag_ids"])
             
             # 如果是紧急任务，添加紧急标签
-            if task_data.get("is_rush", False):
+            if task_data.get("is_rush", False) or task_data.get("is_rush_order", False):
                 await self._add_rush_tag(task)
+            
+            # 自动检测并添加异常扣时标签
+            await self._auto_add_penalty_tags(task, task_data)
+            
+            # 自动检测并添加奖励标签
+            await self._auto_add_bonus_tags(task, task_data)
             
             # 不在创建时计算工时，因为标签关系还未正确加载
             # 工时计算将在后续操作中进行
@@ -899,6 +913,94 @@ class TaskService:
         default_keywords = ["系统默认好评", "默认", "自动好评", "满意"]
         feedback_lower = feedback.lower()
         return any(keyword in feedback_lower for keyword in default_keywords)
+
+    async def _auto_add_penalty_tags(self, task: RepairTask, task_data: Dict[str, Any]) -> None:
+        """自动添加异常扣时标签"""
+        try:
+            report_time = task.report_time
+            response_time = task.response_time
+            completion_time = task.completion_time
+            rating = task.rating
+            
+            # 检查响应超时 (>24小时)
+            if report_time and response_time:
+                response_hours = (response_time - report_time).total_seconds() / 3600
+                if response_hours > 24:
+                    await self._add_standard_tag(task, "超时响应")
+            
+            # 检查处理超时 (>48小时) 
+            if response_time and completion_time:
+                processing_hours = (completion_time - response_time).total_seconds() / 3600
+                if processing_hours > 48:
+                    await self._add_standard_tag(task, "超时处理")
+            
+            # 检查差评 (≤2星)
+            if rating is not None and rating <= 2:
+                await self._add_standard_tag(task, "差评")
+                
+        except Exception as e:
+            logger.warning(f"Error adding penalty tags to task {task.id}: {str(e)}")
+
+    async def _auto_add_bonus_tags(self, task: RepairTask, task_data: Dict[str, Any]) -> None:
+        """自动添加奖励标签"""
+        try:
+            rating = task.rating
+            feedback = task.feedback
+            
+            # 检查非默认好评 (≥4星且有非默认反馈)
+            if rating is not None and rating >= 4 and feedback:
+                if not self._is_default_feedback(feedback):
+                    await self._add_standard_tag(task, "非默认好评")
+                    
+        except Exception as e:
+            logger.warning(f"Error adding bonus tags to task {task.id}: {str(e)}")
+    
+    async def _add_standard_tag(self, task: RepairTask, tag_name: str) -> None:
+        """添加标准标签"""
+        try:
+            # 查找现有标签
+            tag_query = select(TaskTag).where(TaskTag.name == tag_name)
+            tag_result = await self.db.execute(tag_query)
+            tag = tag_result.scalar_one_or_none()
+            
+            if not tag:
+                # 创建标准标签
+                if tag_name == "超时响应":
+                    tag = TaskTag.create_timeout_response_tag()
+                elif tag_name == "超时处理":
+                    tag = TaskTag.create_timeout_processing_tag()
+                elif tag_name == "差评":
+                    tag = TaskTag.create_bad_rating_tag()
+                elif tag_name == "非默认好评":
+                    tag = TaskTag.create_non_default_rating_tag()
+                else:
+                    return
+                
+                self.db.add(tag)
+                await self.db.flush()
+            
+            # 检查标签是否已存在
+            existing_query = select(task_tag_association).where(
+                and_(
+                    task_tag_association.c.task_id == task.id,
+                    task_tag_association.c.tag_id == tag.id
+                )
+            )
+            existing_result = await self.db.execute(existing_query)
+            existing = existing_result.scalar_one_or_none()
+            
+            if not existing:
+                # 添加标签关联
+                from sqlalchemy import insert
+                stmt = insert(task_tag_association).values(
+                    task_id=task.id,
+                    tag_id=tag.id
+                )
+                await self.db.execute(stmt)
+                logger.info(f"Added {tag_name} tag to task {task.id}")
+            
+        except Exception as e:
+            logger.warning(f"Error adding standard tag {tag_name} to task {task.id}: {str(e)}")
 
 
 class MonitoringTaskService:
