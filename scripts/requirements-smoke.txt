@@ -1,0 +1,5 @@
+# 冒烟测试脚本依赖
+aiohttp>=3.8.0
+asyncpg>=0.28.0
+pytest>=7.0.0
+pytest-asyncio>=0.21.0

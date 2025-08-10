@@ -229,11 +229,13 @@ async def root():
 
 # Include API routers
 from app.api.v1 import auth, members, tasks, attendance, statistics
+from app.api.v1 import import_api as import_router
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(members.router, prefix="/api/v1/members", tags=["Members"])
 app.include_router(tasks.router, prefix="/api/v1/tasks", tags=["Tasks"])
 app.include_router(attendance.router, prefix="/api/v1/attendance", tags=["Attendance"])
 app.include_router(statistics.router, prefix="/api/v1/statistics", tags=["Statistics"])
+app.include_router(import_router.router, prefix="/api/v1/import", tags=["Import"])
 
 
 # Development utilities

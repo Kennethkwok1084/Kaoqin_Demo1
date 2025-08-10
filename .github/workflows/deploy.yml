@@ -1,0 +1,183 @@
+name: Deployment Pipeline
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+
+env:
+  REGISTRY_URL: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository }}
+
+jobs:
+  prepare:
+    name: Prepare Deployment
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      environment: ${{ steps.env.outputs.environment }}
+      
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Determine version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" == "release" ]; then
+          VERSION=${{ github.event.release.tag_name }}
+        else
+          VERSION="dev-$(date +%Y%m%d)-${GITHUB_SHA:0:8}"
+        fi
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+    
+    - name: Determine environment
+      id: env
+      run: |
+        if [ "${{ github.event_name }}" == "release" ]; then
+          ENVIRONMENT="production"
+        else
+          ENVIRONMENT="${{ github.event.inputs.environment }}"
+        fi
+        echo "environment=${ENVIRONMENT}" >> $GITHUB_OUTPUT
+
+  build-backend:
+    name: Build Backend Image
+    runs-on: ubuntu-latest
+    needs: prepare
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY_URL }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push backend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        file: ./backend/Dockerfile
+        push: true
+        tags: |
+          ${{ env.REGISTRY_URL }}/${{ env.IMAGE_PREFIX }}/backend:${{ needs.prepare.outputs.version }}
+          ${{ env.REGISTRY_URL }}/${{ env.IMAGE_PREFIX }}/backend:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          VERSION=${{ needs.prepare.outputs.version }}
+          BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+
+  build-frontend:
+    name: Build Frontend Image
+    runs-on: ubuntu-latest
+    needs: prepare
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY_URL }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push frontend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./frontend
+        file: ./frontend/Dockerfile
+        push: true
+        tags: |
+          ${{ env.REGISTRY_URL }}/${{ env.IMAGE_PREFIX }}/frontend:${{ needs.prepare.outputs.version }}
+          ${{ env.REGISTRY_URL }}/${{ env.IMAGE_PREFIX }}/frontend:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          VERSION=${{ needs.prepare.outputs.version }}
+          BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [prepare, build-backend, build-frontend]
+    if: needs.prepare.outputs.environment == 'staging'
+    environment: 
+      name: staging
+      url: https://staging.attendance.example.com
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to staging
+      run: |
+        echo "Deploying version ${{ needs.prepare.outputs.version }} to staging"
+        
+        # 这里添加实际的部署脚本
+        # 例如：使用 kubectl, helm, docker-compose 等
+        
+        # 示例：使用 docker-compose 部署
+        # docker-compose -f docker-compose.staging.yml up -d
+        
+        # 示例：使用 Kubernetes 部署
+        # kubectl set image deployment/backend backend=${{ env.REGISTRY_URL }}/${{ env.IMAGE_PREFIX }}/backend:${{ needs.prepare.outputs.version }}
+        # kubectl set image deployment/frontend frontend=${{ env.REGISTRY_URL }}/${{ env.IMAGE_PREFIX }}/frontend:${{ needs.prepare.outputs.version }}
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [prepare, build-backend, build-frontend]
+    if: needs.prepare.outputs.environment == 'production'
+    environment: 
+      name: production
+      url: https://attendance.example.com
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to production
+      run: |
+        echo "Deploying version ${{ needs.prepare.outputs.version }} to production"
+        
+        # 生产环境部署脚本
+        # 通常包括更严格的检查和回滚机制
+        
+    - name: Health check
+      run: |
+        echo "Performing health check..."
+        # 添加健康检查逻辑
+        
+    - name: Notify deployment
+      run: |
+        echo "✅ Successfully deployed ${{ needs.prepare.outputs.version }} to production!"
+        # 添加部署通知
+
+  rollback:
+    name: Rollback
+    runs-on: ubuntu-latest
+    if: failure() && github.event_name == 'workflow_dispatch'
+    needs: [deploy-staging, deploy-production]
+    
+    steps:
+    - name: Rollback deployment
+      run: |
+        echo "🔄 Rolling back deployment..."
+        # 添加回滚逻辑

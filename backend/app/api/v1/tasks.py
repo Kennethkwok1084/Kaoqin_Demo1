@@ -45,46 +45,224 @@ async def status_check():
     )
 
 @router.get("/monitoring", response_model=Dict[str, Any])
-async def get_monitoring_tasks():
+async def get_monitoring_tasks(
+    page: int = Query(1, ge=1, description="页码"),
+    pageSize: int = Query(20, ge=1, le=100, description="每页数量"),
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
     """获取监控任务列表"""
-    return create_response(
-        data={
-            "items": [],
-            "total": 0,
-            "page": 1,
-            "size": 20,
-            "pages": 0
-        },
-        message="成功获取监控任务列表，共 0 条记录"
-    )
+    try:
+        from app.models.task import MonitoringTask
+        
+        offset = (page - 1) * pageSize
+        
+        # 查询监控任务
+        query = select(MonitoringTask).options(
+            joinedload(MonitoringTask.member)
+        )
+        
+        # 权限过滤：非管理员只能看到自己的任务
+        if not current_user.can_manage_group:
+            query = query.where(MonitoringTask.member_id == current_user.id)
+        
+        # 分页查询
+        query = query.offset(offset).limit(pageSize).order_by(desc(MonitoringTask.created_at))
+        result = await db.execute(query)
+        tasks = result.scalars().unique().all()
+        
+        # 获取总数
+        count_query = select(func.count(MonitoringTask.id))
+        if not current_user.can_manage_group:
+            count_query = count_query.where(MonitoringTask.member_id == current_user.id)
+        
+        count_result = await db.execute(count_query)
+        total = count_result.scalar() or 0
+        
+        # 格式化任务数据
+        items = []
+        for task in tasks:
+            items.append({
+                "id": task.id,
+                "title": task.title,
+                "description": task.description,
+                "location": task.location,
+                "monitoring_type": task.monitoring_type,
+                "start_time": task.start_time.isoformat() if task.start_time else None,
+                "end_time": task.end_time.isoformat() if task.end_time else None,
+                "work_minutes": task.work_minutes,
+                "work_hours": round(task.work_minutes / 60.0, 2),
+                "status": task.status.value,
+                "member_id": task.member_id,
+                "member_name": task.member.name if task.member else None,
+                "created_at": task.created_at.isoformat()
+            })
+        
+        return create_response(
+            data={
+                "items": items,
+                "total": total,
+                "page": page,
+                "pageSize": pageSize,
+                "pages": (total + pageSize - 1) // pageSize
+            },
+            message=f"成功获取监控任务列表，共 {total} 条记录"
+        )
+        
+    except Exception as e:
+        logger.error(f"Get monitoring tasks error: {str(e)}")
+        return create_error_response(
+            message="获取监控任务列表失败",
+            details={"error": str(e)}
+        )
 
 @router.get("/fixes", response_model=Dict[str, Any])
-async def get_fix_tasks():
-    """获取修复任务列表 - 完全重命名"""
-    return create_response(
-        data={
-            "items": [],
-            "total": 0,
-            "page": 1,
-            "size": 20,
-            "pages": 0
-        },
-        message="成功获取修复任务列表，共 0 条记录"
-    )
+async def get_fix_tasks(
+    page: int = Query(1, ge=1, description="页码"),
+    pageSize: int = Query(20, ge=1, le=100, description="每页数量"),
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """获取修复任务列表（实际返回维修任务数据）"""
+    try:
+        offset = (page - 1) * pageSize
+        
+        # 查询维修任务（修复任务的实际实现）
+        query = select(RepairTask).options(
+            joinedload(RepairTask.member),
+            selectinload(RepairTask.tags)
+        )
+        
+        # 权限过滤：非管理员只能看到自己的任务
+        if not current_user.can_manage_group:
+            query = query.where(RepairTask.member_id == current_user.id)
+        
+        # 分页查询
+        query = query.offset(offset).limit(pageSize).order_by(desc(RepairTask.created_at))
+        result = await db.execute(query)
+        tasks = result.scalars().unique().all()
+        
+        # 获取总数
+        count_query = select(func.count(RepairTask.id))
+        if not current_user.can_manage_group:
+            count_query = count_query.where(RepairTask.member_id == current_user.id)
+        
+        count_result = await db.execute(count_query)
+        total = count_result.scalar() or 0
+        
+        # 格式化任务数据
+        items = []
+        for task in tasks:
+            items.append({
+                "id": task.id,
+                "task_id": task.task_id,
+                "title": task.title,
+                "description": task.description,
+                "status": task.status.value,
+                "task_type": task.task_type.value,
+                "priority": task.priority.value,
+                "location": task.location,
+                "report_time": task.report_time.isoformat() if task.report_time else None,
+                "completion_time": task.completion_time.isoformat() if task.completion_time else None,
+                "work_minutes": task.work_minutes,
+                "work_hours": round(task.work_minutes / 60.0, 2),
+                "member_id": task.member_id,
+                "member_name": task.member.name if task.member else None,
+                "reporter_name": task.reporter_name,
+                "rating": task.rating,
+                "tags_count": len(list(task.tags)),
+                "created_at": task.created_at.isoformat()
+            })
+        
+        return create_response(
+            data={
+                "items": items,
+                "total": total,
+                "page": page,
+                "pageSize": pageSize,
+                "pages": (total + pageSize - 1) // pageSize
+            },
+            message=f"成功获取修复任务列表，共 {total} 条记录"
+        )
+        
+    except Exception as e:
+        logger.error(f"Get fix tasks error: {str(e)}")
+        return create_error_response(
+            message="获取修复任务列表失败",
+            details={"error": str(e)}
+        )
 
 @router.get("/assistance", response_model=Dict[str, Any])  
-async def get_assistance_tasks():
+async def get_assistance_tasks(
+    page: int = Query(1, ge=1, description="页码"),
+    pageSize: int = Query(20, ge=1, le=100, description="每页数量"),
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
     """获取协助任务列表"""
-    return create_response(
-        data={
-            "items": [],
-            "total": 0,
-            "page": 1,
-            "size": 20,
-            "pages": 0
-        },
-        message="成功获取协助任务列表，共 0 条记录"
-    )
+    try:
+        from app.models.task import AssistanceTask
+        
+        offset = (page - 1) * pageSize
+        
+        # 查询协助任务
+        query = select(AssistanceTask).options(
+            joinedload(AssistanceTask.member)
+        )
+        
+        # 权限过滤：非管理员只能看到自己的任务
+        if not current_user.can_manage_group:
+            query = query.where(AssistanceTask.member_id == current_user.id)
+        
+        # 分页查询
+        query = query.offset(offset).limit(pageSize).order_by(desc(AssistanceTask.created_at))
+        result = await db.execute(query)
+        tasks = result.scalars().unique().all()
+        
+        # 获取总数
+        count_query = select(func.count(AssistanceTask.id))
+        if not current_user.can_manage_group:
+            count_query = count_query.where(AssistanceTask.member_id == current_user.id)
+        
+        count_result = await db.execute(count_query)
+        total = count_result.scalar() or 0
+        
+        # 格式化任务数据
+        items = []
+        for task in tasks:
+            items.append({
+                "id": task.id,
+                "title": task.title,
+                "description": task.description,
+                "assisted_department": task.assisted_department,
+                "assisted_person": task.assisted_person,
+                "start_time": task.start_time.isoformat() if task.start_time else None,
+                "end_time": task.end_time.isoformat() if task.end_time else None,
+                "work_minutes": task.work_minutes,
+                "work_hours": round(task.work_minutes / 60.0, 2),
+                "status": task.status.value,
+                "member_id": task.member_id,
+                "member_name": task.member.name if task.member else None,
+                "created_at": task.created_at.isoformat()
+            })
+        
+        return create_response(
+            data={
+                "items": items,
+                "total": total,
+                "page": page,
+                "pageSize": pageSize,
+                "pages": (total + pageSize - 1) // pageSize
+            },
+            message=f"成功获取协助任务列表，共 {total} 条记录"
+        )
+        
+    except Exception as e:
+        logger.error(f"Get assistance tasks error: {str(e)}")
+        return create_error_response(
+            message="获取协助任务列表失败",
+            details={"error": str(e)}
+        )
 
 @router.get("/", response_model=Dict[str, Any])
 async def get_all_tasks(
@@ -210,6 +388,69 @@ async def get_all_tasks(
         logger.error(f"获取任务列表失败: {str(e)}")
         return create_error_response(
             message="获取任务列表失败",
+            details={"error": str(e)}
+        )
+
+
+@router.get("/work-time-detail/{task_id}", response_model=Dict[str, Any])
+async def get_work_time_detail(
+    task_id: int,
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    获取单个任务的工时分解详情
+    返回基础分钟、爆单奖励、惩罚等详细分解
+    
+    权限：用户可查看自己的任务，管理员和组长可查看所有任务
+    """
+    try:
+        # 查询任务
+        query = select(RepairTask).options(
+            joinedload(RepairTask.member),
+            selectinload(RepairTask.tags)
+        ).where(RepairTask.id == task_id)
+        
+        result = await db.execute(query)
+        task = result.scalar_one_or_none()
+        
+        if not task:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="任务不存在"
+            )
+        
+        # 权限检查
+        if not (task.member_id == current_user.id or current_user.can_manage_group):
+            raise HTTPException(
+                status_code=http_status.HTTP_403_FORBIDDEN,
+                detail="无权限查看该任务工时详情"
+            )
+        
+        # 计算工时分解
+        work_time_detail = _calculate_detailed_work_time_breakdown(task)
+        
+        return create_response(
+            data={
+                "task_id": task.id,
+                "task_number": task.task_id,
+                "title": task.title,
+                "task_type": task.task_type.value,
+                "status": task.status.value,
+                "work_time_breakdown": work_time_detail,
+                "total_work_minutes": task.work_minutes,
+                "total_work_hours": round(task.work_minutes / 60.0, 2),
+                "calculated_at": datetime.utcnow().isoformat()
+            },
+            message="工时详情获取成功"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get work time detail for task {task_id} error: {str(e)}")
+        return create_error_response(
+            message="获取工时详情失败",
             details={"error": str(e)}
         )
 
@@ -1651,6 +1892,154 @@ def _calculate_work_hour_breakdown(task: RepairTask) -> Dict[str, Any]:
         "is_overdue_response": task.is_overdue_response,
         "is_overdue_completion": task.is_overdue_completion,
         "rating": task.rating
+    }
+
+
+def _calculate_detailed_work_time_breakdown(task: RepairTask) -> Dict[str, Any]:
+    """计算详细的工时分解，包含所有奖励和惩罚项目"""
+    from app.core.config import settings
+    
+    # 基础工时
+    base_minutes = task.get_base_work_minutes()
+    task_type_desc = "线上任务" if task.task_type.value == "online" else "线下任务"
+    
+    # 分类统计各种加时和扣时
+    bonus_items = []  # 奖励项目
+    penalty_items = []  # 惩罚项目
+    category_items = []  # 分类标签
+    
+    total_bonus_minutes = 0
+    total_penalty_minutes = 0
+    
+    # 爆单特殊处理
+    is_rush_order = task.is_rush_order or any(
+        tag.tag_type.value == "RUSH_ORDER" for tag in task.tags if tag.is_active
+    )
+    
+    if is_rush_order:
+        bonus_items.append({
+            "name": "爆单任务",
+            "minutes": settings.RUSH_TASK_BONUS_MINUTES,
+            "type": "RUSH_ORDER",
+            "description": "爆单任务固定工时奖励"
+        })
+        total_bonus_minutes += settings.RUSH_TASK_BONUS_MINUTES
+    
+    # 处理标签
+    for tag in task.tags:
+        if not tag.is_active:
+            continue
+            
+        tag_item = {
+            "name": tag.name,
+            "minutes": tag.work_minutes_modifier,
+            "type": tag.tag_type.value,
+            "description": tag.description or ""
+        }
+        
+        if tag.work_minutes_modifier > 0:
+            bonus_items.append(tag_item)
+            total_bonus_minutes += tag.work_minutes_modifier
+        elif tag.work_minutes_modifier < 0:
+            penalty_items.append({
+                **tag_item,
+                "minutes": abs(tag.work_minutes_modifier)  # 显示为正数，便于理解
+            })
+            total_penalty_minutes += abs(tag.work_minutes_modifier)
+        else:
+            category_items.append(tag_item)
+    
+    # 基于时间的自动惩罚检查
+    if task.is_overdue_response:
+        penalty_items.append({
+            "name": "超时响应惩罚",
+            "minutes": settings.LATE_RESPONSE_PENALTY_MINUTES,
+            "type": "TIMEOUT_RESPONSE",
+            "description": f"响应时间超过{settings.RESPONSE_TIMEOUT_HOURS}小时"
+        })
+        total_penalty_minutes += settings.LATE_RESPONSE_PENALTY_MINUTES
+    
+    if task.is_overdue_completion:
+        penalty_items.append({
+            "name": "超时处理惩罚", 
+            "minutes": settings.LATE_COMPLETION_PENALTY_MINUTES,
+            "type": "TIMEOUT_PROCESSING",
+            "description": f"处理时间超过{settings.COMPLETION_TIMEOUT_HOURS}小时"
+        })
+        total_penalty_minutes += settings.LATE_COMPLETION_PENALTY_MINUTES
+    
+    if task.is_negative_review:
+        penalty_items.append({
+            "name": "差评惩罚",
+            "minutes": settings.NEGATIVE_REVIEW_PENALTY_MINUTES,
+            "type": "BAD_RATING", 
+            "description": f"用户评价{task.rating}星(≤{settings.MAX_RATING_FOR_NEGATIVE}星)"
+        })
+        total_penalty_minutes += settings.NEGATIVE_REVIEW_PENALTY_MINUTES
+    
+    # 计算最终工时
+    if is_rush_order:
+        # 爆单任务：固定15分钟 - 惩罚
+        final_minutes = max(0, settings.RUSH_TASK_BONUS_MINUTES - total_penalty_minutes)
+        calculation_method = "爆单任务特殊计算"
+    else:
+        # 普通任务：基础工时 + 奖励 - 惩罚
+        final_minutes = max(0, base_minutes + total_bonus_minutes - total_penalty_minutes)
+        calculation_method = "标准累积计算"
+    
+    # 时间相关信息
+    time_analysis = {
+        "report_time": task.report_time.isoformat() if task.report_time else None,
+        "response_time": task.response_time.isoformat() if task.response_time else None,
+        "completion_time": task.completion_time.isoformat() if task.completion_time else None,
+        "due_date": task.due_date.isoformat() if task.due_date else None,
+        "response_hours": None,
+        "processing_hours": None
+    }
+    
+    if task.report_time and task.response_time:
+        response_hours = (task.response_time - task.report_time).total_seconds() / 3600
+        time_analysis["response_hours"] = round(response_hours, 2)
+        
+    if task.response_time and task.completion_time:
+        processing_hours = (task.completion_time - task.response_time).total_seconds() / 3600
+        time_analysis["processing_hours"] = round(processing_hours, 2)
+    
+    return {
+        "task_info": {
+            "task_type": task.task_type.value,
+            "task_type_description": task_type_desc,
+            "is_rush_order": is_rush_order,
+            "status": task.status.value,
+            "rating": task.rating,
+            "calculation_method": calculation_method
+        },
+        "base_calculation": {
+            "base_minutes": base_minutes,
+            "base_description": f"{task_type_desc}基础工时"
+        },
+        "bonus_items": bonus_items,
+        "penalty_items": penalty_items,
+        "category_items": category_items,
+        "summary": {
+            "total_bonus_minutes": total_bonus_minutes,
+            "total_penalty_minutes": total_penalty_minutes,
+            "net_modifier_minutes": total_bonus_minutes - total_penalty_minutes,
+            "final_work_minutes": final_minutes,
+            "final_work_hours": round(final_minutes / 60.0, 2)
+        },
+        "time_analysis": time_analysis,
+        "business_rules": {
+            "online_base_minutes": settings.DEFAULT_ONLINE_TASK_MINUTES,
+            "offline_base_minutes": settings.DEFAULT_OFFLINE_TASK_MINUTES,
+            "rush_bonus_minutes": settings.RUSH_TASK_BONUS_MINUTES,
+            "positive_review_bonus_minutes": settings.POSITIVE_REVIEW_BONUS_MINUTES,
+            "late_response_penalty_minutes": settings.LATE_RESPONSE_PENALTY_MINUTES,
+            "late_completion_penalty_minutes": settings.LATE_COMPLETION_PENALTY_MINUTES,
+            "negative_review_penalty_minutes": settings.NEGATIVE_REVIEW_PENALTY_MINUTES,
+            "response_timeout_hours": settings.RESPONSE_TIMEOUT_HOURS,
+            "completion_timeout_hours": settings.COMPLETION_TIMEOUT_HOURS
+        }
     }
 
 

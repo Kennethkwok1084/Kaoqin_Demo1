@@ -52,7 +52,37 @@ class WorkHoursCalculationService:
             
         Returns:
             Dict: 包含各类工时明细的字典
+            
+        Raises:
+            ValueError: 输入参数无效
+            RuntimeError: 计算过程出现错误
         """
+        # 输入校验
+        if not task:
+            logger.error("Task object is None or empty")
+            raise ValueError("任务对象不能为空")
+        
+        if not hasattr(task, 'id') or task.id is None:
+            logger.error("Task ID is None or invalid")
+            raise ValueError("任务ID无效")
+        
+        if not hasattr(task, 'task_type') or task.task_type is None:
+            logger.error(f"Task {task.id} has invalid task_type")
+            raise ValueError(f"任务 {task.id} 的任务类型无效")
+        
+        if not hasattr(task, 'report_time') or task.report_time is None:
+            logger.error(f"Task {task.id} has invalid report_time")
+            raise ValueError(f"任务 {task.id} 的报修时间无效")
+        
+        # 确保task有tags属性
+        if not hasattr(task, 'tags'):
+            logger.warning(f"Task {task.id} has no tags attribute, will refresh from DB")
+            try:
+                await self.db.refresh(task, ["tags"])
+            except Exception as e:
+                logger.error(f"Failed to refresh task {task.id} tags: {str(e)}")
+                raise RuntimeError(f"无法加载任务 {task.id} 的标签信息")
+        
         try:
             # 检查是否为爆单任务（优先使用模型字段）
             is_rush_order = getattr(task, 'is_rush_order', False)
@@ -165,9 +195,15 @@ class WorkHoursCalculationService:
                 "total_minutes": total_minutes
             }
             
-        except Exception as e:
-            logger.error(f"Calculate task work minutes error: {str(e)}")
+        except ValueError:
+            # Re-raise validation errors as-is
             raise
+        except RuntimeError:
+            # Re-raise runtime errors as-is  
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error calculating task {task.id if hasattr(task, 'id') else 'unknown'} work minutes: {str(e)}")
+            raise RuntimeError(f"工时计算过程发生未预期错误: {str(e)}")
     
     async def calculate_monthly_work_hours(
         self, 
@@ -185,7 +221,43 @@ class WorkHoursCalculationService:
             
         Returns:
             Dict: 月度工时统计数据
+            
+        Raises:
+            ValueError: 输入参数无效
+            RuntimeError: 计算过程出现错误
         """
+        # 输入校验
+        if not isinstance(member_id, int) or member_id <= 0:
+            logger.error(f"Invalid member_id: {member_id}")
+            raise ValueError("成员ID必须为正整数")
+        
+        if not isinstance(year, int) or year < 2020 or year > 2050:
+            logger.error(f"Invalid year: {year}")
+            raise ValueError("年份必须在2020-2050范围内")
+        
+        if not isinstance(month, int) or month < 1 or month > 12:
+            logger.error(f"Invalid month: {month}")
+            raise ValueError("月份必须在1-12范围内")
+        
+        # 验证成员是否存在
+        try:
+            member_query = select(Member).where(Member.id == member_id)
+            member_result = await self.db.execute(member_query)
+            member = member_result.scalar_one_or_none()
+            
+            if not member:
+                logger.error(f"Member {member_id} not found")
+                raise ValueError(f"成员 {member_id} 不存在")
+            
+            if not member.is_active:
+                logger.warning(f"Member {member_id} is inactive, but allowing calculation")
+        
+        except ValueError:
+            raise
+        except Exception as e:
+            logger.error(f"Error validating member {member_id}: {str(e)}")
+            raise RuntimeError(f"验证成员信息时出错: {str(e)}")
+        
         try:
             # 计算月份范围
             first_day = date(year, month, 1)
@@ -315,7 +387,24 @@ class WorkHoursCalculationService:
             
         Returns:
             MonthlyAttendanceSummary: 更新后的月度汇总记录
+            
+        Raises:
+            ValueError: 输入参数无效
+            RuntimeError: 更新过程出现错误
         """
+        # 输入校验
+        if not isinstance(member_id, int) or member_id <= 0:
+            logger.error(f"Invalid member_id: {member_id}")
+            raise ValueError("成员ID必须为正整数")
+        
+        if not isinstance(year, int) or year < 2020 or year > 2050:
+            logger.error(f"Invalid year: {year}")
+            raise ValueError("年份必须在2020-2050范围内")
+        
+        if not isinstance(month, int) or month < 1 or month > 12:
+            logger.error(f"Invalid month: {month}")
+            raise ValueError("月份必须在1-12范围内")
+        
         try:
             # 计算工时数据
             work_hours_data = await self.calculate_monthly_work_hours(member_id, year, month)
@@ -353,10 +442,13 @@ class WorkHoursCalculationService:
             logger.info(f"Updated monthly summary for member {member_id}, {year}-{month:02d}")
             return summary
             
+        except ValueError:
+            # Re-raise validation errors as-is
+            raise
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Update monthly summary error: {str(e)}")
-            raise
+            raise RuntimeError(f"更新月度汇总时出错: {str(e)}")
     
     async def batch_update_monthly_summaries(
         self, 
@@ -374,7 +466,30 @@ class WorkHoursCalculationService:
             
         Returns:
             Dict: 更新结果统计
+            
+        Raises:
+            ValueError: 输入参数无效
+            RuntimeError: 批量更新过程出现错误
         """
+        # 输入校验
+        if not isinstance(year, int) or year < 2020 or year > 2050:
+            logger.error(f"Invalid year: {year}")
+            raise ValueError("年份必须在2020-2050范围内")
+        
+        if not isinstance(month, int) or month < 1 or month > 12:
+            logger.error(f"Invalid month: {month}")
+            raise ValueError("月份必须在1-12范围内")
+        
+        if member_ids is not None:
+            if not isinstance(member_ids, list):
+                logger.error(f"member_ids must be a list, got {type(member_ids)}")
+                raise ValueError("成员ID列表必须为列表类型")
+            
+            for member_id in member_ids:
+                if not isinstance(member_id, int) or member_id <= 0:
+                    logger.error(f"Invalid member_id in list: {member_id}")
+                    raise ValueError(f"成员ID必须为正整数: {member_id}")
+        
         try:
             # 获取要更新的成员列表
             if member_ids:
@@ -402,9 +517,12 @@ class WorkHoursCalculationService:
                 "total": len(members)
             }
             
+        except ValueError:
+            # Re-raise validation errors as-is
+            raise
         except Exception as e:
             logger.error(f"Batch update monthly summaries error: {str(e)}")
-            raise
+            raise RuntimeError(f"批量更新月度汇总时出错: {str(e)}")
     
     async def apply_group_penalties(
         self, 
@@ -420,7 +538,29 @@ class WorkHoursCalculationService:
             
         Returns:
             List[int]: 受影响的成员ID列表
+            
+        Raises:
+            ValueError: 输入参数无效
+            RuntimeError: 应用惩罚过程出现错误
         """
+        # 输入校验
+        if not task:
+            logger.error("Task object is None or empty")
+            raise ValueError("任务对象不能为空")
+        
+        if not hasattr(task, 'id') or task.id is None:
+            logger.error("Task ID is None or invalid")
+            raise ValueError("任务ID无效")
+        
+        if not hasattr(task, 'member') or task.member is None:
+            logger.error(f"Task {task.id} has no associated member")
+            raise ValueError(f"任务 {task.id} 没有关联的成员")
+        
+        valid_penalty_types = {"late_response", "late_completion", "negative_review"}
+        if not isinstance(penalty_type, str) or penalty_type not in valid_penalty_types:
+            logger.error(f"Invalid penalty_type: {penalty_type}")
+            raise ValueError(f"惩罚类型无效，必须为: {', '.join(valid_penalty_types)}")
+        
         try:
             # 获取任务处理人所在的组/部门的所有成员
             member_query = select(Member).where(
@@ -456,9 +596,12 @@ class WorkHoursCalculationService:
             logger.info(f"Applied {penalty_type} penalty to {len(affected_member_ids)} members")
             return affected_member_ids
             
+        except ValueError:
+            # Re-raise validation errors as-is
+            raise
         except Exception as e:
             logger.error(f"Apply group penalties error: {str(e)}")
-            raise
+            raise RuntimeError(f"应用组内惩罚时出错: {str(e)}")
     
     # 私有方法
     
@@ -642,7 +785,38 @@ class RushTaskMarkingService:
         
         Returns:
             Dict: 标记结果统计
+            
+        Raises:
+            ValueError: 输入参数无效
+            RuntimeError: 标记过程出现错误
         """
+        # 输入校验
+        if not isinstance(date_from, date):
+            logger.error(f"date_from must be date object, got {type(date_from)}")
+            raise ValueError("开始日期必须为date对象")
+        
+        if not isinstance(date_to, date):
+            logger.error(f"date_to must be date object, got {type(date_to)}")
+            raise ValueError("结束日期必须为date对象")
+        
+        if date_from > date_to:
+            logger.error(f"date_from {date_from} is after date_to {date_to}")
+            raise ValueError("开始日期不能晚于结束日期")
+        
+        if task_ids is not None:
+            if not isinstance(task_ids, list):
+                logger.error(f"task_ids must be list, got {type(task_ids)}")
+                raise ValueError("任务ID列表必须为列表类型")
+            
+            for task_id in task_ids:
+                if not isinstance(task_id, int) or task_id <= 0:
+                    logger.error(f"Invalid task_id in list: {task_id}")
+                    raise ValueError(f"任务ID必须为正整数: {task_id}")
+        
+        if marked_by is not None and (not isinstance(marked_by, int) or marked_by <= 0):
+            logger.error(f"Invalid marked_by: {marked_by}")
+            raise ValueError("标记人ID必须为正整数")
+        
         try:
             # 构建查询
             query = select(RepairTask).options(
@@ -700,10 +874,13 @@ class RushTaskMarkingService:
                 "total": len(tasks)
             }
             
+        except ValueError:
+            # Re-raise validation errors as-is
+            raise
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Mark rush tasks error: {str(e)}")
-            raise
+            raise RuntimeError(f"标记爆单任务时出错: {str(e)}")
     
     async def _get_or_create_rush_tag(self) -> TaskTag:
         """获取或创建爆单标签（重构版）"""
@@ -742,7 +919,34 @@ class RushTaskMarkingService:
             
         Returns:
             Dict: 重算结果统计
+            
+        Raises:
+            ValueError: 输入参数无效
+            RuntimeError: 重算过程出现错误
         """
+        # 输入校验
+        if not isinstance(date_from, date):
+            logger.error(f"date_from must be date object, got {type(date_from)}")
+            raise ValueError("开始日期必须为date对象")
+        
+        if not isinstance(date_to, date):
+            logger.error(f"date_to must be date object, got {type(date_to)}")
+            raise ValueError("结束日期必须为date对象")
+        
+        if date_from > date_to:
+            logger.error(f"date_from {date_from} is after date_to {date_to}")
+            raise ValueError("开始日期不能晚于结束日期")
+        
+        if member_ids is not None:
+            if not isinstance(member_ids, list):
+                logger.error(f"member_ids must be list, got {type(member_ids)}")
+                raise ValueError("成员ID列表必须为列表类型")
+            
+            for member_id in member_ids:
+                if not isinstance(member_id, int) or member_id <= 0:
+                    logger.error(f"Invalid member_id in list: {member_id}")
+                    raise ValueError(f"成员ID必须为正整数: {member_id}")
+        
         try:
             # 构建查询
             query = select(RepairTask).options(
@@ -801,7 +1005,10 @@ class RushTaskMarkingService:
                 "affected_members": len(affected_members)
             }
             
+        except ValueError:
+            # Re-raise validation errors as-is
+            raise
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Batch recalculate work hours error: {str(e)}")
-            raise
+            raise RuntimeError(f"批量重新计算工时时出错: {str(e)}")
