@@ -60,12 +60,13 @@ class TestMemberModel:
     async def test_create_member(self):
         """测试创建成员"""
         member = Member(
+            username="testuser001",
             name="测试用户",
             student_id="TEST001",
-            email="test@example.com",
+            phone="13888880001",
+            department="信息与计算科学学院",
             password_hash=get_password_hash("password123"),
             role=UserRole.MEMBER,
-            group_id=1,
             class_name="计算机2101",
             is_active=True,
             is_verified=False

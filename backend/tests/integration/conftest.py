@@ -149,13 +149,14 @@ async def test_member_user(db_session):
     unique_id = str(uuid.uuid4())[:8]
     
     member_user = Member(
+        username=f"member{unique_id}",
         name=f"测试成员{unique_id}",
-        student_id=f"member{unique_id}",
-        email=f"member{unique_id}@test.com",
+        student_id=f"STU{unique_id}",
+        phone=f"1388888{unique_id[:4]}",
+        department="信息与计算科学学院",
+        class_name="计算机科学与技术2101", 
         password_hash=get_password_hash("member123456"),
         role=UserRole.MEMBER,
-        group_id=1,
-        class_name="计算机科学与技术2101",
         is_active=True,
         is_verified=True
     )
@@ -173,13 +174,14 @@ async def test_group_leader(db_session):
     unique_id = str(uuid.uuid4())[:8]
     
     leader_user = Member(
+        username=f"leader{unique_id}",
         name=f"测试组长{unique_id}",
-        student_id=f"leader{unique_id}",
-        email=f"leader{unique_id}@test.com",
+        student_id=f"LEAD{unique_id}",
+        phone=f"1388888{unique_id[:4]}",
+        department="信息与计算科学学院",
+        class_name="计算机科学与技术2101",
         password_hash=get_password_hash("leader123456"),
         role=UserRole.GROUP_LEADER,
-        group_id=1,
-        class_name="计算机科学与技术2101",
         is_active=True,
         is_verified=True
     )
