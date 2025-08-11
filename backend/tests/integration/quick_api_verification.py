@@ -21,7 +21,7 @@ try:
     from app.core.config import settings
     print("Success: 成功导入应用模块")
 except ImportError as e:
-    print(f"❌ 导入应用失败: {e}")
+    print(f"ERROR 导入应用失败: {e}")
     sys.exit(1)
 
 
@@ -110,7 +110,7 @@ def test_new_api_endpoints():
         }
     ]
     
-    print("🧪 开始API端点验证测试...")
+    print("API 开始API端点验证测试...")
     
     for endpoint in api_endpoints:
         test_results["total_tests"] += 1
@@ -140,7 +140,7 @@ def test_new_api_endpoints():
             # 检查响应状态
             if response.status_code in endpoint["expected_status"]:
                 test_results["passed_tests"] += 1
-                status = "✅ 通过"
+                status = "PASS 通过"
                 details = f"状态码: {response.status_code}"
                 
                 # 对于健康检查API，额外验证响应内容
@@ -156,7 +156,7 @@ def test_new_api_endpoints():
                         
             else:
                 test_results["failed_tests"] += 1
-                status = "❌ 失败"
+                status = "FAIL 失败"
                 details = f"期望状态码: {endpoint['expected_status']}, 实际: {response.status_code}"
                 
                 # 尝试获取错误详情
@@ -183,10 +183,10 @@ def test_new_api_endpoints():
                 "name": test_name,
                 "method": endpoint["method"],
                 "url": endpoint["url"],
-                "status": "❌ 异常",
+                "status": "ERROR 异常",
                 "details": error_msg
             })
-            print(f"  ❌ 异常 {test_name}: {error_msg}")
+            print(f"  ERROR 异常 {test_name}: {error_msg}")
     
     return test_results
 
@@ -195,7 +195,7 @@ def test_api_documentation():
     """测试API文档生成"""
     client = TestClient(app)
     
-    print("\n📚 测试API文档...")
+    print("\nDOC 测试API文档...")
     
     doc_results = {}
     
@@ -223,27 +223,27 @@ def test_api_documentation():
                     found_paths.append(path)
             
             doc_results["openapi"] = {
-                "status": "✅ 正常" if len(found_paths) > 0 else "⚠️ 部分缺失",
+                "status": "OK 正常" if len(found_paths) > 0 else "WARN 部分缺失",
                 "total_new_paths": len(new_paths),
                 "found_paths": len(found_paths),
                 "details": f"找到 {len(found_paths)}/{len(new_paths)} 个新API路径"
             }
             
-            print(f"  ✅ OpenAPI文档: {doc_results['openapi']['details']}")
+            print(f"  OK OpenAPI文档: {doc_results['openapi']['details']}")
             
         else:
             doc_results["openapi"] = {
-                "status": "❌ 失败",
+                "status": "FAIL 失败",
                 "details": f"OpenAPI文档访问失败: {openapi_response.status_code}"
             }
-            print(f"  ❌ OpenAPI文档访问失败: {openapi_response.status_code}")
+            print(f"  FAIL OpenAPI文档访问失败: {openapi_response.status_code}")
     
     except Exception as e:
         doc_results["openapi"] = {
-            "status": "❌ 异常",
+            "status": "ERROR 异常",
             "details": f"OpenAPI文档测试异常: {str(e)}"
         }
-        print(f"  ❌ OpenAPI文档测试异常: {str(e)}")
+        print(f"  ERROR OpenAPI文档测试异常: {str(e)}")
     
     # 测试Swagger UI (仅在开发模式下)
     if settings.DEBUG:
@@ -251,37 +251,37 @@ def test_api_documentation():
             docs_response = client.get("/docs")
             if docs_response.status_code == 200:
                 doc_results["swagger"] = {
-                    "status": "✅ 正常",
+                    "status": "OK 正常",
                     "details": "Swagger UI可访问"
                 }
-                print(f"  ✅ Swagger UI: 可访问")
+                print(f"  OK Swagger UI: 可访问")
             else:
                 doc_results["swagger"] = {
-                    "status": "❌ 失败", 
+                    "status": "FAIL 失败", 
                     "details": f"Swagger UI访问失败: {docs_response.status_code}"
                 }
-                print(f"  ❌ Swagger UI访问失败: {docs_response.status_code}")
+                print(f"  FAIL Swagger UI访问失败: {docs_response.status_code}")
         
         except Exception as e:
             doc_results["swagger"] = {
-                "status": "❌ 异常",
+                "status": "ERROR 异常",
                 "details": f"Swagger UI测试异常: {str(e)}"
             }
-            print(f"  ❌ Swagger UI测试异常: {str(e)}")
+            print(f"  ERROR Swagger UI测试异常: {str(e)}")
     else:
         doc_results["swagger"] = {
-            "status": "⚠️ 跳过",
+            "status": "SKIP 跳过",
             "details": "非开发模式，跳过Swagger UI测试"
         }
-        print(f"  ⚠️ Swagger UI: 非开发模式，跳过测试")
+        print(f"  SKIP Swagger UI: 非开发模式，跳过测试")
     
     return doc_results
 
 
 def main():
     """主函数"""
-    print("🚀 开始快速API验证...")
-    print(f"⚙️ 应用配置: DEBUG={settings.DEBUG}, TESTING={settings.TESTING}")
+    print("API 开始快速API验证...")
+    print(f"CONFIG 应用配置: DEBUG={settings.DEBUG}, TESTING={settings.TESTING}")
     
     try:
         # 运行API端点测试
@@ -291,7 +291,7 @@ def main():
         doc_results = test_api_documentation()
         
         # 汇总结果
-        print(f"\n📋 测试汇总:")
+        print(f"\nSUMMARY 测试汇总:")
         print(f"  API端点测试: {api_results['passed_tests']}/{api_results['total_tests']} 通过")
         print(f"  文档测试: {doc_results}")
         
@@ -300,9 +300,9 @@ def main():
         print(f"  成功率: {success_rate:.1f}%")
         
         if api_results['failed_tests'] > 0:
-            print(f"\n⚠️ 失败的测试:")
+            print(f"\nFAILED 失败的测试:")
             for detail in api_results['test_details']:
-                if "❌" in detail['status']:
+                if "FAIL" in detail['status'] or "ERROR" in detail['status']:
                     print(f"    - {detail['name']}: {detail['details']}")
         
         # 生成验证报告
@@ -326,17 +326,17 @@ def main():
         with open(report_file, 'w', encoding='utf-8') as f:
             json.dump(verification_report, f, ensure_ascii=False, indent=2)
         
-        print(f"\n📄 验证报告已保存: {report_file}")
+        print(f"\nREPORT 验证报告已保存: {report_file}")
         
         if success_rate >= 80:
-            print("✅ API验证通过！新增的业务逻辑API基本功能正常")
+            print("PASS API验证通过！新增的业务逻辑API基本功能正常")
             return 0
         else:
-            print("⚠️ API验证需要检查，部分功能可能存在问题")
+            print("WARN API验证需要检查，部分功能可能存在问题")
             return 1
             
     except Exception as e:
-        print(f"❌ 验证过程异常: {str(e)}")
+        print(f"ERROR 验证过程异常: {str(e)}")
         traceback.print_exc()
         return 1
 

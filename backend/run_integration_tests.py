@@ -44,10 +44,15 @@ class IntegrationTestRunner:
             sys.executable, "-m", "pytest", 
             "tests/integration/",
             "-v",
-            "--tb=short",
-            "--json-report",
-            "--json-report-file=test_results.json"
+            "--tb=short"
         ]
+        
+        # 尝试添加JSON报告（如果可用）
+        try:
+            import pytest_json_report
+            cmd.extend(["--json-report", "--json-report-file=test_results.json"])
+        except ImportError:
+            self.log("pytest-json-report未安装，跳过JSON报告", "WARNING")
         
         if self.verbose:
             cmd.append("--verbose")
@@ -128,19 +133,19 @@ class IntegrationTestRunner:
                 }
                 
                 if result.returncode == 0:
-                    self.log(f"✅ {test_file} 通过")
+                    self.log(f"PASS {test_file} 通过")
                 else:
-                    self.log(f"❌ {test_file} 失败 (退出码: {result.returncode})", "ERROR")
+                    self.log(f"FAIL {test_file} 失败 (退出码: {result.returncode})", "ERROR")
                     
             except subprocess.TimeoutExpired:
-                self.log(f"⏰ {test_file} 超时", "WARNING")
+                self.log(f"TIMEOUT {test_file} 超时", "WARNING")
                 results[test_file] = {
                     "return_code": 124,
                     "stdout": "",
                     "stderr": "测试超时"
                 }
             except Exception as e:
-                self.log(f"❌ {test_file} 执行错误: {e}", "ERROR")
+                self.log(f"ERROR {test_file} 执行错误: {e}", "ERROR")
                 results[test_file] = {
                     "return_code": 1,
                     "stdout": "",
@@ -206,7 +211,7 @@ class IntegrationTestRunner:
         
         # 添加详细结果
         for test_name, test_result in self.results['tests'].items():
-            status = "✅ 通过" if test_result.get('return_code', 1) == 0 else "❌ 失败"
+            status = "PASS 通过" if test_result.get('return_code', 1) == 0 else "FAIL 失败"
             report_lines.extend([
                 f"{test_name}: {status}",
                 f"  退出码: {test_result.get('return_code', 'N/A')}",
@@ -281,10 +286,10 @@ class IntegrationTestRunner:
         
         # 返回适当的退出码
         if passed_tests == total_tests:
-            self.log("✅ 所有集成测试通过!")
+            self.log("SUCCESS 所有集成测试通过!")
             return 0
         else:
-            self.log(f"❌ {failed_tests}/{total_tests} 测试失败", "ERROR")
+            self.log(f"FAILED {failed_tests}/{total_tests} 测试失败", "ERROR")
             return 1
 
 

@@ -8,6 +8,7 @@ import pytest
 import pytest_asyncio
 from typing import AsyncGenerator, Generator
 from fastapi.testclient import TestClient
+from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -16,6 +17,9 @@ from app.core.config import settings
 from app.core.database import get_async_session, Base
 from app.models.member import Member, UserRole
 from app.core.security import get_password_hash
+
+# Export AsyncClient as AsyncTestClient for backward compatibility
+AsyncTestClient = AsyncClient
 
 
 # Test database URL - use in-memory SQLite for testing
