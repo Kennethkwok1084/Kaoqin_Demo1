@@ -41,8 +41,8 @@ async_engine = create_async_engine(
         "statement_cache_size": 0,  # Disable prepared statements for pgbouncer compatibility
         "server_settings": {
             "application_name": "kaoqin_backend",
-        }
-    }
+        },
+    },
 )
 
 # Async Session Factory
