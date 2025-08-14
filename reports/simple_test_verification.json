@@ -1,0 +1,38 @@
+{
+  "timestamp": "2025-07-30T17:31:27.578490",
+  "total_tests": 6,
+  "successful_tests": 6,
+  "success_rate": 100.0,
+  "results": [
+    {
+      "command": "python -c import pytest; print('pytest导入成功')",
+      "status": "success",
+      "output": "pytest导入成功"
+    },
+    {
+      "command": "python -c import pytest_asyncio; print('pytest-asyncio导入成功')",
+      "status": "success",
+      "output": "pytest-asyncio导入成功"
+    },
+    {
+      "command": "python -c import sqlalchemy; print('SQLAlchemy导入成功')",
+      "status": "success",
+      "output": "SQLAlchemy导入成功"
+    },
+    {
+      "command": "python -c import fastapi; print('FastAPI导入成功')",
+      "status": "success",
+      "output": "FastAPI导入成功"
+    },
+    {
+      "command": "python -c import pandas; print('Pandas导入成功')",
+      "status": "success",
+      "output": "Pandas导入成功"
+    },
+    {
+      "command": "python -m pytest D:\\Documents\\WindSurf\\Kaoqin_demo\\backend\\temp_test.py -v",
+      "status": "success",
+      "output": "基础测试通过"
+    }
+  ]
+}
