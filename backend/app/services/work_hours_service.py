@@ -12,8 +12,15 @@ from typing import Any, Dict, List, Optional, Tuple
 from app.core.config import settings
 from app.models.attendance import MonthlyAttendanceSummary
 from app.models.member import Member
-from app.models.task import (AssistanceTask, MonitoringTask, RepairTask,
-                             TaskStatus, TaskTag, TaskTagType, TaskType)
+from app.models.task import (
+    AssistanceTask,
+    MonitoringTask,
+    RepairTask,
+    TaskStatus,
+    TaskTag,
+    TaskTagType,
+    TaskType,
+)
 from sqlalchemy import and_, desc, extract, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload

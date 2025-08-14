@@ -9,9 +9,15 @@ from typing import Any, Dict, List, Optional
 
 from app.core.config import settings
 from app.models.member import Member
-from app.models.task import (AssistanceTask, MonitoringTask, RepairTask,
-                             TaskStatus, TaskTag, TaskType,
-                             task_tag_association)
+from app.models.task import (
+    AssistanceTask,
+    MonitoringTask,
+    RepairTask,
+    TaskStatus,
+    TaskTag,
+    TaskType,
+    task_tag_association,
+)
 from app.services.task_service import TaskService
 from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession

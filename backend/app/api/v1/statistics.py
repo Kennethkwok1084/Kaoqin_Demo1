@@ -8,17 +8,31 @@ from calendar import monthrange
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from app.api.deps import (create_error_response, create_response,
-                          get_current_active_admin,
-                          get_current_active_group_leader, get_current_user,
-                          get_db)
+from app.api.deps import (
+    create_error_response,
+    create_response,
+    get_current_active_admin,
+    get_current_active_group_leader,
+    get_current_user,
+    get_db,
+)
 from app.core.config import settings
-from app.models.attendance import (AttendanceException,
-                                   AttendanceExceptionStatus, AttendanceRecord)
+from app.models.attendance import (
+    AttendanceException,
+    AttendanceExceptionStatus,
+    AttendanceRecord,
+)
 from app.models.member import Member, UserRole
-from app.models.task import (AssistanceTask, MonitoringTask, RepairTask,
-                             TaskCategory, TaskPriority, TaskStatus, TaskTag,
-                             TaskType)
+from app.models.task import (
+    AssistanceTask,
+    MonitoringTask,
+    RepairTask,
+    TaskCategory,
+    TaskPriority,
+    TaskStatus,
+    TaskTag,
+    TaskType,
+)
 from app.services.attendance_service import AttendanceService
 from app.services.task_service import TaskService
 from fastapi import APIRouter, Depends, HTTPException, Query, status

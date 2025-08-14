@@ -7,8 +7,15 @@ from datetime import datetime, timedelta
 
 import pytest
 from app.models.member import Member, UserRole
-from app.models.task import (RepairTask, TaskCategory, TaskPriority,
-                             TaskStatus, TaskTag, TaskTagType, TaskType)
+from app.models.task import (
+    RepairTask,
+    TaskCategory,
+    TaskPriority,
+    TaskStatus,
+    TaskTag,
+    TaskTagType,
+    TaskType,
+)
 from httpx import AsyncClient
 from tests.conftest import AsyncTestClient
 

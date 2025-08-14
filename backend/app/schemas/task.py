@@ -8,8 +8,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from app.models.task import TaskPriority, TaskStatus, TaskType
-from pydantic import (BaseModel, ConfigDict, Field, field_validator,
-                      model_validator)
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class TaskTagBase(BaseModel):

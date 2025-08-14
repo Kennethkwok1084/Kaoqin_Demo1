@@ -60,9 +60,13 @@ def test_imports():
         return False
 
     try:
-        from app.schemas.member import (MemberCreate, MemberImportRequest,
-                                        MemberImportResponse, MemberResponse,
-                                        MemberUpdate)
+        from app.schemas.member import (
+            MemberCreate,
+            MemberImportRequest,
+            MemberImportResponse,
+            MemberResponse,
+            MemberUpdate,
+        )
 
         print_test_result("Member Schema导入", True, "成功导入所有Schema类")
     except Exception as e:
@@ -143,8 +147,7 @@ def test_schema_validation():
     print_test_header("3. Schema验证测试")
 
     try:
-        from app.schemas.member import (MemberCreate, MemberImportItem,
-                                        MemberUpdate)
+        from app.schemas.member import MemberCreate, MemberImportItem, MemberUpdate
         from pydantic import ValidationError
 
         # 测试正确的数据

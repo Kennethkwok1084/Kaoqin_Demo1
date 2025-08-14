@@ -15,8 +15,7 @@ from app.main import app
 from app.models.member import Member, UserRole
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
-                                    create_async_engine)
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 # Export AsyncClient as AsyncTestClient for backward compatibility

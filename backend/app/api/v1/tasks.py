@@ -7,21 +7,44 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from app.api.deps import (create_error_response, create_response,
-                          get_current_active_admin,
-                          get_current_active_group_leader, get_current_user,
-                          get_db)
+from app.api.deps import (
+    create_error_response,
+    create_response,
+    get_current_active_admin,
+    get_current_active_group_leader,
+    get_current_user,
+    get_db,
+)
 from app.core.config import settings
 from app.models.member import Member, UserRole
-from app.models.task import (AssistanceTask, MonitoringTask, RepairTask,
-                             TaskCategory, TaskPriority, TaskStatus, TaskTag,
-                             TaskType, task_tag_association)
-from app.schemas.task import (TaskAssignment, TaskCreate, TaskDetailResponse,
-                              TaskImportRequest, TaskImportResult,
-                              TaskListResponse, TaskResponse, TaskSearchParams,
-                              TaskStatistics, TaskStatusUpdate, TaskTagCreate,
-                              TaskTagResponse, TaskUpdate, WorkHourCalculation,
-                              WorkHourResult)
+from app.models.task import (
+    AssistanceTask,
+    MonitoringTask,
+    RepairTask,
+    TaskCategory,
+    TaskPriority,
+    TaskStatus,
+    TaskTag,
+    TaskType,
+    task_tag_association,
+)
+from app.schemas.task import (
+    TaskAssignment,
+    TaskCreate,
+    TaskDetailResponse,
+    TaskImportRequest,
+    TaskImportResult,
+    TaskListResponse,
+    TaskResponse,
+    TaskSearchParams,
+    TaskStatistics,
+    TaskStatusUpdate,
+    TaskTagCreate,
+    TaskTagResponse,
+    TaskUpdate,
+    WorkHourCalculation,
+    WorkHourResult,
+)
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi import status as http_status
 from sqlalchemy import and_, delete, desc, func, or_, select, update
@@ -3543,8 +3566,7 @@ async def execute_ab_table_matching(
     权限：组长及以上可执行A/B表匹配
     """
     try:
-        from app.services.ab_table_matching_service import \
-            ABTableMatchingService
+        from app.services.ab_table_matching_service import ABTableMatchingService
 
         matching_service = ABTableMatchingService(db)
 
@@ -3657,7 +3679,9 @@ async def enhanced_import_with_ab_matching(
     """
     try:
         from app.services.ab_table_matching_service import (
-            ABTableMatchingService, MatchingStrategy)
+            ABTableMatchingService,
+            MatchingStrategy,
+        )
         from app.services.import_service import ImportService
 
         import_service = ImportService(db)

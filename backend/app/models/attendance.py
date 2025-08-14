@@ -10,8 +10,16 @@ from typing import TYPE_CHECKING, Optional
 from app.models.base import BaseModel
 from sqlalchemy import Boolean, Column, Date, DateTime
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy import (Float, ForeignKey, Index, Integer, String, Text, Time,
-                        UniqueConstraint)
+from sqlalchemy import (
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    Time,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, relationship
 
 if TYPE_CHECKING:

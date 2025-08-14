@@ -111,8 +111,12 @@ def test_database_engine():
         env_path = os.path.join(backend_path, ".env")
         load_dotenv(env_path)
 
-        from app.core.database import (AsyncSessionLocal, SessionLocal,
-                                       async_engine, sync_engine)
+        from app.core.database import (
+            AsyncSessionLocal,
+            SessionLocal,
+            async_engine,
+            sync_engine,
+        )
 
         print_test_result(
             "异步数据库引擎创建", async_engine is not None, "异步数据库引擎对象创建成功"

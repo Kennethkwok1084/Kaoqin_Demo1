@@ -50,10 +50,14 @@ def test_schema_imports():
     print("\n=== Schema导入测试 ===")
 
     try:
-        from app.schemas.member import (MemberCreate, MemberImportItem,
-                                        MemberImportRequest,
-                                        MemberImportResponse, MemberResponse,
-                                        MemberUpdate)
+        from app.schemas.member import (
+            MemberCreate,
+            MemberImportItem,
+            MemberImportRequest,
+            MemberImportResponse,
+            MemberResponse,
+            MemberUpdate,
+        )
 
         print_test_result("Schema导入", True, "所有Schema类导入成功")
         return True

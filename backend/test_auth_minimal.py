@@ -6,8 +6,7 @@ import asyncio
 import os
 
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
-                                    create_async_engine)
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 # 设置测试环境
 os.environ["ENVIRONMENT"] = "test"

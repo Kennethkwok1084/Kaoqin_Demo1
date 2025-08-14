@@ -13,10 +13,19 @@ from typing import Any, Dict, List, Optional, Tuple
 import pandas as pd
 from app.core.config import get_upload_path, settings
 from app.models.member import Member
-from app.models.task import (RepairTask, TaskCategory, TaskPriority,
-                             TaskStatus, TaskTag, TaskTagType, TaskType)
-from app.services.ab_table_matching_service import (ABTableMatchingService,
-                                                    MatchingStrategy)
+from app.models.task import (
+    RepairTask,
+    TaskCategory,
+    TaskPriority,
+    TaskStatus,
+    TaskTag,
+    TaskTagType,
+    TaskType,
+)
+from app.services.ab_table_matching_service import (
+    ABTableMatchingService,
+    MatchingStrategy,
+)
 from app.services.task_service import TaskService
 from fastapi import UploadFile
 from sqlalchemy import and_, func, or_, select

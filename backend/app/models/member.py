@@ -8,13 +8,24 @@ from datetime import date, datetime
 from typing import TYPE_CHECKING, List
 
 from app.models.base import BaseModel
-from sqlalchemy import (Boolean, Column, Date, DateTime, Enum, Integer, String,
-                        UniqueConstraint)
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    Enum,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, relationship
 
 if TYPE_CHECKING:
-    from app.models.attendance import (AttendanceException, AttendanceRecord,
-                                       MonthlyAttendanceSummary)
+    from app.models.attendance import (
+        AttendanceException,
+        AttendanceRecord,
+        MonthlyAttendanceSummary,
+    )
     from app.models.task import AssistanceTask, MonitoringTask, RepairTask
 
 

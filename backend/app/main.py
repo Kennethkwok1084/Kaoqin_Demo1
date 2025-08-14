@@ -10,8 +10,7 @@ from typing import AsyncGenerator
 
 from app.core.cache import cleanup_cache, init_cache
 from app.core.config import get_cors_origins, get_log_config, settings
-from app.core.database import (check_database_health, close_database,
-                               init_database)
+from app.core.database import check_database_health, close_database, init_database
 from app.core.exceptions import BaseCustomException, create_http_exception
 from app.core.security import get_security_headers
 from fastapi import FastAPI, Request, status

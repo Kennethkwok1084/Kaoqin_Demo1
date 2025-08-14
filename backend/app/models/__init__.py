@@ -3,14 +3,25 @@ Database models package.
 Imports all model classes for easy access.
 """
 
-from app.models.attendance import (AttendanceException,
-                                   AttendanceExceptionStatus, AttendanceRecord,
-                                   MonthlyAttendanceSummary)
+from app.models.attendance import (
+    AttendanceException,
+    AttendanceExceptionStatus,
+    AttendanceRecord,
+    MonthlyAttendanceSummary,
+)
 from app.models.base import Base, BaseModel, TimestampMixin
 from app.models.member import Member, UserRole
-from app.models.task import (AssistanceTask, MonitoringTask, RepairTask,
-                             TaskCategory, TaskPriority, TaskStatus, TaskTag,
-                             TaskType, task_tag_association)
+from app.models.task import (
+    AssistanceTask,
+    MonitoringTask,
+    RepairTask,
+    TaskCategory,
+    TaskPriority,
+    TaskStatus,
+    TaskTag,
+    TaskType,
+    task_tag_association,
+)
 
 # All model classes for easy import
 __all__ = [
