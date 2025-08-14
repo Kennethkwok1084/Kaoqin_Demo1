@@ -22,15 +22,20 @@ from app.core.security import get_password_hash
 AsyncTestClient = AsyncClient
 
 
-# Test database URL - use in-memory SQLite for testing
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+# Test database URL - use PostgreSQL for testing
+import os
+TEST_DATABASE_URL = os.getenv(
+    "DATABASE_URL", 
+    "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:38223/attendence_dev"
+)
 
 # Create test async engine
 test_async_engine = create_async_engine(
     TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
     echo=False,
+    pool_size=1,  # Single connection for remote database
+    max_overflow=0,
+    pool_pre_ping=True,
 )
 
 # Test session factory

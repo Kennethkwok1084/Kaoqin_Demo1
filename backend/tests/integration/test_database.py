@@ -44,7 +44,7 @@ class TestDatabaseConnection:
         
         for table_name in tables_to_check:
             result = await self.db.execute(
-                text(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'")
+                text(f"SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename='{table_name}'")
             )
             assert result.scalar() is not None, f"Table {table_name} should exist"
 

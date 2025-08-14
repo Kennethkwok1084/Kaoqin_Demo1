@@ -102,37 +102,20 @@ jobs:
     - name: Database connection test
       run: |
         cd backend
-        # 首先尝试连接生产数据库
-        echo "尝试连接生产PostgreSQL数据库..."
-        python simple_db_test.py && {
-          echo "生产数据库连接成功，运行完整测试"
-          echo "USE_PRODUCTION_DB=true" >> $GITHUB_ENV
-        } || {
-          echo "生产数据库连接失败，降级使用SQLite测试"
-          echo "USE_PRODUCTION_DB=false" >> $GITHUB_ENV
-          # 更新为SQLite配置
-          echo "DATABASE_URL=sqlite+aiosqlite:///:memory:" >> $GITHUB_ENV
-          echo "DATABASE_URL_SYNC=sqlite:///:memory:" >> $GITHUB_ENV
-          
-          # 验证SQLite配置
-          python -c "
-          import os
-          os.environ['DATABASE_URL'] = 'sqlite+aiosqlite:///:memory:'
-          os.environ['DATABASE_URL_SYNC'] = 'sqlite:///:memory:'
-          from app.core.config import settings
-          print(f'降级后数据库URL: {settings.DATABASE_URL}')
-          print('SQLite配置验证完成')
-          "
+        # 连接PostgreSQL数据库
+        echo "连接PostgreSQL数据库..."
+        python simple_db_test.py || {
+          echo "PostgreSQL数据库连接失败，停止构建"
+          exit 1
         }
-        
-        echo "数据库连接测试完成"
+        echo "PostgreSQL数据库连接成功"
 
     - name: Run unit tests
       run: |
         cd backend
-        # 运行单元测试（使用SQLite内存数据库，快速执行）
+        # 运行单元测试（使用PostgreSQL数据库）
         echo "运行单元测试..."
-        TESTING=true DATABASE_URL="sqlite+aiosqlite:///:memory:" python -m pytest tests/unit/ -v --tb=short --cov=app --cov-report=xml --cov-report=html --cov-report=term || echo "单元测试失败，但继续集成测试"
+        TESTING=true python -m pytest tests/unit/ -v --tb=short --cov=app --cov-report=xml --cov-report=html --cov-report=term || echo "单元测试失败，但继续集成测试"
         
         # 保存覆盖率报告
         if [ -f "coverage.xml" ]; then
@@ -142,14 +125,7 @@ jobs:
     - name: Run integration tests
       run: |
         cd backend
-        # 根据数据库连接情况选择测试策略
-        if [ "$USE_PRODUCTION_DB" = "true" ]; then
-          echo "使用生产数据库进行集成测试..."
-          echo "警告：使用生产数据库，测试数据可能会影响生产环境"
-        else
-          echo "使用SQLite内存数据库进行集成测试..."
-          echo "注意：SQLite环境可能无法发现PostgreSQL特有问题"
-        fi
+        echo "使用PostgreSQL数据库进行集成测试..."
         
         # 运行集成测试
         if [ -f "run_integration_tests.py" ]; then
@@ -159,12 +135,7 @@ jobs:
           python -m pytest tests/integration/ -v --tb=short || echo "集成测试失败，但继续构建"
         fi
         
-        # 测试结果总结
-        if [ "$USE_PRODUCTION_DB" = "true" ]; then
-          echo "✓ 使用真实PostgreSQL数据库测试，结果更可靠"
-        else
-          echo "⚠ 使用SQLite测试，建议在生产数据库可用时重新测试"
-        fi
+        echo "使用真实PostgreSQL数据库测试，结果可靠"
 
     - name: Run performance benchmarks
       run: |

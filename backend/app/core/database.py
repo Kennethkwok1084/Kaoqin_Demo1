@@ -211,13 +211,7 @@ async def get_pool_status() -> dict:
 # Database Event Listeners
 from sqlalchemy import event
 
-@event.listens_for(async_engine.sync_engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
-    """Set database pragmas for SQLite (if used)."""
-    if "sqlite" in str(dbapi_connection):
-        cursor = dbapi_connection.cursor()
-        cursor.execute("PRAGMA foreign_keys=ON")
-        cursor.close()
+# Note: SQLite-specific pragmas removed as we use PostgreSQL exclusively
 
 
 @event.listens_for(async_engine.sync_engine, "before_cursor_execute")
