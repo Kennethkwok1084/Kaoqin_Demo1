@@ -8,8 +8,8 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 
 # 设置环境变量使用远程数据库
 os.environ["ENVIRONMENT"] = "production"
-os.environ["DATABASE_URL"] = "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:38223/attendence_dev"
-os.environ["DATABASE_URL_SYNC"] = "postgresql://kwok:Onjuju1084@8.138.233.54:38223/attendence_dev"
+os.environ["DATABASE_URL"] = "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev"
+os.environ["DATABASE_URL_SYNC"] = "postgresql://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev"
 os.environ["SECRET_KEY"] = "test_secret_key_for_remote_testing"
 os.environ["ALGORITHM"] = "HS256"
 
@@ -20,7 +20,7 @@ async def test_remote_integration():
     try:
         # 创建单连接引擎（避免并发问题）
         test_engine = create_async_engine(
-            "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:38223/attendence_dev",
+            "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev",
             echo=False,
             pool_size=1,  # 单连接
             max_overflow=0,  # 无额外连接

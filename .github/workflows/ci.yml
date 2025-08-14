@@ -47,7 +47,7 @@ jobs:
         
         # 测试数据库连接
         echo "测试数据库连接..."
-        pg_isready -h 8.138.233.54 -p 38223 -U kwok -d attendence_dev || echo "数据库连接测试完成"
+        pg_isready -h 8.138.233.54 -p 5432 -U kwok -d attendence_dev || echo "数据库连接测试完成"
 
     - name: Install Python dependencies
       run: |
@@ -76,8 +76,8 @@ jobs:
         echo "TESTING=true" >> $GITHUB_ENV
         echo "DEBUG=false" >> $GITHUB_ENV
         # 使用指定的外部PostgreSQL数据库
-        echo "DATABASE_URL=postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:38223/attendence_dev" >> $GITHUB_ENV
-        echo "DATABASE_URL_SYNC=postgresql://kwok:Onjuju1084@8.138.233.54:38223/attendence_dev" >> $GITHUB_ENV
+        echo "DATABASE_URL=postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev" >> $GITHUB_ENV
+        echo "DATABASE_URL_SYNC=postgresql://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev" >> $GITHUB_ENV
         echo "REDIS_URL=redis://localhost:6379/0" >> $GITHUB_ENV
         # JWT密钥
         echo "SECRET_KEY=test_secret_key_for_ci_cd_environment_only" >> $GITHUB_ENV

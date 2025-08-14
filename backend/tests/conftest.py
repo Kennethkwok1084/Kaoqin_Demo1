@@ -26,7 +26,7 @@ AsyncTestClient = AsyncClient
 import os
 TEST_DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:38223/attendence_dev"
+    "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev"
 )
 
 # Create test async engine

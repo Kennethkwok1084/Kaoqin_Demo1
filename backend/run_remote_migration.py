@@ -8,7 +8,7 @@ from app.models import Base
 
 # 设置环境变量
 os.environ["ENVIRONMENT"] = "production"
-os.environ["DATABASE_URL"] = "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:38223/attendence_dev"
+os.environ["DATABASE_URL"] = "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev"
 
 async def run_migration():
     """使用单连接运行数据库迁移"""
@@ -17,7 +17,7 @@ async def run_migration():
     try:
         # 创建单连接引擎
         engine = create_async_engine(
-            "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:38223/attendence_dev",
+            "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev",
             echo=True,
             pool_size=1,  # 单连接
             max_overflow=0,  # 无额外连接

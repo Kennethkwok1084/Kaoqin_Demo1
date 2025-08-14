@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 # 设置环境变量
 os.environ["ENVIRONMENT"] = "production"
-os.environ["DATABASE_URL"] = "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:38223/attendence_dev"
+os.environ["DATABASE_URL"] = "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev"
 
 async def test_basic_connection():
     """测试基础连接 - 使用asyncpg直连"""
@@ -18,7 +18,7 @@ async def test_basic_connection():
     try:
         conn = await asyncpg.connect(
             host='8.138.233.54',
-            port=38223,
+            port=5432,
             user='kwok',
             password='Onjuju1084',
             database='attendence_dev',
@@ -63,7 +63,7 @@ async def create_members_table_minimal():
     try:
         conn = await asyncpg.connect(
             host='8.138.233.54',
-            port=38223,
+            port=5432,
             user='kwok',
             password='Onjuju1084',
             database='attendence_dev'

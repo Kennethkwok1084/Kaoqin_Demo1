@@ -14,8 +14,8 @@ from sqlalchemy.orm import sessionmaker
 
 # Set testing environment before importing app
 os.environ["TESTING"] = "1"
-os.environ["DATABASE_URL"] = os.getenv("DATABASE_URL", "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:38223/attendence_dev")
-os.environ["DATABASE_URL_SYNC"] = os.getenv("DATABASE_URL_SYNC", "postgresql://kwok:Onjuju1084@8.138.233.54:38223/attendence_dev")
+os.environ["DATABASE_URL"] = os.getenv("DATABASE_URL", "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev")
+os.environ["DATABASE_URL_SYNC"] = os.getenv("DATABASE_URL_SYNC", "postgresql://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev")
 os.environ["REDIS_URL"] = "redis://localhost:6379/1"
 
 from app.main import app
@@ -23,16 +23,16 @@ from app.core.config import settings
 
 # Override settings for testing
 settings.TESTING = True
-settings.DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:38223/attendence_dev")
-settings.DATABASE_URL_SYNC = os.getenv("DATABASE_URL_SYNC", "postgresql://kwok:Onjuju1084@8.138.233.54:38223/attendence_dev")
+settings.DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev")
+settings.DATABASE_URL_SYNC = os.getenv("DATABASE_URL_SYNC", "postgresql://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev")
 from app.core.database import get_async_session, get_sync_session
 from app.models import Base, Member, UserRole
 from app.core.security import get_password_hash
 
 
 # 测试数据库配置
-TEST_DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:38223/attendence_dev")
-TEST_DATABASE_URL_SYNC = os.getenv("DATABASE_URL_SYNC", "postgresql://kwok:Onjuju1084@8.138.233.54:38223/attendence_dev")
+TEST_DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev")
+TEST_DATABASE_URL_SYNC = os.getenv("DATABASE_URL_SYNC", "postgresql://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev")
 
 # 创建测试引擎
 test_async_engine = create_async_engine(
