@@ -11,7 +11,6 @@ from unittest.mock import AsyncMock, Mock, patch
 import pandas as pd
 import pytest
 import pytest_asyncio
-
 from app.models.member import Member, UserRole
 from app.models.task import RepairTask, TaskPriority, TaskStatus
 

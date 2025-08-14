@@ -67,7 +67,7 @@ class Settings(BaseSettings):
 
     # Password Configuration
     PWD_CONTEXT_SCHEMES: List[str] = ["bcrypt"]
-    PWD_CONTEXT_DEPRECATED: str = "auto"
+    PWD_CONTEXT_DEPRECATED: Optional[str] = None
 
     # Encryption Configuration (AES-256-GCM)
     ENCRYPTION_KEY: str = Field(

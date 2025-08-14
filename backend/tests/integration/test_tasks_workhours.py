@@ -7,9 +7,8 @@ from datetime import datetime, timedelta
 
 import pytest
 import pytest_asyncio
-from sqlalchemy import select
-
 from app.models.task import RepairTask, TaskPriority, TaskStatus, TaskType
+from sqlalchemy import select
 
 
 class TestTasksCRUD:

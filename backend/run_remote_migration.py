@@ -5,9 +5,8 @@
 import asyncio
 import os
 
-from sqlalchemy.ext.asyncio import create_async_engine
-
 from app.models import Base
+from sqlalchemy.ext.asyncio import create_async_engine
 
 # 设置环境变量
 os.environ["ENVIRONMENT"] = "production"

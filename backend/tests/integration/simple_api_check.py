@@ -104,9 +104,8 @@ def check_api_routes():
 def check_basic_response():
     """Check basic API response"""
     try:
-        from fastapi.testclient import TestClient
-
         from app.main import app
+        from fastapi.testclient import TestClient
 
         client = TestClient(app)
 

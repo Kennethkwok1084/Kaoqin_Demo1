@@ -4,14 +4,15 @@ Handles SQLAlchemy async and sync database connections.
 """
 
 import logging
+import time
 from typing import AsyncGenerator, Generator
 
+from app.core.config import get_database_url, get_database_url_sync, settings
 from sqlalchemy import MetaData, create_engine
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
+                                    create_async_engine)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
-
-from app.core.config import get_database_url, get_database_url_sync, settings
 
 logger = logging.getLogger(__name__)
 
@@ -34,14 +35,17 @@ async_engine = create_async_engine(
     echo=settings.DEBUG,
     future=True,
     pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
-    pool_recycle=3600,  # Recycle connections every hour
+    pool_size=5,  # Reduced pool size for remote connection
+    max_overflow=10,  # Reduced overflow
+    pool_recycle=1800,  # Recycle connections every 30 minutes
     connect_args={
-        "statement_cache_size": 0,  # Disable prepared statements for pgbouncer compatibility
+        "command_timeout": 60,
         "server_settings": {
             "application_name": "kaoqin_backend",
         },
+    },
+    execution_options={
+        "compiled_cache": {},
     },
 )
 
@@ -240,6 +244,3 @@ def receive_after_cursor_execute(
         total = time.time() - context._query_start_time
         if total > 0.1:  # Log queries taking more than 100ms
             logger.warning(f"Slow query ({total:.3f}s): {statement[:100]}...")
-
-
-import time

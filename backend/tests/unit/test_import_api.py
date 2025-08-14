@@ -7,7 +7,6 @@ from typing import Any, Dict
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-
 from app.api.v1.import_api import get_import_field_mapping
 from app.models.member import Member, UserRole
 

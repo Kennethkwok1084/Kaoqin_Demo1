@@ -60,7 +60,6 @@ def test_sync_connection():
 
     try:
         import psycopg2
-
         from app.core.config import settings
 
         # 解析数据库URL

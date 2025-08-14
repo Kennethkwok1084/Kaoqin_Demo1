@@ -8,16 +8,16 @@ from typing import AsyncGenerator, Generator
 
 import pytest
 import pytest_asyncio
-from fastapi.testclient import TestClient
-from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.pool import StaticPool
-
 from app.core.config import settings
 from app.core.database import Base, get_async_session
 from app.core.security import get_password_hash
 from app.main import app
 from app.models.member import Member, UserRole
+from fastapi.testclient import TestClient
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
+                                    create_async_engine)
+from sqlalchemy.pool import StaticPool
 
 # Export AsyncClient as AsyncTestClient for backward compatibility
 AsyncTestClient = AsyncClient
@@ -38,6 +38,11 @@ test_async_engine = create_async_engine(
     pool_size=1,  # Single connection for remote database
     max_overflow=0,
     pool_pre_ping=True,
+    connect_args={
+        "statement_cache_size": 0,  # Disable prepared statements
+        "prepared_statement_cache_size": 0,  # Additional safeguard
+        "server_settings": {"application_name": "kaoqin_pytest"},
+    },
 )
 
 # Test session factory

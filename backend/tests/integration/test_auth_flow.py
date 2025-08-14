@@ -7,10 +7,9 @@ from datetime import datetime, timedelta
 
 import pytest
 import pytest_asyncio
-from jose import jwt
-
 from app.core.config import settings
 from app.core.security import create_access_token, create_refresh_token
+from jose import jwt
 
 
 class TestAuthenticationFlow:

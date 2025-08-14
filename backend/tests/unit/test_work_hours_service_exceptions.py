@@ -7,13 +7,10 @@ from datetime import date, datetime, timedelta
 from unittest.mock import AsyncMock, Mock
 
 import pytest
-
 from app.models.member import Member, UserRole
 from app.models.task import RepairTask, TaskStatus, TaskType
-from app.services.work_hours_service import (
-    RushTaskMarkingService,
-    WorkHoursCalculationService,
-)
+from app.services.work_hours_service import (RushTaskMarkingService,
+                                             WorkHoursCalculationService)
 
 
 class TestWorkHoursServiceExceptions:

@@ -5,17 +5,13 @@
 
 import pytest
 import pytest_asyncio
-from sqlalchemy import select, text
-from sqlalchemy.exc import IntegrityError
-
 from app.core.security import get_password_hash
 from app.models import Member, UserRole
-from app.models.attendance import (
-    AttendanceException,
-    AttendanceExceptionStatus,
-    AttendanceRecord,
-)
+from app.models.attendance import (AttendanceException,
+                                   AttendanceExceptionStatus, AttendanceRecord)
 from app.models.task import RepairTask, TaskPriority, TaskStatus, TaskType
+from sqlalchemy import select, text
+from sqlalchemy.exc import IntegrityError
 
 
 class TestDatabaseConnection:

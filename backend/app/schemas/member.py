@@ -7,9 +7,8 @@ import re
 from datetime import date, datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, root_validator, validator
-
 from app.models.member import UserRole
+from pydantic import BaseModel, Field, root_validator, validator
 
 
 class MemberBase(BaseModel):

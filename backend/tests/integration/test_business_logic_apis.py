@@ -8,12 +8,12 @@ from datetime import date, datetime, timedelta
 from typing import Any, Dict
 
 import pytest
-from httpx import AsyncClient
-
 from app.core.config import settings
 from app.models.attendance import AttendanceRecord
 from app.models.member import Member, UserRole
-from app.models.task import RepairTask, TaskCategory, TaskPriority, TaskStatus, TaskType
+from app.models.task import (RepairTask, TaskCategory, TaskPriority,
+                             TaskStatus, TaskType)
+from httpx import AsyncClient
 
 
 class TestWorkHoursManagementAPI:

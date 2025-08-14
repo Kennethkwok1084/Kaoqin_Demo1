@@ -7,26 +7,12 @@ from datetime import date, datetime, time
 from enum import Enum
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    Date,
-    DateTime,
-)
-from sqlalchemy import Enum as SQLEnum
-from sqlalchemy import (
-    Float,
-    ForeignKey,
-    Index,
-    Integer,
-    String,
-    Text,
-    Time,
-    UniqueConstraint,
-)
-from sqlalchemy.orm import Mapped, relationship
-
 from app.models.base import BaseModel
+from sqlalchemy import Boolean, Column, Date, DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import (Float, ForeignKey, Index, Integer, String, Text, Time,
+                        UniqueConstraint)
+from sqlalchemy.orm import Mapped, relationship
 
 if TYPE_CHECKING:
     from app.models.member import Member

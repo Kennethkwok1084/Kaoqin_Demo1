@@ -5,9 +5,8 @@
 
 import pytest
 import pytest_asyncio
-from sqlalchemy import select
-
 from app.models import Member, UserRole
+from sqlalchemy import select
 
 
 class TestMembersCRUD:

@@ -4,11 +4,10 @@ Comprehensive test suite for login, logout, token refresh, and profile managemen
 """
 
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.security import create_access_token, create_refresh_token
 from app.models.member import Member
+from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class TestAuthLogin:

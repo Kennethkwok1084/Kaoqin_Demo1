@@ -7,10 +7,9 @@ import logging
 from datetime import timedelta
 from typing import Any, Dict
 
+from app.core.config import settings
 from celery import Celery
 from celery.schedules import crontab
-
-from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 

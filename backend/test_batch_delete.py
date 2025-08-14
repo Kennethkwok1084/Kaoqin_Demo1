@@ -10,10 +10,9 @@ def test_batch_delete_endpoint():
     print("🧪 Testing batch delete endpoint...")
 
     try:
+        from app.api.v1.tasks import router
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
-
-        from app.api.v1.tasks import router
 
         # Create a test app
         app = FastAPI()

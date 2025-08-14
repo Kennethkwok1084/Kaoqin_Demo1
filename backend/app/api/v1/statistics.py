@@ -8,38 +8,23 @@ from calendar import monthrange
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional
 
+from app.api.deps import (create_error_response, create_response,
+                          get_current_active_admin,
+                          get_current_active_group_leader, get_current_user,
+                          get_db)
+from app.core.config import settings
+from app.models.attendance import (AttendanceException,
+                                   AttendanceExceptionStatus, AttendanceRecord)
+from app.models.member import Member, UserRole
+from app.models.task import (AssistanceTask, MonitoringTask, RepairTask,
+                             TaskCategory, TaskPriority, TaskStatus, TaskTag,
+                             TaskType)
+from app.services.attendance_service import AttendanceService
+from app.services.task_service import TaskService
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, case, desc, extract, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
-
-from app.api.deps import (
-    create_error_response,
-    create_response,
-    get_current_active_admin,
-    get_current_active_group_leader,
-    get_current_user,
-    get_db,
-)
-from app.core.config import settings
-from app.models.attendance import (
-    AttendanceException,
-    AttendanceExceptionStatus,
-    AttendanceRecord,
-)
-from app.models.member import Member, UserRole
-from app.models.task import (
-    AssistanceTask,
-    MonitoringTask,
-    RepairTask,
-    TaskCategory,
-    TaskPriority,
-    TaskStatus,
-    TaskTag,
-    TaskType,
-)
-from app.services.attendance_service import AttendanceService
-from app.services.task_service import TaskService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -928,9 +913,8 @@ async def get_attendance_statistics(
 ):
     """获取考勤统计数据（基于工时）"""
     try:
-        from sqlalchemy import func, select
-
         from app.models.task import AssistanceTask, MonitoringTask, RepairTask
+        from sqlalchemy import func, select
 
         # 解析日期范围
         start_date_obj = datetime.strptime(start_date, "%Y-%m-%d").date()

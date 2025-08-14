@@ -8,7 +8,6 @@ import asyncio
 import pytest
 import pytest_benchmark
 from httpx import AsyncClient
-
 from tests.conftest import AsyncTestClient
 
 

@@ -6,7 +6,8 @@ import asyncio
 import os
 
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
+                                    create_async_engine)
 
 # 设置环境变量使用远程数据库
 os.environ["ENVIRONMENT"] = "production"
@@ -33,7 +34,9 @@ async def test_remote_integration():
             max_overflow=0,  # 无额外连接
             pool_pre_ping=True,
             connect_args={
-                "server_settings": {"application_name": "kaoqin_integration_test"}
+                "statement_cache_size": 0,  # 禁用预处理语句缓存
+                "prepared_statement_cache_size": 0,  # 额外保障
+                "server_settings": {"application_name": "kaoqin_integration_test"},
             },
         )
 

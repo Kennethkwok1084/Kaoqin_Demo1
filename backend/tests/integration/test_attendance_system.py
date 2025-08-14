@@ -7,13 +7,9 @@ from datetime import date, datetime, timedelta
 
 import pytest
 import pytest_asyncio
+from app.models.attendance import (AttendanceException,
+                                   AttendanceExceptionStatus, AttendanceRecord)
 from sqlalchemy import select
-
-from app.models.attendance import (
-    AttendanceException,
-    AttendanceExceptionStatus,
-    AttendanceRecord,
-)
 
 
 class TestAttendanceCheckinCheckout:

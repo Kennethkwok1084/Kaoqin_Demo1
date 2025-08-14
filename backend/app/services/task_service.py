@@ -8,28 +8,16 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
+from app.core.config import settings
+from app.models.member import Member
+from app.models.task import (AssistanceTask, MonitoringTask, RepairTask,
+                             TaskCategory, TaskPriority, TaskStatus, TaskTag,
+                             TaskTagType, TaskType, task_tag_association)
+from app.services.work_hours_service import (RushTaskMarkingService,
+                                             WorkHoursCalculationService)
 from sqlalchemy import and_, desc, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
-
-from app.core.config import settings
-from app.models.member import Member
-from app.models.task import (
-    AssistanceTask,
-    MonitoringTask,
-    RepairTask,
-    TaskCategory,
-    TaskPriority,
-    TaskStatus,
-    TaskTag,
-    TaskTagType,
-    TaskType,
-    task_tag_association,
-)
-from app.services.work_hours_service import (
-    RushTaskMarkingService,
-    WorkHoursCalculationService,
-)
 
 logger = logging.getLogger(__name__)
 

@@ -15,19 +15,13 @@ def test_imports():
         # Test core model imports
         from app.models.member import Member
         from app.models.task import RepairTask, TaskTag, TaskTagType
-
         # Test service imports
         from app.services.ab_table_matching_service import (
-            ABTableMatchingService,
-            MatchingStrategy,
-            MatchResult,
-        )
+            ABTableMatchingService, MatchingStrategy, MatchResult)
         from app.services.import_service import ImportService
         from app.services.task_service import TaskService
         from app.services.work_hours_service import (
-            RushTaskMarkingService,
-            WorkHoursCalculationService,
-        )
+            RushTaskMarkingService, WorkHoursCalculationService)
 
         print("✓ All imports successful")
         return True
@@ -71,7 +65,8 @@ def test_matching_service_logic():
     """Test AB table matching service logic without database"""
     try:
         # Test similarity algorithms
-        from app.services.ab_table_matching_service import ABTableMatchingService
+        from app.services.ab_table_matching_service import \
+            ABTableMatchingService
 
         # Create a mock service instance (without db)
         class MockDB:

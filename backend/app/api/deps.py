@@ -5,15 +5,14 @@ Provides common dependencies for database sessions, authentication, and paginati
 
 from typing import Generator, Optional
 
+from app.core.config import settings
+from app.core.database import get_async_session, get_sync_session
+from app.core.security import verify_token
+from app.models.member import Member
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-
-from app.core.config import settings
-from app.core.database import get_async_session, get_sync_session
-from app.core.security import verify_token
-from app.models.member import Member, UserRole
 
 # Security scheme
 security = HTTPBearer()
