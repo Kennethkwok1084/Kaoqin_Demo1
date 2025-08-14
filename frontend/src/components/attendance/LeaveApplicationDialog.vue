@@ -15,7 +15,11 @@
         class="leave-form"
       >
         <el-form-item label="请假类型" prop="type">
-          <el-select v-model="formData.type" placeholder="请选择请假类型" style="width: 100%">
+          <el-select
+            v-model="formData.type"
+            placeholder="请选择请假类型"
+            style="width: 100%"
+          >
             <el-option
               v-for="(config, type) in LEAVE_TYPE_CONFIG"
               :key="type"
@@ -133,11 +137,7 @@
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="handleClose">取消</el-button>
-        <el-button 
-          type="primary" 
-          :loading="loading"
-          @click="handleSubmit"
-        >
+        <el-button type="primary" :loading="loading" @click="handleSubmit">
           提交申请
         </el-button>
       </div>
@@ -177,7 +177,7 @@ const calculatedHours = ref(0)
 // 计算属性
 const visible = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: value => emit('update:modelValue', value)
 })
 
 // 表单数据
@@ -193,21 +193,11 @@ const formData = reactive<CreateLeaveRequest>({
 
 // 表单验证规则
 const formRules = {
-  type: [
-    { required: true, message: '请选择请假类型', trigger: 'change' }
-  ],
-  startDate: [
-    { required: true, message: '请选择开始日期', trigger: 'change' }
-  ],
-  endDate: [
-    { required: true, message: '请选择结束日期', trigger: 'change' }
-  ],
-  startTime: [
-    { required: true, message: '请选择开始时间', trigger: 'change' }
-  ],
-  endTime: [
-    { required: true, message: '请选择结束时间', trigger: 'change' }
-  ],
+  type: [{ required: true, message: '请选择请假类型', trigger: 'change' }],
+  startDate: [{ required: true, message: '请选择开始日期', trigger: 'change' }],
+  endDate: [{ required: true, message: '请选择结束日期', trigger: 'change' }],
+  startTime: [{ required: true, message: '请选择开始时间', trigger: 'change' }],
+  endTime: [{ required: true, message: '请选择结束时间', trigger: 'change' }],
   reason: [
     { required: true, message: '请填写请假原因', trigger: 'blur' },
     { min: 10, message: '请假原因至少10个字符', trigger: 'blur' }
@@ -216,14 +206,21 @@ const formRules = {
 
 // 方法
 const calculateDays = () => {
-  if (formData.startDate && formData.endDate && formData.startTime && formData.endTime) {
-    const startDateTime = new Date(`${formData.startDate} ${formData.startTime}`)
+  if (
+    formData.startDate &&
+    formData.endDate &&
+    formData.startTime &&
+    formData.endTime
+  ) {
+    const startDateTime = new Date(
+      `${formData.startDate} ${formData.startTime}`
+    )
     const endDateTime = new Date(`${formData.endDate} ${formData.endTime}`)
-    
+
     if (endDateTime > startDateTime) {
       const diffMs = endDateTime.getTime() - startDateTime.getTime()
       const diffHours = diffMs / (1000 * 60 * 60)
-      
+
       calculatedDays.value = Math.floor(diffHours / 24)
       calculatedHours.value = Math.round(diffHours % 24)
     } else {
@@ -261,9 +258,11 @@ const handleSubmit = async () => {
     if (!valid) return
 
     // 验证时间逻辑
-    const startDateTime = new Date(`${formData.startDate} ${formData.startTime}`)
+    const startDateTime = new Date(
+      `${formData.startDate} ${formData.startTime}`
+    )
     const endDateTime = new Date(`${formData.endDate} ${formData.endTime}`)
-    
+
     if (endDateTime <= startDateTime) {
       ElMessage.error('结束时间必须晚于开始时间')
       return
@@ -278,11 +277,10 @@ const handleSubmit = async () => {
     }
 
     await attendanceApi.createLeaveApplication(submitData)
-    
+
     ElMessage.success('请假申请提交成功')
     emit('success')
     handleClose()
-
   } catch (error) {
     console.error('提交申请失败:', error)
     ElMessage.error('提交申请失败')
@@ -292,11 +290,13 @@ const handleSubmit = async () => {
 }
 
 const beforeUpload = (file: File) => {
-  const isValidType = file.type.startsWith('image/') || 
-                     file.type === 'application/pdf' ||
-                     file.type === 'application/msword' ||
-                     file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-  
+  const isValidType =
+    file.type.startsWith('image/') ||
+    file.type === 'application/pdf' ||
+    file.type === 'application/msword' ||
+    file.type ===
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+
   if (!isValidType) {
     ElMessage.error('只能上传图片、PDF或Word文档！')
     return false
@@ -320,22 +320,28 @@ const handleExceed = () => {
 }
 
 // 监听
-watch(() => visible.value, (val) => {
-  if (val) {
-    nextTick(() => {
-      formRef.value?.clearValidate()
-    })
+watch(
+  () => visible.value,
+  val => {
+    if (val) {
+      nextTick(() => {
+        formRef.value?.clearValidate()
+      })
+    }
   }
-})
+)
 
-watch([
-  () => formData.startDate,
-  () => formData.endDate,
-  () => formData.startTime,
-  () => formData.endTime
-], () => {
-  calculateDays()
-})
+watch(
+  [
+    () => formData.startDate,
+    () => formData.endDate,
+    () => formData.startTime,
+    () => formData.endTime
+  ],
+  () => {
+    calculateDays()
+  }
+)
 </script>
 
 <style scoped lang="scss">

@@ -31,7 +31,7 @@ export default defineConfig({
       dts: true
     })
   ],
-  
+
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
@@ -44,15 +44,16 @@ export default defineConfig({
       '@assets': resolve(__dirname, 'src/assets')
     }
   },
-  
+
   css: {
     preprocessorOptions: {
       scss: {
-        additionalData: '@use "@/styles/variables.scss" as *; @use "@/styles/mixins.scss" as *;'
+        additionalData:
+          '@use "@/styles/variables.scss" as *; @use "@/styles/mixins.scss" as *;'
       }
     }
   },
-  
+
   test: {
     globals: true,
     environment: 'jsdom',
@@ -74,12 +75,6 @@ export default defineConfig({
       'tests/unit/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'src/**/__tests__/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
-    exclude: [
-      'node_modules/',
-      'dist/',
-      '.idea/',
-      '.git/',
-      '.cache/'
-    ]
+    exclude: ['node_modules/', 'dist/', '.idea/', '.git/', '.cache/']
   }
 })

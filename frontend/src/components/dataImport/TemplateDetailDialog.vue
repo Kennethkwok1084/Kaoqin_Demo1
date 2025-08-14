@@ -92,9 +92,7 @@
             width="120"
           />
         </el-table>
-        <div class="sample-info">
-          显示前 3 行示例数据
-        </div>
+        <div class="sample-info">显示前 3 行示例数据</div>
       </div>
     </div>
 
@@ -131,11 +129,14 @@ const emit = defineEmits<Emits>()
 
 const dialogVisible = ref(false)
 
-watch(() => props.visible, (visible) => {
-  dialogVisible.value = visible
-})
+watch(
+  () => props.visible,
+  visible => {
+    dialogVisible.value = visible
+  }
+)
 
-watch(dialogVisible, (visible) => {
+watch(dialogVisible, visible => {
   emit('update:visible', visible)
 })
 

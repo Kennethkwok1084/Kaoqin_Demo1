@@ -1,6 +1,10 @@
 // HTTP 客户端配置
 
-import axios, { type AxiosInstance, type AxiosResponse, type AxiosError } from 'axios'
+import axios, {
+  type AxiosInstance,
+  type AxiosResponse,
+  type AxiosError
+} from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getToken, removeToken } from '@/utils/auth'
 import router from '@/router'
@@ -16,7 +20,7 @@ export const http: AxiosInstance = axios.create({
 
 // 请求拦截器
 http.interceptors.request.use(
-  (config) => {
+  config => {
     // 添加认证令牌
     const token = getToken()
     if (token) {
@@ -33,7 +37,7 @@ http.interceptors.request.use(
 
     return config
   },
-  (error) => {
+  error => {
     console.error('请求拦截器错误:', error)
     return Promise.reject(error)
   }
@@ -118,20 +122,18 @@ http.interceptors.response.use(
 
 // 导出便捷方法
 export const api = {
-  get: <T = any>(url: string, config?: any) => 
-    http.get<T>(url, config),
-  
-  post: <T = any>(url: string, data?: any, config?: any) => 
+  get: <T = any>(url: string, config?: any) => http.get<T>(url, config),
+
+  post: <T = any>(url: string, data?: any, config?: any) =>
     http.post<T>(url, data, config),
-  
-  put: <T = any>(url: string, data?: any, config?: any) => 
+
+  put: <T = any>(url: string, data?: any, config?: any) =>
     http.put<T>(url, data, config),
-  
-  patch: <T = any>(url: string, data?: any, config?: any) => 
+
+  patch: <T = any>(url: string, data?: any, config?: any) =>
     http.patch<T>(url, data, config),
-  
-  delete: <T = any>(url: string, config?: any) => 
-    http.delete<T>(url, config)
+
+  delete: <T = any>(url: string, config?: any) => http.delete<T>(url, config)
 }
 
 export default http

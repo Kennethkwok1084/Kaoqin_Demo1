@@ -7,24 +7,11 @@
         <p class="page-description">数据分析、图表展示和报表生成</p>
       </div>
       <div class="header-actions">
-        <el-button 
-          type="primary" 
-          :icon="Plus" 
-          @click="showReportDialog = true"
-        >
+        <el-button type="primary" :icon="Plus" @click="showReportDialog = true">
           生成报表
         </el-button>
-        <el-button 
-          :icon="Download" 
-          @click="handleExport"
-        >
-          导出数据
-        </el-button>
-        <el-button 
-          :icon="Refresh" 
-          @click="refreshData"
-          :loading="refreshing"
-        >
+        <el-button :icon="Download" @click="handleExport"> 导出数据 </el-button>
+        <el-button :icon="Refresh" @click="refreshData" :loading="refreshing">
           刷新
         </el-button>
       </div>
@@ -42,8 +29,14 @@
               <div class="metric-content">
                 <div class="metric-value">{{ overview.totalTasks }}</div>
                 <div class="metric-label">总任务数</div>
-                <div class="metric-trend" :class="getTrendClass(overview.monthlyGrowth)">
-                  <el-icon><CaretTop v-if="overview.monthlyGrowth > 0" /><CaretBottom v-else /></el-icon>
+                <div
+                  class="metric-trend"
+                  :class="getTrendClass(overview.monthlyGrowth)"
+                >
+                  <el-icon
+                    ><CaretTop v-if="overview.monthlyGrowth > 0" /><CaretBottom
+                      v-else
+                  /></el-icon>
                   {{ Math.abs(overview.monthlyGrowth) }}%
                 </div>
               </div>
@@ -176,15 +169,25 @@
                   </el-button>
                   <template #dropdown>
                     <el-dropdown-menu>
-                      <el-dropdown-item command="export-chart-1">导出图表</el-dropdown-item>
-                      <el-dropdown-item command="fullscreen-1">全屏查看</el-dropdown-item>
-                      <el-dropdown-item command="refresh-1">刷新数据</el-dropdown-item>
+                      <el-dropdown-item command="export-chart-1"
+                        >导出图表</el-dropdown-item
+                      >
+                      <el-dropdown-item command="fullscreen-1"
+                        >全屏查看</el-dropdown-item
+                      >
+                      <el-dropdown-item command="refresh-1"
+                        >刷新数据</el-dropdown-item
+                      >
                     </el-dropdown-menu>
                   </template>
                 </el-dropdown>
               </div>
             </template>
-            <div class="chart-container" ref="taskTrendChartRef" style="height: 300px;"></div>
+            <div
+              class="chart-container"
+              ref="taskTrendChartRef"
+              style="height: 300px"
+            ></div>
           </el-card>
         </el-col>
 
@@ -200,20 +203,30 @@
                   </el-button>
                   <template #dropdown>
                     <el-dropdown-menu>
-                      <el-dropdown-item command="export-chart-2">导出图表</el-dropdown-item>
-                      <el-dropdown-item command="fullscreen-2">全屏查看</el-dropdown-item>
-                      <el-dropdown-item command="refresh-2">刷新数据</el-dropdown-item>
+                      <el-dropdown-item command="export-chart-2"
+                        >导出图表</el-dropdown-item
+                      >
+                      <el-dropdown-item command="fullscreen-2"
+                        >全屏查看</el-dropdown-item
+                      >
+                      <el-dropdown-item command="refresh-2"
+                        >刷新数据</el-dropdown-item
+                      >
                     </el-dropdown-menu>
                   </template>
                 </el-dropdown>
               </div>
             </template>
-            <div class="chart-container" ref="taskTypeChartRef" style="height: 300px;"></div>
+            <div
+              class="chart-container"
+              ref="taskTypeChartRef"
+              style="height: 300px"
+            ></div>
           </el-card>
         </el-col>
       </el-row>
 
-      <el-row :gutter="20" style="margin-top: 20px;">
+      <el-row :gutter="20" style="margin-top: 20px">
         <!-- 考勤统计 -->
         <el-col :span="8">
           <el-card class="chart-card">
@@ -226,15 +239,25 @@
                   </el-button>
                   <template #dropdown>
                     <el-dropdown-menu>
-                      <el-dropdown-item command="export-chart-3">导出图表</el-dropdown-item>
-                      <el-dropdown-item command="fullscreen-3">全屏查看</el-dropdown-item>
-                      <el-dropdown-item command="refresh-3">刷新数据</el-dropdown-item>
+                      <el-dropdown-item command="export-chart-3"
+                        >导出图表</el-dropdown-item
+                      >
+                      <el-dropdown-item command="fullscreen-3"
+                        >全屏查看</el-dropdown-item
+                      >
+                      <el-dropdown-item command="refresh-3"
+                        >刷新数据</el-dropdown-item
+                      >
                     </el-dropdown-menu>
                   </template>
                 </el-dropdown>
               </div>
             </template>
-            <div class="chart-container" ref="attendanceChartRef" style="height: 250px;"></div>
+            <div
+              class="chart-container"
+              ref="attendanceChartRef"
+              style="height: 250px"
+            ></div>
           </el-card>
         </el-col>
 
@@ -250,15 +273,25 @@
                   </el-button>
                   <template #dropdown>
                     <el-dropdown-menu>
-                      <el-dropdown-item command="export-chart-4">导出图表</el-dropdown-item>
-                      <el-dropdown-item command="fullscreen-4">全屏查看</el-dropdown-item>
-                      <el-dropdown-item command="refresh-4">刷新数据</el-dropdown-item>
+                      <el-dropdown-item command="export-chart-4"
+                        >导出图表</el-dropdown-item
+                      >
+                      <el-dropdown-item command="fullscreen-4"
+                        >全屏查看</el-dropdown-item
+                      >
+                      <el-dropdown-item command="refresh-4"
+                        >刷新数据</el-dropdown-item
+                      >
                     </el-dropdown-menu>
                   </template>
                 </el-dropdown>
               </div>
             </template>
-            <div class="chart-container" ref="workHoursChartRef" style="height: 250px;"></div>
+            <div
+              class="chart-container"
+              ref="workHoursChartRef"
+              style="height: 250px"
+            ></div>
           </el-card>
         </el-col>
 
@@ -290,10 +323,12 @@
                 <div class="rank-number" :class="`rank-${index + 1}`">
                   {{ index + 1 }}
                 </div>
-                <el-avatar 
-                  :src="member.avatar" 
+                <el-avatar
+                  :src="member.avatar"
                   :size="40"
-                  :style="{ backgroundColor: getAvatarColor(member.memberName) }"
+                  :style="{
+                    backgroundColor: getAvatarColor(member.memberName)
+                  }"
                 >
                   {{ member.memberName?.charAt(0) }}
                 </el-avatar>
@@ -315,7 +350,10 @@
                     <span class="stat-label">效率</span>
                   </div>
                 </div>
-                <div class="rank-change" :class="getRankChangeClass(member.change)">
+                <div
+                  class="rank-change"
+                  :class="getRankChangeClass(member.change)"
+                >
                   <el-icon>
                     <CaretTop v-if="member.change > 0" />
                     <CaretBottom v-else-if="member.change < 0" />
@@ -350,11 +388,15 @@
               </div>
               <div class="summary-item">
                 <span class="summary-label">总工作时长：</span>
-                <span class="summary-value">{{ overview.totalWorkHours }}h</span>
+                <span class="summary-value"
+                  >{{ overview.totalWorkHours }}h</span
+                >
               </div>
               <div class="summary-item">
                 <span class="summary-label">团队效率评分：</span>
-                <span class="summary-value">{{ overview.efficiencyScore }}分</span>
+                <span class="summary-value"
+                  >{{ overview.efficiencyScore }}分</span
+                >
               </div>
             </div>
           </el-card>
@@ -387,29 +429,44 @@
 import { ref, reactive, onMounted, nextTick, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
-  Plus, Download, Refresh, Document, User, Timer, TrendCharts, Star,
-  CaretTop, CaretBottom, Minus, MoreFilled
+  Plus,
+  Download,
+  Refresh,
+  Document,
+  User,
+  Timer,
+  TrendCharts,
+  Star,
+  CaretTop,
+  CaretBottom,
+  Minus,
+  MoreFilled
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { statisticsApi } from '@/api/statistics'
-import { 
-  validateChartData, 
-  getDefaultPieChartData, 
+import {
+  validateChartData,
+  getDefaultPieChartData,
   getDefaultLineChartData,
   getDefaultBarChartData,
   getDefaultDoughnutChartData,
   formatApiResponse
 } from '@/utils/chartDataValidator'
 import { DEPARTMENT_OPTIONS } from '@/types/member'
-import type { 
-  StatisticsOverview, 
+import type {
+  StatisticsOverview,
   TaskStatistics,
   AttendanceStatistics,
   StatisticsFilters,
   MemberRankingItem,
   DepartmentStatsItem
 } from '@/types/statistics'
-import { formatDate, getMonthRange, getWeekRange, getQuarterRange } from '@/utils/date'
+import {
+  formatDate,
+  getMonthRange,
+  getWeekRange,
+  getQuarterRange
+} from '@/utils/date'
 import ReportGenerateDialog from '@/components/statistics/ReportGenerateDialog.vue'
 import ChartFullScreenDialog from '@/components/statistics/ChartFullScreenDialog.vue'
 import ExportDataDialog from '@/components/statistics/ExportDataDialog.vue'
@@ -491,7 +548,10 @@ const loadTaskTrendChart = async () => {
       filters: { dateRange: dateRange.value, ...filters }
     })
 
-    const data = validateChartData(formatApiResponse(apiResponse), getDefaultLineChartData())
+    const data = validateChartData(
+      formatApiResponse(apiResponse),
+      getDefaultLineChartData()
+    )
 
     if (!taskTrendChart) {
       taskTrendChart = echarts.init(taskTrendChartRef.value)
@@ -575,7 +635,10 @@ const loadTaskTypeChart = async () => {
       filters: { dateRange: dateRange.value, ...filters }
     })
 
-    const data = validateChartData(formatApiResponse(apiResponse), getDefaultPieChartData())
+    const data = validateChartData(
+      formatApiResponse(apiResponse),
+      getDefaultPieChartData()
+    )
 
     if (!taskTypeChart) {
       taskTypeChart = echarts.init(taskTypeChartRef.value)
@@ -730,17 +793,19 @@ const loadDepartmentChart = async () => {
       radar: {
         indicator: data.labels.map(label => ({ name: label, max: 100 }))
       },
-      series: [{
-        name: '部门对比',
-        type: 'radar',
-        data: data.datasets.map(dataset => ({
-          value: dataset.data,
-          name: dataset.label,
-          areaStyle: {
-            color: dataset.backgroundColor + '40'
-          }
-        }))
-      }]
+      series: [
+        {
+          name: '部门对比',
+          type: 'radar',
+          data: data.datasets.map(dataset => ({
+            value: dataset.data,
+            name: dataset.label,
+            areaStyle: {
+              color: dataset.backgroundColor + '40'
+            }
+          }))
+        }
+      ]
     }
 
     departmentChart.setOption(option)
@@ -826,7 +891,7 @@ const handleQuickFilter = (value: string) => {
 
 const handleChartAction = (command: string) => {
   const [action, chartId] = command.split('-')
-  
+
   switch (action) {
     case 'export':
       handleExportChart(chartId)
@@ -850,7 +915,7 @@ const handleExportChart = async (chartId: string) => {
       height: 400,
       filters: { dateRange: dateRange.value, ...filters }
     })
-    
+
     // 创建下载链接
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -860,7 +925,7 @@ const handleExportChart = async (chartId: string) => {
     a.click()
     window.URL.revokeObjectURL(url)
     document.body.removeChild(a)
-    
+
     ElMessage.success('图表导出成功')
   } catch (error) {
     console.error('导出图表失败:', error)
@@ -934,7 +999,8 @@ const getEfficiencyTagType = (efficiency: number) => {
 
 const getAvatarColor = (name: string) => {
   const colors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399']
-  const hash = name?.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) || 0
+  const hash =
+    name?.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) || 0
   return colors[hash % colors.length]
 }
 
@@ -1001,7 +1067,7 @@ onUnmounted(() => {
 
     .overview-card {
       height: 120px;
-      
+
       .metric-item {
         @include flex-start;
         gap: 16px;
@@ -1014,10 +1080,18 @@ onUnmounted(() => {
           @include flex-center;
           color: white;
 
-          &.primary { background: linear-gradient(135deg, $primary-color, #66b2ff); }
-          &.success { background: linear-gradient(135deg, $success-color, #85ce61); }
-          &.warning { background: linear-gradient(135deg, $warning-color, #eebe77); }
-          &.info { background: linear-gradient(135deg, $info-color, #a6a9ad); }
+          &.primary {
+            background: linear-gradient(135deg, $primary-color, #66b2ff);
+          }
+          &.success {
+            background: linear-gradient(135deg, $success-color, #85ce61);
+          }
+          &.warning {
+            background: linear-gradient(135deg, $warning-color, #eebe77);
+          }
+          &.info {
+            background: linear-gradient(135deg, $info-color, #a6a9ad);
+          }
         }
 
         .metric-content {
@@ -1042,9 +1116,15 @@ onUnmounted(() => {
             gap: 4px;
             font-size: 12px;
 
-            &.positive { color: $success-color; }
-            &.negative { color: $danger-color; }
-            &.neutral { color: $text-color-secondary; }
+            &.positive {
+              color: $success-color;
+            }
+            &.negative {
+              color: $danger-color;
+            }
+            &.neutral {
+              color: $text-color-secondary;
+            }
           }
         }
       }
@@ -1125,9 +1205,15 @@ onUnmounted(() => {
             font-weight: bold;
             color: white;
 
-            &.rank-1 { background: linear-gradient(135deg, #FFD700, #FFA500); }
-            &.rank-2 { background: linear-gradient(135deg, #C0C0C0, #A0A0A0); }
-            &.rank-3 { background: linear-gradient(135deg, #CD7F32, #B8860B); }
+            &.rank-1 {
+              background: linear-gradient(135deg, #ffd700, #ffa500);
+            }
+            &.rank-2 {
+              background: linear-gradient(135deg, #c0c0c0, #a0a0a0);
+            }
+            &.rank-3 {
+              background: linear-gradient(135deg, #cd7f32, #b8860b);
+            }
           }
 
           .member-info {
@@ -1172,9 +1258,15 @@ onUnmounted(() => {
             gap: 4px;
             font-size: 12px;
 
-            &.rank-up { color: $success-color; }
-            &.rank-down { color: $danger-color; }
-            &.rank-same { color: $text-color-secondary; }
+            &.rank-up {
+              color: $success-color;
+            }
+            &.rank-down {
+              color: $danger-color;
+            }
+            &.rank-same {
+              color: $text-color-secondary;
+            }
           }
         }
       }
@@ -1193,7 +1285,7 @@ onUnmounted(() => {
     .overview-section {
       .overview-card {
         height: auto;
-        
+
         .metric-item {
           flex-direction: column;
           text-align: center;

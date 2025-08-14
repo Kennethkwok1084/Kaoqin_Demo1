@@ -13,7 +13,7 @@ export const useGlobalStore = defineStore('global', {
 
     async initializeApp() {
       this.setLoading(true)
-      
+
       try {
         // 应用初始化逻辑
         await new Promise(resolve => setTimeout(resolve, 500))

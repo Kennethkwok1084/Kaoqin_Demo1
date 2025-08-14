@@ -62,7 +62,11 @@
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item label="角色" prop="role">
-            <el-select v-model="form.role" placeholder="选择角色" style="width: 100%">
+            <el-select
+              v-model="form.role"
+              placeholder="选择角色"
+              style="width: 100%"
+            >
               <el-option label="管理员" value="admin" />
               <el-option label="组长" value="group_leader" />
               <el-option label="成员" value="member" />
@@ -72,7 +76,11 @@
         </el-col>
         <el-col :span="12">
           <el-form-item label="状态" prop="is_active">
-            <el-select v-model="form.is_active" placeholder="选择状态" style="width: 100%">
+            <el-select
+              v-model="form.is_active"
+              placeholder="选择状态"
+              style="width: 100%"
+            >
               <el-option label="在职" :value="true" />
               <el-option label="离职" :value="false" />
             </el-select>
@@ -93,7 +101,7 @@
           <el-form-item label="班级" prop="class_name">
             <el-input
               v-model="form.class_name"
-             placeholder="班级名称（必填）"
+              placeholder="班级名称（必填）"
               maxlength="100"
               show-word-limit
             />
@@ -177,52 +185,44 @@ const form = reactive<MemberCreateRequest>({
 const rules: FormRules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
-    { 
-      pattern: /^[a-zA-Z0-9_]+$/, 
-      message: '用户名只能包含字母、数字和下划线', 
-      trigger: 'blur' 
+    {
+      pattern: /^[a-zA-Z0-9_]+$/,
+      message: '用户名只能包含字母、数字和下划线',
+      trigger: 'blur'
     }
   ],
   name: [
     { required: true, message: '请输入姓名', trigger: 'blur' },
-    { 
-      pattern: /^[\u4e00-\u9fa5a-zA-Z·\s]+$/, 
-      message: '姓名只能包含中文、字母、·和空格', 
-      trigger: 'blur' 
+    {
+      pattern: /^[\u4e00-\u9fa5a-zA-Z·\s]+$/,
+      message: '姓名只能包含中文、字母、·和空格',
+      trigger: 'blur'
     }
   ],
   student_id: [
-    { 
-      pattern: /^\d+$/, 
-      message: '学号只能包含数字', 
-      trigger: 'blur' 
+    {
+      pattern: /^\d+$/,
+      message: '学号只能包含数字',
+      trigger: 'blur'
     }
   ],
   phone: [
-    { 
-      pattern: /^1[3-9]\d{9}$/, 
-      message: '请输入正确的手机号', 
-      trigger: 'blur' 
+    {
+      pattern: /^1[3-9]\d{9}$/,
+      message: '请输入正确的手机号',
+      trigger: 'blur'
     }
   ],
-  role: [
-    { required: true, message: '请选择角色', trigger: 'change' }
-  ],
-  is_active: [
-    { required: true, message: '请选择状态', trigger: 'change' }
-  ],
-  class_name: [
-    { required: true, message: '请输入班级', trigger: 'blur' }
-  ],
-  join_date: [
-    { required: true, message: '请选择入职日期', trigger: 'change' }
-  ]
+  role: [{ required: true, message: '请选择角色', trigger: 'change' }],
+  is_active: [{ required: true, message: '请选择状态', trigger: 'change' }],
+  class_name: [{ required: true, message: '请输入班级', trigger: 'blur' }],
+  join_date: [{ required: true, message: '请选择入职日期', trigger: 'change' }]
 }
 
 // Computed
 const visible = computed({
   get: () => props.visible,
-  set: (value) => emit('update:visible', value)
+  set: value => emit('update:visible', value)
 })
 
 // Methods
@@ -256,19 +256,19 @@ const handleSubmit = async () => {
 
     // 准备提交数据
     const submitData = { ...form }
-    
+
     // 如果手机号为空，删除该字段
     if (!submitData.phone?.trim()) {
       delete submitData.phone
     }
-    
+
     // 如果学号为空，删除该字段
     if (!submitData.student_id?.trim()) {
       delete submitData.student_id
     }
 
     await MembersApi.createMember(submitData)
-    
+
     ElMessage.success('成员创建成功')
     emit('success')
     handleClose()
@@ -281,11 +281,14 @@ const handleSubmit = async () => {
 }
 
 // Watch for visibility changes to reset form
-watch(() => props.visible, (newVal) => {
-  if (newVal) {
-    resetForm()
+watch(
+  () => props.visible,
+  newVal => {
+    if (newVal) {
+      resetForm()
+    }
   }
-})
+)
 </script>
 
 <style scoped>

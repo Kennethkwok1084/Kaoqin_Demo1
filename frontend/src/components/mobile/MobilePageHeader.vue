@@ -12,13 +12,13 @@
         >
           <el-icon><ArrowLeft /></el-icon>
         </el-button>
-        
+
         <div class="title-section">
           <h1 class="page-title">{{ title }}</h1>
           <p v-if="subtitle" class="page-subtitle">{{ subtitle }}</p>
         </div>
       </div>
-      
+
       <!-- 右侧操作 -->
       <div class="header-right">
         <slot name="actions">
@@ -32,7 +32,7 @@
           >
             <el-icon><Search /></el-icon>
           </el-button>
-          
+
           <el-button
             v-if="showMore"
             type="text"
@@ -45,7 +45,7 @@
         </slot>
       </div>
     </div>
-    
+
     <!-- 搜索栏 (可选) -->
     <div v-if="showSearchBar && searchVisible" class="search-section">
       <MobileSearchBar
@@ -58,11 +58,11 @@
         @filter="handleSearchFilter"
       />
     </div>
-    
+
     <!-- 标签页 (可选) -->
     <div v-if="tabs && tabs.length > 0" class="tabs-section">
-      <el-tabs 
-        v-model="activeTab" 
+      <el-tabs
+        v-model="activeTab"
         class="mobile-tabs"
         @tab-change="handleTabChange"
       >
@@ -75,7 +75,7 @@
         />
       </el-tabs>
     </div>
-    
+
     <!-- 更多菜单 -->
     <el-drawer
       v-model="showMoreMenu"
@@ -85,8 +85,8 @@
       class="more-menu-drawer"
     >
       <div class="more-menu-content">
-        <div 
-          v-for="item in moreMenuItems" 
+        <div
+          v-for="item in moreMenuItems"
           :key="item.key"
           class="menu-item"
           @click="handleMoreMenuItem(item)"
@@ -104,9 +104,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { 
-  ArrowLeft, 
-  Search, 
+import {
+  ArrowLeft,
+  Search,
   MoreFilled,
   Share,
   Download,
@@ -250,31 +250,31 @@ defineExpose({
   top: 0;
   z-index: 998;
   @include safe-area-padding;
-  
+
   .header-content {
     @include flex-between;
     align-items: flex-start;
     padding: $spacing-base;
     min-height: 56px;
-    
+
     .header-left {
       @include flex-start;
       gap: $spacing-small;
       flex: 1;
-      
+
       .back-button {
         @include touch-target(44px);
         margin-right: $spacing-small;
-        
+
         .el-icon {
           font-size: 20px;
         }
       }
-      
+
       .title-section {
         flex: 1;
         min-width: 0; // 允许文字截断
-        
+
         .page-title {
           font-size: $font-size-large;
           font-weight: 600;
@@ -283,7 +283,7 @@ defineExpose({
           line-height: 1.4;
           @include text-ellipsis;
         }
-        
+
         .page-subtitle {
           font-size: $font-size-small;
           color: $text-color-secondary;
@@ -293,35 +293,35 @@ defineExpose({
         }
       }
     }
-    
+
     .header-right {
       @include flex-end;
       gap: $spacing-extra-small;
       flex-shrink: 0;
-      
+
       .action-button {
         @include touch-target(44px);
-        
+
         .el-icon {
           font-size: 20px;
         }
       }
     }
   }
-  
+
   .search-section {
     padding: 0 $spacing-base $spacing-base $spacing-base;
     animation: slideDown 0.3s ease;
   }
-  
+
   .tabs-section {
     .mobile-tabs {
       :deep(.el-tabs__header) {
         margin: 0;
-        
+
         .el-tabs__nav-wrap {
           padding: 0 $spacing-base;
-          
+
           .el-tabs__nav-scroll {
             .el-tabs__nav {
               .el-tabs__item {
@@ -335,7 +335,7 @@ defineExpose({
           }
         }
       }
-      
+
       :deep(.el-tabs__content) {
         display: none; // 隐藏内容，只显示标签
       }
@@ -347,16 +347,16 @@ defineExpose({
   :deep(.el-drawer) {
     border-radius: $spacing-base $spacing-base 0 0;
   }
-  
+
   :deep(.el-drawer__header) {
     padding: $spacing-base;
     margin-bottom: 0;
   }
-  
+
   :deep(.el-drawer__body) {
     padding: 0 0 $spacing-base 0;
   }
-  
+
   .more-menu-content {
     .menu-item {
       @include flex-start;
@@ -365,22 +365,22 @@ defineExpose({
       cursor: pointer;
       transition: background-color $transition-base;
       @include touch-target(56px);
-      
+
       &:hover {
         background: $background-color-light;
       }
-      
+
       .menu-icon {
         width: 24px;
         height: 24px;
         @include flex-center;
         color: $text-color-secondary;
-        
+
         .el-icon {
           font-size: 20px;
         }
       }
-      
+
       .menu-text {
         font-size: $font-size-base;
         color: $text-color-primary;

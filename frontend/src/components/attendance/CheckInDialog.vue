@@ -85,11 +85,7 @@
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="handleClose">取消</el-button>
-        <el-button 
-          type="primary" 
-          :loading="loading"
-          @click="handleSubmit"
-        >
+        <el-button type="primary" :loading="loading" @click="handleSubmit">
           确认签到
         </el-button>
       </div>
@@ -98,7 +94,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import {
+  ref,
+  reactive,
+  computed,
+  watch,
+  onMounted,
+  onUnmounted,
+  nextTick
+} from 'vue'
 import { ElMessage, ElForm } from 'element-plus'
 import { Location, Plus } from '@element-plus/icons-vue'
 import { attendanceApi } from '@/api/attendance'
@@ -134,7 +138,7 @@ let timeTimer: NodeJS.Timeout | null = null
 // 计算属性
 const visible = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: value => emit('update:modelValue', value)
 })
 
 // 表单数据
@@ -146,18 +150,11 @@ const formData = reactive<CheckInRequest>({
 
 // 表单验证规则
 const formRules = {
-  location: [
-    { required: true, message: '请选择签到地点', trigger: 'blur' }
-  ]
+  location: [{ required: true, message: '请选择签到地点', trigger: 'blur' }]
 }
 
 // 地点选项
-const locationOptions = ref<string[]>([
-  '公司',
-  '客户现场',
-  '远程办公',
-  '出差'
-])
+const locationOptions = ref<string[]>(['公司', '客户现场', '远程办公', '出差'])
 
 // 方法
 const updateCurrentTime = () => {
@@ -179,12 +176,12 @@ const updateCurrentTime = () => {
 const getCurrentLocation = () => {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      position => {
         const { latitude, longitude } = position.coords
         // 这里可以调用地图API获取详细地址
         currentLocation.value = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
       },
-      (error) => {
+      error => {
         console.warn('获取位置失败:', error)
         currentLocation.value = '位置获取失败'
       }
@@ -236,11 +233,10 @@ const handleSubmit = async () => {
     }
 
     await attendanceApi.checkIn(submitData)
-    
+
     ElMessage.success('签到成功')
     emit('success')
     handleClose()
-
   } catch (error) {
     console.error('签到失败:', error)
     ElMessage.error('签到失败')
@@ -274,23 +270,26 @@ const handleExceed = () => {
 }
 
 // 监听
-watch(() => visible.value, (val) => {
-  if (val) {
-    updateCurrentTime()
-    timeTimer = setInterval(updateCurrentTime, 1000)
-    getCurrentLocation()
-    loadLocationOptions()
-    
-    nextTick(() => {
-      formRef.value?.clearValidate()
-    })
-  } else {
-    if (timeTimer) {
-      clearInterval(timeTimer)
-      timeTimer = null
+watch(
+  () => visible.value,
+  val => {
+    if (val) {
+      updateCurrentTime()
+      timeTimer = setInterval(updateCurrentTime, 1000)
+      getCurrentLocation()
+      loadLocationOptions()
+
+      nextTick(() => {
+        formRef.value?.clearValidate()
+      })
+    } else {
+      if (timeTimer) {
+        clearInterval(timeTimer)
+        timeTimer = null
+      }
     }
   }
-})
+)
 
 // 生命周期
 onMounted(() => {

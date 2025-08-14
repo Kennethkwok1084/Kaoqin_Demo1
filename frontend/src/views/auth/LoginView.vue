@@ -45,10 +45,12 @@
 
         <el-form-item>
           <div class="login-options">
-            <el-checkbox v-model="loginForm.remember_me">
-              记住我
-            </el-checkbox>
-            <el-link type="primary" :underline="false" @click="showForgotPassword">
+            <el-checkbox v-model="loginForm.remember_me"> 记住我 </el-checkbox>
+            <el-link
+              type="primary"
+              :underline="false"
+              @click="showForgotPassword"
+            >
               忘记密码？
             </el-link>
           </div>
@@ -68,9 +70,7 @@
       </el-form>
 
       <div class="login-footer">
-        <p class="copyright">
-          © 2024 考勤管理系统 版权所有
-        </p>
+        <p class="copyright">© 2024 考勤管理系统 版权所有</p>
       </div>
     </div>
 
@@ -173,7 +173,7 @@ const handleLogin = async () => {
     ElMessage.success('登录成功')
   } catch (error: any) {
     console.error('登录失败:', error)
-    
+
     if (error.response?.status === 401) {
       ElMessage.error('用户名或密码错误')
     } else if (error.response?.status === 423) {
@@ -217,10 +217,10 @@ onMounted(() => {
   if (authStore.isAuthenticated) {
     authStore.login
   }
-  
+
   // 设置页面标题
   document.title = '登录 - 考勤管理系统'
-  
+
   // 开发环境下预填充表单（可选）
   if (import.meta.env.DEV) {
     loginForm.username = 'admin'
@@ -237,7 +237,10 @@ onMounted(() => {
 .login-container {
   min-height: 100vh;
   @include flex-center;
-  @include gradient-background($primary-color, color.adjust($primary-color, $lightness: 20%));
+  @include gradient-background(
+    $primary-color,
+    color.adjust($primary-color, $lightness: 20%)
+  );
   padding: $spacing-base;
 }
 
@@ -248,14 +251,14 @@ onMounted(() => {
   border-radius: $border-radius-round;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   padding: $spacing-extra-large;
-  
+
   .login-header {
     text-align: center;
     margin-bottom: $spacing-extra-large;
-    
+
     .logo {
       margin-bottom: $spacing-base;
-      
+
       .logo-icon {
         width: 80px;
         height: 80px;
@@ -265,48 +268,54 @@ onMounted(() => {
         margin: 0 auto;
       }
     }
-    
+
     .login-title {
       font-size: $font-size-extra-large;
       font-weight: 700;
       color: $text-color-primary;
       margin: 0 0 $spacing-extra-small 0;
     }
-    
+
     .login-subtitle {
       font-size: $font-size-small;
       color: $text-color-secondary;
       margin: 0;
     }
   }
-  
+
   .login-form {
     .login-options {
       @include flex-between;
       width: 100%;
     }
-    
+
     .login-button {
       width: 100%;
       height: 48px;
       font-size: $font-size-medium;
       font-weight: 600;
       border-radius: $border-radius-base;
-      @include gradient-background($primary-color, color.adjust($primary-color, $lightness: 10%));
+      @include gradient-background(
+        $primary-color,
+        color.adjust($primary-color, $lightness: 10%)
+      );
       border: none;
-      
+
       &:hover {
-        @include gradient-background(color.adjust($primary-color, $lightness: 5%), color.adjust($primary-color, $lightness: 15%));
+        @include gradient-background(
+          color.adjust($primary-color, $lightness: 5%),
+          color.adjust($primary-color, $lightness: 15%)
+        );
         transform: translateY(-1px);
         box-shadow: 0 6px 20px rgba($primary-color, 0.3);
       }
     }
   }
-  
+
   .login-footer {
     text-align: center;
     margin-top: $spacing-large;
-    
+
     .copyright {
       font-size: $font-size-extra-small;
       color: $text-color-placeholder;
@@ -320,7 +329,7 @@ onMounted(() => {
   .login-container {
     padding: $spacing-small;
   }
-  
+
   .login-card {
     padding: $spacing-large;
     border-radius: $border-radius-base;

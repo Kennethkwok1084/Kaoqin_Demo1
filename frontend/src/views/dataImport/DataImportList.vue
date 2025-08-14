@@ -50,7 +50,9 @@
         <el-col :span="6">
           <el-card class="stat-card">
             <div class="stat-content">
-              <div class="stat-value">{{ statistics.totalRowsProcessed.toLocaleString() }}</div>
+              <div class="stat-value">
+                {{ statistics.totalRowsProcessed.toLocaleString() }}
+              </div>
               <div class="stat-label">处理记录数</div>
             </div>
             <div class="stat-icon records">
@@ -61,7 +63,9 @@
         <el-col :span="6">
           <el-card class="stat-card">
             <div class="stat-content">
-              <div class="stat-value">{{ statistics.averageProcessingTime.toFixed(1) }}s</div>
+              <div class="stat-value">
+                {{ statistics.averageProcessingTime.toFixed(1) }}s
+              </div>
               <div class="stat-label">平均处理时间</div>
             </div>
             <div class="stat-icon time">
@@ -76,16 +80,26 @@
     <el-card class="filter-card">
       <el-form :model="filters" inline class="filter-form">
         <el-form-item label="状态">
-          <el-select v-model="filters.status" placeholder="选择状态" clearable style="width: 120px">
+          <el-select
+            v-model="filters.status"
+            placeholder="选择状态"
+            clearable
+            style="width: 120px"
+          >
             <el-option label="处理中" value="processing" />
             <el-option label="已完成" value="completed" />
             <el-option label="已失败" value="failed" />
             <el-option label="已取消" value="cancelled" />
           </el-select>
         </el-form-item>
-        
+
         <el-form-item label="模板类型">
-          <el-select v-model="filters.templateType" placeholder="选择类型" clearable style="width: 150px">
+          <el-select
+            v-model="filters.templateType"
+            placeholder="选择类型"
+            clearable
+            style="width: 150px"
+          >
             <el-option label="维修任务" value="repair_tasks" />
             <el-option label="监控任务" value="monitoring_tasks" />
             <el-option label="协助任务" value="assistance_tasks" />
@@ -94,7 +108,7 @@
             <el-option label="工时记录" value="work_hours" />
           </el-select>
         </el-form-item>
-        
+
         <el-form-item label="时间范围">
           <el-date-picker
             v-model="filters.dateRange"
@@ -105,7 +119,7 @@
             @change="handleSearch"
           />
         </el-form-item>
-        
+
         <el-form-item>
           <el-button type="primary" @click="handleSearch">
             <el-icon><Search /></el-icon>
@@ -127,8 +141,13 @@
         stripe
         style="width: 100%"
       >
-        <el-table-column prop="fileName" label="文件名" min-width="200" show-overflow-tooltip />
-        
+        <el-table-column
+          prop="fileName"
+          label="文件名"
+          min-width="200"
+          show-overflow-tooltip
+        />
+
         <el-table-column prop="templateName" label="模板类型" width="150">
           <template #default="{ row }">
             <el-tag :type="getTemplateTypeColor(row.templateName)">
@@ -136,7 +155,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        
+
         <el-table-column prop="status" label="状态" width="120">
           <template #default="{ row }">
             <el-tag :type="getStatusColor(row.status)">
@@ -144,7 +163,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="进度" width="200">
           <template #default="{ row }">
             <div class="progress-container">
@@ -158,7 +177,7 @@
             </div>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="处理结果" width="180">
           <template #default="{ row }">
             <div class="result-stats">
@@ -177,19 +196,19 @@
             </div>
           </template>
         </el-table-column>
-        
+
         <el-table-column prop="fileSize" label="文件大小" width="100">
           <template #default="{ row }">
             {{ formatFileSize(row.fileSize) }}
           </template>
         </el-table-column>
-        
+
         <el-table-column prop="createdAt" label="创建时间" width="160">
           <template #default="{ row }">
             {{ formatDateTime(row.createdAt) }}
           </template>
         </el-table-column>
-        
+
         <el-table-column label="操作" width="250" fixed="right">
           <template #default="{ row }">
             <el-button-group>
@@ -197,27 +216,27 @@
                 <el-icon><View /></el-icon>
                 详情
               </el-button>
-              <el-button 
-                size="small" 
-                type="warning" 
+              <el-button
+                size="small"
+                type="warning"
                 @click="cancelJob(row)"
                 v-if="row.status === 'processing'"
               >
                 <el-icon><Close /></el-icon>
                 取消
               </el-button>
-              <el-button 
-                size="small" 
-                type="info" 
+              <el-button
+                size="small"
+                type="info"
                 @click="retryJob(row)"
                 v-if="row.status === 'failed'"
               >
                 <el-icon><Refresh /></el-icon>
                 重试
               </el-button>
-              <el-button 
-                size="small" 
-                type="success" 
+              <el-button
+                size="small"
+                type="success"
                 @click="downloadReport(row)"
                 v-if="row.status === 'completed'"
               >
@@ -268,11 +287,25 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Upload, Document, Refresh, DataBoard, SuccessFilled, Grid, Timer,
-  Search, RefreshLeft, View, Close, Download
+  Upload,
+  Document,
+  Refresh,
+  DataBoard,
+  SuccessFilled,
+  Grid,
+  Timer,
+  Search,
+  RefreshLeft,
+  View,
+  Close,
+  Download
 } from '@element-plus/icons-vue'
 import { dataImportApi } from '@/api/dataImport'
-import type { ImportJob, ImportStatistics, ImportFilters } from '@/types/dataImport'
+import type {
+  ImportJob,
+  ImportStatistics,
+  ImportFilters
+} from '@/types/dataImport'
 import ImportWizardDialog from '@/components/dataImport/ImportWizardDialog.vue'
 import TemplateManagerDialog from '@/components/dataImport/TemplateManagerDialog.vue'
 import ImportDetailDialog from '@/components/dataImport/ImportDetailDialog.vue'
@@ -348,8 +381,10 @@ const loadStatistics = async () => {
 
 const startProgressPolling = () => {
   progressPolling.value = setInterval(async () => {
-    const processingJobs = importJobs.value.filter(job => job.status === 'processing')
-    
+    const processingJobs = importJobs.value.filter(
+      job => job.status === 'processing'
+    )
+
     for (const job of processingJobs) {
       try {
         const progress = await dataImportApi.getImportProgress(job.id)
@@ -501,12 +536,12 @@ const getProgressStatus = (status: string) => {
 
 const getTemplateTypeColor = (templateName: string) => {
   const colorMap = {
-    '维修任务': 'danger',
-    '监控任务': 'warning',
-    '协助任务': 'success',
-    '成员信息': 'info',
-    '考勤记录': 'primary',
-    '工时记录': 'warning'
+    维修任务: 'danger',
+    监控任务: 'warning',
+    协助任务: 'success',
+    成员信息: 'info',
+    考勤记录: 'primary',
+    工时记录: 'warning'
   }
   return colorMap[templateName as keyof typeof colorMap] || 'info'
 }

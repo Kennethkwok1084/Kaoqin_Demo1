@@ -8,7 +8,7 @@ vi.mock('@/api/auth', () => ({
   login: vi.fn(),
   logout: vi.fn(),
   refreshToken: vi.fn(),
-  getCurrentUser: vi.fn(),
+  getCurrentUser: vi.fn()
 }))
 
 describe('Auth Store', () => {
@@ -21,7 +21,7 @@ describe('Auth Store', () => {
   describe('initial state', () => {
     it('should have correct initial state', () => {
       const authStore = useAuthStore()
-      
+
       expect(authStore.isAuthenticated).toBe(false)
       expect(authStore.userInfo).toBeNull()
       expect(authStore.token).toBeNull()
@@ -56,8 +56,14 @@ describe('Auth Store', () => {
       expect(authStore.token).toBe('test-access-token')
       expect(authStore.refreshToken).toBe('test-refresh-token')
       expect(authStore.userInfo).toEqual(mockLoginResponse.user)
-      expect(localStorage.setItem).toHaveBeenCalledWith('access_token', 'test-access-token')
-      expect(localStorage.setItem).toHaveBeenCalledWith('refresh_token', 'test-refresh-token')
+      expect(localStorage.setItem).toHaveBeenCalledWith(
+        'access_token',
+        'test-access-token'
+      )
+      expect(localStorage.setItem).toHaveBeenCalledWith(
+        'refresh_token',
+        'test-refresh-token'
+      )
     })
 
     it('should handle login failure', async () => {
@@ -119,7 +125,9 @@ describe('Auth Store', () => {
 
     it('should clear auth if token is invalid', async () => {
       localStorage.setItem('access_token', 'invalid-token')
-      vi.mocked(authApi.getCurrentUser).mockRejectedValue(new Error('Invalid token'))
+      vi.mocked(authApi.getCurrentUser).mockRejectedValue(
+        new Error('Invalid token')
+      )
 
       const authStore = useAuthStore()
       await authStore.initializeAuth()
@@ -153,7 +161,9 @@ describe('Auth Store', () => {
     })
 
     it('should handle refresh token failure', async () => {
-      vi.mocked(authApi.refreshToken).mockRejectedValue(new Error('Refresh token expired'))
+      vi.mocked(authApi.refreshToken).mockRejectedValue(
+        new Error('Refresh token expired')
+      )
 
       const authStore = useAuthStore()
       authStore.refreshToken = 'expired-refresh-token'
@@ -169,7 +179,7 @@ describe('Auth Store', () => {
   describe('computed properties', () => {
     it('should correctly compute isAdmin', () => {
       const authStore = useAuthStore()
-      
+
       // 非管理员用户
       authStore.userInfo = { role: 'user' } as any
       expect(authStore.isAdmin).toBe(false)
@@ -185,7 +195,7 @@ describe('Auth Store', () => {
 
     it('should correctly compute userRole', () => {
       const authStore = useAuthStore()
-      
+
       authStore.userInfo = { role: 'user' } as any
       expect(authStore.userRole).toBe('user')
 

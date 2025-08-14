@@ -12,8 +12,8 @@
         @keyup.enter="handleEnterSearch"
       >
         <template #suffix>
-          <el-icon 
-            v-if="showVoiceSearch" 
+          <el-icon
+            v-if="showVoiceSearch"
             class="voice-search-icon"
             @click="handleVoiceSearch"
           >
@@ -21,10 +21,10 @@
           </el-icon>
         </template>
       </el-input>
-      
-      <el-button 
+
+      <el-button
         v-if="showFilterButton"
-        type="primary" 
+        type="primary"
         size="small"
         class="filter-button"
         @click="showFilters = true"
@@ -33,16 +33,21 @@
         筛选
       </el-button>
     </div>
-    
+
     <!-- 搜索建议 -->
-    <div v-if="showSuggestions && suggestions.length > 0" class="search-suggestions">
+    <div
+      v-if="showSuggestions && suggestions.length > 0"
+      class="search-suggestions"
+    >
       <div class="suggestions-header">
         <span>搜索建议</span>
-        <el-button type="text" size="small" @click="clearSuggestions">清除</el-button>
+        <el-button type="text" size="small" @click="clearSuggestions"
+          >清除</el-button
+        >
       </div>
       <div class="suggestions-list">
-        <div 
-          v-for="(suggestion, index) in suggestions" 
+        <div
+          v-for="(suggestion, index) in suggestions"
           :key="index"
           class="suggestion-item"
           @click="selectSuggestion(suggestion)"
@@ -52,16 +57,18 @@
         </div>
       </div>
     </div>
-    
+
     <!-- 历史搜索 -->
     <div v-if="showHistory && searchHistory.length > 0" class="search-history">
       <div class="history-header">
         <span>历史搜索</span>
-        <el-button type="text" size="small" @click="clearHistory">清除</el-button>
+        <el-button type="text" size="small" @click="clearHistory"
+          >清除</el-button
+        >
       </div>
       <div class="history-list">
-        <el-tag 
-          v-for="(item, index) in searchHistory" 
+        <el-tag
+          v-for="(item, index) in searchHistory"
           :key="index"
           class="history-tag"
           closable
@@ -72,7 +79,7 @@
         </el-tag>
       </div>
     </div>
-    
+
     <!-- 筛选面板 -->
     <el-drawer
       v-model="showFilters"
@@ -92,7 +99,7 @@
               <el-checkbox value="completed">已完成</el-checkbox>
             </el-checkbox-group>
           </div>
-          
+
           <div class="filter-section">
             <h4>类型</h4>
             <el-checkbox-group v-model="filters.type">
@@ -100,7 +107,7 @@
               <el-checkbox value="offline">线下任务</el-checkbox>
             </el-checkbox-group>
           </div>
-          
+
           <div class="filter-section">
             <h4>时间范围</h4>
             <el-date-picker
@@ -114,7 +121,7 @@
             />
           </div>
         </slot>
-        
+
         <div class="filter-actions">
           <el-button @click="resetFilters">重置</el-button>
           <el-button type="primary" @click="applyFilters">应用筛选</el-button>
@@ -174,19 +181,22 @@ const filters = ref({
 // 计算属性
 const filteredSuggestions = computed(() => {
   if (!searchQuery.value) return []
-  return props.suggestions.filter(s => 
+  return props.suggestions.filter(s =>
     s.toLowerCase().includes(searchQuery.value.toLowerCase())
   )
 })
 
 // 监听搜索框值变化
-watch(() => props.modelValue, (newVal) => {
-  searchQuery.value = newVal
-})
+watch(
+  () => props.modelValue,
+  newVal => {
+    searchQuery.value = newVal
+  }
+)
 
-watch(searchQuery, (newVal) => {
+watch(searchQuery, newVal => {
   emit('update:modelValue', newVal)
-  
+
   if (newVal.length > 0) {
     showSuggestions.value = true
     showHistory.value = false
@@ -220,11 +230,14 @@ const handleEnterSearch = () => {
 
 const handleVoiceSearch = () => {
   // 检查浏览器是否支持语音识别
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+  if (
+    !('webkitSpeechRecognition' in window) &&
+    !('SpeechRecognition' in window)
+  ) {
     ElMessage.warning('您的浏览器不支持语音搜索')
     return
   }
-  
+
   emit('voiceSearch')
   ElMessage.info('语音搜索功能开发中...')
 }
@@ -260,12 +273,12 @@ const addToHistory = (query: string) => {
     searchHistory.value.splice(index, 1)
   }
   searchHistory.value.unshift(query)
-  
+
   // 限制历史记录数量
   if (searchHistory.value.length > 10) {
     searchHistory.value = searchHistory.value.slice(0, 10)
   }
-  
+
   storeHistory()
 }
 
@@ -315,48 +328,48 @@ defineExpose({
 .mobile-search-bar {
   width: 100%;
   position: relative;
-  
+
   .search-container {
     display: flex;
     gap: $spacing-small;
     align-items: center;
-    
+
     .search-input {
       flex: 1;
-      
+
       :deep(.el-input__wrapper) {
         @include mobile-input;
         border-radius: 20px;
         padding: 0 $spacing-base;
-        
+
         .el-input__inner {
           font-size: $font-size-base;
         }
-        
+
         .el-input__prefix,
         .el-input__suffix {
           color: $text-color-secondary;
         }
       }
     }
-    
+
     .voice-search-icon {
       cursor: pointer;
       color: $text-color-secondary;
       transition: color $transition-base;
-      
+
       &:hover {
         color: $primary-color;
       }
     }
-    
+
     .filter-button {
       @include touch-target(36px);
       border-radius: 18px;
       flex-shrink: 0;
     }
   }
-  
+
   .search-suggestions,
   .search-history {
     position: absolute;
@@ -373,20 +386,20 @@ defineExpose({
     overflow-y: auto;
     @include mobile-scroll;
   }
-  
+
   .suggestions-header,
   .history-header {
     @include flex-between;
     padding: $spacing-small $spacing-base;
     border-bottom: 1px solid $border-color-extra-light;
-    
+
     span {
       font-size: $font-size-small;
       color: $text-color-secondary;
       font-weight: 500;
     }
   }
-  
+
   .suggestions-list {
     .suggestion-item {
       @include flex-start;
@@ -395,16 +408,16 @@ defineExpose({
       cursor: pointer;
       transition: background-color $transition-base;
       @include touch-target(44px);
-      
+
       &:hover {
         background: $background-color-light;
       }
-      
+
       .suggestion-icon {
         color: $text-color-placeholder;
         font-size: $font-size-small;
       }
-      
+
       .suggestion-text {
         flex: 1;
         font-size: $font-size-base;
@@ -412,17 +425,17 @@ defineExpose({
       }
     }
   }
-  
+
   .history-list {
     padding: $spacing-base;
     display: flex;
     flex-wrap: wrap;
     gap: $spacing-small;
-    
+
     .history-tag {
       cursor: pointer;
       @include touch-target(32px);
-      
+
       &:hover {
         background: color.adjust($primary-color, $lightness: 40%);
       }
@@ -435,46 +448,46 @@ defineExpose({
     padding: $spacing-base;
     margin-bottom: 0;
   }
-  
+
   :deep(.el-drawer__body) {
     padding: 0;
   }
-  
+
   .filter-content {
     padding: $spacing-base;
     height: 100%;
     display: flex;
     flex-direction: column;
-    
+
     .filter-section {
       margin-bottom: $spacing-large;
-      
+
       h4 {
         margin: 0 0 $spacing-base 0;
         font-size: $font-size-medium;
         color: $text-color-primary;
         font-weight: 600;
       }
-      
+
       .el-checkbox-group {
         display: flex;
         flex-direction: column;
         gap: $spacing-small;
-        
+
         .el-checkbox {
           margin-right: 0;
           @include touch-target(44px);
         }
       }
     }
-    
+
     .filter-actions {
       margin-top: auto;
       padding-top: $spacing-base;
       border-top: 1px solid $border-color-extra-light;
       display: flex;
       gap: $spacing-base;
-      
+
       .el-button {
         flex: 1;
         @include touch-target(44px);

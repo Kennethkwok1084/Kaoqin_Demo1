@@ -11,7 +11,7 @@
         <template #header>
           <span>基本信息</span>
         </template>
-        
+
         <el-descriptions :column="2" border>
           <el-descriptions-item label="文件名">
             {{ importJob.fileName }}
@@ -43,14 +43,14 @@
         <template #header>
           <span>处理进度</span>
         </template>
-        
+
         <div class="progress-section">
           <el-progress
             :percentage="importJob.progress"
             :status="getProgressStatus(importJob.status)"
             stroke-width="20"
           />
-          
+
           <div class="progress-stats">
             <div class="stat-item">
               <span class="label">总记录数:</span>
@@ -84,34 +84,48 @@
       </el-card>
 
       <!-- 错误信息 -->
-      <el-card v-if="importJob.validationErrors.length || importJob.processingErrors.length" class="errors-card">
+      <el-card
+        v-if="
+          importJob.validationErrors.length || importJob.processingErrors.length
+        "
+        class="errors-card"
+      >
         <template #header>
           <span>错误信息</span>
         </template>
-        
+
         <el-tabs v-model="errorTab">
-          <el-tab-pane 
+          <el-tab-pane
             v-if="importJob.validationErrors.length"
             :label="`验证错误 (${importJob.validationErrors.length})`"
             name="validation"
           >
             <div class="error-list">
               <div
-                v-for="(error, index) in importJob.validationErrors.slice(0, 20)"
+                v-for="(error, index) in importJob.validationErrors.slice(
+                  0,
+                  20
+                )"
                 :key="index"
                 class="error-item"
               >
                 <div class="error-header">
                   <span class="error-row">第{{ error.row }}行</span>
                   <span class="error-field">{{ error.field }}</span>
-                  <el-tag :type="error.severity === 'error' ? 'danger' : 'warning'" size="small">
+                  <el-tag
+                    :type="error.severity === 'error' ? 'danger' : 'warning'"
+                    size="small"
+                  >
                     {{ error.severity === 'error' ? '错误' : '警告' }}
                   </el-tag>
                 </div>
                 <div class="error-message">{{ error.error }}</div>
                 <div class="error-value">值: {{ error.value }}</div>
               </div>
-              <div v-if="importJob.validationErrors.length > 20" class="more-errors">
+              <div
+                v-if="importJob.validationErrors.length > 20"
+                class="more-errors"
+              >
                 还有 {{ importJob.validationErrors.length - 20 }} 个错误...
               </div>
             </div>
@@ -124,7 +138,10 @@
           >
             <div class="error-list">
               <div
-                v-for="(error, index) in importJob.processingErrors.slice(0, 20)"
+                v-for="(error, index) in importJob.processingErrors.slice(
+                  0,
+                  20
+                )"
                 :key="index"
                 class="error-item"
               >
@@ -138,7 +155,10 @@
                   数据: {{ JSON.stringify(error.data, null, 2) }}
                 </div>
               </div>
-              <div v-if="importJob.processingErrors.length > 20" class="more-errors">
+              <div
+                v-if="importJob.processingErrors.length > 20"
+                class="more-errors"
+              >
                 还有 {{ importJob.processingErrors.length - 20 }} 个错误...
               </div>
             </div>
@@ -148,15 +168,27 @@
 
       <!-- 操作按钮 -->
       <div class="action-buttons">
-        <el-button v-if="importJob.status === 'processing'" type="warning" @click="cancelImport">
+        <el-button
+          v-if="importJob.status === 'processing'"
+          type="warning"
+          @click="cancelImport"
+        >
           <el-icon><Close /></el-icon>
           取消导入
         </el-button>
-        <el-button v-if="importJob.status === 'failed'" type="info" @click="retryImport">
+        <el-button
+          v-if="importJob.status === 'failed'"
+          type="info"
+          @click="retryImport"
+        >
           <el-icon><Refresh /></el-icon>
           重试导入
         </el-button>
-        <el-button v-if="importJob.status === 'completed'" type="success" @click="downloadReport">
+        <el-button
+          v-if="importJob.status === 'completed'"
+          type="success"
+          @click="downloadReport"
+        >
           <el-icon><Download /></el-icon>
           下载报告
         </el-button>
@@ -199,11 +231,14 @@ const dialogVisible = ref(false)
 const refreshing = ref(false)
 const errorTab = ref('validation')
 
-watch(() => props.visible, (visible) => {
-  dialogVisible.value = visible
-})
+watch(
+  () => props.visible,
+  visible => {
+    dialogVisible.value = visible
+  }
+)
 
-watch(dialogVisible, (visible) => {
+watch(dialogVisible, visible => {
   emit('update:visible', visible)
 })
 
@@ -265,7 +300,10 @@ const downloadReport = async () => {
   if (!props.importJob) return
 
   try {
-    const blob = await dataImportApi.downloadImportReport(props.importJob.id, 'xlsx')
+    const blob = await dataImportApi.downloadImportReport(
+      props.importJob.id,
+      'xlsx'
+    )
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
@@ -316,27 +354,27 @@ const getProgressStatus = (status: string) => {
 
 const getTemplateTypeColor = (templateName: string) => {
   const colorMap = {
-    '维修任务': 'danger',
-    '监控任务': 'warning',
-    '协助任务': 'success',
-    '成员信息': 'info',
-    '考勤记录': 'primary',
-    '工时记录': 'warning'
+    维修任务: 'danger',
+    监控任务: 'warning',
+    协助任务: 'success',
+    成员信息: 'info',
+    考勤记录: 'primary',
+    工时记录: 'warning'
   }
   return colorMap[templateName as keyof typeof colorMap] || 'info'
 }
 
 const getProcessingTime = () => {
   if (!props.importJob?.startTime || !props.importJob?.endTime) return ''
-  
+
   const start = new Date(props.importJob.startTime)
   const end = new Date(props.importJob.endTime)
   const diff = end.getTime() - start.getTime()
-  
+
   const seconds = Math.floor(diff / 1000)
   const minutes = Math.floor(seconds / 60)
   const hours = Math.floor(minutes / 60)
-  
+
   if (hours > 0) {
     return `${hours}小时${minutes % 60}分钟${seconds % 60}秒`
   } else if (minutes > 0) {

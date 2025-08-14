@@ -1,16 +1,21 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { 
-  getMembers, 
-  getMemberDetail, 
-  createMember, 
-  updateMember, 
+import {
+  getMembers,
+  getMemberDetail,
+  createMember,
+  updateMember,
   deleteMember,
   importMembers,
   exportMembers,
   getMemberStats
 } from '@/api/members'
 import { client } from '@/api/client'
-import type { Member, MemberCreateRequest, MemberUpdateRequest, MemberListParams } from '@/types/member'
+import type {
+  Member,
+  MemberCreateRequest,
+  MemberUpdateRequest,
+  MemberListParams
+} from '@/types/member'
 
 // Mock client
 vi.mock('@/api/client', () => ({
@@ -18,8 +23,8 @@ vi.mock('@/api/client', () => ({
     get: vi.fn(),
     post: vi.fn(),
     put: vi.fn(),
-    delete: vi.fn(),
-  },
+    delete: vi.fn()
+  }
 }))
 
 describe('Members API', () => {
@@ -37,7 +42,7 @@ describe('Members API', () => {
               username: 'test1',
               name: '测试用户1',
               role: 'member',
-              is_active: true,
+              is_active: true
             }
           ],
           total: 1,
@@ -196,7 +201,9 @@ describe('Members API', () => {
 
       vi.mocked(client.post).mockRejectedValue(new Error('Validation failed'))
 
-      await expect(createMember(createData)).rejects.toThrow('Validation failed')
+      await expect(createMember(createData)).rejects.toThrow(
+        'Validation failed'
+      )
     })
   })
 
@@ -287,9 +294,13 @@ describe('Members API', () => {
 
   describe('importMembers', () => {
     it('应该批量导入成员', async () => {
-      const file = new File(['name,username,email\n张三,zhangsan,zhang@test.com'], 'members.csv', {
-        type: 'text/csv'
-      })
+      const file = new File(
+        ['name,username,email\n张三,zhangsan,zhang@test.com'],
+        'members.csv',
+        {
+          type: 'text/csv'
+        }
+      )
 
       const mockImportResult = {
         success_count: 1,
@@ -339,9 +350,11 @@ describe('Members API', () => {
 
   describe('exportMembers', () => {
     it('应该导出成员数据', async () => {
-      const mockExportData = new Blob(['exported data'], { type: 'application/vnd.ms-excel' })
+      const mockExportData = new Blob(['exported data'], {
+        type: 'application/vnd.ms-excel'
+      })
       const mockResponse = { data: mockExportData }
-      
+
       vi.mocked(client.get).mockResolvedValue(mockResponse)
 
       const params = {
@@ -362,7 +375,7 @@ describe('Members API', () => {
     it('应该支持CSV格式导出', async () => {
       const mockExportData = new Blob(['csv data'], { type: 'text/csv' })
       const mockResponse = { data: mockExportData }
-      
+
       vi.mocked(client.get).mockResolvedValue(mockResponse)
 
       const params = {
@@ -401,9 +414,9 @@ describe('Members API', () => {
           guest: 2
         },
         department_distribution: {
-          '技术部': 45,
-          '运维部': 30,
-          '测试部': 25
+          技术部: 45,
+          运维部: 30,
+          测试部: 25
         },
         recent_registrations: 12,
         recent_logins: 78
@@ -468,7 +481,9 @@ describe('Members API', () => {
         role: 'member'
       }
 
-      await expect(createMember(createData)).rejects.toThrow('Internal Server Error')
+      await expect(createMember(createData)).rejects.toThrow(
+        'Internal Server Error'
+      )
     })
 
     it('应该正确传递验证错误', async () => {
@@ -479,7 +494,9 @@ describe('Members API', () => {
         email: 'invalid-email'
       }
 
-      await expect(updateMember(1, updateData)).rejects.toThrow('Validation Error')
+      await expect(updateMember(1, updateData)).rejects.toThrow(
+        'Validation Error'
+      )
     })
   })
 })

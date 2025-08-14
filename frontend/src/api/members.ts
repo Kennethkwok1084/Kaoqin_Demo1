@@ -110,7 +110,9 @@ export class MembersApi {
   /**
    * 获取成员列表
    */
-  static async getMembers(params: MemberListParams = {}): Promise<MemberListResponse> {
+  static async getMembers(
+    params: MemberListParams = {}
+  ): Promise<MemberListResponse> {
     const response = await http.get('/members/', { params })
     return response.data.data
   }
@@ -134,7 +136,10 @@ export class MembersApi {
   /**
    * 更新成员信息
    */
-  static async updateMember(id: number, data: MemberUpdateRequest): Promise<Member> {
+  static async updateMember(
+    id: number,
+    data: MemberUpdateRequest
+  ): Promise<Member> {
     const response = await http.put(`/members/${id}`, data)
     return response.data.data
   }
@@ -149,7 +154,9 @@ export class MembersApi {
   /**
    * 批量导入成员
    */
-  static async importMembers(data: MemberImportRequest): Promise<MemberImportResponse> {
+  static async importMembers(
+    data: MemberImportRequest
+  ): Promise<MemberImportResponse> {
     const response = await http.post('/members/import', data)
     return response.data.data
   }
@@ -157,7 +164,10 @@ export class MembersApi {
   /**
    * 修改密码
    */
-  static async changePassword(id: number, data: PasswordChangeRequest): Promise<void> {
+  static async changePassword(
+    id: number,
+    data: PasswordChangeRequest
+  ): Promise<void> {
     await http.post(`/members/${id}/change-password`, data)
   }
 
@@ -180,8 +190,14 @@ export class MembersApi {
   /**
    * 完善个人信息
    */
-  static async completeProfile(memberId: number, data: MemberUpdateRequest): Promise<any> {
-    const response = await http.post(`/members/${memberId}/complete-profile`, data)
+  static async completeProfile(
+    memberId: number,
+    data: MemberUpdateRequest
+  ): Promise<any> {
+    const response = await http.post(
+      `/members/${memberId}/complete-profile`,
+      data
+    )
     return response.data.data
   }
 }

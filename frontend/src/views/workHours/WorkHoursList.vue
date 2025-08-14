@@ -7,11 +7,19 @@
         <p>管理和审核员工工时记录</p>
       </div>
       <div class="header-actions">
-        <el-button type="success" @click="recalculateAll" :loading="recalculating">
+        <el-button
+          type="success"
+          @click="recalculateAll"
+          :loading="recalculating"
+        >
           <el-icon><Refresh /></el-icon>
           重新计算
         </el-button>
-        <el-button type="primary" @click="showBatchReview = true" :disabled="!selectedRows.length">
+        <el-button
+          type="primary"
+          @click="showBatchReview = true"
+          :disabled="!selectedRows.length"
+        >
           <el-icon><Check /></el-icon>
           批量审核
         </el-button>
@@ -38,7 +46,9 @@
         <el-col :span="6">
           <el-card class="stat-card">
             <div class="stat-content">
-              <div class="stat-value">{{ statistics.totalHours.toFixed(1) }}</div>
+              <div class="stat-value">
+                {{ statistics.totalHours.toFixed(1) }}
+              </div>
               <div class="stat-label">总工时</div>
             </div>
             <div class="stat-icon hours">
@@ -60,7 +70,9 @@
         <el-col :span="6">
           <el-card class="stat-card">
             <div class="stat-content">
-              <div class="stat-value">{{ statistics.efficiency.toFixed(1) }}%</div>
+              <div class="stat-value">
+                {{ statistics.efficiency.toFixed(1) }}%
+              </div>
               <div class="stat-label">平均效率</div>
             </div>
             <div class="stat-icon efficiency">
@@ -71,7 +83,9 @@
         <el-col :span="6">
           <el-card class="stat-card">
             <div class="stat-content">
-              <div class="stat-value">{{ statistics.avgHoursPerTask.toFixed(1) }}</div>
+              <div class="stat-value">
+                {{ statistics.avgHoursPerTask.toFixed(1) }}
+              </div>
               <div class="stat-label">平均工时/任务</div>
             </div>
             <div class="stat-icon average">
@@ -86,7 +100,12 @@
     <el-card class="filter-card">
       <el-form :model="filters" inline class="filter-form">
         <el-form-item label="成员">
-          <el-select v-model="filters.memberId" placeholder="选择成员" clearable style="width: 150px">
+          <el-select
+            v-model="filters.memberId"
+            placeholder="选择成员"
+            clearable
+            style="width: 150px"
+          >
             <el-option
               v-for="member in members"
               :key="member.id"
@@ -95,23 +114,33 @@
             />
           </el-select>
         </el-form-item>
-        
+
         <el-form-item label="任务类型">
-          <el-select v-model="filters.taskType" placeholder="选择类型" clearable style="width: 120px">
+          <el-select
+            v-model="filters.taskType"
+            placeholder="选择类型"
+            clearable
+            style="width: 120px"
+          >
             <el-option label="维修任务" value="repair" />
             <el-option label="监控任务" value="monitoring" />
             <el-option label="协助任务" value="assistance" />
           </el-select>
         </el-form-item>
-        
+
         <el-form-item label="审核状态">
-          <el-select v-model="filters.status" placeholder="选择状态" clearable style="width: 120px">
+          <el-select
+            v-model="filters.status"
+            placeholder="选择状态"
+            clearable
+            style="width: 120px"
+          >
             <el-option label="待审核" value="pending" />
             <el-option label="已通过" value="approved" />
             <el-option label="已拒绝" value="rejected" />
           </el-select>
         </el-form-item>
-        
+
         <el-form-item label="时间范围">
           <el-date-picker
             v-model="filters.dateRange"
@@ -122,7 +151,7 @@
             @change="handleSearch"
           />
         </el-form-item>
-        
+
         <el-form-item>
           <el-button type="primary" @click="handleSearch">
             <el-icon><Search /></el-icon>
@@ -146,11 +175,16 @@
         style="width: 100%"
       >
         <el-table-column type="selection" width="55" />
-        
+
         <el-table-column prop="memberName" label="成员" width="100" />
-        
-        <el-table-column prop="taskTitle" label="任务标题" min-width="200" show-overflow-tooltip />
-        
+
+        <el-table-column
+          prop="taskTitle"
+          label="任务标题"
+          min-width="200"
+          show-overflow-tooltip
+        />
+
         <el-table-column prop="taskType" label="任务类型" width="100">
           <template #default="{ row }">
             <el-tag :type="getTaskTypeColor(row.taskType)">
@@ -158,7 +192,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="工时详情" width="180">
           <template #default="{ row }">
             <div class="hours-breakdown">
@@ -174,13 +208,13 @@
             </div>
           </template>
         </el-table-column>
-        
+
         <el-table-column prop="totalHours" label="总工时" width="100">
           <template #default="{ row }">
             <span class="total-hours">{{ row.totalHours }}h</span>
           </template>
         </el-table-column>
-        
+
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
             <el-tag :type="getStatusColor(row.status)">
@@ -188,46 +222,46 @@
             </el-tag>
           </template>
         </el-table-column>
-        
+
         <el-table-column prop="createdAt" label="创建时间" width="120">
           <template #default="{ row }">
             {{ formatDate(row.createdAt) }}
           </template>
         </el-table-column>
-        
+
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button-group>
               <el-button size="small" @click="viewDetails(row)">
                 <el-icon><View /></el-icon>
               </el-button>
-              <el-button 
-                size="small" 
-                type="warning" 
+              <el-button
+                size="small"
+                type="warning"
                 @click="adjustHours(row)"
                 :disabled="row.status === 'approved'"
               >
                 <el-icon><Edit /></el-icon>
               </el-button>
-              <el-button 
-                size="small" 
-                type="success" 
+              <el-button
+                size="small"
+                type="success"
                 @click="reviewHour(row, 'approve')"
                 v-if="row.status === 'pending'"
               >
                 <el-icon><Check /></el-icon>
               </el-button>
-              <el-button 
-                size="small" 
-                type="danger" 
+              <el-button
+                size="small"
+                type="danger"
                 @click="reviewHour(row, 'reject')"
                 v-if="row.status === 'pending'"
               >
                 <el-icon><Close /></el-icon>
               </el-button>
-              <el-button 
-                size="small" 
-                type="info" 
+              <el-button
+                size="small"
+                type="info"
                 @click="recalculateTask(row.taskId)"
               >
                 <el-icon><Refresh /></el-icon>
@@ -286,12 +320,27 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Refresh, Check, Download, ArrowDown, Timer, Clock, TrendCharts, DataAnalysis,
-  Search, RefreshLeft, View, Edit, Close
+  Refresh,
+  Check,
+  Download,
+  ArrowDown,
+  Timer,
+  Clock,
+  TrendCharts,
+  DataAnalysis,
+  Search,
+  RefreshLeft,
+  View,
+  Edit,
+  Close
 } from '@element-plus/icons-vue'
 import { workHoursApi } from '@/api/workHours'
 import { MembersApi } from '@/api/members'
-import type { WorkHour, WorkHourFilters, WorkHourStatistics } from '@/types/workHours'
+import type {
+  WorkHour,
+  WorkHourFilters,
+  WorkHourStatistics
+} from '@/types/workHours'
 import type { Member } from '@/types/member'
 import WorkHourDetailDialog from '@/components/workHours/WorkHourDetailDialog.vue'
 import WorkHourAdjustDialog from '@/components/workHours/WorkHourAdjustDialog.vue'
@@ -432,7 +481,7 @@ const recalculateTask = async (taskId: number) => {
     })
 
     const result = await workHoursApi.recalculateTaskWorkHours(taskId)
-    
+
     if (result.success) {
       ElMessage.success('工时重新计算成功')
       loadWorkHours()
@@ -450,9 +499,13 @@ const recalculateTask = async (taskId: number) => {
 
 const recalculateAll = async () => {
   try {
-    await ElMessageBox.confirm('确定要重新计算所有工时吗？这可能需要一些时间。', '确认操作', {
-      type: 'warning'
-    })
+    await ElMessageBox.confirm(
+      '确定要重新计算所有工时吗？这可能需要一些时间。',
+      '确认操作',
+      {
+        type: 'warning'
+      }
+    )
 
     recalculating.value = true
     const results = await workHoursApi.recalculateWorkHours({
@@ -464,7 +517,9 @@ const recalculateAll = async () => {
     const successCount = results.filter(r => r.success).length
     const failedCount = results.length - successCount
 
-    ElMessage.success(`工时重新计算完成：成功 ${successCount} 个，失败 ${failedCount} 个`)
+    ElMessage.success(
+      `工时重新计算完成：成功 ${successCount} 个，失败 ${failedCount} 个`
+    )
     loadWorkHours()
     loadStatistics()
   } catch (error) {

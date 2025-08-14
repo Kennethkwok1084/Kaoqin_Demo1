@@ -77,11 +77,7 @@
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="handleClose">取消</el-button>
-        <el-button 
-          type="primary" 
-          :loading="loading"
-          @click="handleSubmit"
-        >
+        <el-button type="primary" :loading="loading" @click="handleSubmit">
           提交申请
         </el-button>
       </div>
@@ -116,7 +112,7 @@ const calculatedHours = ref(0)
 // 计算属性
 const visible = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: value => emit('update:modelValue', value)
 })
 
 // 表单数据
@@ -129,15 +125,9 @@ const formData = reactive<CreateOvertimeRequest>({
 
 // 表单验证规则
 const formRules = {
-  date: [
-    { required: true, message: '请选择加班日期', trigger: 'change' }
-  ],
-  startTime: [
-    { required: true, message: '请选择开始时间', trigger: 'change' }
-  ],
-  endTime: [
-    { required: true, message: '请选择结束时间', trigger: 'change' }
-  ],
+  date: [{ required: true, message: '请选择加班日期', trigger: 'change' }],
+  startTime: [{ required: true, message: '请选择开始时间', trigger: 'change' }],
+  endTime: [{ required: true, message: '请选择结束时间', trigger: 'change' }],
   reason: [
     { required: true, message: '请填写加班原因', trigger: 'blur' },
     { min: 10, message: '加班原因至少10个字符', trigger: 'blur' }
@@ -149,12 +139,13 @@ const calculateHours = () => {
   if (formData.startTime && formData.endTime) {
     const [startHour, startMin] = formData.startTime.split(':').map(Number)
     const [endHour, endMin] = formData.endTime.split(':').map(Number)
-    
+
     const startMinutes = startHour * 60 + startMin
     const endMinutes = endHour * 60 + endMin
-    
+
     if (endMinutes > startMinutes) {
-      calculatedHours.value = Math.round((endMinutes - startMinutes) / 60 * 10) / 10
+      calculatedHours.value =
+        Math.round(((endMinutes - startMinutes) / 60) * 10) / 10
     } else {
       calculatedHours.value = 0
     }
@@ -192,11 +183,10 @@ const handleSubmit = async () => {
     loading.value = true
 
     await attendanceApi.createOvertimeApplication(formData)
-    
+
     ElMessage.success('加班申请提交成功')
     emit('success')
     handleClose()
-
   } catch (error) {
     console.error('提交申请失败:', error)
     ElMessage.error('提交申请失败')
@@ -206,14 +196,17 @@ const handleSubmit = async () => {
 }
 
 // 监听
-watch(() => visible.value, (val) => {
-  if (val) {
-    calculateHours()
-    nextTick(() => {
-      formRef.value?.clearValidate()
-    })
+watch(
+  () => visible.value,
+  val => {
+    if (val) {
+      calculateHours()
+      nextTick(() => {
+        formRef.value?.clearValidate()
+      })
+    }
   }
-})
+)
 
 watch([() => formData.startTime, () => formData.endTime], () => {
   calculateHours()

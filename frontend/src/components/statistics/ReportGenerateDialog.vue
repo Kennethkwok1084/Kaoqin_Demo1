@@ -7,7 +7,11 @@
   >
     <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
       <el-form-item label="报表类型" prop="type">
-        <el-select v-model="form.type" placeholder="请选择报表类型" style="width: 100%">
+        <el-select
+          v-model="form.type"
+          placeholder="请选择报表类型"
+          style="width: 100%"
+        >
           <el-option label="月度综合报表" value="monthly_comprehensive" />
           <el-option label="工作效率报表" value="efficiency_analysis" />
           <el-option label="考勤统计报表" value="attendance_summary" />
@@ -99,7 +103,12 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import {
+  ElMessage,
+  ElMessageBox,
+  type FormInstance,
+  type FormRules
+} from 'element-plus'
 import { statisticsApi } from '@/api/statistics'
 import type { ReportTemplate, Member } from '@/types/statistics'
 
@@ -131,22 +140,21 @@ const form = reactive({
 })
 
 const rules: FormRules = {
-  type: [
-    { required: true, message: '请选择报表类型', trigger: 'change' }
-  ],
-  dateRange: [
-    { required: true, message: '请选择时间范围', trigger: 'change' }
-  ]
+  type: [{ required: true, message: '请选择报表类型', trigger: 'change' }],
+  dateRange: [{ required: true, message: '请选择时间范围', trigger: 'change' }]
 }
 
-watch(() => props.visible, (visible) => {
-  dialogVisible.value = visible
-  if (visible) {
-    loadMembers()
+watch(
+  () => props.visible,
+  visible => {
+    dialogVisible.value = visible
+    if (visible) {
+      loadMembers()
+    }
   }
-})
+)
 
-watch(dialogVisible, (visible) => {
+watch(dialogVisible, visible => {
   emit('update:visible', visible)
 })
 
@@ -155,7 +163,7 @@ const loadMembers = async () => {
     // 这里应该调用获取成员列表的API
     // const response = await membersApi.getMembers()
     // members.value = response.data
-    
+
     // 临时模拟数据
     members.value = [
       { id: 1, name: '张三', department: 'network_maintenance' },
@@ -174,9 +182,9 @@ const handleGenerate = async () => {
 
   try {
     await formRef.value.validate()
-    
+
     loading.value = true
-    
+
     const reportData: ReportTemplate = {
       id: Date.now(),
       name: getReportTypeName(form.type),
@@ -194,11 +202,10 @@ const handleGenerate = async () => {
     }
 
     await statisticsApi.generateReport(reportData)
-    
+
     ElMessage.success('报表生成成功！')
     emit('success', reportData)
     handleClose()
-    
   } catch (error) {
     console.error('生成报表失败:', error)
     ElMessage.error('生成报表失败')

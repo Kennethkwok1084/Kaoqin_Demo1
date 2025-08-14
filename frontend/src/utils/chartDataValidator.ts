@@ -20,7 +20,10 @@ export interface ChartData {
 /**
  * 验证并修复图表数据
  */
-export function validateChartData(data: any, defaultConfig?: Partial<ChartData>): ChartData {
+export function validateChartData(
+  data: any,
+  defaultConfig?: Partial<ChartData>
+): ChartData {
   const defaultLabels = defaultConfig?.labels || ['数据1', '数据2', '数据3']
   const defaultDataset: ChartDataset = {
     label: '默认数据',
@@ -46,7 +49,8 @@ export function validateChartData(data: any, defaultConfig?: Partial<ChartData>)
     datasets = data.datasets.map((dataset: any, index: number) => ({
       label: dataset?.label || `数据集${index + 1}`,
       data: Array.isArray(dataset?.data) ? dataset.data : defaultDataset.data,
-      backgroundColor: dataset?.backgroundColor || defaultDataset.backgroundColor,
+      backgroundColor:
+        dataset?.backgroundColor || defaultDataset.backgroundColor,
       borderColor: dataset?.borderColor || defaultDataset.borderColor,
       ...dataset
     }))
@@ -73,11 +77,13 @@ export function validateChartData(data: any, defaultConfig?: Partial<ChartData>)
 export function getDefaultPieChartData(): ChartData {
   return validateChartData(null, {
     labels: ['维修任务', '监控任务', '协助任务'],
-    datasets: [{
-      label: '任务分布',
-      data: [0, 0, 0],
-      backgroundColor: ['#5470c6', '#91cc75', '#fac858']
-    }]
+    datasets: [
+      {
+        label: '任务分布',
+        data: [0, 0, 0],
+        backgroundColor: ['#5470c6', '#91cc75', '#fac858']
+      }
+    ]
   })
 }
 
@@ -94,12 +100,14 @@ export function getDefaultLineChartData(): ChartData {
 
   return validateChartData(null, {
     labels: dates,
-    datasets: [{
-      label: '任务完成趋势',
-      data: new Array(7).fill(0),
-      backgroundColor: ['rgba(84, 112, 198, 0.2)'],
-      borderColor: '#5470c6'
-    }]
+    datasets: [
+      {
+        label: '任务完成趋势',
+        data: new Array(7).fill(0),
+        backgroundColor: ['rgba(84, 112, 198, 0.2)'],
+        borderColor: '#5470c6'
+      }
+    ]
   })
 }
 
@@ -109,11 +117,13 @@ export function getDefaultLineChartData(): ChartData {
 export function getDefaultBarChartData(): ChartData {
   return validateChartData(null, {
     labels: ['成员1', '成员2', '成员3', '成员4', '成员5'],
-    datasets: [{
-      label: '工作时长',
-      data: [0, 0, 0, 0, 0],
-      backgroundColor: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de']
-    }]
+    datasets: [
+      {
+        label: '工作时长',
+        data: [0, 0, 0, 0, 0],
+        backgroundColor: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de']
+      }
+    ]
   })
 }
 
@@ -123,11 +133,13 @@ export function getDefaultBarChartData(): ChartData {
 export function getDefaultDoughnutChartData(): ChartData {
   return validateChartData(null, {
     labels: ['出勤', '缺勤', '请假'],
-    datasets: [{
-      label: '考勤分布',
-      data: [0, 0, 0],
-      backgroundColor: ['#91cc75', '#ee6666', '#fac858']
-    }]
+    datasets: [
+      {
+        label: '考勤分布',
+        data: [0, 0, 0],
+        backgroundColor: ['#91cc75', '#ee6666', '#fac858']
+      }
+    ]
   })
 }
 

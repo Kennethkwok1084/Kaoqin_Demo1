@@ -25,13 +25,13 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       isLoading.value = true
       const response = await authApi.login(credentials)
-      
+
       // 保存token和用户信息
       token.value = response.data.access_token
       userInfo.value = response.data.user
       setToken(response.data.access_token)
       setRefreshToken(response.data.refresh_token)
-      
+
       // 检查是否需要完善信息
       if (response.data.user.needs_profile_completion) {
         await router.push('/auth/complete-profile')
@@ -52,7 +52,7 @@ export const useAuthStore = defineStore('auth', () => {
   const logout = async (): Promise<void> => {
     try {
       isLoading.value = true
-      
+
       // 调用后端登出接口
       if (token.value) {
         await authApi.logout()
@@ -66,7 +66,7 @@ export const useAuthStore = defineStore('auth', () => {
       userInfo.value = null
       removeToken()
       isLoading.value = false
-      
+
       // 跳转到登录页
       await router.push('/login')
     }
@@ -78,7 +78,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (!token.value) {
         throw new Error('未找到认证token')
       }
-      
+
       const response = await authApi.getUserInfo()
       userInfo.value = response
     } catch (error) {
@@ -147,14 +147,14 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     userInfo,
     isLoading,
-    
+
     // 计算属性
     isAuthenticated,
     isAdmin,
     isGroupLeader,
     hasPermission,
     needsProfileCompletion,
-    
+
     // 方法
     login,
     logout,

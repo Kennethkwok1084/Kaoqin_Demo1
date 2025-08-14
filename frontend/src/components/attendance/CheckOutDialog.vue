@@ -100,7 +100,11 @@
           </el-checkbox>
         </el-form-item>
 
-        <el-form-item v-if="applyOvertime" label="加班原因" prop="overtimeReason">
+        <el-form-item
+          v-if="applyOvertime"
+          label="加班原因"
+          prop="overtimeReason"
+        >
           <el-input
             v-model="overtimeReason"
             type="textarea"
@@ -116,11 +120,7 @@
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="handleClose">取消</el-button>
-        <el-button 
-          type="success" 
-          :loading="loading"
-          @click="handleSubmit"
-        >
+        <el-button type="success" :loading="loading" @click="handleSubmit">
           确认签退
         </el-button>
       </div>
@@ -129,7 +129,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import {
+  ref,
+  reactive,
+  computed,
+  watch,
+  onMounted,
+  onUnmounted,
+  nextTick
+} from 'vue'
 import { ElMessage, ElForm } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { attendanceApi } from '@/api/attendance'
@@ -170,7 +178,7 @@ let timeTimer: NodeJS.Timeout | null = null
 // 计算属性
 const visible = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: value => emit('update:modelValue', value)
 })
 
 // 表单数据
@@ -182,25 +190,18 @@ const formData = reactive<CheckOutRequest>({
 
 // 表单验证规则
 const formRules = computed(() => ({
-  location: [
-    { required: true, message: '请选择签退地点', trigger: 'blur' }
-  ],
+  location: [{ required: true, message: '请选择签退地点', trigger: 'blur' }],
   overtimeReason: [
-    { 
-      required: applyOvertime.value, 
-      message: '请说明加班原因', 
-      trigger: 'blur' 
+    {
+      required: applyOvertime.value,
+      message: '请说明加班原因',
+      trigger: 'blur'
     }
   ]
 }))
 
 // 地点选项
-const locationOptions = ref<string[]>([
-  '公司',
-  '客户现场',
-  '远程办公',
-  '出差'
-])
+const locationOptions = ref<string[]>(['公司', '客户现场', '远程办公', '出差'])
 
 // 方法
 const updateCurrentTime = () => {
@@ -217,22 +218,24 @@ const updateCurrentTime = () => {
     day: 'numeric',
     weekday: 'long'
   })
-  
+
   // 计算工作时长
   calculateWorkDuration()
 }
 
 const calculateWorkDuration = () => {
   if (checkInTime.value) {
-    const checkIn = new Date(`${new Date().toDateString()} ${checkInTime.value}`)
+    const checkIn = new Date(
+      `${new Date().toDateString()} ${checkInTime.value}`
+    )
     const now = new Date()
     const diff = now.getTime() - checkIn.getTime()
-    
+
     const hours = Math.floor(diff / (1000 * 60 * 60))
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-    
+
     workDuration.value = `${hours}小时${minutes}分钟`
-    
+
     // 自动判断是否需要申请加班
     if (hours >= overtimeThreshold.value && !applyOvertime.value) {
       applyOvertime.value = true
@@ -243,11 +246,11 @@ const calculateWorkDuration = () => {
 const getCurrentLocation = () => {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      position => {
         const { latitude, longitude } = position.coords
         currentLocation.value = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
       },
-      (error) => {
+      error => {
         console.warn('获取位置失败:', error)
         currentLocation.value = '位置获取失败'
       }
@@ -317,11 +320,10 @@ const handleSubmit = async () => {
     }
 
     await attendanceApi.checkOut(submitData)
-    
+
     ElMessage.success('签退成功')
     emit('success')
     handleClose()
-
   } catch (error) {
     console.error('签退失败:', error)
     ElMessage.error('签退失败')
@@ -355,24 +357,27 @@ const handleExceed = () => {
 }
 
 // 监听
-watch(() => visible.value, (val) => {
-  if (val) {
-    updateCurrentTime()
-    timeTimer = setInterval(updateCurrentTime, 1000)
-    getCurrentLocation()
-    loadLocationOptions()
-    loadTodayStatus()
-    
-    nextTick(() => {
-      formRef.value?.clearValidate()
-    })
-  } else {
-    if (timeTimer) {
-      clearInterval(timeTimer)
-      timeTimer = null
+watch(
+  () => visible.value,
+  val => {
+    if (val) {
+      updateCurrentTime()
+      timeTimer = setInterval(updateCurrentTime, 1000)
+      getCurrentLocation()
+      loadLocationOptions()
+      loadTodayStatus()
+
+      nextTick(() => {
+        formRef.value?.clearValidate()
+      })
+    } else {
+      if (timeTimer) {
+        clearInterval(timeTimer)
+        timeTimer = null
+      }
     }
   }
-})
+)
 
 // 生命周期
 onUnmounted(() => {

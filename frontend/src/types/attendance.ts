@@ -92,7 +92,14 @@ export interface CreateLeaveRequest {
 export interface AttendanceFilters {
   memberId?: number
   department?: string[]
-  status?: ('normal' | 'late' | 'early_leave' | 'absent' | 'leave' | 'overtime')[]
+  status?: (
+    | 'normal'
+    | 'late'
+    | 'early_leave'
+    | 'absent'
+    | 'leave'
+    | 'overtime'
+  )[]
   dateRange?: [string, string]
   search?: string
 }

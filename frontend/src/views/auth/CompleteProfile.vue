@@ -32,13 +32,15 @@
                 />
               </el-form-item>
             </el-col>
-            
+
             <el-col :span="12">
               <el-form-item prop="phone">
                 <template #label>
                   <el-icon><Phone /></el-icon>
                   手机号码
-                  <el-tag type="info" size="small" style="margin-left: 4px">可选</el-tag>
+                  <el-tag type="info" size="small" style="margin-left: 4px"
+                    >可选</el-tag
+                  >
                 </template>
                 <el-input
                   v-model="formData.phone"
@@ -59,7 +61,9 @@
                 <template #label>
                   <el-icon><Message /></el-icon>
                   用户名
-                  <el-tag type="info" size="small" style="margin-left: 4px">可选</el-tag>
+                  <el-tag type="info" size="small" style="margin-left: 4px"
+                    >可选</el-tag
+                  >
                 </template>
                 <el-input
                   v-model="formData.username"
@@ -76,15 +80,11 @@
         </div>
 
         <div class="form-actions">
-          <el-button 
-            size="large" 
-            @click="handleSkip"
-            :loading="loading"
-          >
+          <el-button size="large" @click="handleSkip" :loading="loading">
             跳过，稍后完善
           </el-button>
-          <el-button 
-            type="primary" 
+          <el-button
+            type="primary"
             size="large"
             @click="handleSubmit"
             :loading="loading"
@@ -132,11 +132,24 @@ const formData = reactive({
 // 表单验证规则（只验证格式，不强制要求）
 const formRules = {
   phone: [
-    { pattern: /^1[3-9]\d{9}$/, message: '请输入11位有效手机号码', trigger: 'blur' }
+    {
+      pattern: /^1[3-9]\d{9}$/,
+      message: '请输入11位有效手机号码',
+      trigger: 'blur'
+    }
   ],
   username: [
-    { pattern: /^[a-zA-Z0-9_]+$/, message: '用户名只能包含字母、数字和下划线', trigger: 'blur' },
-    { min: 3, max: 50, message: '用户名长度必须在3-50个字符之间', trigger: 'blur' }
+    {
+      pattern: /^[a-zA-Z0-9_]+$/,
+      message: '用户名只能包含字母、数字和下划线',
+      trigger: 'blur'
+    },
+    {
+      min: 3,
+      max: 50,
+      message: '用户名长度必须在3-50个字符之间',
+      trigger: 'blur'
+    }
   ]
 }
 
@@ -145,9 +158,9 @@ const handleSubmit = async () => {
   try {
     // 验证表单
     await formRef.value?.validate()
-    
+
     loading.value = true
-    
+
     // 过滤空值
     const submitData: MemberUpdateRequest = {}
     if (formData.phone?.trim()) {
@@ -156,28 +169,27 @@ const handleSubmit = async () => {
     if (formData.username?.trim()) {
       submitData.username = formData.username.trim()
     }
-    
+
     // 调用API完善信息 - 使用completeProfile方法
     const currentUser = authStore.userInfo
     if (currentUser?.id) {
       // 将submitData转换为completeProfile格式
       const updateData = {
-        phone: submitData.phone,
+        phone: submitData.phone
         // 可以添加其他需要完善的字段
       }
       await MembersApi.completeProfile(currentUser.id, updateData)
-      
+
       // 更新用户状态为已完善信息
       authStore.updateUser({ profile_completed: true })
     } else {
       throw new Error('无法获取当前用户信息')
     }
-    
+
     ElMessage.success('信息保存成功！')
-    
+
     // 跳转到主页面
     await redirectToMain()
-    
   } catch (error: any) {
     console.error('完善信息失败:', error)
     ElMessage.error(error.message || '保存失败，请重试')
@@ -197,7 +209,7 @@ const handleSkip = async () => {
         type: 'info'
       }
     )
-    
+
     if (result === 'confirm') {
       await redirectToMain()
     }
@@ -209,7 +221,7 @@ const handleSkip = async () => {
 const redirectToMain = async () => {
   // 更新用户状态
   await authStore.refreshUserInfo()
-  
+
   // 跳转到仪表板
   router.replace('/dashboard')
 }
@@ -312,7 +324,7 @@ const redirectToMain = async () => {
   align-items: center;
   font-weight: 500;
   color: $text-color-primary;
-  
+
   .el-icon {
     margin-right: 8px;
     color: $primary-color;

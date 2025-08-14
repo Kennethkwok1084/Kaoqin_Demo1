@@ -18,10 +18,10 @@ const globalStore = useGlobalStore()
 onMounted(() => {
   // 初始化应用
   globalStore.initializeApp()
-  
+
   // 设置页面标题
   document.title = import.meta.env.VITE_APP_TITLE
-  
+
   // 设置全局版本号
   window.__APP_VERSION__ = import.meta.env.VITE_APP_VERSION
 })
@@ -30,7 +30,9 @@ onMounted(() => {
 <style lang="scss">
 #app {
   height: 100vh;
-  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+  font-family:
+    'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

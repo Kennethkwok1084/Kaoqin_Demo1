@@ -1,8 +1,8 @@
 <template>
   <div class="mobile-bottom-nav visible-xs">
     <div class="nav-items">
-      <div 
-        v-for="item in navItems" 
+      <div
+        v-for="item in navItems"
         :key="item.path"
         class="nav-item"
         :class="{ active: isActive(item.path) }"
@@ -23,12 +23,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { 
-  Monitor, 
-  Document, 
-  User, 
-  Clock, 
-  DataLine 
+import {
+  Monitor,
+  Document,
+  User,
+  Clock,
+  DataLine
 } from '@element-plus/icons-vue'
 
 // 路由
@@ -45,7 +45,7 @@ const navItems = [
   {
     path: '/tasks',
     label: '任务',
-    icon: Document,
+    icon: Document
     // badge: 5 // 可选的徽章数量
   },
   {
@@ -100,12 +100,12 @@ const navigateTo = (path: string) => {
   z-index: 999;
   @include safe-area-padding;
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  
+
   .nav-items {
     display: flex;
     height: 100%;
     align-items: center;
-    
+
     .nav-item {
       flex: 1;
       display: flex;
@@ -117,29 +117,29 @@ const navigateTo = (path: string) => {
       transition: all $transition-base;
       padding: $spacing-extra-small 0;
       @include touch-target(60px);
-      
+
       &:active {
         background: $background-color-light;
       }
-      
+
       &.active {
         .nav-icon {
           color: $primary-color;
           transform: scale(1.1);
         }
-        
+
         .nav-label {
           color: $primary-color;
           font-weight: 600;
         }
       }
-      
+
       .nav-icon {
         margin-bottom: 2px;
         color: $text-color-secondary;
         transition: all $transition-base;
       }
-      
+
       .nav-label {
         font-size: 10px;
         color: $text-color-secondary;
@@ -147,7 +147,7 @@ const navigateTo = (path: string) => {
         line-height: 1.2;
         text-align: center;
       }
-      
+
       .nav-badge {
         position: absolute;
         top: 4px;
@@ -172,7 +172,9 @@ const navigateTo = (path: string) => {
 // 为页面内容留出底部导航的空间
 :global(.content-area) {
   @include mobile-only {
-    padding-bottom: calc(#{$spacing-small} + 60px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(
+      #{$spacing-small} + 60px + env(safe-area-inset-bottom, 0px)
+    ) !important;
   }
 }
 </style>

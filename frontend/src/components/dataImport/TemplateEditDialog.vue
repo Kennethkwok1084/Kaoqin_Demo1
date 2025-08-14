@@ -20,7 +20,11 @@
       </el-form-item>
 
       <el-form-item label="数据类型" prop="type">
-        <el-select v-model="form.type" placeholder="请选择数据类型" style="width: 100%">
+        <el-select
+          v-model="form.type"
+          placeholder="请选择数据类型"
+          style="width: 100%"
+        >
           <el-option label="维修任务" value="repair_tasks" />
           <el-option label="监控任务" value="monitoring_tasks" />
           <el-option label="协助任务" value="assistance_tasks" />
@@ -110,47 +114,68 @@ const form = reactive({
 })
 
 const rules: FormRules = {
-  name: [
-    { required: true, message: '请输入模板名称', trigger: 'blur' }
-  ],
-  description: [
-    { required: true, message: '请输入模板描述', trigger: 'blur' }
-  ],
-  type: [
-    { required: true, message: '请选择数据类型', trigger: 'change' }
-  ],
+  name: [{ required: true, message: '请输入模板名称', trigger: 'blur' }],
+  description: [{ required: true, message: '请输入模板描述', trigger: 'blur' }],
+  type: [{ required: true, message: '请选择数据类型', trigger: 'change' }],
   requiredFields: [
-    { required: true, type: 'array', min: 1, message: '请至少选择一个必填字段', trigger: 'change' }
+    {
+      required: true,
+      type: 'array',
+      min: 1,
+      message: '请至少选择一个必填字段',
+      trigger: 'change'
+    }
   ]
 }
 
 const isEdit = computed(() => !!props.template)
 
 const availableFields = [
-  'id', 'name', 'title', 'description', 'type', 'status', 'priority',
-  'assignee', 'reporter', 'department', 'location', 'phone', 'email',
-  'start_time', 'end_time', 'created_at', 'updated_at', 'completed_at',
-  'work_hours', 'base_hours', 'bonus_hours', 'penalty_hours'
+  'id',
+  'name',
+  'title',
+  'description',
+  'type',
+  'status',
+  'priority',
+  'assignee',
+  'reporter',
+  'department',
+  'location',
+  'phone',
+  'email',
+  'start_time',
+  'end_time',
+  'created_at',
+  'updated_at',
+  'completed_at',
+  'work_hours',
+  'base_hours',
+  'bonus_hours',
+  'penalty_hours'
 ]
 
-watch(() => props.visible, (visible) => {
-  dialogVisible.value = visible
-  if (visible) {
-    if (props.template) {
-      Object.assign(form, {
-        name: props.template.name,
-        description: props.template.description,
-        type: props.template.type,
-        requiredFields: [...props.template.requiredFields],
-        optionalFields: [...props.template.optionalFields]
-      })
-    } else {
-      resetForm()
+watch(
+  () => props.visible,
+  visible => {
+    dialogVisible.value = visible
+    if (visible) {
+      if (props.template) {
+        Object.assign(form, {
+          name: props.template.name,
+          description: props.template.description,
+          type: props.template.type,
+          requiredFields: [...props.template.requiredFields],
+          optionalFields: [...props.template.optionalFields]
+        })
+      } else {
+        resetForm()
+      }
     }
   }
-})
+)
 
-watch(dialogVisible, (visible) => {
+watch(dialogVisible, visible => {
   emit('update:visible', visible)
 })
 

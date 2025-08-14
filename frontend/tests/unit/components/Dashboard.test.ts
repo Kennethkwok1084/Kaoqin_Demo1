@@ -10,13 +10,13 @@ import * as statisticsApi from '@/api/statistics'
 vi.mock('@/api/dashboard', () => ({
   getDashboardOverview: vi.fn(),
   getRecentTasks: vi.fn(),
-  getRecentAttendance: vi.fn(),
+  getRecentAttendance: vi.fn()
 }))
 
 vi.mock('@/api/statistics', () => ({
   getOverviewStats: vi.fn(),
   getTaskStats: vi.fn(),
-  getWorkHourStats: vi.fn(),
+  getWorkHourStats: vi.fn()
 }))
 
 // Mock ECharts
@@ -121,21 +121,33 @@ describe('Dashboard', () => {
 
   beforeEach(async () => {
     setActivePinia(createPinia())
-    
+
     // Mock API responses
-    vi.mocked(dashboardApi.getDashboardOverview).mockResolvedValue(mockDashboardData.overview)
-    vi.mocked(dashboardApi.getRecentTasks).mockResolvedValue(mockDashboardData.recent_tasks)
-    vi.mocked(dashboardApi.getRecentAttendance).mockResolvedValue(mockDashboardData.recent_attendance)
-    vi.mocked(statisticsApi.getOverviewStats).mockResolvedValue(mockStatsData.task_distribution)
-    vi.mocked(statisticsApi.getTaskStats).mockResolvedValue(mockStatsData.task_status_distribution)
-    vi.mocked(statisticsApi.getWorkHourStats).mockResolvedValue(mockStatsData.work_hours_trend)
-    
+    vi.mocked(dashboardApi.getDashboardOverview).mockResolvedValue(
+      mockDashboardData.overview
+    )
+    vi.mocked(dashboardApi.getRecentTasks).mockResolvedValue(
+      mockDashboardData.recent_tasks
+    )
+    vi.mocked(dashboardApi.getRecentAttendance).mockResolvedValue(
+      mockDashboardData.recent_attendance
+    )
+    vi.mocked(statisticsApi.getOverviewStats).mockResolvedValue(
+      mockStatsData.task_distribution
+    )
+    vi.mocked(statisticsApi.getTaskStats).mockResolvedValue(
+      mockStatsData.task_status_distribution
+    )
+    vi.mocked(statisticsApi.getWorkHourStats).mockResolvedValue(
+      mockStatsData.work_hours_trend
+    )
+
     wrapper = mount(Dashboard, {
       global: {
         plugins: [router]
       }
     })
-    
+
     await wrapper.vm.$nextTick()
   })
 
@@ -174,34 +186,39 @@ describe('Dashboard', () => {
     it('应该正确显示加载状态', async () => {
       // 模拟加载状态
       vi.mocked(dashboardApi.getDashboardOverview).mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve(mockDashboardData.overview), 100))
+        () =>
+          new Promise(resolve =>
+            setTimeout(() => resolve(mockDashboardData.overview), 100)
+          )
       )
-      
+
       const newWrapper = mount(Dashboard, {
         global: {
           plugins: [router]
         }
       })
-      
+
       expect(newWrapper.vm.loading).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 150))
-      
+
       expect(newWrapper.vm.loading).toBe(false)
       newWrapper.unmount()
     })
 
     it('应该处理数据加载错误', async () => {
-      vi.mocked(dashboardApi.getDashboardOverview).mockRejectedValue(new Error('API Error'))
-      
+      vi.mocked(dashboardApi.getDashboardOverview).mockRejectedValue(
+        new Error('API Error')
+      )
+
       const newWrapper = mount(Dashboard, {
         global: {
           plugins: [router]
         }
       })
-      
+
       await new Promise(resolve => setTimeout(resolve, 50))
-      
+
       expect(newWrapper.vm.error).toBeTruthy()
       newWrapper.unmount()
     })
@@ -214,22 +231,22 @@ describe('Dashboard', () => {
 
     it('应该显示任务统计卡片', async () => {
       await wrapper.vm.$nextTick()
-      
+
       const taskCards = wrapper.findAll('.overview-card')
       expect(taskCards.length).toBeGreaterThan(0)
-      
+
       // 验证总任务数
       expect(wrapper.text()).toContain('156')
       expect(wrapper.text()).toContain('总任务数')
-      
+
       // 验证待处理任务数
       expect(wrapper.text()).toContain('23')
       expect(wrapper.text()).toContain('待处理')
-      
+
       // 验证进行中任务数
       expect(wrapper.text()).toContain('45')
       expect(wrapper.text()).toContain('进行中')
-      
+
       // 验证已完成任务数
       expect(wrapper.text()).toContain('88')
       expect(wrapper.text()).toContain('已完成')
@@ -237,27 +254,27 @@ describe('Dashboard', () => {
 
     it('应该显示成员统计卡片', async () => {
       await wrapper.vm.$nextTick()
-      
+
       expect(wrapper.text()).toContain('42')
       expect(wrapper.text()).toContain('总成员数')
-      
+
       expect(wrapper.text()).toContain('38')
       expect(wrapper.text()).toContain('活跃成员')
     })
 
     it('应该显示工时统计卡片', async () => {
       await wrapper.vm.$nextTick()
-      
+
       expect(wrapper.text()).toContain('3240')
       expect(wrapper.text()).toContain('总工时')
-      
+
       expect(wrapper.text()).toContain('2.5')
       expect(wrapper.text()).toContain('平均完成时间')
     })
 
     it('应该正确计算完成率', () => {
       const completionRate = wrapper.vm.getCompletionRate()
-      const expected = (88 / 156 * 100).toFixed(1)
+      const expected = ((88 / 156) * 100).toFixed(1)
       expect(completionRate).toBe(expected)
     })
   })
@@ -270,10 +287,10 @@ describe('Dashboard', () => {
 
     it('应该渲染任务状态分布图表', async () => {
       await wrapper.vm.$nextTick()
-      
+
       const taskChart = wrapper.find('[data-testid="task-status-chart"]')
       expect(taskChart.exists()).toBe(true)
-      
+
       // 验证图表配置
       const chartOption = wrapper.vm.getTaskStatusChartOption()
       expect(chartOption.series[0].data).toHaveLength(4)
@@ -283,15 +300,19 @@ describe('Dashboard', () => {
 
     it('应该渲染工时趋势图表', async () => {
       await wrapper.vm.$nextTick()
-      
+
       const trendChart = wrapper.find('[data-testid="work-hour-trend-chart"]')
       expect(trendChart.exists()).toBe(true)
-      
+
       // 验证图表配置
       const chartOption = wrapper.vm.getWorkHourTrendChartOption()
       expect(chartOption.series[0].data).toHaveLength(5)
       expect(chartOption.xAxis.data).toEqual([
-        '2023-11-01', '2023-11-02', '2023-11-03', '2023-11-04', '2023-11-05'
+        '2023-11-01',
+        '2023-11-02',
+        '2023-11-03',
+        '2023-11-04',
+        '2023-11-05'
       ])
     })
 
@@ -299,7 +320,7 @@ describe('Dashboard', () => {
       wrapper.vm.taskStats = {}
       wrapper.vm.workHourTrend = []
       await wrapper.vm.$nextTick()
-      
+
       expect(wrapper.find('.empty-chart-state').exists()).toBe(true)
     })
   })
@@ -312,10 +333,10 @@ describe('Dashboard', () => {
 
     it('应该显示最近任务列表', async () => {
       await wrapper.vm.$nextTick()
-      
+
       const taskList = wrapper.find('.recent-tasks')
       expect(taskList.exists()).toBe(true)
-      
+
       expect(wrapper.text()).toContain('图书馆网络故障')
       expect(wrapper.text()).toContain('宿舍楼监控检查')
       expect(wrapper.text()).toContain('张三')
@@ -324,24 +345,24 @@ describe('Dashboard', () => {
 
     it('应该显示任务优先级标签', async () => {
       await wrapper.vm.$nextTick()
-      
+
       expect(wrapper.find('.priority-high').exists()).toBe(true)
       expect(wrapper.find('.priority-medium').exists()).toBe(true)
     })
 
     it('应该显示任务状态标签', async () => {
       await wrapper.vm.$nextTick()
-      
+
       expect(wrapper.find('.status-pending').exists()).toBe(true)
       expect(wrapper.find('.status-in-progress').exists()).toBe(true)
     })
 
     it('应该显示最近考勤记录', async () => {
       await wrapper.vm.$nextTick()
-      
+
       const attendanceList = wrapper.find('.recent-attendance')
       expect(attendanceList.exists()).toBe(true)
-      
+
       expect(wrapper.text()).toContain('张三')
       expect(wrapper.text()).toContain('8.5')
       expect(wrapper.text()).toContain('李四')
@@ -352,9 +373,9 @@ describe('Dashboard', () => {
   describe('操作功能', () => {
     it('应该处理刷新操作', async () => {
       vi.clearAllMocks()
-      
+
       await wrapper.find('.refresh-btn').trigger('click')
-      
+
       expect(dashboardApi.getDashboardOverview).toHaveBeenCalled()
       expect(dashboardApi.getRecentTasks).toHaveBeenCalled()
       expect(dashboardApi.getRecentAttendance).toHaveBeenCalled()
@@ -362,13 +383,13 @@ describe('Dashboard', () => {
 
     it('应该处理快速导航', async () => {
       const routerPushSpy = vi.spyOn(router, 'push')
-      
+
       await wrapper.find('.nav-to-tasks').trigger('click')
       expect(routerPushSpy).toHaveBeenCalledWith('/tasks')
-      
+
       await wrapper.find('.nav-to-members').trigger('click')
       expect(routerPushSpy).toHaveBeenCalledWith('/members')
-      
+
       await wrapper.find('.nav-to-work-hours').trigger('click')
       expect(routerPushSpy).toHaveBeenCalledWith('/work-hours')
     })
@@ -376,10 +397,10 @@ describe('Dashboard', () => {
     it('应该处理任务详情查看', async () => {
       wrapper.vm.recentTasks = mockDashboardData.recent_tasks
       await wrapper.vm.$nextTick()
-      
+
       const taskItem = wrapper.find('.task-item').first()
       await taskItem.trigger('click')
-      
+
       expect(wrapper.vm.taskDetailVisible).toBe(true)
       expect(wrapper.vm.selectedTask).toEqual(mockDashboardData.recent_tasks[0])
     })
@@ -387,39 +408,41 @@ describe('Dashboard', () => {
     it('应该处理考勤详情查看', async () => {
       wrapper.vm.recentAttendance = mockDashboardData.recent_attendance
       await wrapper.vm.$nextTick()
-      
+
       const attendanceItem = wrapper.find('.attendance-item').first()
       await attendanceItem.trigger('click')
-      
+
       expect(wrapper.vm.attendanceDetailVisible).toBe(true)
-      expect(wrapper.vm.selectedAttendance).toEqual(mockDashboardData.recent_attendance[0])
+      expect(wrapper.vm.selectedAttendance).toEqual(
+        mockDashboardData.recent_attendance[0]
+      )
     })
   })
 
   describe('实时更新', () => {
     it('应该支持自动刷新', async () => {
       vi.useFakeTimers()
-      
+
       wrapper.vm.enableAutoRefresh = true
       wrapper.vm.autoRefreshInterval = 30000
-      
+
       vi.clearAllMocks()
       wrapper.vm.startAutoRefresh()
-      
+
       // 快进30秒
       vi.advanceTimersByTime(30000)
-      
+
       expect(dashboardApi.getDashboardOverview).toHaveBeenCalled()
-      
+
       wrapper.vm.stopAutoRefresh()
       vi.useRealTimers()
     })
 
     it('应该在组件销毁时停止自动刷新', async () => {
       const stopSpy = vi.spyOn(wrapper.vm, 'stopAutoRefresh')
-      
+
       wrapper.unmount()
-      
+
       expect(stopSpy).toHaveBeenCalled()
     })
   })
@@ -430,26 +453,28 @@ describe('Dashboard', () => {
       Object.defineProperty(window, 'innerWidth', {
         writable: true,
         configurable: true,
-        value: 600,
+        value: 600
       })
-      
+
       window.dispatchEvent(new Event('resize'))
       await wrapper.vm.$nextTick()
-      
+
       expect(wrapper.vm.isMobile).toBe(true)
-      expect(wrapper.find('.dashboard-container').classes()).toContain('mobile-layout')
+      expect(wrapper.find('.dashboard-container').classes()).toContain(
+        'mobile-layout'
+      )
     })
 
     it('应该在平板设备上调整图表大小', async () => {
       Object.defineProperty(window, 'innerWidth', {
         writable: true,
         configurable: true,
-        value: 768,
+        value: 768
       })
-      
+
       window.dispatchEvent(new Event('resize'))
       await wrapper.vm.$nextTick()
-      
+
       expect(wrapper.vm.isTablet).toBe(true)
     })
   })
@@ -463,7 +488,7 @@ describe('Dashboard', () => {
     it('应该支持键盘导航', async () => {
       const focusableElements = wrapper.findAll('[tabindex="0"]')
       expect(focusableElements.length).toBeGreaterThan(0)
-      
+
       // 测试Tab键导航
       await wrapper.trigger('keydown.tab')
       expect(document.activeElement?.tagName).toBeDefined()
@@ -474,7 +499,7 @@ describe('Dashboard', () => {
     it('应该显示网络错误提示', async () => {
       wrapper.vm.error = '网络连接失败'
       await wrapper.vm.$nextTick()
-      
+
       expect(wrapper.find('.error-message').exists()).toBe(true)
       expect(wrapper.text()).toContain('网络连接失败')
     })
@@ -482,13 +507,13 @@ describe('Dashboard', () => {
     it('应该提供重试功能', async () => {
       wrapper.vm.error = '加载失败'
       await wrapper.vm.$nextTick()
-      
+
       const retryBtn = wrapper.find('.retry-btn')
       expect(retryBtn.exists()).toBe(true)
-      
+
       vi.clearAllMocks()
       await retryBtn.trigger('click')
-      
+
       expect(dashboardApi.getDashboardOverview).toHaveBeenCalled()
       expect(wrapper.vm.error).toBe(null)
     })
@@ -505,10 +530,10 @@ describe('Dashboard', () => {
         created_at: new Date().toISOString(),
         assignee_name: `用户${i + 1}`
       }))
-      
+
       wrapper.vm.recentTasks = largeTasks
       await wrapper.vm.$nextTick()
-      
+
       // 验证只显示前10条
       const taskItems = wrapper.findAll('.task-item')
       expect(taskItems.length).toBeLessThanOrEqual(10)

@@ -18,9 +18,9 @@
         <div class="current-hours">
           <el-tag type="info">{{ workHour?.totalHours }}h</el-tag>
           <span class="hours-detail">
-            (基础: {{ workHour?.baseHours }}h, 
-            奖励: +{{ workHour?.bonusHours }}h, 
-            惩罚: -{{ workHour?.penaltyHours }}h)
+            (基础: {{ workHour?.baseHours }}h, 奖励: +{{
+              workHour?.bonusHours
+            }}h, 惩罚: -{{ workHour?.penaltyHours }}h)
           </span>
         </div>
       </el-form-item>
@@ -45,7 +45,11 @@
       </el-form-item>
 
       <el-form-item label="调整原因" prop="reason">
-        <el-select v-model="form.reason" placeholder="请选择调整原因" style="width: 100%">
+        <el-select
+          v-model="form.reason"
+          placeholder="请选择调整原因"
+          style="width: 100%"
+        >
           <el-option-group label="奖励原因">
             <el-option label="工作质量优秀" value="excellent_quality" />
             <el-option label="提前完成任务" value="early_completion" />
@@ -141,14 +145,18 @@ const form = reactive({
 const rules: FormRules = {
   adjustedHours: [
     { required: true, message: '请输入调整后的工时', trigger: 'blur' },
-    { type: 'number', min: 0, max: 1000, message: '工时必须在0-1000之间', trigger: 'blur' }
+    {
+      type: 'number',
+      min: 0,
+      max: 1000,
+      message: '工时必须在0-1000之间',
+      trigger: 'blur'
+    }
   ],
   adjustmentType: [
     { required: true, message: '请选择调整类型', trigger: 'change' }
   ],
-  reason: [
-    { required: true, message: '请选择调整原因', trigger: 'change' }
-  ],
+  reason: [{ required: true, message: '请选择调整原因', trigger: 'change' }],
   notes: [
     { required: true, message: '请输入详细说明', trigger: 'blur' },
     { min: 10, message: '详细说明至少需要10个字符', trigger: 'blur' }
@@ -160,17 +168,20 @@ const changeDifference = computed(() => {
   return form.adjustedHours - props.workHour.totalHours
 })
 
-watch(() => props.visible, (visible) => {
-  dialogVisible.value = visible
-  if (visible && props.workHour) {
-    form.adjustedHours = props.workHour.totalHours
-    form.adjustmentType = 'manual'
-    form.reason = ''
-    form.notes = ''
+watch(
+  () => props.visible,
+  visible => {
+    dialogVisible.value = visible
+    if (visible && props.workHour) {
+      form.adjustedHours = props.workHour.totalHours
+      form.adjustmentType = 'manual'
+      form.reason = ''
+      form.notes = ''
+    }
   }
-})
+)
 
-watch(dialogVisible, (visible) => {
+watch(dialogVisible, visible => {
   emit('update:visible', visible)
 })
 
@@ -205,7 +216,6 @@ const handleSubmit = async () => {
     ElMessage.success('工时调整成功')
     emit('success')
     handleClose()
-
   } catch (error) {
     console.error('工时调整失败:', error)
     ElMessage.error('工时调整失败')

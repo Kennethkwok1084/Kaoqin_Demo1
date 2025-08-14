@@ -15,26 +15,24 @@ vi.mock('element-plus', async () => {
     ElMessage: {
       success: vi.fn(),
       error: vi.fn(),
-      info: vi.fn(),
+      info: vi.fn()
     },
     ElMessageBox: {
-      confirm: vi.fn(),
-    },
+      confirm: vi.fn()
+    }
   }
 })
 
 // Mock API
 vi.mock('@/api/members', () => ({
   getMembers: vi.fn(),
-  deleteMember: vi.fn(),
+  deleteMember: vi.fn()
 }))
 
 // Mock router
 const router = createRouter({
   history: createWebHistory(),
-  routes: [
-    { path: '/', component: { template: '<div>Home</div>' } }
-  ]
+  routes: [{ path: '/', component: { template: '<div>Home</div>' } }]
 })
 
 describe('MemberList', () => {
@@ -55,7 +53,7 @@ describe('MemberList', () => {
         is_active: true,
         status_display: '在职',
         join_date: '2023-01-01',
-        last_login: '2023-12-01T10:00:00',
+        last_login: '2023-12-01T10:00:00'
       },
       {
         id: 2,
@@ -69,7 +67,7 @@ describe('MemberList', () => {
         is_active: true,
         status_display: '在职',
         join_date: '2023-01-01',
-        last_login: null,
+        last_login: null
       }
     ],
     total: 2,
@@ -80,16 +78,16 @@ describe('MemberList', () => {
     setActivePinia(createPinia())
     authStore = useAuthStore()
     authStore.userInfo = { id: 999, username: 'admin', name: '管理员' }
-    
+
     // Mock API响应
     vi.mocked(membersApi.getMembers).mockResolvedValue(mockMembersData)
-    
+
     wrapper = mount(MemberList, {
       global: {
         plugins: [router]
       }
     })
-    
+
     await wrapper.vm.$nextTick()
   })
 
@@ -115,7 +113,9 @@ describe('MemberList', () => {
     })
 
     it('应该渲染搜索框', () => {
-      const searchInput = wrapper.find('input[placeholder="搜索用户名、姓名或学号"]')
+      const searchInput = wrapper.find(
+        'input[placeholder="搜索用户名、姓名或学号"]'
+      )
       expect(searchInput.exists()).toBe(true)
     })
 
@@ -139,34 +139,39 @@ describe('MemberList', () => {
     it('应该正确显示加载状态', async () => {
       // 模拟加载状态
       vi.mocked(membersApi.getMembers).mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve(mockMembersData), 100))
+        () =>
+          new Promise(resolve =>
+            setTimeout(() => resolve(mockMembersData), 100)
+          )
       )
-      
+
       const newWrapper = mount(MemberList, {
         global: {
           plugins: [router]
         }
       })
-      
+
       expect(newWrapper.vm.loading).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 150))
-      
+
       expect(newWrapper.vm.loading).toBe(false)
       newWrapper.unmount()
     })
 
     it('应该处理API错误', async () => {
-      vi.mocked(membersApi.getMembers).mockRejectedValue(new Error('Network error'))
-      
+      vi.mocked(membersApi.getMembers).mockRejectedValue(
+        new Error('Network error')
+      )
+
       const newWrapper = mount(MemberList, {
         global: {
           plugins: [router]
         }
       })
-      
+
       await new Promise(resolve => setTimeout(resolve, 50))
-      
+
       expect(ElMessage.error).toHaveBeenCalledWith('加载成员列表失败')
       newWrapper.unmount()
     })
@@ -174,12 +179,14 @@ describe('MemberList', () => {
 
   describe('搜索功能', () => {
     it('应该处理搜索输入', async () => {
-      const searchInput = wrapper.find('input[placeholder="搜索用户名、姓名或学号"]')
+      const searchInput = wrapper.find(
+        'input[placeholder="搜索用户名、姓名或学号"]'
+      )
       await searchInput.setValue('测试')
-      
+
       // 等待防抖
       await new Promise(resolve => setTimeout(resolve, 600))
-      
+
       expect(membersApi.getMembers).toHaveBeenCalledWith({
         page: 1,
         page_size: 20,
@@ -189,12 +196,14 @@ describe('MemberList', () => {
 
     it('应该在搜索时重置页码', async () => {
       wrapper.vm.pagination.page = 3
-      
-      const searchInput = wrapper.find('input[placeholder="搜索用户名、姓名或学号"]')
+
+      const searchInput = wrapper.find(
+        'input[placeholder="搜索用户名、姓名或学号"]'
+      )
       await searchInput.setValue('新搜索')
-      
+
       await new Promise(resolve => setTimeout(resolve, 600))
-      
+
       expect(wrapper.vm.pagination.page).toBe(1)
     })
   })
@@ -204,11 +213,11 @@ describe('MemberList', () => {
       await wrapper.setData({
         filters: { ...wrapper.vm.filters, role: 'admin' }
       })
-      
+
       wrapper.vm.handleFilter()
-      
+
       await new Promise(resolve => setTimeout(resolve, 350))
-      
+
       expect(membersApi.getMembers).toHaveBeenCalledWith({
         page: 1,
         page_size: 20,
@@ -220,11 +229,11 @@ describe('MemberList', () => {
       await wrapper.setData({
         filters: { ...wrapper.vm.filters, is_active: false }
       })
-      
+
       wrapper.vm.handleFilter()
-      
+
       await new Promise(resolve => setTimeout(resolve, 350))
-      
+
       expect(membersApi.getMembers).toHaveBeenCalledWith({
         page: 1,
         page_size: 20,
@@ -234,17 +243,17 @@ describe('MemberList', () => {
 
     it('应该处理部门和班级筛选', async () => {
       await wrapper.setData({
-        filters: { 
-          ...wrapper.vm.filters, 
+        filters: {
+          ...wrapper.vm.filters,
           department: '网络部',
           class_name: '计算机1班'
         }
       })
-      
+
       wrapper.vm.handleFilter()
-      
+
       await new Promise(resolve => setTimeout(resolve, 350))
-      
+
       expect(membersApi.getMembers).toHaveBeenCalledWith({
         page: 1,
         page_size: 20,
@@ -257,7 +266,7 @@ describe('MemberList', () => {
   describe('分页功能', () => {
     it('应该处理页码变化', async () => {
       await wrapper.vm.handlePageChange(2)
-      
+
       expect(membersApi.getMembers).toHaveBeenCalledWith({
         page: 2,
         page_size: 20
@@ -266,7 +275,7 @@ describe('MemberList', () => {
 
     it('应该处理每页大小变化', async () => {
       await wrapper.vm.handleSizeChange(50)
-      
+
       expect(wrapper.vm.pagination.page_size).toBe(50)
       expect(wrapper.vm.pagination.page).toBe(1)
       expect(membersApi.getMembers).toHaveBeenCalledWith({
@@ -310,9 +319,9 @@ describe('MemberList', () => {
     it('应该处理删除成员确认', async () => {
       vi.mocked(ElMessageBox.confirm).mockResolvedValue('confirm')
       vi.mocked(membersApi.deleteMember).mockResolvedValue(undefined)
-      
+
       await wrapper.vm.handleDelete(mockMembersData.items[0])
-      
+
       expect(ElMessageBox.confirm).toHaveBeenCalledWith(
         '确定要删除成员 "测试用户1" 吗？此操作无法撤销。',
         '确认删除',
@@ -324,9 +333,9 @@ describe('MemberList', () => {
 
     it('应该处理删除操作取消', async () => {
       vi.mocked(ElMessageBox.confirm).mockRejectedValue('cancel')
-      
+
       await wrapper.vm.handleDelete(mockMembersData.items[0])
-      
+
       expect(membersApi.deleteMember).not.toHaveBeenCalled()
       expect(ElMessage.error).not.toHaveBeenCalled()
     })
@@ -335,7 +344,7 @@ describe('MemberList', () => {
       const currentUser = { ...mockMembersData.items[0], id: 999 }
       wrapper.vm.members = [currentUser]
       await wrapper.vm.$nextTick()
-      
+
       // 当前用户的删除按钮应该被禁用
       expect(wrapper.vm.currentUserId).toBe(999)
     })
@@ -349,14 +358,14 @@ describe('MemberList', () => {
     it('应该处理表格选择变化', async () => {
       const selectedMembers = [mockMembersData.items[0]]
       await wrapper.vm.handleSelectionChange(selectedMembers)
-      
+
       expect(wrapper.vm.selectedMembers).toEqual(selectedMembers)
     })
 
     it('应该在有选择时显示批量操作区域', async () => {
       wrapper.vm.selectedMembers = mockMembersData.items
       await wrapper.vm.$nextTick()
-      
+
       const batchActions = wrapper.find('.batch-actions')
       expect(batchActions.exists()).toBe(true)
       expect(batchActions.text()).toContain('已选择 2 项')
@@ -365,9 +374,9 @@ describe('MemberList', () => {
     it('应该处理批量删除确认', async () => {
       wrapper.vm.selectedMembers = mockMembersData.items
       vi.mocked(ElMessageBox.confirm).mockResolvedValue('confirm')
-      
+
       await wrapper.vm.handleBatchDelete()
-      
+
       expect(ElMessageBox.confirm).toHaveBeenCalledWith(
         '确定要删除选中的 2 个成员吗？此操作无法撤销。',
         '确认批量删除',
@@ -378,7 +387,7 @@ describe('MemberList', () => {
     it('应该处理批量离职', async () => {
       wrapper.vm.selectedMembers = mockMembersData.items
       await wrapper.vm.handleBatchDeactivate()
-      
+
       expect(ElMessage.info).toHaveBeenCalledWith('批量离职功能开发中')
     })
   })
@@ -416,7 +425,7 @@ describe('MemberList', () => {
     it('应该处理创建成功事件', async () => {
       vi.clearAllMocks()
       await wrapper.vm.handleCreateSuccess()
-      
+
       expect(membersApi.getMembers).toHaveBeenCalled()
       expect(ElMessage.success).toHaveBeenCalledWith('成员创建成功')
     })
@@ -424,7 +433,7 @@ describe('MemberList', () => {
     it('应该处理导入成功事件', async () => {
       vi.clearAllMocks()
       await wrapper.vm.handleImportSuccess()
-      
+
       expect(membersApi.getMembers).toHaveBeenCalled()
       expect(ElMessage.success).toHaveBeenCalledWith('批量导入完成')
     })

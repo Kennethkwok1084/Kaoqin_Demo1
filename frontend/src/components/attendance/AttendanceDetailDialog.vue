@@ -7,8 +7,8 @@
   >
     <div v-if="record" class="attendance-detail">
       <div class="detail-header">
-        <el-avatar 
-          :src="record.memberAvatar" 
+        <el-avatar
+          :src="record.memberAvatar"
           :size="60"
           :style="{ backgroundColor: getAvatarColor(record.memberName) }"
         >
@@ -18,7 +18,7 @@
           <h3>{{ record.memberName }}</h3>
           <p>{{ record.employeeId }} | {{ record.department }}</p>
         </div>
-        <el-tag 
+        <el-tag
           :type="getStatusTagType(record.status)"
           :color="ATTENDANCE_STATUS_CONFIG[record.status]?.color"
           effect="light"
@@ -36,13 +36,19 @@
           {{ record.workHours }}小时
         </el-descriptions-item>
         <el-descriptions-item label="签到时间">
-          <span v-if="record.checkInTime" :class="{ 'late-time': record.lateMinutes > 0 }">
+          <span
+            v-if="record.checkInTime"
+            :class="{ 'late-time': record.lateMinutes > 0 }"
+          >
             {{ formatTime(record.checkInTime) }}
           </span>
           <span v-else class="no-record">未签到</span>
         </el-descriptions-item>
         <el-descriptions-item label="签退时间">
-          <span v-if="record.checkOutTime" :class="{ 'early-time': record.earlyLeaveMinutes > 0 }">
+          <span
+            v-if="record.checkOutTime"
+            :class="{ 'early-time': record.earlyLeaveMinutes > 0 }"
+          >
             {{ formatTime(record.checkOutTime) }}
           </span>
           <span v-else class="no-record">未签退</span>
@@ -54,7 +60,11 @@
           <span v-else class="normal-text">无</span>
         </el-descriptions-item>
         <el-descriptions-item label="早退">
-          <el-tag v-if="record.earlyLeaveMinutes > 0" type="danger" size="small">
+          <el-tag
+            v-if="record.earlyLeaveMinutes > 0"
+            type="danger"
+            size="small"
+          >
             {{ record.earlyLeaveMinutes }}分钟
           </el-tag>
           <span v-else class="normal-text">无</span>
@@ -130,7 +140,7 @@ const emit = defineEmits<{
 // 计算属性
 const visible = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: value => emit('update:modelValue', value)
 })
 
 // 方法
@@ -147,7 +157,8 @@ const handleEdit = () => {
 // 工具方法
 const getAvatarColor = (name: string) => {
   const colors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399']
-  const hash = name?.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) || 0
+  const hash =
+    name?.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) || 0
   return colors[hash % colors.length]
 }
 

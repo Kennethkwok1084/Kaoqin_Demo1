@@ -24,7 +24,10 @@
             <div
               v-for="template in templates"
               :key="template.id"
-              :class="['template-card', { active: selectedTemplate?.id === template.id }]"
+              :class="[
+                'template-card',
+                { active: selectedTemplate?.id === template.id }
+              ]"
               @click="selectTemplate(template)"
             >
               <div class="template-icon">
@@ -39,7 +42,11 @@
                 </div>
               </div>
               <div class="template-actions">
-                <el-button size="small" type="primary" @click.stop="downloadTemplate(template)">
+                <el-button
+                  size="small"
+                  type="primary"
+                  @click.stop="downloadTemplate(template)"
+                >
                   <el-icon><Download /></el-icon>
                   下载模板
                 </el-button>
@@ -76,7 +83,9 @@
               <div class="file-info">
                 <el-icon><Document /></el-icon>
                 <span class="file-name">{{ uploadedFile.name }}</span>
-                <span class="file-size">({{ formatFileSize(uploadedFile.size) }})</span>
+                <span class="file-size"
+                  >({{ formatFileSize(uploadedFile.size) }})</span
+                >
                 <el-button size="small" type="danger" text @click="removeFile">
                   <el-icon><Close /></el-icon>
                 </el-button>
@@ -84,8 +93,14 @@
 
               <div v-if="filePreview" class="file-preview">
                 <h4>文件预览</h4>
-                <div v-if="filePreview.sheets && filePreview.sheets.length > 1" class="sheet-selector">
-                  <el-radio-group v-model="selectedSheet" @change="loadSheetPreview">
+                <div
+                  v-if="filePreview.sheets && filePreview.sheets.length > 1"
+                  class="sheet-selector"
+                >
+                  <el-radio-group
+                    v-model="selectedSheet"
+                    @change="loadSheetPreview"
+                  >
                     <el-radio
                       v-for="sheet in filePreview.sheets"
                       :key="sheet.name"
@@ -113,7 +128,9 @@
                 </el-table>
 
                 <div class="preview-info">
-                  <span>共 {{ filePreview.totalRows }} 行数据，显示前 5 行</span>
+                  <span
+                    >共 {{ filePreview.totalRows }} 行数据，显示前 5 行</span
+                  >
                 </div>
               </div>
             </div>
@@ -154,19 +171,29 @@
                 <div class="target-field">
                   <div class="field-info">
                     <span class="field-name">{{ mapping.targetField }}</span>
-                    <el-tag v-if="mapping.isRequired" type="danger" size="small">必填</el-tag>
+                    <el-tag v-if="mapping.isRequired" type="danger" size="small"
+                      >必填</el-tag
+                    >
                     <el-tag v-else type="info" size="small">可选</el-tag>
                   </div>
                 </div>
 
                 <div class="mapping-options">
                   <el-tooltip content="数据转换" placement="top">
-                    <el-button size="small" text @click="showTransformDialog(mapping)">
+                    <el-button
+                      size="small"
+                      text
+                      @click="showTransformDialog(mapping)"
+                    >
                       <el-icon><Setting /></el-icon>
                     </el-button>
                   </el-tooltip>
                   <el-tooltip content="默认值" placement="top">
-                    <el-button size="small" text @click="showDefaultValueDialog(mapping)">
+                    <el-button
+                      size="small"
+                      text
+                      @click="showDefaultValueDialog(mapping)"
+                    >
                       <el-icon><EditPen /></el-icon>
                     </el-button>
                   </el-tooltip>
@@ -215,7 +242,9 @@
                   size="small"
                 >
                   <el-table-column
-                    v-for="field in selectedTemplate?.requiredFields.concat(selectedTemplate?.optionalFields || [])"
+                    v-for="field in selectedTemplate?.requiredFields.concat(
+                      selectedTemplate?.optionalFields || []
+                    )"
                     :key="field"
                     :prop="field"
                     :label="field"
@@ -223,9 +252,7 @@
                     width="120"
                   />
                 </el-table>
-                <div class="preview-info">
-                  显示前 10 行转换后的数据
-                </div>
+                <div class="preview-info">显示前 10 行转换后的数据</div>
               </el-tab-pane>
 
               <el-tab-pane label="验证结果" name="validation">
@@ -238,8 +265,14 @@
                     <div class="field-header">
                       <span class="field-name">{{ result.field }}</span>
                       <div class="field-stats">
-                        <el-tag type="success" size="small">有效: {{ result.validCount }}</el-tag>
-                        <el-tag v-if="result.invalidCount > 0" type="danger" size="small">
+                        <el-tag type="success" size="small"
+                          >有效: {{ result.validCount }}</el-tag
+                        >
+                        <el-tag
+                          v-if="result.invalidCount > 0"
+                          type="danger"
+                          size="small"
+                        >
                           无效: {{ result.invalidCount }}
                         </el-tag>
                       </div>
@@ -310,9 +343,13 @@
               <ul>
                 <li>模板类型: {{ selectedTemplate?.name }}</li>
                 <li>文件名: {{ uploadedFile?.name }}</li>
-                <li>预计导入: {{ validationResults?.totalRows || 0 }} 行数据</li>
+                <li>
+                  预计导入: {{ validationResults?.totalRows || 0 }} 行数据
+                </li>
                 <li>有效数据: {{ getValidRowCount() }} 行</li>
-                <li v-if="getErrorRowCount() > 0">错误数据: {{ getErrorRowCount() }} 行</li>
+                <li v-if="getErrorRowCount() > 0">
+                  错误数据: {{ getErrorRowCount() }} 行
+                </li>
               </ul>
             </div>
           </div>
@@ -349,7 +386,13 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
-  Document, Download, Close, Setting, EditPen, Star, RefreshLeft,
+  Document,
+  Download,
+  Close,
+  Setting,
+  EditPen,
+  Star,
+  RefreshLeft,
   UploadFilled
 } from '@element-plus/icons-vue'
 import { dataImportApi } from '@/api/dataImport'
@@ -405,7 +448,7 @@ const previewHeaders = computed(() => {
 
 const previewData = computed(() => {
   if (!filePreview.value?.rows) return []
-  
+
   return filePreview.value.rows.slice(0, 5).map(row => {
     const obj: Record<string, any> = {}
     row.forEach((cell, index) => {
@@ -415,15 +458,18 @@ const previewData = computed(() => {
   })
 })
 
-watch(() => props.visible, (visible) => {
-  dialogVisible.value = visible
-  if (visible) {
-    loadTemplates()
-    resetWizard()
+watch(
+  () => props.visible,
+  visible => {
+    dialogVisible.value = visible
+    if (visible) {
+      loadTemplates()
+      resetWizard()
+    }
   }
-})
+)
 
-watch(dialogVisible, (visible) => {
+watch(dialogVisible, visible => {
   emit('update:visible', visible)
 })
 
@@ -477,7 +523,7 @@ const downloadTemplate = async (template: ImportTemplate) => {
 
 const handleFileChange = async (file: any) => {
   const uploadFile = file.raw as File
-  
+
   // 文件大小检查
   if (uploadFile.size > 10 * 1024 * 1024) {
     ElMessage.error('文件大小不能超过 10MB')
@@ -486,8 +532,11 @@ const handleFileChange = async (file: any) => {
 
   try {
     uploadedFile.value = uploadFile
-    filePreview.value = await dataImportApi.uploadFile(uploadFile, selectedTemplate.value?.id)
-    
+    filePreview.value = await dataImportApi.uploadFile(
+      uploadFile,
+      selectedTemplate.value?.id
+    )
+
     if (filePreview.value.sheets && filePreview.value.sheets.length > 0) {
       selectedSheet.value = filePreview.value.sheets[0].name
     }
@@ -514,11 +563,14 @@ const loadSheetPreview = async () => {
   if (!filePreview.value?.fileId || !selectedSheet.value) return
 
   try {
-    const preview = await dataImportApi.getFilePreview(filePreview.value.fileId, selectedSheet.value)
+    const preview = await dataImportApi.getFilePreview(
+      filePreview.value.fileId,
+      selectedSheet.value
+    )
     filePreview.value.headers = preview.headers
     filePreview.value.rows = preview.rows
     filePreview.value.totalRows = preview.totalRows
-    
+
     initializeFieldMappings()
   } catch (error) {
     console.error('加载工作表失败:', error)
@@ -529,7 +581,10 @@ const loadSheetPreview = async () => {
 const initializeFieldMappings = () => {
   if (!selectedTemplate.value) return
 
-  const allFields = [...selectedTemplate.value.requiredFields, ...selectedTemplate.value.optionalFields]
+  const allFields = [
+    ...selectedTemplate.value.requiredFields,
+    ...selectedTemplate.value.optionalFields
+  ]
   fieldMappings.value = allFields.map(field => ({
     sourceField: '',
     targetField: field,
@@ -553,7 +608,9 @@ const autoMapFields = async () => {
 
     suggestions.forEach(suggestion => {
       if (suggestion.suggestions.length > 0) {
-        const mapping = fieldMappings.value.find(m => m.targetField === suggestion.suggestions[0].target)
+        const mapping = fieldMappings.value.find(
+          m => m.targetField === suggestion.suggestions[0].target
+        )
         if (mapping) {
           mapping.sourceField = suggestion.field
         }
@@ -586,7 +643,7 @@ const validateData = async () => {
 
   try {
     importConfig.fieldMappings = fieldMappings.value.filter(m => m.sourceField)
-    
+
     validationResults.value = await dataImportApi.validateImportData(
       filePreview.value.fileId,
       importConfig
@@ -599,12 +656,18 @@ const validateData = async () => {
 
 const getValidRowCount = () => {
   if (!validationResults.value) return 0
-  return validationResults.value.validationResults.reduce((sum, result) => sum + result.validCount, 0)
+  return validationResults.value.validationResults.reduce(
+    (sum, result) => sum + result.validCount,
+    0
+  )
 }
 
 const getErrorRowCount = () => {
   if (!validationResults.value) return 0
-  return validationResults.value.validationResults.reduce((sum, result) => sum + result.invalidCount, 0)
+  return validationResults.value.validationResults.reduce(
+    (sum, result) => sum + result.invalidCount,
+    0
+  )
 }
 
 const canProceed = () => {
@@ -626,7 +689,7 @@ const nextStep = async () => {
   if (currentStep.value === 2) {
     await validateData()
   }
-  
+
   if (canProceed()) {
     currentStep.value++
   }
@@ -644,9 +707,9 @@ const startImport = async () => {
   try {
     importing.value = true
     importConfig.fieldMappings = fieldMappings.value.filter(m => m.sourceField)
-    
+
     await dataImportApi.startImportJob(filePreview.value.fileId, importConfig)
-    
+
     ElMessage.success('导入作业已创建')
     emit('success')
     handleClose()

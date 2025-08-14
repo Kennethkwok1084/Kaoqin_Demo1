@@ -10,7 +10,9 @@
       <div class="chart-header">
         <div class="chart-info">
           <h3>{{ chartTitle }}</h3>
-          <p v-if="chartDescription" class="chart-description">{{ chartDescription }}</p>
+          <p v-if="chartDescription" class="chart-description">
+            {{ chartDescription }}
+          </p>
         </div>
         <div class="chart-actions">
           <el-button-group>
@@ -47,7 +49,7 @@
           <template #header>
             <span>图表控制</span>
           </template>
-          
+
           <div class="control-section">
             <el-row :gutter="20">
               <el-col :span="8">
@@ -62,17 +64,20 @@
                   />
                 </el-form-item>
               </el-col>
-              
+
               <el-col :span="8">
                 <el-form-item label="数据维度">
-                  <el-select v-model="chartFilters.dimension" @change="updateChart">
+                  <el-select
+                    v-model="chartFilters.dimension"
+                    @change="updateChart"
+                  >
                     <el-option label="按日统计" value="day" />
                     <el-option label="按周统计" value="week" />
                     <el-option label="按月统计" value="month" />
                   </el-select>
                 </el-form-item>
               </el-col>
-              
+
               <el-col :span="8">
                 <el-form-item label="图表类型">
                   <el-select v-model="chartType" @change="changeChartType">
@@ -100,7 +105,7 @@
               </el-button>
             </div>
           </template>
-          
+
           <el-table :data="chartData" stripe style="width: 100%">
             <el-table-column
               v-for="column in dataColumns"
@@ -166,16 +171,19 @@ const chartFilters = reactive<StatisticsFilters>({
   dimension: 'month'
 })
 
-watch(() => props.visible, (visible) => {
-  dialogVisible.value = visible
-  if (visible) {
-    nextTick(() => {
-      initChart()
-    })
+watch(
+  () => props.visible,
+  visible => {
+    dialogVisible.value = visible
+    if (visible) {
+      nextTick(() => {
+        initChart()
+      })
+    }
   }
-})
+)
 
-watch(dialogVisible, (visible) => {
+watch(dialogVisible, visible => {
   emit('update:visible', visible)
   if (!visible) {
     destroyChart()
@@ -196,16 +204,15 @@ const initChart = async () => {
 
   try {
     loading.value = true
-    
+
     // 初始化图表实例
     chartInstance.value = echarts.init(chartRef.value)
-    
+
     // 加载图表数据
     await loadChartData()
-    
+
     // 渲染图表
     renderChart()
-    
   } catch (error) {
     console.error('初始化图表失败:', error)
     ElMessage.error('初始化图表失败')
@@ -218,9 +225,12 @@ const loadChartData = async () => {
   if (!props.chartConfig) return
 
   try {
-    const response = await statisticsApi.getChartData(props.chartConfig.id, chartFilters)
+    const response = await statisticsApi.getChartData(
+      props.chartConfig.id,
+      chartFilters
+    )
     chartData.value = response.data
-    
+
     // 设置数据表格列
     if (chartData.value.length > 0) {
       const firstItem = chartData.value[0]
@@ -282,35 +292,39 @@ const generateChartOption = () => {
         yAxis: {
           type: 'value'
         },
-        series: [{
-          type: 'line',
-          data: chartData.value.map(item => item.value),
-          smooth: true,
-          areaStyle: {}
-        }]
+        series: [
+          {
+            type: 'line',
+            data: chartData.value.map(item => item.value),
+            smooth: true,
+            areaStyle: {}
+          }
+        ]
       }
-    
+
     case 'pie':
       return {
         ...baseOption,
-        series: [{
-          type: 'pie',
-          radius: ['40%', '70%'],
-          center: ['50%', '60%'],
-          data: chartData.value.map(item => ({
-            name: item.name || item.label,
-            value: item.value
-          })),
-          emphasis: {
-            itemStyle: {
-              shadowBlur: 10,
-              shadowOffsetX: 0,
-              shadowColor: 'rgba(0, 0, 0, 0.5)'
+        series: [
+          {
+            type: 'pie',
+            radius: ['40%', '70%'],
+            center: ['50%', '60%'],
+            data: chartData.value.map(item => ({
+              name: item.name || item.label,
+              value: item.value
+            })),
+            emphasis: {
+              itemStyle: {
+                shadowBlur: 10,
+                shadowOffsetX: 0,
+                shadowColor: 'rgba(0, 0, 0, 0.5)'
+              }
             }
           }
-        }]
+        ]
       }
-    
+
     case 'radar':
       return {
         ...baseOption,
@@ -320,15 +334,19 @@ const generateChartOption = () => {
             max: Math.max(...chartData.value.map(d => d.value)) * 1.2
           }))
         },
-        series: [{
-          type: 'radar',
-          data: [{
-            value: chartData.value.map(item => item.value),
-            name: props.chartTitle
-          }]
-        }]
+        series: [
+          {
+            type: 'radar',
+            data: [
+              {
+                value: chartData.value.map(item => item.value),
+                name: props.chartTitle
+              }
+            ]
+          }
+        ]
       }
-    
+
     default: // bar
       return {
         ...baseOption,
@@ -339,17 +357,19 @@ const generateChartOption = () => {
         yAxis: {
           type: 'value'
         },
-        series: [{
-          type: 'bar',
-          data: chartData.value.map(item => item.value),
-          itemStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: '#83bff6' },
-              { offset: 0.5, color: '#188df0' },
-              { offset: 1, color: '#188df0' }
-            ])
+        series: [
+          {
+            type: 'bar',
+            data: chartData.value.map(item => item.value),
+            itemStyle: {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: '#83bff6' },
+                { offset: 0.5, color: '#188df0' },
+                { offset: 1, color: '#188df0' }
+              ])
+            }
           }
-        }]
+        ]
       }
   }
 }
@@ -384,7 +404,7 @@ const downloadChart = (format: string) => {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-    
+
     ElMessage.success(`图表已导出为 ${format.toUpperCase()} 格式`)
   } catch (error) {
     console.error('导出图表失败:', error)
@@ -402,7 +422,7 @@ const exportData = () => {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-    
+
     ElMessage.success('数据已导出为 CSV 格式')
   } catch (error) {
     console.error('导出数据失败:', error)
@@ -412,13 +432,13 @@ const exportData = () => {
 
 const convertToCSV = (data: any[]): string => {
   if (!data.length) return ''
-  
+
   const headers = Object.keys(data[0])
   const csvContent = [
     headers.join(','),
     ...data.map(row => headers.map(header => row[header]).join(','))
   ].join('\n')
-  
+
   return csvContent
 }
 

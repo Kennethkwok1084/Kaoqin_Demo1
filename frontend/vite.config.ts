@@ -48,7 +48,8 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        additionalData: '@use "@/styles/variables.scss" as *; @use "@/styles/mixins.scss" as *;'
+        additionalData:
+          '@use "@/styles/variables.scss" as *; @use "@/styles/mixins.scss" as *;'
       }
     }
   },
@@ -76,8 +77,8 @@ export default defineConfig({
         manualChunks: {
           'element-plus': ['element-plus'],
           'vue-vendor': ['vue', 'vue-router', 'pinia'],
-          'echarts': ['echarts', 'vue-echarts'],
-          'utils': ['axios', 'dayjs', 'xlsx']
+          echarts: ['echarts', 'vue-echarts'],
+          utils: ['axios', 'dayjs', 'xlsx']
         }
       }
     }

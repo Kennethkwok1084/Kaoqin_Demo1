@@ -14,8 +14,8 @@ vi.mock('element-plus', async () => {
     ElMessage: {
       success: vi.fn(),
       error: vi.fn(),
-      info: vi.fn(),
-    },
+      info: vi.fn()
+    }
   }
 })
 
@@ -25,15 +25,13 @@ vi.mock('@/api/tasks', () => ({
   getTaskDetail: vi.fn(),
   createTask: vi.fn(),
   updateTask: vi.fn(),
-  deleteTask: vi.fn(),
+  deleteTask: vi.fn()
 }))
 
 // Mock router
 const router = createRouter({
   history: createWebHistory(),
-  routes: [
-    { path: '/tasks', component: { template: '<div>Tasks</div>' } }
-  ]
+  routes: [{ path: '/tasks', component: { template: '<div>Tasks</div>' } }]
 })
 
 describe('TaskList', () => {
@@ -84,16 +82,16 @@ describe('TaskList', () => {
 
   beforeEach(async () => {
     setActivePinia(createPinia())
-    
+
     // Mock API响应
     vi.mocked(tasksApi.getTasks).mockResolvedValue(mockTasksData)
-    
+
     wrapper = mount(TaskList, {
       global: {
         plugins: [router]
       }
     })
-    
+
     await wrapper.vm.$nextTick()
   })
 
@@ -136,34 +134,35 @@ describe('TaskList', () => {
 
     it('应该正确处理加载状态', async () => {
       vi.mocked(tasksApi.getTasks).mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve(mockTasksData), 100))
+        () =>
+          new Promise(resolve => setTimeout(() => resolve(mockTasksData), 100))
       )
-      
+
       const newWrapper = mount(TaskList, {
         global: {
           plugins: [router]
         }
       })
-      
+
       expect(newWrapper.vm.loading).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 150))
-      
+
       expect(newWrapper.vm.loading).toBe(false)
       newWrapper.unmount()
     })
 
     it('应该处理数据加载错误', async () => {
       vi.mocked(tasksApi.getTasks).mockRejectedValue(new Error('API Error'))
-      
+
       const newWrapper = mount(TaskList, {
         global: {
           plugins: [router]
         }
       })
-      
+
       await new Promise(resolve => setTimeout(resolve, 50))
-      
+
       expect(ElMessage.error).toHaveBeenCalledWith('加载任务列表失败')
       newWrapper.unmount()
     })
@@ -174,10 +173,10 @@ describe('TaskList', () => {
       await wrapper.setData({
         filters: { ...wrapper.vm.filters, task_type: 'repair' }
       })
-      
+
       wrapper.vm.handleFilter()
       await new Promise(resolve => setTimeout(resolve, 350))
-      
+
       expect(tasksApi.getTasks).toHaveBeenCalledWith({
         page: 1,
         page_size: 20,
@@ -189,10 +188,10 @@ describe('TaskList', () => {
       await wrapper.setData({
         filters: { ...wrapper.vm.filters, task_status: 'pending' }
       })
-      
+
       wrapper.vm.handleFilter()
       await new Promise(resolve => setTimeout(resolve, 350))
-      
+
       expect(tasksApi.getTasks).toHaveBeenCalledWith({
         page: 1,
         page_size: 20,
@@ -204,10 +203,10 @@ describe('TaskList', () => {
       await wrapper.setData({
         filters: { ...wrapper.vm.filters, priority: 'high' }
       })
-      
+
       wrapper.vm.handleFilter()
       await new Promise(resolve => setTimeout(resolve, 350))
-      
+
       expect(tasksApi.getTasks).toHaveBeenCalledWith({
         page: 1,
         page_size: 20,
@@ -219,10 +218,10 @@ describe('TaskList', () => {
       await wrapper.setData({
         filters: { ...wrapper.vm.filters, assignee_id: 1 }
       })
-      
+
       wrapper.vm.handleFilter()
       await new Promise(resolve => setTimeout(resolve, 350))
-      
+
       expect(tasksApi.getTasks).toHaveBeenCalledWith({
         page: 1,
         page_size: 20,
@@ -236,9 +235,9 @@ describe('TaskList', () => {
       const searchInput = wrapper.find('input[placeholder*="搜索"]')
       if (searchInput.exists()) {
         await searchInput.setValue('测试任务')
-        
+
         await new Promise(resolve => setTimeout(resolve, 600))
-        
+
         expect(tasksApi.getTasks).toHaveBeenCalledWith({
           page: 1,
           page_size: 20,
@@ -250,10 +249,10 @@ describe('TaskList', () => {
     it('应该在搜索时重置页码', async () => {
       wrapper.vm.pagination.page = 3
       wrapper.vm.searchQuery = '新搜索'
-      
+
       wrapper.vm.handleSearch()
       await new Promise(resolve => setTimeout(resolve, 600))
-      
+
       expect(wrapper.vm.pagination.page).toBe(1)
     })
   })
@@ -261,7 +260,7 @@ describe('TaskList', () => {
   describe('任务状态管理', () => {
     it('应该正确显示任务状态标签', () => {
       wrapper.vm.tasks = mockTasksData.items
-      
+
       expect(wrapper.vm.getStatusTagType('pending')).toBe('warning')
       expect(wrapper.vm.getStatusTagType('in_progress')).toBe('primary')
       expect(wrapper.vm.getStatusTagType('completed')).toBe('success')
@@ -287,10 +286,12 @@ describe('TaskList', () => {
     })
 
     it('应该处理任务详情查看', async () => {
-      vi.mocked(tasksApi.getTaskDetail).mockResolvedValue(mockTasksData.items[0])
-      
+      vi.mocked(tasksApi.getTaskDetail).mockResolvedValue(
+        mockTasksData.items[0]
+      )
+
       await wrapper.vm.handleViewDetail(mockTasksData.items[0])
-      
+
       expect(tasksApi.getTaskDetail).toHaveBeenCalledWith(1)
     })
 
@@ -313,7 +314,7 @@ describe('TaskList', () => {
   describe('分页功能', () => {
     it('应该处理页码变化', async () => {
       await wrapper.vm.handlePageChange(2)
-      
+
       expect(wrapper.vm.pagination.page).toBe(2)
       expect(tasksApi.getTasks).toHaveBeenCalledWith({
         page: 2,
@@ -323,7 +324,7 @@ describe('TaskList', () => {
 
     it('应该处理每页大小变化', async () => {
       await wrapper.vm.handleSizeChange(50)
-      
+
       expect(wrapper.vm.pagination.page_size).toBe(50)
       expect(wrapper.vm.pagination.page).toBe(1)
       expect(tasksApi.getTasks).toHaveBeenCalledWith({
@@ -347,7 +348,7 @@ describe('TaskList', () => {
         task_status: 'pending'
       }
       expect(wrapper.vm.isTaskOverdue(overdueTask)).toBe(true)
-      
+
       const normalTask = {
         ...mockTasksData.items[0],
         task_status: 'completed'
@@ -377,7 +378,7 @@ describe('TaskList', () => {
         task_status: 'completed',
         priority: 'high'
       }
-      
+
       const params = wrapper.vm.getExportParams()
       expect(params).toEqual({
         task_type: 'repair',
@@ -395,21 +396,21 @@ describe('TaskList', () => {
     it('应该处理批量任务选择', async () => {
       const selectedTasks = [mockTasksData.items[0]]
       await wrapper.vm.handleSelectionChange(selectedTasks)
-      
+
       expect(wrapper.vm.selectedTasks).toEqual(selectedTasks)
     })
 
     it('应该在有选择时显示批量操作', async () => {
       wrapper.vm.selectedTasks = mockTasksData.items
       await wrapper.vm.$nextTick()
-      
+
       expect(wrapper.vm.selectedTasks.length).toBe(2)
     })
 
     it('应该处理批量状态更新', async () => {
       wrapper.vm.selectedTasks = mockTasksData.items
       await wrapper.vm.handleBatchStatusUpdate('completed')
-      
+
       expect(ElMessage.info).toHaveBeenCalledWith('批量状态更新功能开发中')
     })
   })
@@ -420,12 +421,12 @@ describe('TaskList', () => {
       Object.defineProperty(window, 'innerWidth', {
         writable: true,
         configurable: true,
-        value: 600,
+        value: 600
       })
-      
+
       window.dispatchEvent(new Event('resize'))
       await wrapper.vm.$nextTick()
-      
+
       // 检查移动设备适配逻辑
       expect(wrapper.vm.isMobile).toBe(true)
     })

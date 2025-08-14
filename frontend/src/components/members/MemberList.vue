@@ -17,7 +17,7 @@
           </el-input>
         </div>
       </div>
-      
+
       <div class="header-right">
         <el-button type="primary" @click="handleCreate">
           <el-icon><Plus /></el-icon>
@@ -38,35 +38,45 @@
     <div class="filter-bar">
       <el-form :model="filters" inline>
         <el-form-item label="角色">
-          <el-select v-model="filters.role" placeholder="选择角色" clearable @change="handleFilter">
+          <el-select
+            v-model="filters.role"
+            placeholder="选择角色"
+            clearable
+            @change="handleFilter"
+          >
             <el-option label="管理员" value="admin" />
             <el-option label="组长" value="group_leader" />
             <el-option label="成员" value="member" />
             <el-option label="访客" value="guest" />
           </el-select>
         </el-form-item>
-        
+
         <el-form-item label="状态">
-          <el-select v-model="filters.is_active" placeholder="选择状态" clearable @change="handleFilter">
+          <el-select
+            v-model="filters.is_active"
+            placeholder="选择状态"
+            clearable
+            @change="handleFilter"
+          >
             <el-option label="在职" :value="true" />
             <el-option label="离职" :value="false" />
           </el-select>
         </el-form-item>
-        
+
         <el-form-item label="部门">
-          <el-input 
-            v-model="filters.department" 
-            placeholder="输入部门名称" 
-            clearable 
+          <el-input
+            v-model="filters.department"
+            placeholder="输入部门名称"
+            clearable
             @input="handleFilter"
           />
         </el-form-item>
-        
+
         <el-form-item label="班级">
-          <el-input 
-            v-model="filters.class_name" 
-            placeholder="输入班级名称" 
-            clearable 
+          <el-input
+            v-model="filters.class_name"
+            placeholder="输入班级名称"
+            clearable
             @input="handleFilter"
           />
         </el-form-item>
@@ -75,8 +85,8 @@
 
     <!-- 数据表格 -->
     <div class="table-container">
-      <el-table 
-        :data="members" 
+      <el-table
+        :data="members"
         v-loading="loading"
         @selection-change="handleSelectionChange"
         stripe
@@ -116,10 +126,12 @@
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="handleView(row)">查看</el-button>
-            <el-button size="small" type="primary" @click="handleEdit(row)">编辑</el-button>
-            <el-button 
-              size="small" 
-              type="danger" 
+            <el-button size="small" type="primary" @click="handleEdit(row)"
+              >编辑</el-button
+            >
+            <el-button
+              size="small"
+              type="danger"
               @click="handleDelete(row)"
               :disabled="row.id === currentUserId"
             >
@@ -168,7 +180,12 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, Upload, Refresh } from '@element-plus/icons-vue'
-import { getMembers, deleteMember, type Member, type MemberListParams } from '@/api/members'
+import {
+  getMembers,
+  deleteMember,
+  type Member,
+  type MemberListParams
+} from '@/api/members'
 import { useAuthStore } from '@/stores/auth'
 import CreateMemberDialog from './CreateMemberDialog.vue'
 import ImportMemberDialog from './ImportMemberDialog.vue'
@@ -209,12 +226,12 @@ const loadMembers = async () => {
       page: pagination.page,
       page_size: pagination.page_size
     }
-    
+
     // 添加搜索条件
     if (searchQuery.value) {
       params.search = searchQuery.value
     }
-    
+
     // 添加筛选条件
     if (filters.role) {
       params.role = filters.role
@@ -228,12 +245,11 @@ const loadMembers = async () => {
     if (filters.class_name) {
       params.class_name = filters.class_name
     }
-    
+
     const response = await getMembers(params)
     members.value = response.items
     pagination.total = response.total
     pagination.total_pages = response.total_pages
-    
   } catch (error) {
     ElMessage.error('加载成员列表失败')
     console.error('Load members error:', error)
@@ -323,11 +339,10 @@ const handleDelete = async (member: Member) => {
         type: 'warning'
       }
     )
-    
+
     await deleteMember(member.id)
     ElMessage.success('删除成功')
     loadMembers()
-    
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('删除失败')
@@ -347,10 +362,9 @@ const handleBatchDelete = async () => {
         type: 'warning'
       }
     )
-    
+
     // TODO: 实现批量删除
     ElMessage.info('批量删除功能开发中')
-    
   } catch (error) {
     // 用户取消操作
   }

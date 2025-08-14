@@ -1,8 +1,8 @@
 import { http } from './http'
-import type { 
-  LoginRequest, 
-  LoginResponse, 
-  RefreshTokenResponse, 
+import type {
+  LoginRequest,
+  LoginResponse,
+  RefreshTokenResponse,
   UserInfo,
   PasswordChangeRequest,
   ResetPasswordRequest,
@@ -51,24 +51,39 @@ export const authApi = {
   /**
    * 修改密码
    */
-  async changePassword(data: PasswordChangeRequest): Promise<{ message: string }> {
-    const response = await http.post<{ message: string }>('/auth/change-password', data)
+  async changePassword(
+    data: PasswordChangeRequest
+  ): Promise<{ message: string }> {
+    const response = await http.post<{ message: string }>(
+      '/auth/change-password',
+      data
+    )
     return response.data
   },
 
   /**
    * 请求重置密码
    */
-  async requestResetPassword(data: ResetPasswordRequest): Promise<{ message: string }> {
-    const response = await http.post<{ message: string }>('/auth/reset-password', data)
+  async requestResetPassword(
+    data: ResetPasswordRequest
+  ): Promise<{ message: string }> {
+    const response = await http.post<{ message: string }>(
+      '/auth/reset-password',
+      data
+    )
     return response.data
   },
 
   /**
    * 确认重置密码
    */
-  async confirmResetPassword(data: ConfirmResetPasswordRequest): Promise<{ message: string }> {
-    const response = await http.post<{ message: string }>('/auth/reset-password/confirm', data)
+  async confirmResetPassword(
+    data: ConfirmResetPasswordRequest
+  ): Promise<{ message: string }> {
+    const response = await http.post<{ message: string }>(
+      '/auth/reset-password/confirm',
+      data
+    )
     return response.data
   },
 
@@ -84,7 +99,9 @@ export const authApi = {
    * 获取用户权限列表
    */
   async getUserPermissions(): Promise<{ permissions: string[] }> {
-    const response = await http.get<{ permissions: string[] }>('/auth/permissions')
+    const response = await http.get<{ permissions: string[] }>(
+      '/auth/permissions'
+    )
     return response.data
   }
 }

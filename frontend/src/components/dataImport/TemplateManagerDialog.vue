@@ -17,11 +17,21 @@
         </el-button>
       </div>
 
-      <el-table :data="templates" v-loading="loading" stripe style="width: 100%">
+      <el-table
+        :data="templates"
+        v-loading="loading"
+        stripe
+        style="width: 100%"
+      >
         <el-table-column prop="name" label="模板名称" min-width="150" />
-        
-        <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
-        
+
+        <el-table-column
+          prop="description"
+          label="描述"
+          min-width="200"
+          show-overflow-tooltip
+        />
+
         <el-table-column prop="type" label="类型" width="120">
           <template #default="{ row }">
             <el-tag :type="getTypeColor(row.type)">
@@ -29,22 +39,26 @@
             </el-tag>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="字段配置" width="150">
           <template #default="{ row }">
             <div class="field-stats">
-              <span class="required">必填: {{ row.requiredFields.length }}</span>
-              <span class="optional">可选: {{ row.optionalFields.length }}</span>
+              <span class="required"
+                >必填: {{ row.requiredFields.length }}</span
+              >
+              <span class="optional"
+                >可选: {{ row.optionalFields.length }}</span
+              >
             </div>
           </template>
         </el-table-column>
-        
+
         <el-table-column prop="updatedAt" label="更新时间" width="140">
           <template #default="{ row }">
             {{ formatDate(row.updatedAt) }}
           </template>
         </el-table-column>
-        
+
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button-group>
@@ -54,10 +68,18 @@
               <el-button size="small" type="warning" @click="editTemplate(row)">
                 <el-icon><Edit /></el-icon>
               </el-button>
-              <el-button size="small" type="success" @click="downloadTemplate(row)">
+              <el-button
+                size="small"
+                type="success"
+                @click="downloadTemplate(row)"
+              >
                 <el-icon><Download /></el-icon>
               </el-button>
-              <el-button size="small" type="danger" @click="deleteTemplate(row)">
+              <el-button
+                size="small"
+                type="danger"
+                @click="deleteTemplate(row)"
+              >
                 <el-icon><Delete /></el-icon>
               </el-button>
             </el-button-group>
@@ -90,7 +112,14 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Refresh, View, Edit, Download, Delete } from '@element-plus/icons-vue'
+import {
+  Plus,
+  Refresh,
+  View,
+  Edit,
+  Download,
+  Delete
+} from '@element-plus/icons-vue'
 import { dataImportApi } from '@/api/dataImport'
 import type { ImportTemplate } from '@/types/dataImport'
 import TemplateEditDialog from './TemplateEditDialog.vue'
@@ -117,14 +146,17 @@ const viewingTemplate = ref<ImportTemplate | null>(null)
 const showCreateTemplate = ref(false)
 const showTemplateDetail = ref(false)
 
-watch(() => props.visible, (visible) => {
-  dialogVisible.value = visible
-  if (visible) {
-    loadTemplates()
+watch(
+  () => props.visible,
+  visible => {
+    dialogVisible.value = visible
+    if (visible) {
+      loadTemplates()
+    }
   }
-})
+)
 
-watch(dialogVisible, (visible) => {
+watch(dialogVisible, visible => {
   emit('update:visible', visible)
 })
 

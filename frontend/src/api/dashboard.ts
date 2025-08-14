@@ -1,5 +1,5 @@
 import { http } from './client'
-import type { 
+import type {
   DashboardStats,
   TaskDistribution,
   WorkHoursTrend,
@@ -25,7 +25,9 @@ export const dashboardApi = {
    * 获取任务分布数据
    */
   async getTaskDistribution(): Promise<TaskDistribution> {
-    const response = await http.get<TaskDistribution>('/dashboard/task-distribution')
+    const response = await http.get<TaskDistribution>(
+      '/dashboard/task-distribution'
+    )
     return response.data
   },
 
@@ -34,7 +36,9 @@ export const dashboardApi = {
    * @param days 获取最近多少天的数据，默认30天
    */
   async getWorkHoursTrend(days: number = 30): Promise<WorkHoursTrend[]> {
-    const response = await http.get<WorkHoursTrend[]>(`/dashboard/work-hours-trend?days=${days}`)
+    const response = await http.get<WorkHoursTrend[]>(
+      `/dashboard/work-hours-trend?days=${days}`
+    )
     return response.data
   },
 
@@ -43,7 +47,9 @@ export const dashboardApi = {
    * @param limit 返回前N名成员，默认10
    */
   async getMemberPerformance(limit: number = 10): Promise<MemberPerformance[]> {
-    const response = await http.get<MemberPerformance[]>(`/dashboard/member-performance?limit=${limit}`)
+    const response = await http.get<MemberPerformance[]>(
+      `/dashboard/member-performance?limit=${limit}`
+    )
     return response.data
   },
 
@@ -52,7 +58,9 @@ export const dashboardApi = {
    * @param limit 返回最近N条活动，默认20
    */
   async getRecentActivities(limit: number = 20): Promise<RecentActivity[]> {
-    const response = await http.get<RecentActivity[]>(`/dashboard/recent-activities?limit=${limit}`)
+    const response = await http.get<RecentActivity[]>(
+      `/dashboard/recent-activities?limit=${limit}`
+    )
     return response.data
   },
 
@@ -61,7 +69,9 @@ export const dashboardApi = {
    * @param months 获取最近几个月的数据，默认6个月
    */
   async getMonthlyReports(months: number = 6): Promise<MonthlyReport[]> {
-    const response = await http.get<MonthlyReport[]>(`/dashboard/monthly-reports?months=${months}`)
+    const response = await http.get<MonthlyReport[]>(
+      `/dashboard/monthly-reports?months=${months}`
+    )
     return response.data
   },
 
@@ -70,7 +80,9 @@ export const dashboardApi = {
    * @param resolved 是否包含已解决的警告，默认false
    */
   async getAlerts(resolved: boolean = false): Promise<AlertItem[]> {
-    const response = await http.get<AlertItem[]>(`/dashboard/alerts?resolved=${resolved}`)
+    const response = await http.get<AlertItem[]>(
+      `/dashboard/alerts?resolved=${resolved}`
+    )
     return response.data
   },
 

@@ -32,7 +32,7 @@ export interface RefreshTokenResponse {
 export interface UserInfo {
   id: number
   username: string
-  name: string  // 真实姓名
+  name: string // 真实姓名
   student_id?: string
   email?: string
   phone?: string
@@ -48,7 +48,7 @@ export interface UserInfo {
   login_count?: number
   created_at: string
   updated_at?: string
-  needs_profile_completion?: boolean  // 是否需要完善信息
+  needs_profile_completion?: boolean // 是否需要完善信息
   // 为了兼容性，保留full_name作为name的别名
   full_name?: string
 }

@@ -148,21 +148,24 @@ export function generateRandomPassword(length: number = 12): string {
   const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
   const numbers = '0123456789'
   const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?'
-  
+
   const allChars = lowercase + uppercase + numbers + symbols
   let password = ''
-  
+
   // 确保至少包含每种类型的字符
   password += lowercase[Math.floor(Math.random() * lowercase.length)]
   password += uppercase[Math.floor(Math.random() * uppercase.length)]
   password += numbers[Math.floor(Math.random() * numbers.length)]
   password += symbols[Math.floor(Math.random() * symbols.length)]
-  
+
   // 填充剩余长度
   for (let i = 4; i < length; i++) {
     password += allChars[Math.floor(Math.random() * allChars.length)]
   }
-  
+
   // 打乱字符顺序
-  return password.split('').sort(() => Math.random() - 0.5).join('')
+  return password
+    .split('')
+    .sort(() => Math.random() - 0.5)
+    .join('')
 }

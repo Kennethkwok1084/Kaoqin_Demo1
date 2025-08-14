@@ -10,7 +10,10 @@
               size="small"
               effect="plain"
             >
-              {{ ATTENDANCE_STATUS_CONFIG[getDateAttendance(data.day)?.status]?.label }}
+              {{
+                ATTENDANCE_STATUS_CONFIG[getDateAttendance(data.day)?.status]
+                  ?.label
+              }}
             </el-tag>
           </div>
         </div>

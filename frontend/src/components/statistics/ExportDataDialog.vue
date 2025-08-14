@@ -15,7 +15,11 @@
       </el-form-item>
 
       <el-form-item label="导出格式" prop="format">
-        <el-select v-model="form.format" placeholder="请选择导出格式" style="width: 100%">
+        <el-select
+          v-model="form.format"
+          placeholder="请选择导出格式"
+          style="width: 100%"
+        >
           <el-option label="Excel (.xlsx)" value="xlsx" />
           <el-option label="CSV (.csv)" value="csv" />
           <el-option label="PDF (.pdf)" value="pdf" />
@@ -33,7 +37,7 @@
               <el-checkbox value="department">部门</el-checkbox>
               <el-checkbox value="position">职位</el-checkbox>
             </div>
-            
+
             <div class="field-category">
               <h4>任务统计</h4>
               <el-checkbox value="taskCount">任务数量</el-checkbox>
@@ -41,7 +45,7 @@
               <el-checkbox value="pendingTasks">待处理任务</el-checkbox>
               <el-checkbox value="completionRate">完成率</el-checkbox>
             </div>
-            
+
             <div class="field-category">
               <h4>工时统计</h4>
               <el-checkbox value="totalHours">总工时</el-checkbox>
@@ -49,7 +53,7 @@
               <el-checkbox value="overtimeHours">加班工时</el-checkbox>
               <el-checkbox value="efficiency">工作效率</el-checkbox>
             </div>
-            
+
             <div class="field-category">
               <h4>考勤统计</h4>
               <el-checkbox value="attendanceDays">出勤天数</el-checkbox>
@@ -111,8 +115,13 @@
         <el-tag type="info">预计导出 {{ previewData.length }} 条记录</el-tag>
         <el-tag type="success">文件大小约 {{ estimatedSize }}</el-tag>
       </div>
-      
-      <el-table :data="previewData.slice(0, 5)" stripe style="width: 100%; margin-top: 10px;" max-height="200">
+
+      <el-table
+        :data="previewData.slice(0, 5)"
+        stripe
+        style="width: 100%; margin-top: 10px"
+        max-height="200"
+      >
         <el-table-column
           v-for="field in selectedFields"
           :key="field"
@@ -121,15 +130,19 @@
           show-overflow-tooltip
         />
       </el-table>
-      
+
       <div class="preview-more" v-if="previewData.length > 5">
-        <el-text type="info">... 还有 {{ previewData.length - 5 }} 条记录</el-text>
+        <el-text type="info"
+          >... 还有 {{ previewData.length - 5 }} 条记录</el-text
+        >
       </div>
     </div>
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="handlePreview" :loading="previewing">预览数据</el-button>
+        <el-button @click="handlePreview" :loading="previewing"
+          >预览数据</el-button
+        >
         <el-button @click="handleClose">取消</el-button>
         <el-button type="primary" @click="handleExport" :loading="loading">
           导出数据
@@ -166,7 +179,14 @@ const previewData = ref<any[]>([])
 const form = reactive({
   type: 'current',
   format: 'xlsx',
-  fields: ['name', 'department', 'taskCount', 'completionRate', 'totalHours', 'attendanceRate'],
+  fields: [
+    'name',
+    'department',
+    'taskCount',
+    'completionRate',
+    'totalHours',
+    'attendanceRate'
+  ],
   dateRange: [] as Date[],
   departments: [] as string[],
   options: ['includeSummary'],
@@ -174,14 +194,16 @@ const form = reactive({
 })
 
 const rules: FormRules = {
-  type: [
-    { required: true, message: '请选择导出类型', trigger: 'change' }
-  ],
-  format: [
-    { required: true, message: '请选择导出格式', trigger: 'change' }
-  ],
+  type: [{ required: true, message: '请选择导出类型', trigger: 'change' }],
+  format: [{ required: true, message: '请选择导出格式', trigger: 'change' }],
   fields: [
-    { required: true, type: 'array', min: 1, message: '请至少选择一个字段', trigger: 'change' }
+    {
+      required: true,
+      type: 'array',
+      min: 1,
+      message: '请至少选择一个字段',
+      trigger: 'change'
+    }
   ]
 }
 
@@ -194,20 +216,23 @@ const estimatedSize = computed(() => {
   const fieldCount = selectedFields.value.length
   const avgFieldSize = 20 // 平均每个字段字节数
   const totalBytes = recordCount * fieldCount * avgFieldSize
-  
+
   if (totalBytes < 1024) return `${totalBytes} B`
   if (totalBytes < 1024 * 1024) return `${(totalBytes / 1024).toFixed(1)} KB`
   return `${(totalBytes / (1024 * 1024)).toFixed(1)} MB`
 })
 
-watch(() => props.visible, (visible) => {
-  dialogVisible.value = visible
-  if (visible) {
-    resetForm()
+watch(
+  () => props.visible,
+  visible => {
+    dialogVisible.value = visible
+    if (visible) {
+      resetForm()
+    }
   }
-})
+)
 
-watch(dialogVisible, (visible) => {
+watch(dialogVisible, visible => {
   emit('update:visible', visible)
 })
 
@@ -243,9 +268,9 @@ const handlePreview = async () => {
 
   try {
     await formRef.value.validate()
-    
+
     previewing.value = true
-    
+
     const config: ExportConfig = {
       type: form.type,
       format: form.format,
@@ -257,9 +282,8 @@ const handlePreview = async () => {
 
     const response = await statisticsApi.previewExportData(config)
     previewData.value = response.data
-    
+
     ElMessage.success('数据预览成功')
-    
   } catch (error) {
     console.error('预览数据失败:', error)
     ElMessage.error('预览数据失败')
@@ -273,9 +297,9 @@ const handleExport = async () => {
 
   try {
     await formRef.value.validate()
-    
+
     loading.value = true
-    
+
     const config: ExportConfig = {
       type: form.type,
       format: form.format,
@@ -287,9 +311,9 @@ const handleExport = async () => {
     }
 
     const response = await statisticsApi.exportData(config)
-    
+
     // 下载文件
-    const blob = new Blob([response.data], { 
+    const blob = new Blob([response.data], {
       type: getContentType(form.format)
     })
     const url = window.URL.createObjectURL(blob)
@@ -300,11 +324,10 @@ const handleExport = async () => {
     link.click()
     document.body.removeChild(link)
     window.URL.revokeObjectURL(url)
-    
+
     ElMessage.success('数据导出成功')
     emit('success')
     handleClose()
-    
   } catch (error) {
     console.error('导出数据失败:', error)
     ElMessage.error('导出数据失败')

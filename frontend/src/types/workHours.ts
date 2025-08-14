@@ -70,7 +70,11 @@ export interface BonusCondition {
 }
 
 export interface PenaltyCondition {
-  type: 'late_response' | 'late_completion' | 'negative_review' | 'quality_issue'
+  type:
+    | 'late_response'
+    | 'late_completion'
+    | 'negative_review'
+    | 'quality_issue'
   value: number
   description: string
 }

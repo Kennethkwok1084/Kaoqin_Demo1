@@ -14,7 +14,10 @@ dayjs.locale('zh-cn')
  * @param format 格式字符串，默认 'YYYY-MM-DD HH:mm:ss'
  * @returns 格式化后的日期字符串
  */
-export function formatDate(date: string | Date, format = 'YYYY-MM-DD HH:mm:ss'): string {
+export function formatDate(
+  date: string | Date,
+  format = 'YYYY-MM-DD HH:mm:ss'
+): string {
   if (!date) return ''
   return dayjs(date).format(format)
 }
@@ -53,7 +56,10 @@ export function formatFromNow(date: string | Date): string {
  * @param baseDate 基准日期，默认为当前时间
  * @returns 相对时间字符串
  */
-export function formatRelativeTo(date: string | Date, baseDate?: string | Date): string {
+export function formatRelativeTo(
+  date: string | Date,
+  baseDate?: string | Date
+): string {
   if (!date) return ''
   return dayjs(date).to(dayjs(baseDate))
 }
@@ -64,20 +70,23 @@ export function formatRelativeTo(date: string | Date, baseDate?: string | Date):
  * @param endDate 结束日期
  * @returns 日期范围描述
  */
-export function formatDateRange(startDate: string | Date, endDate: string | Date): string {
+export function formatDateRange(
+  startDate: string | Date,
+  endDate: string | Date
+): string {
   if (!startDate || !endDate) return ''
-  
+
   const start = dayjs(startDate)
   const end = dayjs(endDate)
-  
+
   if (start.isSame(end, 'day')) {
     return start.format('YYYY-MM-DD')
   }
-  
+
   if (start.isSame(end, 'year')) {
     return `${start.format('MM-DD')} ~ ${end.format('MM-DD')}`
   }
-  
+
   return `${start.format('YYYY-MM-DD')} ~ ${end.format('YYYY-MM-DD')}`
 }
 
@@ -128,26 +137,26 @@ export function isThisMonth(date: string | Date): boolean {
  */
 export function formatFriendlyDate(date: string | Date): string {
   if (!date) return ''
-  
+
   const target = dayjs(date)
-  
+
   if (isToday(date)) {
     return `今天 ${target.format('HH:mm')}`
   }
-  
+
   if (isYesterday(date)) {
     return `昨天 ${target.format('HH:mm')}`
   }
-  
+
   if (isThisWeek(date)) {
     const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
     return `${weekdays[target.day()]} ${target.format('HH:mm')}`
   }
-  
+
   if (isThisMonth(date)) {
     return target.format('MM-DD HH:mm')
   }
-  
+
   return target.format('YYYY-MM-DD')
 }
 
@@ -159,13 +168,13 @@ export function formatFriendlyDate(date: string | Date): string {
  */
 export function getTimeDiff(startDate: string | Date, endDate?: string | Date) {
   if (!startDate) return null
-  
+
   const start = dayjs(startDate)
   const end = dayjs(endDate)
-  
+
   const diffMs = end.diff(start)
   const duration = dayjs.duration(diffMs)
-  
+
   return {
     milliseconds: diffMs,
     seconds: duration.asSeconds(),
@@ -185,20 +194,24 @@ export function getTimeDiff(startDate: string | Date, endDate?: string | Date) {
  * @param endDate 结束日期
  * @returns 工作日天数
  */
-export function getWorkdays(startDate: string | Date, endDate: string | Date): number {
+export function getWorkdays(
+  startDate: string | Date,
+  endDate: string | Date
+): number {
   if (!startDate || !endDate) return 0
-  
+
   let start = dayjs(startDate)
   const end = dayjs(endDate)
   let workdays = 0
-  
+
   while (start.isBefore(end) || start.isSame(end, 'day')) {
-    if (start.day() !== 0 && start.day() !== 6) { // 不是周末
+    if (start.day() !== 0 && start.day() !== 6) {
+      // 不是周末
       workdays++
     }
     start = start.add(1, 'day')
   }
-  
+
   return workdays
 }
 
@@ -209,21 +222,21 @@ export function getWorkdays(startDate: string | Date, endDate: string | Date): n
  */
 export function formatDuration(duration: number): string {
   if (!duration || duration < 0) return '0秒'
-  
+
   const d = dayjs.duration(duration)
-  
+
   if (d.asDays() >= 1) {
     return `${Math.floor(d.asDays())}天${d.hours()}小时${d.minutes()}分钟`
   }
-  
+
   if (d.asHours() >= 1) {
     return `${d.hours()}小时${d.minutes()}分钟`
   }
-  
+
   if (d.asMinutes() >= 1) {
     return `${d.minutes()}分钟${d.seconds()}秒`
   }
-  
+
   return `${d.seconds()}秒`
 }
 

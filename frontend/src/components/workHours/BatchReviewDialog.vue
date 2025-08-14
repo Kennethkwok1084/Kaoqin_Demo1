@@ -11,10 +11,15 @@
         <template #header>
           <span>待审核工时 ({{ workHours.length }} 条)</span>
         </template>
-        
+
         <el-table :data="workHours" max-height="300" stripe>
           <el-table-column prop="memberName" label="成员" width="100" />
-          <el-table-column prop="taskTitle" label="任务" min-width="200" show-overflow-tooltip />
+          <el-table-column
+            prop="taskTitle"
+            label="任务"
+            min-width="200"
+            show-overflow-tooltip
+          />
           <el-table-column prop="taskType" label="类型" width="80">
             <template #default="{ row }">
               <el-tag :type="getTaskTypeColor(row.taskType)" size="small">
@@ -23,9 +28,7 @@
             </template>
           </el-table-column>
           <el-table-column prop="totalHours" label="工时" width="80">
-            <template #default="{ row }">
-              {{ row.totalHours }}h
-            </template>
+            <template #default="{ row }"> {{ row.totalHours }}h </template>
           </el-table-column>
           <el-table-column prop="status" label="状态" width="80">
             <template #default="{ row }">
@@ -42,7 +45,7 @@
         <template #header>
           <span>批量操作设置</span>
         </template>
-        
+
         <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
           <el-form-item label="审核操作" prop="reviewType">
             <el-radio-group v-model="form.reviewType">
@@ -109,9 +112,9 @@
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="handleClose">取消</el-button>
-        <el-button 
-          :type="form.reviewType === 'approve' ? 'success' : 'danger'" 
-          @click="handleSubmit" 
+        <el-button
+          :type="form.reviewType === 'approve' ? 'success' : 'danger'"
+          @click="handleSubmit"
           :loading="loading"
         >
           <el-icon v-if="form.reviewType === 'approve'"><Check /></el-icon>
@@ -125,7 +128,12 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch, computed } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import {
+  ElMessage,
+  ElMessageBox,
+  type FormInstance,
+  type FormRules
+} from 'element-plus'
 import { Check, Close } from '@element-plus/icons-vue'
 import { workHoursApi } from '@/api/workHours'
 import type { WorkHour } from '@/types/workHours'
@@ -171,15 +179,18 @@ const uniqueMembers = computed(() => {
   return memberIds.size
 })
 
-watch(() => props.visible, (visible) => {
-  dialogVisible.value = visible
-  if (visible) {
-    form.reviewType = 'approve'
-    form.reviewNotes = ''
+watch(
+  () => props.visible,
+  visible => {
+    dialogVisible.value = visible
+    if (visible) {
+      form.reviewType = 'approve'
+      form.reviewNotes = ''
+    }
   }
-})
+)
 
-watch(dialogVisible, (visible) => {
+watch(dialogVisible, visible => {
   emit('update:visible', visible)
 })
 
@@ -256,7 +267,6 @@ const handleSubmit = async () => {
     ElMessage.success(`批量${actionText}成功`)
     emit('success')
     handleClose()
-
   } catch (error) {
     if (error !== 'cancel') {
       console.error('批量审核失败:', error)

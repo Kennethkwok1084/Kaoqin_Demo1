@@ -24,7 +24,9 @@ export const statisticsApi = {
   },
 
   // 获取任务统计
-  async getTaskStatistics(filters?: StatisticsFilters): Promise<TaskStatistics> {
+  async getTaskStatistics(
+    filters?: StatisticsFilters
+  ): Promise<TaskStatistics> {
     const response = await http.get('/statistics/tasks', { params: filters })
     return response.data.data || {}
   },
@@ -40,14 +42,22 @@ export const statisticsApi = {
   },
 
   // 获取工时统计
-  async getWorkHoursStatistics(filters?: StatisticsFilters): Promise<WorkHoursStatistics> {
-    const response = await http.get('/statistics/work-hours', { params: filters })
+  async getWorkHoursStatistics(
+    filters?: StatisticsFilters
+  ): Promise<WorkHoursStatistics> {
+    const response = await http.get('/statistics/work-hours', {
+      params: filters
+    })
     return response.data.data || {}
   },
 
   // 获取绩效指标
-  async getPerformanceMetrics(filters?: StatisticsFilters): Promise<PerformanceMetrics> {
-    const response = await http.get('/statistics/performance', { params: filters })
+  async getPerformanceMetrics(
+    filters?: StatisticsFilters
+  ): Promise<PerformanceMetrics> {
+    const response = await http.get('/statistics/performance', {
+      params: filters
+    })
     return response.data.data || {}
   },
 
@@ -75,8 +85,8 @@ export const statisticsApi = {
 
   // 获取实时数据
   async getRealTimeData(metrics: string[]): Promise<{ [key: string]: any }> {
-    const response = await http.get('/statistics/realtime', { 
-      params: { metrics: metrics.join(',') } 
+    const response = await http.get('/statistics/realtime', {
+      params: { metrics: metrics.join(',') }
     })
     return response.data.data || {}
   },
@@ -94,7 +104,14 @@ export const statisticsApi = {
     data: { date: string; value: number }[]
   }> {
     const response = await http.get('/statistics/trends', { params })
-    return response.data.data || { trend: 'stable', change: 0, forecast: [], data: [] }
+    return (
+      response.data.data || {
+        trend: 'stable',
+        change: 0,
+        forecast: [],
+        data: []
+      }
+    )
   },
 
   // 获取排行榜数据
@@ -123,25 +140,40 @@ export const statisticsApi = {
 
   // 获取报表模板列表
   async getReportTemplates(): Promise<ReportTemplate[]> {
-    const response = await http.get<ReportTemplate[]>('/statistics/report-templates')
+    const response = await http.get<ReportTemplate[]>(
+      '/statistics/report-templates'
+    )
     return response.data
   },
 
   // 获取报表模板详情
   async getReportTemplate(id: string): Promise<ReportTemplate> {
-    const response = await http.get<ReportTemplate>(`/statistics/report-templates/${id}`)
+    const response = await http.get<ReportTemplate>(
+      `/statistics/report-templates/${id}`
+    )
     return response.data
   },
 
   // 创建报表模板
-  async createReportTemplate(template: Omit<ReportTemplate, 'id'>): Promise<ReportTemplate> {
-    const response = await http.post<ReportTemplate>('/statistics/report-templates', template)
+  async createReportTemplate(
+    template: Omit<ReportTemplate, 'id'>
+  ): Promise<ReportTemplate> {
+    const response = await http.post<ReportTemplate>(
+      '/statistics/report-templates',
+      template
+    )
     return response.data
   },
 
   // 更新报表模板
-  async updateReportTemplate(id: string, template: Partial<ReportTemplate>): Promise<ReportTemplate> {
-    const response = await http.put<ReportTemplate>(`/statistics/report-templates/${id}`, template)
+  async updateReportTemplate(
+    id: string,
+    template: Partial<ReportTemplate>
+  ): Promise<ReportTemplate> {
+    const response = await http.put<ReportTemplate>(
+      `/statistics/report-templates/${id}`,
+      template
+    )
     return response.data
   },
 
@@ -157,7 +189,10 @@ export const statisticsApi = {
     filters?: StatisticsFilters
     options?: ExportOptions
   }): Promise<GeneratedReport> {
-    const response = await http.post<GeneratedReport>('/statistics/reports/generate', params)
+    const response = await http.post<GeneratedReport>(
+      '/statistics/reports/generate',
+      params
+    )
     return response.data
   },
 
@@ -180,7 +215,9 @@ export const statisticsApi = {
 
   // 获取报表详情
   async getGeneratedReport(id: string): Promise<GeneratedReport> {
-    const response = await http.get<GeneratedReport>(`/statistics/reports/${id}`)
+    const response = await http.get<GeneratedReport>(
+      `/statistics/reports/${id}`
+    )
     return response.data
   },
 
@@ -241,9 +278,12 @@ export const statisticsApi = {
 
   // 获取仪表板配置
   async getDashboardConfig(userId?: number): Promise<DashboardWidget[]> {
-    const response = await http.get<DashboardWidget[]>('/statistics/dashboard', {
-      params: { userId }
-    })
+    const response = await http.get<DashboardWidget[]>(
+      '/statistics/dashboard',
+      {
+        params: { userId }
+      }
+    )
     return response.data
   },
 
@@ -254,7 +294,9 @@ export const statisticsApi = {
 
   // 获取仪表板数据
   async getDashboardData(widgetIds: string[]): Promise<{ [key: string]: any }> {
-    const response = await http.post('/statistics/dashboard/data', { widgetIds })
+    const response = await http.post('/statistics/dashboard/data', {
+      widgetIds
+    })
     return response.data
   },
 
@@ -354,7 +396,9 @@ export const statisticsApi = {
 
   // 健康检查
   async healthCheck(): Promise<{ status: string; timestamp: string }> {
-    const response = await http.get<{ status: string; timestamp: string }>('/statistics/health')
+    const response = await http.get<{ status: string; timestamp: string }>(
+      '/statistics/health'
+    )
     return response.data
   }
 }

@@ -11,7 +11,7 @@
         <h4>{{ record.memberName }} - {{ formatDateShort(record.date) }}</h4>
         <p class="current-status">
           当前状态：
-          <el-tag 
+          <el-tag
             :type="getStatusTagType(record.status)"
             :color="ATTENDANCE_STATUS_CONFIG[record.status]?.color"
             effect="light"
@@ -38,7 +38,9 @@
             clearable
           />
           <div class="time-info">
-            原时间：{{ record.checkInTime ? formatTime(record.checkInTime) : '未签到' }}
+            原时间：{{
+              record.checkInTime ? formatTime(record.checkInTime) : '未签到'
+            }}
           </div>
         </el-form-item>
 
@@ -52,7 +54,9 @@
             clearable
           />
           <div class="time-info">
-            原时间：{{ record.checkOutTime ? formatTime(record.checkOutTime) : '未签退' }}
+            原时间：{{
+              record.checkOutTime ? formatTime(record.checkOutTime) : '未签退'
+            }}
           </div>
         </el-form-item>
 
@@ -72,11 +76,7 @@
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="handleClose">取消</el-button>
-        <el-button 
-          type="primary" 
-          :loading="loading"
-          @click="handleSubmit"
-        >
+        <el-button type="primary" :loading="loading" @click="handleSubmit">
           确认修正
         </el-button>
       </div>
@@ -115,7 +115,7 @@ const loading = ref(false)
 // 计算属性
 const visible = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: value => emit('update:modelValue', value)
 })
 
 // 表单数据
@@ -169,11 +169,10 @@ const handleSubmit = async () => {
     }
 
     await attendanceApi.correctAttendance(props.record.id, submitData)
-    
+
     ElMessage.success('考勤记录修正成功')
     emit('success')
     handleClose()
-
   } catch (error) {
     console.error('修正失败:', error)
     ElMessage.error('修正失败')
@@ -195,21 +194,31 @@ const getStatusTagType = (status: string) => {
 }
 
 // 监听
-watch(() => props.record, (record) => {
-  if (record) {
-    // 填入当前时间作为默认值
-    formData.checkInTime = record.checkInTime ? formatTime(record.checkInTime) : ''
-    formData.checkOutTime = record.checkOutTime ? formatTime(record.checkOutTime) : ''
+watch(
+  () => props.record,
+  record => {
+    if (record) {
+      // 填入当前时间作为默认值
+      formData.checkInTime = record.checkInTime
+        ? formatTime(record.checkInTime)
+        : ''
+      formData.checkOutTime = record.checkOutTime
+        ? formatTime(record.checkOutTime)
+        : ''
+    }
   }
-})
+)
 
-watch(() => visible.value, (val) => {
-  if (val) {
-    nextTick(() => {
-      formRef.value?.clearValidate()
-    })
+watch(
+  () => visible.value,
+  val => {
+    if (val) {
+      nextTick(() => {
+        formRef.value?.clearValidate()
+      })
+    }
   }
-})
+)
 </script>
 
 <style scoped lang="scss">

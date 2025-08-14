@@ -4,14 +4,12 @@
     <div class="page-header">
       <div class="header-left">
         <h1 class="page-title">工时管理</h1>
-        <p class="page-description">查看基于任务完成的工时统计、月度汇总和数据导出</p>
+        <p class="page-description">
+          查看基于任务完成的工时统计、月度汇总和数据导出
+        </p>
       </div>
       <div class="header-actions">
-        <el-button 
-          :icon="Download" 
-          @click="handleExport"
-          type="primary"
-        >
+        <el-button :icon="Download" @click="handleExport" type="primary">
           导出工时数据
         </el-button>
       </div>
@@ -90,7 +88,9 @@
                 <el-icon><TrendCharts /></el-icon>
               </div>
               <div class="stat-content">
-                <div class="stat-number">{{ todaySummary.attendanceRate?.toFixed(1) || 0 }}%</div>
+                <div class="stat-number">
+                  {{ todaySummary.attendanceRate?.toFixed(1) || 0 }}%
+                </div>
                 <div class="stat-label">出勤率</div>
               </div>
             </div>
@@ -99,8 +99,8 @@
           <!-- 快速操作 -->
           <div class="quick-actions">
             <div class="personal-status">
-              <el-avatar 
-                :src="userInfo?.avatar" 
+              <el-avatar
+                :src="userInfo?.avatar"
                 :size="40"
                 :style="{ backgroundColor: getAvatarColor(userInfo?.fullName) }"
               >
@@ -110,10 +110,20 @@
                 <div class="user-name">{{ userInfo?.fullName }}</div>
                 <div class="status-text">
                   <template v-if="todayStatus.record">
-                    <span v-if="todayStatus.record.checkInTime && !todayStatus.record.checkOutTime">
+                    <span
+                      v-if="
+                        todayStatus.record.checkInTime &&
+                        !todayStatus.record.checkOutTime
+                      "
+                    >
                       已签到 {{ formatTime(todayStatus.record.checkInTime) }}
                     </span>
-                    <span v-else-if="todayStatus.record.checkInTime && todayStatus.record.checkOutTime">
+                    <span
+                      v-else-if="
+                        todayStatus.record.checkInTime &&
+                        todayStatus.record.checkOutTime
+                      "
+                    >
                       已签退 {{ formatTime(todayStatus.record.checkOutTime) }}
                     </span>
                   </template>
@@ -123,9 +133,9 @@
             </div>
 
             <div class="action-buttons">
-              <el-button 
+              <el-button
                 v-if="todayStatus.canCheckIn"
-                type="primary" 
+                type="primary"
                 size="large"
                 :loading="checkingIn"
                 @click="handleCheckIn"
@@ -133,10 +143,10 @@
                 <el-icon><CircleCheck /></el-icon>
                 签到
               </el-button>
-              
-              <el-button 
+
+              <el-button
                 v-if="todayStatus.canCheckOut"
-                type="success" 
+                type="success"
                 size="large"
                 :loading="checkingOut"
                 @click="handleCheckOut"
@@ -145,7 +155,7 @@
                 签退
               </el-button>
 
-              <el-tag 
+              <el-tag
                 v-if="!todayStatus.canCheckIn && !todayStatus.canCheckOut"
                 size="large"
                 type="success"
@@ -240,15 +250,15 @@
         <div class="table-title">工时记录</div>
         <div class="table-actions">
           <el-button-group>
-            <el-button 
-              :type="viewMode === 'table' ? 'primary' : ''" 
+            <el-button
+              :type="viewMode === 'table' ? 'primary' : ''"
               :icon="Grid"
               @click="viewMode = 'table'"
             >
               表格视图
             </el-button>
-            <el-button 
-              :type="viewMode === 'calendar' ? 'primary' : ''" 
+            <el-button
+              :type="viewMode === 'calendar' ? 'primary' : ''"
               :icon="Calendar"
               @click="viewMode = 'calendar'"
             >
@@ -269,8 +279,8 @@
       >
         <el-table-column prop="memberAvatar" label="头像" width="80">
           <template #default="{ row }">
-            <el-avatar 
-              :src="row.memberAvatar" 
+            <el-avatar
+              :src="row.memberAvatar"
               :size="40"
               :style="{ backgroundColor: getAvatarColor(row.memberName) }"
             >
@@ -279,7 +289,12 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="memberName" label="姓名" min-width="120" sortable="custom">
+        <el-table-column
+          prop="memberName"
+          label="姓名"
+          min-width="120"
+          sortable="custom"
+        >
           <template #default="{ row }">
             <div class="member-info">
               <div class="name">{{ row.memberName }}</div>
@@ -301,7 +316,10 @@
 
         <el-table-column label="签到时间" width="100">
           <template #default="{ row }">
-            <span v-if="row.checkInTime" :class="{ 'late-time': row.lateMinutes > 0 }">
+            <span
+              v-if="row.checkInTime"
+              :class="{ 'late-time': row.lateMinutes > 0 }"
+            >
               {{ formatTime(row.checkInTime) }}
             </span>
             <span v-else class="no-record">--</span>
@@ -310,14 +328,22 @@
 
         <el-table-column label="签退时间" width="100">
           <template #default="{ row }">
-            <span v-if="row.checkOutTime" :class="{ 'early-time': row.earlyLeaveMinutes > 0 }">
+            <span
+              v-if="row.checkOutTime"
+              :class="{ 'early-time': row.earlyLeaveMinutes > 0 }"
+            >
               {{ formatTime(row.checkOutTime) }}
             </span>
             <span v-else class="no-record">--</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="workHours" label="工时" width="80" sortable="custom">
+        <el-table-column
+          prop="workHours"
+          label="工时"
+          width="80"
+          sortable="custom"
+        >
           <template #default="{ row }">
             <span class="work-hours">{{ row.workHours }}h</span>
           </template>
@@ -325,7 +351,7 @@
 
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
-            <el-tag 
+            <el-tag
               :type="getStatusTagType(row.status)"
               :color="ATTENDANCE_STATUS_CONFIG[row.status]?.color"
               effect="light"
@@ -338,27 +364,23 @@
         <el-table-column label="异常信息" min-width="150">
           <template #default="{ row }">
             <div class="anomaly-info">
-              <el-tag 
-                v-if="row.lateMinutes > 0" 
-                type="warning" 
+              <el-tag
+                v-if="row.lateMinutes > 0"
+                type="warning"
                 size="small"
-                style="margin-right: 4px;"
+                style="margin-right: 4px"
               >
                 迟到{{ row.lateMinutes }}分钟
               </el-tag>
-              <el-tag 
-                v-if="row.earlyLeaveMinutes > 0" 
-                type="danger" 
+              <el-tag
+                v-if="row.earlyLeaveMinutes > 0"
+                type="danger"
                 size="small"
-                style="margin-right: 4px;"
+                style="margin-right: 4px"
               >
                 早退{{ row.earlyLeaveMinutes }}分钟
               </el-tag>
-              <el-tag 
-                v-if="row.overtimeHours > 0" 
-                type="info" 
-                size="small"
-              >
+              <el-tag v-if="row.overtimeHours > 0" type="info" size="small">
                 加班{{ row.overtimeHours }}小时
               </el-tag>
             </div>
@@ -368,26 +390,24 @@
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
-              <el-button size="small" type="primary" link @click="handleView(row)">
+              <el-button
+                size="small"
+                type="primary"
+                link
+                @click="handleView(row)"
+              >
                 查看
               </el-button>
-              <el-dropdown @command="(cmd) => handleAction(cmd, row)">
+              <el-dropdown @command="cmd => handleAction(cmd, row)">
                 <el-button size="small" type="primary" link>
                   更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>
                 </el-button>
                 <template #dropdown>
                   <el-dropdown-menu>
-                    <el-dropdown-item 
-                      command="correct" 
-                      :icon="Edit"
-                    >
+                    <el-dropdown-item command="correct" :icon="Edit">
                       修正记录
                     </el-dropdown-item>
-                    <el-dropdown-item 
-                      command="delete" 
-                      :icon="Delete"
-                      divided
-                    >
+                    <el-dropdown-item command="delete" :icon="Delete" divided>
                       删除记录
                     </el-dropdown-item>
                   </el-dropdown-menu>
@@ -400,7 +420,7 @@
 
       <!-- 日历视图 -->
       <div v-if="viewMode === 'calendar'" class="calendar-view">
-        <AttendanceCalendar 
+        <AttendanceCalendar
           :attendance-data="attendanceList"
           :loading="loading"
           @date-click="handleDateClick"
@@ -459,18 +479,34 @@
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Plus, DocumentAdd, Timer, Download, Refresh, User, CircleCheck, Close, Clock,
-  Document, TrendCharts, Search, Grid, Calendar, ArrowDown, Edit, Delete, CircleClose
+  Plus,
+  DocumentAdd,
+  Timer,
+  Download,
+  Refresh,
+  User,
+  CircleCheck,
+  Close,
+  Clock,
+  Document,
+  TrendCharts,
+  Search,
+  Grid,
+  Calendar,
+  ArrowDown,
+  Edit,
+  Delete,
+  CircleClose
 } from '@element-plus/icons-vue'
 import { attendanceApi } from '@/api/attendance'
 import { useAuthStore } from '@/stores/auth'
-import { 
-  ATTENDANCE_STATUS_CONFIG, 
-  DEPARTMENT_OPTIONS 
+import {
+  ATTENDANCE_STATUS_CONFIG,
+  DEPARTMENT_OPTIONS
 } from '@/types/attendance'
-import type { 
-  AttendanceRecord, 
-  AttendanceListParams, 
+import type {
+  AttendanceRecord,
+  AttendanceListParams,
   AttendanceFilters,
   AttendanceSummary
 } from '@/types/attendance'
@@ -578,7 +614,6 @@ const loadAttendanceRecords = async () => {
     const records = await attendanceApi.getWorkHoursRecords(params)
     attendanceList.value = records
     pagination.total = records.length
-    
   } catch (error) {
     console.error('加载工时记录失败:', error)
     ElMessage.error('加载工时记录失败')
@@ -592,7 +627,6 @@ const loadTodayData = async () => {
     const summary = await attendanceApi.getTodayWorkHoursSummary()
 
     Object.assign(todaySummary, summary.data || summary)
-    
   } catch (error) {
     console.error('加载今日数据失败:', error)
     ElMessage.error('加载今日数据失败')
@@ -636,7 +670,7 @@ const handleView = (record: AttendanceRecord) => {
 
 const handleAction = async (command: string, record: AttendanceRecord) => {
   currentRecord.value = record
-  
+
   switch (command) {
     case 'correct':
       showCorrectionDialog.value = true
@@ -654,11 +688,10 @@ const handleDelete = async (record: AttendanceRecord) => {
       '删除工时记录',
       { type: 'warning' }
     )
-    
+
     // 工时记录不支持删除，因为它们基于任务完成情况
     ElMessage.info('工时记录基于任务完成情况生成，不支持直接删除')
     await loadAttendanceRecords()
-    
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除失败:', error)
@@ -675,7 +708,7 @@ const handleExport = async () => {
       date_to: dateRange.value[1],
       format: 'excel'
     })
-    
+
     if (result.success) {
       ElMessage.success(`工时数据导出成功，共 ${result.total_records} 条记录`)
       // 如果有下载链接，可以引导用户下载
@@ -747,7 +780,8 @@ const handleCorrectionSuccess = () => {
 // 工具方法
 const getAvatarColor = (name: string) => {
   const colors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399']
-  const hash = name?.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) || 0
+  const hash =
+    name?.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) || 0
   return colors[hash % colors.length]
 }
 
@@ -772,7 +806,7 @@ const getWeekday = (date: string) => {
 onMounted(() => {
   updateCurrentTime()
   timeTimer = setInterval(updateCurrentTime, 1000)
-  
+
   loadTodayData()
   loadAttendanceRecords()
 })
@@ -876,12 +910,24 @@ onUnmounted(() => {
               }
             }
 
-            &.total .stat-icon { background: $primary-color; }
-            &.present .stat-icon { background: $success-color; }
-            &.absent .stat-icon { background: $info-color; }
-            &.late .stat-icon { background: $warning-color; }
-            &.leave .stat-icon { background: $primary-color; }
-            &.rate .stat-icon { background: linear-gradient(135deg, $primary-color, #409EFF); }
+            &.total .stat-icon {
+              background: $primary-color;
+            }
+            &.present .stat-icon {
+              background: $success-color;
+            }
+            &.absent .stat-icon {
+              background: $info-color;
+            }
+            &.late .stat-icon {
+              background: $warning-color;
+            }
+            &.leave .stat-icon {
+              background: $primary-color;
+            }
+            &.rate .stat-icon {
+              background: linear-gradient(135deg, $primary-color, #409eff);
+            }
           }
         }
 

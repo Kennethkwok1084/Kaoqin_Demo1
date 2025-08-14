@@ -21,7 +21,7 @@
             <span>基本信息</span>
           </div>
         </template>
-        
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="任务标题" prop="title">
@@ -32,10 +32,14 @@
               />
             </el-form-item>
           </el-col>
-          
+
           <el-col :span="12">
             <el-form-item label="任务类型" prop="type">
-              <el-select v-model="formData.type" placeholder="请选择任务类型" clearable>
+              <el-select
+                v-model="formData.type"
+                placeholder="请选择任务类型"
+                clearable
+              >
                 <el-option
                   v-for="(config, key) in TASK_TYPE_CONFIG"
                   :key="key"
@@ -79,7 +83,7 @@
             <span>任务设置</span>
           </div>
         </template>
-        
+
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="优先级" prop="priority">
@@ -90,12 +94,14 @@
                   :label="config.label"
                   :value="key"
                 >
-                  <el-tag :color="config.color" size="small">{{ config.label }}</el-tag>
+                  <el-tag :color="config.color" size="small">{{
+                    config.label
+                  }}</el-tag>
                 </el-option>
               </el-select>
             </el-form-item>
           </el-col>
-          
+
           <el-col :span="8">
             <el-form-item label="预估工时" prop="estimatedHours">
               <el-input-number
@@ -108,7 +114,7 @@
               />
             </el-form-item>
           </el-col>
-          
+
           <el-col :span="8">
             <el-form-item label="截止日期" prop="dueDate">
               <el-date-picker
@@ -143,7 +149,7 @@
               </el-select>
             </el-form-item>
           </el-col>
-          
+
           <el-col :span="12">
             <el-form-item label="任务标签" prop="tags">
               <el-select
@@ -174,7 +180,7 @@
             <span>联系信息</span>
           </div>
         </template>
-        
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="任务地点" prop="location">
@@ -185,7 +191,7 @@
               />
             </el-form-item>
           </el-col>
-          
+
           <el-col :span="12">
             <el-form-item label="联系方式" prop="contactInfo">
               <el-input
@@ -207,7 +213,7 @@
             <el-tag size="small" type="info">可选</el-tag>
           </div>
         </template>
-        
+
         <el-upload
           ref="uploadRef"
           v-model:file-list="fileList"
@@ -230,7 +236,7 @@
         </el-upload>
       </el-card>
     </el-form>
-    
+
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="handleClose" :disabled="submitting">取消</el-button>
@@ -245,11 +251,11 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { 
-  DocumentCopy, 
-  Setting, 
-  Location, 
-  Paperclip, 
+import {
+  DocumentCopy,
+  Setting,
+  Location,
+  Paperclip,
   UploadFilled,
   Tools,
   Monitor,
@@ -308,37 +314,43 @@ const formData = reactive<CreateTaskRequest & { id?: number }>({
 const formRules: FormRules = {
   title: [
     { required: true, message: '请输入任务标题', trigger: 'blur' },
-    { min: 2, max: 100, message: '标题长度应在2-100个字符之间', trigger: 'blur' }
+    {
+      min: 2,
+      max: 100,
+      message: '标题长度应在2-100个字符之间',
+      trigger: 'blur'
+    }
   ],
   description: [
     { required: true, message: '请输入任务描述', trigger: 'blur' },
-    { min: 10, max: 500, message: '描述长度应在10-500个字符之间', trigger: 'blur' }
+    {
+      min: 10,
+      max: 500,
+      message: '描述长度应在10-500个字符之间',
+      trigger: 'blur'
+    }
   ],
-  type: [
-    { required: true, message: '请选择任务类型', trigger: 'change' }
-  ],
-  priority: [
-    { required: true, message: '请选择优先级', trigger: 'change' }
-  ],
-  location: [
-    { required: true, message: '请输入任务地点', trigger: 'blur' }
-  ],
-  contactInfo: [
-    { required: true, message: '请输入联系方式', trigger: 'blur' }
-  ],
+  type: [{ required: true, message: '请选择任务类型', trigger: 'change' }],
+  priority: [{ required: true, message: '请选择优先级', trigger: 'change' }],
+  location: [{ required: true, message: '请输入任务地点', trigger: 'blur' }],
+  contactInfo: [{ required: true, message: '请输入联系方式', trigger: 'blur' }],
   estimatedHours: [
     { required: true, message: '请输入预估工时', trigger: 'blur' },
-    { type: 'number', min: 0.5, max: 999, message: '工时应在0.5-999小时之间', trigger: 'change' }
+    {
+      type: 'number',
+      min: 0.5,
+      max: 999,
+      message: '工时应在0.5-999小时之间',
+      trigger: 'change'
+    }
   ],
-  dueDate: [
-    { required: true, message: '请选择截止日期', trigger: 'change' }
-  ]
+  dueDate: [{ required: true, message: '请选择截止日期', trigger: 'change' }]
 }
 
 // Computed
 const visible = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: value => emit('update:modelValue', value)
 })
 
 const isEdit = computed(() => !!props.task)
@@ -352,10 +364,10 @@ const disabledDate = (time: Date) => {
 const loadMembers = async () => {
   try {
     membersLoading.value = true
-    const response = await MembersApi.getMembers({ 
-      page: 1, 
+    const response = await MembersApi.getMembers({
+      page: 1,
       page_size: 100,
-      is_active: true 
+      is_active: true
     })
     members.value = response.items || []
   } catch (error) {
@@ -379,25 +391,27 @@ const handleFileChange = (file: UploadFile) => {
   if (file.raw) {
     // 验证文件类型和大小
     const allowedTypes = [
-      'image/jpeg', 'image/png', 'image/gif',
+      'image/jpeg',
+      'image/png',
+      'image/gif',
       'application/pdf',
-      'application/msword', 
+      'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'text/plain'
     ]
-    
+
     if (!allowedTypes.includes(file.raw.type)) {
       ElMessage.error('不支持的文件类型')
       return false
     }
-    
+
     if (file.raw.size > 10 * 1024 * 1024) {
       ElMessage.error('文件大小不能超过10MB')
       return false
     }
-    
+
     formData.attachments = formData.attachments || []
     formData.attachments.push(file.raw)
   }
@@ -458,11 +472,11 @@ const handleClose = () => {
 
 const handleSubmit = async () => {
   if (!formRef.value) return
-  
+
   try {
     await formRef.value.validate()
     submitting.value = true
-    
+
     if (isEdit.value && props.task) {
       // 更新任务
       const updateData: UpdateTaskRequest = {
@@ -477,7 +491,7 @@ const handleSubmit = async () => {
         dueDate: formData.dueDate,
         tags: formData.tags
       }
-      
+
       await tasksApi.updateTask(props.task.id, updateData)
       ElMessage.success('任务更新成功')
     } else {
@@ -495,11 +509,11 @@ const handleSubmit = async () => {
         tags: formData.tags,
         attachments: formData.attachments
       }
-      
+
       await tasksApi.createTask(createData)
       ElMessage.success('任务创建成功')
     }
-    
+
     emit('success')
     handleClose()
   } catch (error: any) {
@@ -515,13 +529,16 @@ const handleSubmit = async () => {
 }
 
 // Watch
-watch(() => props.modelValue, (newVal) => {
-  if (newVal) {
-    initForm()
-    loadMembers()
-    loadTags()
+watch(
+  () => props.modelValue,
+  newVal => {
+    if (newVal) {
+      initForm()
+      loadMembers()
+      loadTags()
+    }
   }
-})
+)
 
 // Lifecycle
 onMounted(() => {
@@ -536,7 +553,7 @@ onMounted(() => {
 <style scoped lang="scss">
 .form-section {
   margin-bottom: 20px;
-  
+
   :deep(.el-card__body) {
     padding: 20px;
   }
@@ -547,7 +564,7 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   font-weight: 500;
-  
+
   .el-tag {
     margin-left: auto;
   }
@@ -557,7 +574,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   width: 100%;
-  
+
   .description {
     margin-left: auto;
     font-size: 12px;

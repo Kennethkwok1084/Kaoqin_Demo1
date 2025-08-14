@@ -21,13 +21,13 @@ describe('LoginView', () => {
   beforeEach(async () => {
     setActivePinia(createPinia())
     authStore = useAuthStore()
-    
+
     wrapper = mount(LoginView, {
       global: {
         plugins: [router]
       }
     })
-    
+
     await router.push('/login')
     await router.isReady()
   })
@@ -65,33 +65,33 @@ describe('LoginView', () => {
 
       // 等待验证错误显示
       await wrapper.vm.$nextTick()
-      
+
       // Element Plus 表单验证通常会在表单项上添加错误类
       expect(wrapper.find('.el-form-item.is-error').exists()).toBe(true)
     })
 
     it('should validate username format', async () => {
       const usernameInput = wrapper.find('input[type="text"]')
-      
+
       // 输入无效用户名
       await usernameInput.setValue('ab') // 太短
       await usernameInput.trigger('blur')
-      
+
       await wrapper.vm.$nextTick()
-      
+
       // 检查是否有验证错误
       expect(wrapper.vm.loginForm.username).toBe('ab')
     })
 
     it('should validate password length', async () => {
       const passwordInput = wrapper.find('input[type="password"]')
-      
+
       // 输入过短的密码
       await passwordInput.setValue('123')
       await passwordInput.trigger('blur')
-      
+
       await wrapper.vm.$nextTick()
-      
+
       expect(wrapper.vm.loginForm.password).toBe('123')
     })
   })
@@ -133,7 +133,7 @@ describe('LoginView', () => {
 
       expect(loginSpy).toHaveBeenCalledWith('testuser', 'wrongpassword')
       expect(routerPushSpy).not.toHaveBeenCalled()
-      
+
       // 检查是否显示错误消息
       expect(wrapper.vm.loginError).toBeTruthy()
     })
@@ -141,7 +141,7 @@ describe('LoginView', () => {
     it('should show loading state during login', async () => {
       // Mock a slow login
       let resolveLogin: (value: boolean) => void
-      const loginPromise = new Promise<boolean>((resolve) => {
+      const loginPromise = new Promise<boolean>(resolve => {
         resolveLogin = resolve
       })
       vi.spyOn(authStore, 'login').mockReturnValue(loginPromise)
@@ -178,12 +178,15 @@ describe('LoginView', () => {
 
       await wrapper.vm.$nextTick()
 
-      expect(localStorageSetSpy).toHaveBeenCalledWith('rememberedUsername', 'testuser')
+      expect(localStorageSetSpy).toHaveBeenCalledWith(
+        'rememberedUsername',
+        'testuser'
+      )
     })
 
     it('should load remembered username on mount', async () => {
       vi.spyOn(localStorage, 'getItem').mockReturnValue('remembereduser')
-      
+
       const newWrapper = mount(LoginView, {
         global: {
           plugins: [router]
@@ -194,7 +197,7 @@ describe('LoginView', () => {
 
       expect(newWrapper.vm.loginForm.username).toBe('remembereduser')
       expect(newWrapper.vm.loginForm.rememberMe).toBe(true)
-      
+
       newWrapper.unmount()
     })
   })
@@ -218,7 +221,7 @@ describe('LoginView', () => {
     it('should have proper form labels', () => {
       const labels = wrapper.findAll('label')
       expect(labels.length).toBeGreaterThan(0)
-      
+
       // 检查每个输入框都有对应的标签
       const inputs = wrapper.findAll('input')
       inputs.forEach(input => {
@@ -232,7 +235,7 @@ describe('LoginView', () => {
     it('should have proper ARIA attributes', () => {
       const form = wrapper.find('form')
       expect(form.attributes('novalidate')).toBeDefined()
-      
+
       // 检查错误状态的 ARIA 属性
       const inputs = wrapper.findAll('input')
       inputs.forEach(input => {

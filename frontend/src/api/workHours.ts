@@ -41,14 +41,23 @@ export const workHoursApi = {
   },
 
   // 批量重新计算工时
-  async recalculateWorkHours(request: WorkHourCalculationRequest): Promise<WorkHourCalculationResult[]> {
-    const response = await http.post<WorkHourCalculationResult[]>('/work-hours/recalculate', request)
+  async recalculateWorkHours(
+    request: WorkHourCalculationRequest
+  ): Promise<WorkHourCalculationResult[]> {
+    const response = await http.post<WorkHourCalculationResult[]>(
+      '/work-hours/recalculate',
+      request
+    )
     return response.data
   },
 
   // 单个任务工时重算
-  async recalculateTaskWorkHours(taskId: number): Promise<WorkHourCalculationResult> {
-    const response = await http.post<WorkHourCalculationResult>(`/tasks/${taskId}/recalculate-hours`)
+  async recalculateTaskWorkHours(
+    taskId: number
+  ): Promise<WorkHourCalculationResult> {
+    const response = await http.post<WorkHourCalculationResult>(
+      `/tasks/${taskId}/recalculate-hours`
+    )
     return response.data
   },
 
@@ -59,11 +68,14 @@ export const workHoursApi = {
     reason: string,
     notes?: string
   ): Promise<WorkHour> {
-    const response = await http.put<WorkHour>(`/work-hours/${workHourId}/adjust`, {
-      adjusted_hours: adjustedHours,
-      reason,
-      notes
-    })
+    const response = await http.put<WorkHour>(
+      `/work-hours/${workHourId}/adjust`,
+      {
+        adjusted_hours: adjustedHours,
+        reason,
+        notes
+      }
+    )
     return response.data
   },
 
@@ -74,11 +86,14 @@ export const workHoursApi = {
     reviewNotes: string,
     adjustedHours?: number
   ): Promise<WorkHour> {
-    const response = await http.post<WorkHour>(`/work-hours/${workHourId}/review`, {
-      review_type: reviewType,
-      review_notes: reviewNotes,
-      adjusted_hours: adjustedHours
-    })
+    const response = await http.post<WorkHour>(
+      `/work-hours/${workHourId}/review`,
+      {
+        review_type: reviewType,
+        review_notes: reviewNotes,
+        adjusted_hours: adjustedHours
+      }
+    )
     return response.data
   },
 
@@ -97,10 +112,15 @@ export const workHoursApi = {
   },
 
   // 获取工时统计
-  async getWorkHourStatistics(filters?: WorkHourFilters): Promise<WorkHourStatistics> {
-    const response = await http.get<WorkHourStatistics>('/work-hours/statistics', {
-      params: filters
-    })
+  async getWorkHourStatistics(
+    filters?: WorkHourFilters
+  ): Promise<WorkHourStatistics> {
+    const response = await http.get<WorkHourStatistics>(
+      '/work-hours/statistics',
+      {
+        params: filters
+      }
+    )
     return response.data
   },
 
@@ -124,13 +144,16 @@ export const workHoursApi = {
     dateRange: [Date, Date],
     department?: string
   ): Promise<MemberWorkHourSummary[]> {
-    const response = await http.get<MemberWorkHourSummary[]>('/work-hours/member-summary', {
-      params: {
-        start_date: dateRange[0].toISOString().split('T')[0],
-        end_date: dateRange[1].toISOString().split('T')[0],
-        department
+    const response = await http.get<MemberWorkHourSummary[]>(
+      '/work-hours/member-summary',
+      {
+        params: {
+          start_date: dateRange[0].toISOString().split('T')[0],
+          end_date: dateRange[1].toISOString().split('T')[0],
+          department
+        }
       }
-    })
+    )
     return response.data
   },
 
@@ -150,14 +173,20 @@ export const workHoursApi = {
   },
 
   // 获取工时调整记录
-  async getWorkHourAdjustments(workHourId: number): Promise<WorkHourAdjustment[]> {
-    const response = await http.get<WorkHourAdjustment[]>(`/work-hours/${workHourId}/adjustments`)
+  async getWorkHourAdjustments(
+    workHourId: number
+  ): Promise<WorkHourAdjustment[]> {
+    const response = await http.get<WorkHourAdjustment[]>(
+      `/work-hours/${workHourId}/adjustments`
+    )
     return response.data
   },
 
   // 获取工时审核记录
   async getWorkHourReviews(workHourId: number): Promise<WorkHourReview[]> {
-    const response = await http.get<WorkHourReview[]>(`/work-hours/${workHourId}/reviews`)
+    const response = await http.get<WorkHourReview[]>(
+      `/work-hours/${workHourId}/reviews`
+    )
     return response.data
   },
 
@@ -168,14 +197,22 @@ export const workHoursApi = {
   },
 
   // 创建工时规则
-  async createWorkHourRule(rule: Omit<WorkHourRule, 'id' | 'createdAt' | 'updatedAt'>): Promise<WorkHourRule> {
+  async createWorkHourRule(
+    rule: Omit<WorkHourRule, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<WorkHourRule> {
     const response = await http.post<WorkHourRule>('/work-hours/rules', rule)
     return response.data
   },
 
   // 更新工时规则
-  async updateWorkHourRule(id: number, rule: Partial<WorkHourRule>): Promise<WorkHourRule> {
-    const response = await http.put<WorkHourRule>(`/work-hours/rules/${id}`, rule)
+  async updateWorkHourRule(
+    id: number,
+    rule: Partial<WorkHourRule>
+  ): Promise<WorkHourRule> {
+    const response = await http.put<WorkHourRule>(
+      `/work-hours/rules/${id}`,
+      rule
+    )
     return response.data
   },
 
@@ -208,7 +245,7 @@ export const workHoursApi = {
   }> {
     const formData = new FormData()
     formData.append('file', file)
-    
+
     const response = await http.post('/work-hours/import', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
@@ -218,8 +255,12 @@ export const workHoursApi = {
   },
 
   // 预览工时计算
-  async previewWorkHourCalculation(taskId: number): Promise<WorkHourCalculationResult> {
-    const response = await http.get<WorkHourCalculationResult>(`/work-hours/preview/${taskId}`)
+  async previewWorkHourCalculation(
+    taskId: number
+  ): Promise<WorkHourCalculationResult> {
+    const response = await http.get<WorkHourCalculationResult>(
+      `/work-hours/preview/${taskId}`
+    )
     return response.data
   },
 

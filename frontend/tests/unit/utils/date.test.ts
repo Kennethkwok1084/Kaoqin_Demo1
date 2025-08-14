@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { 
-  formatDate, 
-  formatDateTime, 
+import {
+  formatDate,
+  formatDateTime,
   formatTime,
   isToday,
   isThisWeek,
@@ -47,8 +47,12 @@ describe('Date Utils', () => {
     })
 
     it('should format datetime with custom format', () => {
-      expect(formatDateTime(testDate, 'YYYY-MM-DD HH:mm')).toMatch(/2024-03-15 \d{2}:\d{2}/)
-      expect(formatDateTime(testDate, 'MM/DD/YYYY hh:mm A')).toMatch(/03\/15\/2024 \d{2}:\d{2} (AM|PM)/)
+      expect(formatDateTime(testDate, 'YYYY-MM-DD HH:mm')).toMatch(
+        /2024-03-15 \d{2}:\d{2}/
+      )
+      expect(formatDateTime(testDate, 'MM/DD/YYYY hh:mm A')).toMatch(
+        /03\/15\/2024 \d{2}:\d{2} (AM|PM)/
+      )
     })
   })
 
@@ -85,7 +89,9 @@ describe('Date Utils', () => {
   describe('isThisWeek', () => {
     it('should detect if date is in current week', () => {
       const now = new Date()
-      const weekStart = new Date(now.getTime() - now.getDay() * 24 * 60 * 60 * 1000)
+      const weekStart = new Date(
+        now.getTime() - now.getDay() * 24 * 60 * 60 * 1000
+      )
       const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000)
       const nextWeek = new Date(weekEnd.getTime() + 24 * 60 * 60 * 1000)
 
@@ -123,7 +129,7 @@ describe('Date Utils', () => {
     it('should handle future dates', () => {
       const now = new Date()
       const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000)
-      
+
       expect(getRelativeTime(oneHourLater)).toContain('小时后')
     })
   })
@@ -184,7 +190,7 @@ describe('Date Utils', () => {
 
     it('should handle current week when no date provided', () => {
       const { start, end } = getWeekRange()
-      
+
       expect(start).toBeInstanceOf(Date)
       expect(end).toBeInstanceOf(Date)
       expect(end.getTime() - start.getTime()).toBe(6 * 24 * 60 * 60 * 1000)

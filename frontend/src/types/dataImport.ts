@@ -4,7 +4,13 @@ export interface ImportTemplate {
   id: string
   name: string
   description: string
-  type: 'repair_tasks' | 'monitoring_tasks' | 'assistance_tasks' | 'members' | 'attendance' | 'work_hours'
+  type:
+    | 'repair_tasks'
+    | 'monitoring_tasks'
+    | 'assistance_tasks'
+    | 'members'
+    | 'attendance'
+    | 'work_hours'
   requiredFields: string[]
   optionalFields: string[]
   sampleData: Record<string, any>[]
@@ -185,11 +191,14 @@ export interface ImportReport {
     processingTime: number
   }
   statistics: {
-    byField: Record<string, {
-      valid: number
-      invalid: number
-      warnings: number
-    }>
+    byField: Record<
+      string,
+      {
+        valid: number
+        invalid: number
+        warnings: number
+      }
+    >
     byErrorType: Record<string, number>
   }
   errors: ValidationError[]

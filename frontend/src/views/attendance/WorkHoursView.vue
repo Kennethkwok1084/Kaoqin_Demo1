@@ -4,14 +4,12 @@
     <div class="page-header">
       <div class="header-left">
         <h1 class="page-title">工时管理</h1>
-        <p class="page-description">查看基于任务完成的工时统计、月度汇总和数据导出</p>
+        <p class="page-description">
+          查看基于任务完成的工时统计、月度汇总和数据导出
+        </p>
       </div>
       <div class="header-actions">
-        <el-button 
-          :icon="Download" 
-          @click="handleExport"
-          type="primary"
-        >
+        <el-button :icon="Download" @click="handleExport" type="primary">
           导出工时数据
         </el-button>
       </div>
@@ -40,7 +38,9 @@
                 <el-icon><Timer /></el-icon>
               </div>
               <div class="stat-content">
-                <div class="stat-number">{{ todaySummary.total_hours || 0 }}</div>
+                <div class="stat-number">
+                  {{ todaySummary.total_hours || 0 }}
+                </div>
                 <div class="stat-label">今日总工时</div>
               </div>
             </div>
@@ -50,7 +50,9 @@
                 <el-icon><User /></el-icon>
               </div>
               <div class="stat-content">
-                <div class="stat-number">{{ todaySummary.active_members || 0 }}</div>
+                <div class="stat-number">
+                  {{ todaySummary.active_members || 0 }}
+                </div>
                 <div class="stat-label">活跃成员</div>
               </div>
             </div>
@@ -60,7 +62,9 @@
                 <el-icon><Tools /></el-icon>
               </div>
               <div class="stat-content">
-                <div class="stat-number">{{ todaySummary.repair_hours || 0 }}</div>
+                <div class="stat-number">
+                  {{ todaySummary.repair_hours || 0 }}
+                </div>
                 <div class="stat-label">维修工时</div>
               </div>
             </div>
@@ -70,7 +74,9 @@
                 <el-icon><Monitor /></el-icon>
               </div>
               <div class="stat-content">
-                <div class="stat-number">{{ todaySummary.monitoring_hours || 0 }}</div>
+                <div class="stat-number">
+                  {{ todaySummary.monitoring_hours || 0 }}
+                </div>
                 <div class="stat-label">监控工时</div>
               </div>
             </div>
@@ -80,7 +86,9 @@
                 <el-icon><TrendCharts /></el-icon>
               </div>
               <div class="stat-content">
-                <div class="stat-number">{{ todaySummary.average_hours || 0 }}</div>
+                <div class="stat-number">
+                  {{ todaySummary.average_hours || 0 }}
+                </div>
                 <div class="stat-label">平均工时</div>
               </div>
             </div>
@@ -95,14 +103,14 @@
         <div class="table-title">工时记录</div>
         <div class="table-actions">
           <el-button-group>
-            <el-button 
-              :type="viewMode === 'table' ? 'primary' : ''" 
+            <el-button
+              :type="viewMode === 'table' ? 'primary' : ''"
               @click="viewMode = 'table'"
             >
               表格视图
             </el-button>
-            <el-button 
-              :type="viewMode === 'chart' ? 'primary' : ''" 
+            <el-button
+              :type="viewMode === 'chart' ? 'primary' : ''"
               @click="viewMode = 'chart'"
             >
               图表视图
@@ -126,10 +134,10 @@
             />
           </el-col>
           <el-col :span="6">
-            <el-select 
-              v-model="filters.member_ids" 
-              placeholder="选择成员" 
-              multiple 
+            <el-select
+              v-model="filters.member_ids"
+              placeholder="选择成员"
+              multiple
               clearable
               style="width: 100%"
               @change="loadWorkHoursRecords"
@@ -143,9 +151,9 @@
             </el-select>
           </el-col>
           <el-col :span="6">
-            <el-select 
-              v-model="filters.task_type" 
-              placeholder="任务类型" 
+            <el-select
+              v-model="filters.task_type"
+              placeholder="任务类型"
               clearable
               style="width: 100%"
               @change="loadWorkHoursRecords"
@@ -167,12 +175,7 @@
 
       <!-- 表格视图 -->
       <div v-if="viewMode === 'table'">
-        <el-table
-          :data="workHoursList"
-          :loading="loading"
-          stripe
-          height="600"
-        >
+        <el-table :data="workHoursList" :loading="loading" stripe height="600">
           <el-table-column prop="task_id" label="任务ID" width="100" />
           <el-table-column prop="title" label="任务标题" min-width="200" />
           <el-table-column prop="task_type" label="任务类型" width="120">
@@ -216,7 +219,7 @@
 
       <!-- 图表视图 -->
       <div v-else-if="viewMode === 'chart'" class="chart-container">
-        <div id="workHoursChart" style="height: 400px;"></div>
+        <div id="workHoursChart" style="height: 400px"></div>
       </div>
     </el-card>
   </div>
@@ -225,7 +228,15 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Download, Refresh, Timer, User, Tools, Monitor, TrendCharts } from '@element-plus/icons-vue'
+import {
+  Download,
+  Refresh,
+  Timer,
+  User,
+  Tools,
+  Monitor,
+  TrendCharts
+} from '@element-plus/icons-vue'
 import { attendanceApi } from '@/api/attendance'
 import { MembersApi } from '@/api/members'
 import type { WorkHoursRecord } from '@/types/attendance'
@@ -269,9 +280,9 @@ const updateCurrentTime = () => {
 // 获取任务类型标签颜色
 const getTaskTypeTagType = (taskType: string) => {
   const typeMap: Record<string, string> = {
-    '维修任务': 'primary',
-    '监控任务': 'success',
-    '协助任务': 'warning'
+    维修任务: 'primary',
+    监控任务: 'success',
+    协助任务: 'warning'
   }
   return typeMap[taskType] || 'info'
 }
@@ -303,7 +314,7 @@ const refreshTodayData = async () => {
 const loadWorkHoursRecords = async () => {
   try {
     loading.value = true
-    
+
     const params: any = {
       page: pagination.page,
       size: pagination.size
@@ -325,7 +336,6 @@ const loadWorkHoursRecords = async () => {
     const records = await attendanceApi.getWorkHoursRecords(params)
     workHoursList.value = records
     pagination.total = records.length
-    
   } catch (error) {
     console.error('加载工时记录失败:', error)
     ElMessage.error('加载工时记录失败')
@@ -344,7 +354,7 @@ const handleExport = async () => {
       member_ids: filters.member_ids,
       format: 'excel'
     })
-    
+
     if (result.success) {
       ElMessage.success(`工时数据导出成功，共 ${result.total_records} 条记录`)
       if (result.download_url) {
@@ -364,12 +374,12 @@ const handleExport = async () => {
 // 加载成员选项
 const loadMemberOptions = async () => {
   try {
-    const response = await MembersApi.getMembers({ 
-      page: 1, 
+    const response = await MembersApi.getMembers({
+      page: 1,
       size: 100,
-      is_active: true 
+      is_active: true
     })
-    
+
     // 适配不同的响应格式
     const members = response.items || response.data || response
     if (Array.isArray(members)) {
@@ -391,7 +401,7 @@ let timeInterval: number
 onMounted(async () => {
   updateCurrentTime()
   timeInterval = window.setInterval(updateCurrentTime, 1000)
-  
+
   // 设置默认日期范围为当月
   const now = new Date()
   const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -400,7 +410,7 @@ onMounted(async () => {
     firstDay.toISOString().split('T')[0],
     lastDay.toISOString().split('T')[0]
   ]
-  
+
   await Promise.all([
     loadTodayData(),
     loadWorkHoursRecords(),
@@ -504,11 +514,21 @@ onUnmounted(() => {
         }
       }
 
-      &.hours .stat-icon { background: #409eff; }
-      &.members .stat-icon { background: #67c23a; }
-      &.repair .stat-icon { background: #e6a23c; }
-      &.monitoring .stat-icon { background: #f56c6c; }
-      &.average .stat-icon { background: #909399; }
+      &.hours .stat-icon {
+        background: #409eff;
+      }
+      &.members .stat-icon {
+        background: #67c23a;
+      }
+      &.repair .stat-icon {
+        background: #e6a23c;
+      }
+      &.monitoring .stat-icon {
+        background: #f56c6c;
+      }
+      &.average .stat-icon {
+        background: #909399;
+      }
     }
   }
 }
@@ -554,7 +574,7 @@ onUnmounted(() => {
   .stats-grid {
     grid-template-columns: repeat(2, 1fr) !important;
   }
-  
+
   .page-header {
     flex-direction: column;
     align-items: flex-start;

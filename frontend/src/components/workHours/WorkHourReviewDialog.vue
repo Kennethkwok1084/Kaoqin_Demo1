@@ -16,8 +16,7 @@
         <el-descriptions-item label="当前工时">
           <span class="current-hours">{{ workHour.totalHours }}h</span>
           <span class="hours-breakdown">
-            (基础: {{ workHour.baseHours }}h, 
-            奖励: +{{ workHour.bonusHours }}h, 
+            (基础: {{ workHour.baseHours }}h, 奖励: +{{ workHour.bonusHours }}h,
             惩罚: -{{ workHour.penaltyHours }}h)
           </span>
         </el-descriptions-item>
@@ -33,9 +32,9 @@
         </el-tag>
       </el-form-item>
 
-      <el-form-item 
-        label="调整工时" 
-        prop="adjustedHours" 
+      <el-form-item
+        label="调整工时"
+        prop="adjustedHours"
         v-if="reviewType === 'adjust' || showAdjustHours"
       >
         <el-input-number
@@ -58,19 +57,23 @@
       </el-form-item>
 
       <el-form-item v-if="reviewType === 'approve'">
-        <el-checkbox v-model="showAdjustHours">
-          同时调整工时
-        </el-checkbox>
+        <el-checkbox v-model="showAdjustHours"> 同时调整工时 </el-checkbox>
       </el-form-item>
 
       <!-- 审核预览 -->
-      <el-form-item label="审核预览" v-if="reviewType === 'adjust' || showAdjustHours">
+      <el-form-item
+        label="审核预览"
+        v-if="reviewType === 'adjust' || showAdjustHours"
+      >
         <div class="review-preview">
           <div class="preview-item">
             <span class="label">当前工时：</span>
             <span class="value">{{ workHour?.totalHours }}h</span>
           </div>
-          <div class="preview-item" v-if="form.adjustedHours !== workHour?.totalHours">
+          <div
+            class="preview-item"
+            v-if="form.adjustedHours !== workHour?.totalHours"
+          >
             <span class="label">调整后：</span>
             <span class="value highlight">{{ form.adjustedHours }}h</span>
           </div>
@@ -87,9 +90,9 @@
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="handleClose">取消</el-button>
-        <el-button 
-          :type="getButtonType()" 
-          @click="handleSubmit" 
+        <el-button
+          :type="getButtonType()"
+          @click="handleSubmit"
           :loading="loading"
         >
           {{ getButtonText() }}
@@ -140,23 +143,32 @@ const rules = computed((): FormRules => {
   if (props.reviewType === 'adjust' || showAdjustHours.value) {
     baseRules.adjustedHours = [
       { required: true, message: '请输入调整后的工时', trigger: 'blur' },
-      { type: 'number', min: 0, max: 1000, message: '工时必须在0-1000之间', trigger: 'blur' }
+      {
+        type: 'number',
+        min: 0,
+        max: 1000,
+        message: '工时必须在0-1000之间',
+        trigger: 'blur'
+      }
     ]
   }
 
   return baseRules
 })
 
-watch(() => props.visible, (visible) => {
-  dialogVisible.value = visible
-  if (visible && props.workHour) {
-    form.adjustedHours = props.workHour.totalHours
-    form.reviewNotes = ''
-    showAdjustHours.value = false
+watch(
+  () => props.visible,
+  visible => {
+    dialogVisible.value = visible
+    if (visible && props.workHour) {
+      form.adjustedHours = props.workHour.totalHours
+      form.reviewNotes = ''
+      showAdjustHours.value = false
+    }
   }
-})
+)
 
-watch(dialogVisible, (visible) => {
+watch(dialogVisible, visible => {
   emit('update:visible', visible)
 })
 
@@ -222,9 +234,10 @@ const handleSubmit = async () => {
 
     loading.value = true
 
-    const adjustedHours = (props.reviewType === 'adjust' || showAdjustHours.value) 
-      ? form.adjustedHours 
-      : undefined
+    const adjustedHours =
+      props.reviewType === 'adjust' || showAdjustHours.value
+        ? form.adjustedHours
+        : undefined
 
     await workHoursApi.reviewWorkHour(
       props.workHour.id,
@@ -236,7 +249,6 @@ const handleSubmit = async () => {
     ElMessage.success('审核完成')
     emit('success')
     handleClose()
-
   } catch (error) {
     console.error('审核失败:', error)
     ElMessage.error('审核失败')

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { 
-  getToken, 
-  setToken, 
+import {
+  getToken,
+  setToken,
   removeToken,
   getRefreshToken,
   setRefreshToken,
@@ -20,7 +20,7 @@ describe('Auth Utils', () => {
   describe('token management', () => {
     it('should get and set access token', () => {
       expect(getToken()).toBeNull()
-      
+
       setToken('test-token')
       expect(getToken()).toBe('test-token')
       expect(localStorage.getItem('access_token')).toBe('test-token')
@@ -29,7 +29,7 @@ describe('Auth Utils', () => {
     it('should remove access token', () => {
       setToken('test-token')
       expect(getToken()).toBe('test-token')
-      
+
       removeToken()
       expect(getToken()).toBeNull()
       expect(localStorage.getItem('access_token')).toBeNull()
@@ -37,7 +37,7 @@ describe('Auth Utils', () => {
 
     it('should get and set refresh token', () => {
       expect(getRefreshToken()).toBeNull()
-      
+
       setRefreshToken('test-refresh-token')
       expect(getRefreshToken()).toBe('test-refresh-token')
       expect(localStorage.getItem('refresh_token')).toBe('test-refresh-token')
@@ -46,7 +46,7 @@ describe('Auth Utils', () => {
     it('should remove refresh token', () => {
       setRefreshToken('test-refresh-token')
       expect(getRefreshToken()).toBe('test-refresh-token')
-      
+
       removeRefreshToken()
       expect(getRefreshToken()).toBeNull()
       expect(localStorage.getItem('refresh_token')).toBeNull()
@@ -55,9 +55,9 @@ describe('Auth Utils', () => {
     it('should clear all auth data', () => {
       setToken('test-token')
       setRefreshToken('test-refresh-token')
-      
+
       clearAuthData()
-      
+
       expect(getToken()).toBeNull()
       expect(getRefreshToken()).toBeNull()
     })
@@ -72,10 +72,10 @@ describe('Auth Utils', () => {
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + 3600
       }
-      
+
       const encodedPayload = btoa(JSON.stringify(payload))
       const mockToken = `header.${encodedPayload}.signature`
-      
+
       const decoded = parseJWT(mockToken)
       expect(decoded).toEqual(payload)
     })
@@ -99,7 +99,7 @@ describe('Auth Utils', () => {
       }
       const encodedPayload = btoa(JSON.stringify(expiredPayload))
       const expiredToken = `header.${encodedPayload}.signature`
-      
+
       expect(isTokenExpired(expiredToken)).toBe(true)
     })
 
@@ -109,7 +109,7 @@ describe('Auth Utils', () => {
       }
       const encodedPayload = btoa(JSON.stringify(validPayload))
       const validToken = `header.${encodedPayload}.signature`
-      
+
       expect(isTokenExpired(validToken)).toBe(false)
     })
 
@@ -120,7 +120,7 @@ describe('Auth Utils', () => {
       }
       const encodedPayload = btoa(JSON.stringify(payloadWithoutExp))
       const tokenWithoutExp = `header.${encodedPayload}.signature`
-      
+
       expect(isTokenExpired(tokenWithoutExp)).toBe(true)
     })
 
@@ -136,10 +136,10 @@ describe('Auth Utils', () => {
       // Mock localStorage to throw error
       const originalLocalStorage = global.localStorage
       delete (global as any).localStorage
-      
+
       expect(() => getToken()).not.toThrow()
       expect(() => setToken('test')).not.toThrow()
-      
+
       // Restore localStorage
       global.localStorage = originalLocalStorage
     })
@@ -148,7 +148,7 @@ describe('Auth Utils', () => {
       // 创建一个包含无效JSON的伪JWT
       const invalidPayload = btoa('invalid json {')
       const invalidToken = `header.${invalidPayload}.signature`
-      
+
       expect(parseJWT(invalidToken)).toBeNull()
     })
   })

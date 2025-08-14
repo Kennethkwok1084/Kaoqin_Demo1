@@ -12,7 +12,7 @@ vi.mock('@/api/tasks', () => ({
   updateTask: vi.fn(),
   deleteTask: vi.fn(),
   getTaskStats: vi.fn(),
-  getWorkTimeDetail: vi.fn(),
+  getWorkTimeDetail: vi.fn()
 }))
 
 describe('Tasks Store', () => {
@@ -147,7 +147,9 @@ describe('Tasks Store', () => {
 
     it('应该处理获取详情失败', async () => {
       const errorMessage = 'Task not found'
-      vi.mocked(tasksApi.getTaskDetail).mockRejectedValue(new Error(errorMessage))
+      vi.mocked(tasksApi.getTaskDetail).mockRejectedValue(
+        new Error(errorMessage)
+      )
 
       await tasksStore.fetchTaskDetail(999)
 
@@ -298,8 +300,18 @@ describe('Tasks Store', () => {
     beforeEach(() => {
       tasksStore.tasks = [
         mockTask,
-        { ...mockTask, id: 2, task_type: 'monitoring', task_status: 'in_progress' },
-        { ...mockTask, id: 3, task_type: 'assistance', task_status: 'completed' }
+        {
+          ...mockTask,
+          id: 2,
+          task_type: 'monitoring',
+          task_status: 'in_progress'
+        },
+        {
+          ...mockTask,
+          id: 3,
+          task_type: 'assistance',
+          task_status: 'completed'
+        }
       ]
     })
 
@@ -322,7 +334,10 @@ describe('Tasks Store', () => {
 
       await tasksStore.setFilters({ task_type: 'repair', priority: 'high' })
 
-      expect(tasksStore.filters).toEqual({ task_type: 'repair', priority: 'high' })
+      expect(tasksStore.filters).toEqual({
+        task_type: 'repair',
+        priority: 'high'
+      })
       expect(tasksStore.pagination.page).toBe(1)
       expect(tasksApi.getTasks).toHaveBeenCalledWith({
         page: 1,
@@ -387,7 +402,9 @@ describe('Tasks Store', () => {
 
     it('应该正确过滤待处理任务', () => {
       expect(tasksStore.pendingTasks).toHaveLength(2)
-      expect(tasksStore.pendingTasks.every(task => task.task_status === 'pending')).toBe(true)
+      expect(
+        tasksStore.pendingTasks.every(task => task.task_status === 'pending')
+      ).toBe(true)
     })
 
     it('应该正确过滤进行中任务', () => {
@@ -406,14 +423,14 @@ describe('Tasks Store', () => {
 
     it('应该正确判断是否有下一页', () => {
       expect(tasksStore.hasNextPage).toBe(true)
-      
+
       tasksStore.pagination.page = 5 // 最后一页
       expect(tasksStore.hasNextPage).toBe(false)
     })
 
     it('应该正确判断是否有上一页', () => {
       expect(tasksStore.hasPrevPage).toBe(true)
-      
+
       tasksStore.pagination.page = 1 // 第一页
       expect(tasksStore.hasPrevPage).toBe(false)
     })
@@ -434,7 +451,9 @@ describe('Tasks Store', () => {
     }
 
     it('应该获取任务工时详情', async () => {
-      vi.mocked(tasksApi.getWorkTimeDetail).mockResolvedValue(mockWorkTimeDetail)
+      vi.mocked(tasksApi.getWorkTimeDetail).mockResolvedValue(
+        mockWorkTimeDetail
+      )
 
       const result = await tasksStore.getWorkTimeDetail(1)
 
@@ -443,7 +462,9 @@ describe('Tasks Store', () => {
     })
 
     it('应该处理获取工时详情失败', async () => {
-      vi.mocked(tasksApi.getWorkTimeDetail).mockRejectedValue(new Error('Work time not found'))
+      vi.mocked(tasksApi.getWorkTimeDetail).mockRejectedValue(
+        new Error('Work time not found')
+      )
 
       const result = await tasksStore.getWorkTimeDetail(999)
 
@@ -464,20 +485,27 @@ describe('Tasks Store', () => {
     it('应该批量更新任务状态', async () => {
       const taskIds = [1, 2]
       const newStatus = 'completed'
-      
+
       // Mock批量更新API
-      vi.mocked(tasksApi.updateTask).mockResolvedValue({ ...mockTask, task_status: newStatus })
+      vi.mocked(tasksApi.updateTask).mockResolvedValue({
+        ...mockTask,
+        task_status: newStatus
+      })
 
       await tasksStore.batchUpdateStatus(taskIds, newStatus)
 
       expect(tasksApi.updateTask).toHaveBeenCalledTimes(2)
-      expect(tasksApi.updateTask).toHaveBeenCalledWith(1, { task_status: newStatus })
-      expect(tasksApi.updateTask).toHaveBeenCalledWith(2, { task_status: newStatus })
+      expect(tasksApi.updateTask).toHaveBeenCalledWith(1, {
+        task_status: newStatus
+      })
+      expect(tasksApi.updateTask).toHaveBeenCalledWith(2, {
+        task_status: newStatus
+      })
     })
 
     it('应该批量删除任务', async () => {
       const taskIds = [1, 3]
-      
+
       vi.mocked(tasksApi.deleteTask).mockResolvedValue(undefined)
 
       const success = await tasksStore.batchDeleteTasks(taskIds)
@@ -490,7 +518,7 @@ describe('Tasks Store', () => {
 
     it('应该处理批量操作部分失败', async () => {
       const taskIds = [1, 2]
-      
+
       vi.mocked(tasksApi.deleteTask)
         .mockResolvedValueOnce(undefined)
         .mockRejectedValueOnce(new Error('Delete failed'))

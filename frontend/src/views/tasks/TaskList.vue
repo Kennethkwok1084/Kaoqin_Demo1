@@ -13,16 +13,20 @@
         <el-button :icon="Upload" @click="showImportDialog">
           导入任务
         </el-button>
-        <el-button :icon="Download" @click="exportTasks">
-          导出任务
-        </el-button>
+        <el-button :icon="Download" @click="exportTasks"> 导出任务 </el-button>
       </div>
     </div>
 
     <!-- 统计卡片 -->
     <div class="stats-section">
       <el-row :gutter="20">
-        <el-col :xs="24" :sm="12" :md="6" v-for="stat in statsCards" :key="stat.key">
+        <el-col
+          :xs="24"
+          :sm="12"
+          :md="6"
+          v-for="stat in statsCards"
+          :key="stat.key"
+        >
           <div class="stat-card" :class="stat.className">
             <div class="stat-icon">
               <el-icon :size="24" :color="stat.iconColor">
@@ -51,7 +55,7 @@
               @input="handleSearch"
             />
           </div>
-          
+
           <div class="filter-item">
             <el-select
               v-model="filters.status"
@@ -130,9 +134,7 @@
     <el-card class="table-card" shadow="never">
       <template #header>
         <div class="table-header">
-          <div class="table-title">
-            任务列表 ({{ pagination.total }})
-          </div>
+          <div class="table-title">任务列表 ({{ pagination.total }})</div>
           <div class="table-actions">
             <el-button-group>
               <el-button
@@ -164,7 +166,7 @@
           @sort-change="handleSortChange"
         >
           <el-table-column type="selection" width="55" />
-          
+
           <el-table-column
             prop="title"
             label="任务标题"
@@ -178,10 +180,7 @@
                   {{ scope.row.title }}
                 </el-link>
                 <div class="task-meta">
-                  <el-tag
-                    :type="getTypeTagType(scope.row.type)"
-                    size="small"
-                  >
+                  <el-tag :type="getTypeTagType(scope.row.type)" size="small">
                     {{ TASK_TYPE_CONFIG[scope.row.type]?.label }}
                   </el-tag>
                   <el-tag
@@ -215,7 +214,9 @@
             show-overflow-tooltip
           >
             <template #default="scope">
-              <span v-if="scope.row.assigneeName">{{ scope.row.assigneeName }}</span>
+              <span v-if="scope.row.assigneeName">{{
+                scope.row.assigneeName
+              }}</span>
               <span v-else class="text-placeholder">未分配</span>
             </template>
           </el-table-column>
@@ -234,7 +235,9 @@
             sortable="custom"
           >
             <template #default="scope">
-              <div :class="getDueDateClass(scope.row.dueDate, scope.row.status)">
+              <div
+                :class="getDueDateClass(scope.row.dueDate, scope.row.status)"
+              >
                 {{ formatDate(scope.row.dueDate) }}
               </div>
             </template>
@@ -278,7 +281,9 @@
                 >
                   编辑
                 </el-button>
-                <el-dropdown @command="(command) => handleTaskAction(command, scope.row)">
+                <el-dropdown
+                  @command="command => handleTaskAction(command, scope.row)"
+                >
                   <el-button type="text" size="small">
                     更多<el-icon><ArrowDown /></el-icon>
                   </el-button>
@@ -292,7 +297,10 @@
                       </el-dropdown-item>
                       <el-dropdown-item
                         command="start"
-                        v-if="scope.row.status === 'pending' || scope.row.status === 'assigned'"
+                        v-if="
+                          scope.row.status === 'pending' ||
+                          scope.row.status === 'assigned'
+                        "
                       >
                         开始任务
                       </el-dropdown-item>
@@ -304,20 +312,23 @@
                       </el-dropdown-item>
                       <el-dropdown-item
                         command="cancel"
-                        v-if="scope.row.status !== 'completed' && scope.row.status !== 'cancelled'"
+                        v-if="
+                          scope.row.status !== 'completed' &&
+                          scope.row.status !== 'cancelled'
+                        "
                       >
                         取消任务
                       </el-dropdown-item>
                       <el-dropdown-item
                         command="reopen"
-                        v-if="scope.row.status === 'completed' || scope.row.status === 'cancelled'"
+                        v-if="
+                          scope.row.status === 'completed' ||
+                          scope.row.status === 'cancelled'
+                        "
                       >
                         重新打开
                       </el-dropdown-item>
-                      <el-dropdown-item
-                        command="delete"
-                        divided
-                      >
+                      <el-dropdown-item command="delete" divided>
                         删除任务
                       </el-dropdown-item>
                     </el-dropdown-menu>
@@ -330,9 +341,7 @@
 
         <!-- 批量操作 -->
         <div class="batch-actions" v-if="selectedTasks.length > 0">
-          <div class="batch-info">
-            已选择 {{ selectedTasks.length }} 个任务
-          </div>
+          <div class="batch-info">已选择 {{ selectedTasks.length }} 个任务</div>
           <div class="batch-buttons">
             <el-button @click="batchAssign">批量分配</el-button>
             <el-button @click="batchExport">批量导出</el-button>
@@ -344,38 +353,51 @@
       <!-- 卡片视图 -->
       <div v-else class="card-view">
         <el-row :gutter="20">
-          <el-col :xs="24" :sm="12" :lg="8" v-for="task in tasks" :key="task.id">
+          <el-col
+            :xs="24"
+            :sm="12"
+            :lg="8"
+            v-for="task in tasks"
+            :key="task.id"
+          >
             <div class="task-card" @click="viewTaskDetail(task.id)">
               <div class="task-card-header">
                 <div class="task-card-title">{{ task.title }}</div>
                 <div class="task-card-actions">
-                  <el-dropdown @command="(command) => handleTaskAction(command, task)">
+                  <el-dropdown
+                    @command="command => handleTaskAction(command, task)"
+                  >
                     <el-button type="text" size="small" :icon="MoreFilled" />
                     <template #dropdown>
                       <el-dropdown-menu>
                         <el-dropdown-item command="edit">编辑</el-dropdown-item>
-                        <el-dropdown-item command="delete">删除</el-dropdown-item>
+                        <el-dropdown-item command="delete"
+                          >删除</el-dropdown-item
+                        >
                       </el-dropdown-menu>
                     </template>
                   </el-dropdown>
                 </div>
               </div>
-              
+
               <div class="task-card-content">
                 <div class="task-card-meta">
                   <el-tag :type="getTypeTagType(task.type)" size="small">
                     {{ TASK_TYPE_CONFIG[task.type]?.label }}
                   </el-tag>
-                  <el-tag :type="getPriorityTagType(task.priority)" size="small">
+                  <el-tag
+                    :type="getPriorityTagType(task.priority)"
+                    size="small"
+                  >
                     {{ TASK_PRIORITY_CONFIG[task.priority]?.label }}
                   </el-tag>
                   <el-tag :type="getStatusTagType(task.status)" size="small">
                     {{ TASK_STATUS_CONFIG[task.status]?.label }}
                   </el-tag>
                 </div>
-                
+
                 <div class="task-card-desc">{{ task.description }}</div>
-                
+
                 <div class="task-card-info">
                   <div class="info-item">
                     <el-icon><Location /></el-icon>
@@ -391,7 +413,7 @@
                   </div>
                 </div>
               </div>
-              
+
               <div class="task-card-footer">
                 <el-progress
                   :percentage="getTaskProgress(task)"
@@ -463,10 +485,10 @@ import {
 import { tasksApi } from '@/api/tasks'
 import { useAuthStore } from '@/stores/auth'
 import type { Task, TaskListParams, TaskStats } from '@/types/task'
-import { 
-  TASK_TYPE_CONFIG, 
-  TASK_PRIORITY_CONFIG, 
-  TASK_STATUS_CONFIG 
+import {
+  TASK_TYPE_CONFIG,
+  TASK_PRIORITY_CONFIG,
+  TASK_STATUS_CONFIG
 } from '@/types/task'
 import TaskFormDialog from '@/components/tasks/TaskFormDialog.vue'
 import TaskDetailDialog from '@/components/tasks/TaskDetailDialog.vue'
@@ -598,10 +620,10 @@ const hasSelectedTasks = computed(() => selectedTasks.value.length > 0)
 const loadTasks = async () => {
   try {
     loading.value = true
-    
+
     // 根据当前任务类型添加过滤条件
     const taskTypeFilter = taskType.value !== 'all' ? [taskType.value] : []
-    
+
     const params: TaskListParams = {
       page: pagination.page,
       pageSize: pagination.pageSize,
@@ -613,7 +635,7 @@ const loadTasks = async () => {
         search: searchQuery.value || undefined
       }
     }
-    
+
     const result = await tasksApi.getTasks(params)
     tasks.value = result.items
     pagination.total = result.total
@@ -632,7 +654,7 @@ const loadTaskStats = async () => {
       ...filters,
       type: taskTypeFilter.length > 0 ? taskTypeFilter : filters.type
     }
-    
+
     const stats = await tasksApi.getTaskStats(statsFilters)
     Object.assign(taskStats, stats)
   } catch (error) {
@@ -654,7 +676,13 @@ const handleSelectionChange = (selection: Task[]) => {
   selectedTasks.value = selection
 }
 
-const handleSortChange = ({ prop, order }: { prop: string, order: string | null }) => {
+const handleSortChange = ({
+  prop,
+  order
+}: {
+  prop: string
+  order: string | null
+}) => {
   if (order) {
     sortConfig.sortBy = prop
     sortConfig.sortOrder = order === 'ascending' ? 'asc' : 'desc'
@@ -732,7 +760,7 @@ const deleteTask = async (task: Task) => {
         type: 'warning'
       }
     )
-    
+
     await tasksApi.deleteTask(task.id)
     ElMessage.success('任务删除成功')
     loadTasks()
@@ -774,7 +802,7 @@ const cancelTask = async (task: Task) => {
       {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        inputValidator: (value) => {
+        inputValidator: value => {
           if (!value || value.trim().length === 0) {
             return '请输入取消原因'
           }
@@ -782,7 +810,7 @@ const cancelTask = async (task: Task) => {
         }
       }
     )
-    
+
     await tasksApi.cancelTask(task.id, reason)
     ElMessage.success('任务已取消')
     loadTasks()
@@ -802,7 +830,7 @@ const reopenTask = async (task: Task) => {
       {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        inputValidator: (value) => {
+        inputValidator: value => {
           if (!value || value.trim().length === 0) {
             return '请输入重新打开原因'
           }
@@ -810,7 +838,7 @@ const reopenTask = async (task: Task) => {
         }
       }
     )
-    
+
     await tasksApi.reopenTask(task.id, reason)
     ElMessage.success('任务已重新打开')
     loadTasks()
@@ -845,7 +873,7 @@ const batchDelete = async () => {
         type: 'warning'
       }
     )
-    
+
     const ids = selectedTasks.value.map(task => task.id)
     await tasksApi.batchDeleteTasks(ids)
     ElMessage.success('批量删除成功')
@@ -919,12 +947,12 @@ const getStatusTagType = (status: string): string => {
 
 const getDueDateClass = (dueDate: string, status: string): string => {
   if (status === 'completed') return ''
-  
+
   const now = new Date()
   const due = new Date(dueDate)
   const diffTime = due.getTime() - now.getTime()
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  
+
   if (diffDays < 0) return 'overdue'
   if (diffDays <= 1) return 'due-soon'
   return ''
@@ -989,7 +1017,7 @@ watch(
   background: $background-color-white;
   border-radius: $border-radius-base;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  
+
   .header-content {
     .page-title {
       margin: 0 0 $spacing-extra-small 0;
@@ -997,14 +1025,14 @@ watch(
       font-weight: 600;
       color: $text-color-primary;
     }
-    
+
     .page-subtitle {
       margin: 0;
       font-size: $font-size-small;
       color: $text-color-secondary;
     }
   }
-  
+
   .header-actions {
     @include flex-center;
     gap: $spacing-small;
@@ -1022,36 +1050,36 @@ watch(
   border-radius: $border-radius-base;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   transition: all $transition-base;
-  
+
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   }
-  
+
   .stat-icon {
     @include flex-center;
     width: 48px;
     height: 48px;
     border-radius: 50%;
     margin-right: $spacing-base;
-    
+
     &.stat-primary {
       background: color.adjust($primary-color, $lightness: 45%);
     }
-    
+
     &.stat-success {
       background: color.adjust($success-color, $lightness: 45%);
     }
-    
+
     &.stat-warning {
       background: color.adjust($warning-color, $lightness: 45%);
     }
-    
+
     &.stat-default {
       background: color.adjust($info-color, $lightness: 45%);
     }
   }
-  
+
   .stat-content {
     .stat-value {
       font-size: $font-size-large;
@@ -1059,7 +1087,7 @@ watch(
       color: $text-color-primary;
       line-height: 1.2;
     }
-    
+
     .stat-label {
       font-size: $font-size-small;
       color: $text-color-secondary;
@@ -1070,23 +1098,23 @@ watch(
 
 .filter-card {
   margin-bottom: $spacing-base;
-  
+
   .filter-section {
     .filter-row {
       @include flex-start;
       gap: $spacing-base;
       flex-wrap: wrap;
-      
+
       .filter-item {
         min-width: 200px;
         flex: 1;
-        
+
         &:first-child {
           flex: 2;
           min-width: 300px;
         }
       }
-      
+
       .filter-actions {
         @include flex-center;
       }
@@ -1097,7 +1125,7 @@ watch(
 .table-card {
   .table-header {
     @include flex-between;
-    
+
     .table-title {
       font-size: $font-size-medium;
       font-weight: 600;
@@ -1125,11 +1153,11 @@ watch(
   background: $background-color-light;
   border-radius: $border-radius-base;
   margin-top: $spacing-base;
-  
+
   .batch-info {
     color: $text-color-secondary;
   }
-  
+
   .batch-buttons {
     @include flex-center;
     gap: $spacing-small;
@@ -1145,16 +1173,16 @@ watch(
     cursor: pointer;
     transition: all $transition-base;
     margin-bottom: $spacing-base;
-    
+
     &:hover {
       border-color: $primary-color;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
-    
+
     .task-card-header {
       @include flex-between;
       margin-bottom: $spacing-small;
-      
+
       .task-card-title {
         font-size: $font-size-medium;
         font-weight: 600;
@@ -1162,21 +1190,21 @@ watch(
         @include text-ellipsis;
       }
     }
-    
+
     .task-card-content {
       .task-card-meta {
         @include flex-start;
         gap: $spacing-extra-small;
         margin-bottom: $spacing-small;
       }
-      
+
       .task-card-desc {
         color: $text-color-secondary;
         font-size: $font-size-small;
         @include text-ellipsis-multiline(2);
         margin-bottom: $spacing-small;
       }
-      
+
       .task-card-info {
         .info-item {
           @include flex-start;
@@ -1184,14 +1212,14 @@ watch(
           font-size: $font-size-extra-small;
           color: $text-color-placeholder;
           margin-bottom: 4px;
-          
+
           &:last-child {
             margin-bottom: 0;
           }
         }
       }
     }
-    
+
     .task-card-footer {
       margin-top: $spacing-small;
     }
@@ -1222,13 +1250,13 @@ watch(
   .page-header {
     flex-direction: column;
     gap: $spacing-base;
-    
+
     .header-actions {
       align-self: stretch;
       justify-content: flex-end;
     }
   }
-  
+
   .filter-row {
     .filter-item {
       min-width: auto !important;
@@ -1242,10 +1270,10 @@ watch(
   .task-list {
     padding: $spacing-small;
   }
-  
+
   .header-actions {
     flex-direction: column;
-    
+
     .el-button {
       width: 100%;
     }

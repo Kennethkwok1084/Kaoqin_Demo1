@@ -147,11 +147,36 @@ export interface TaskTransition {
 
 // 任务状态流转配置
 export const TASK_STATUS_TRANSITIONS: TaskTransition[] = [
-  { fromStatus: 'pending', toStatus: 'in_progress', allowedRoles: ['user', 'admin'], requireComment: false },
-  { fromStatus: 'in_progress', toStatus: 'completed', allowedRoles: ['user', 'admin'], requireComment: false },
-  { fromStatus: 'in_progress', toStatus: 'cancelled', allowedRoles: ['admin'], requireComment: true },
-  { fromStatus: 'pending', toStatus: 'cancelled', allowedRoles: ['admin'], requireComment: true },
-  { fromStatus: 'completed', toStatus: 'in_progress', allowedRoles: ['admin'], requireComment: true }
+  {
+    fromStatus: 'pending',
+    toStatus: 'in_progress',
+    allowedRoles: ['user', 'admin'],
+    requireComment: false
+  },
+  {
+    fromStatus: 'in_progress',
+    toStatus: 'completed',
+    allowedRoles: ['user', 'admin'],
+    requireComment: false
+  },
+  {
+    fromStatus: 'in_progress',
+    toStatus: 'cancelled',
+    allowedRoles: ['admin'],
+    requireComment: true
+  },
+  {
+    fromStatus: 'pending',
+    toStatus: 'cancelled',
+    allowedRoles: ['admin'],
+    requireComment: true
+  },
+  {
+    fromStatus: 'completed',
+    toStatus: 'in_progress',
+    allowedRoles: ['admin'],
+    requireComment: true
+  }
 ]
 
 // 任务类型配置
@@ -163,14 +188,14 @@ export const TASK_TYPE_CONFIG = {
     description: '设备维修和故障处理'
   },
   monitoring: {
-    label: '监控任务', 
+    label: '监控任务',
     color: '#67C23A',
     icon: 'Monitor',
     description: '系统监控和巡检'
   },
   assistance: {
     label: '协助任务',
-    color: '#E6A23C', 
+    color: '#E6A23C',
     icon: 'Connection',
     description: '技术支持和协助'
   }

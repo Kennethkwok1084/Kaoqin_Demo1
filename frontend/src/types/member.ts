@@ -3,26 +3,26 @@
 export interface Member {
   id: number
   // 关键信息：必填
-  username: string           // 用户名
-  fullName: string           // 真实姓名
-  role: 'admin' | 'user' | 'viewer'  // 角色
-  department: string         // 部门
-  className: string          // 班级
-  joinDate: string           // 入职时间
-  
+  username: string // 用户名
+  fullName: string // 真实姓名
+  role: 'admin' | 'user' | 'viewer' // 角色
+  department: string // 部门
+  className: string // 班级
+  joinDate: string // 入职时间
+
   // 可选信息：用户可后续填写
-  email?: string             // 邮箱（可选）
-  phone?: string            // 手机号（可选）
-  employeeId?: string       // 员工号（可选）
-  avatar?: string           // 头像（可选）
-  
+  email?: string // 邮箱（可选）
+  phone?: string // 手机号（可选）
+  employeeId?: string // 员工号（可选）
+  avatar?: string // 头像（可选）
+
   // 系统字段
   status: 'active' | 'inactive' | 'suspended'
   lastLoginAt: string | null
   createdAt: string
   updatedAt: string
   permissions: string[]
-  stats?: MemberStats       // 统计信息（可选）
+  stats?: MemberStats // 统计信息（可选）
 }
 
 export interface MemberStats {
@@ -44,7 +44,7 @@ export interface CreateMemberRequest {
   className: string
   joinDate: string
   password: string
-  
+
   // 可选信息：创建时可不填
   email?: string
   phone?: string
@@ -58,7 +58,7 @@ export interface UpdateMemberRequest {
   phone?: string
   role?: 'admin' | 'user' | 'viewer'
   department?: string
-  className?: string  // 更改为班级字段
+  className?: string // 更改为班级字段
   status?: 'active' | 'inactive' | 'suspended'
   employeeId?: string
   permissions?: string[]
@@ -124,7 +124,7 @@ export interface MemberProfile {
   department: string
   className: string
   joinDate: string
-  
+
   // 可选信息
   email?: string
   phone?: string
@@ -258,11 +258,41 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     name: '任务管理',
     description: '任务相关操作权限',
     permissions: [
-      { id: 'tasks:read', name: '查看任务', description: '查看任务列表和详情', resource: 'tasks', action: 'read' },
-      { id: 'tasks:create', name: '创建任务', description: '创建新任务', resource: 'tasks', action: 'create' },
-      { id: 'tasks:update', name: '更新任务', description: '修改任务信息', resource: 'tasks', action: 'update' },
-      { id: 'tasks:delete', name: '删除任务', description: '删除任务', resource: 'tasks', action: 'delete' },
-      { id: 'tasks:assign', name: '分配任务', description: '分配任务给成员', resource: 'tasks', action: 'assign' }
+      {
+        id: 'tasks:read',
+        name: '查看任务',
+        description: '查看任务列表和详情',
+        resource: 'tasks',
+        action: 'read'
+      },
+      {
+        id: 'tasks:create',
+        name: '创建任务',
+        description: '创建新任务',
+        resource: 'tasks',
+        action: 'create'
+      },
+      {
+        id: 'tasks:update',
+        name: '更新任务',
+        description: '修改任务信息',
+        resource: 'tasks',
+        action: 'update'
+      },
+      {
+        id: 'tasks:delete',
+        name: '删除任务',
+        description: '删除任务',
+        resource: 'tasks',
+        action: 'delete'
+      },
+      {
+        id: 'tasks:assign',
+        name: '分配任务',
+        description: '分配任务给成员',
+        resource: 'tasks',
+        action: 'assign'
+      }
     ]
   },
   {
@@ -270,10 +300,34 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     name: '成员管理',
     description: '成员相关操作权限',
     permissions: [
-      { id: 'members:read', name: '查看成员', description: '查看成员列表和详情', resource: 'members', action: 'read' },
-      { id: 'members:create', name: '创建成员', description: '创建新成员账户', resource: 'members', action: 'create' },
-      { id: 'members:update', name: '更新成员', description: '修改成员信息', resource: 'members', action: 'update' },
-      { id: 'members:delete', name: '删除成员', description: '删除成员账户', resource: 'members', action: 'delete' }
+      {
+        id: 'members:read',
+        name: '查看成员',
+        description: '查看成员列表和详情',
+        resource: 'members',
+        action: 'read'
+      },
+      {
+        id: 'members:create',
+        name: '创建成员',
+        description: '创建新成员账户',
+        resource: 'members',
+        action: 'create'
+      },
+      {
+        id: 'members:update',
+        name: '更新成员',
+        description: '修改成员信息',
+        resource: 'members',
+        action: 'update'
+      },
+      {
+        id: 'members:delete',
+        name: '删除成员',
+        description: '删除成员账户',
+        resource: 'members',
+        action: 'delete'
+      }
     ]
   },
   {
@@ -281,9 +335,27 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     name: '考勤管理',
     description: '考勤相关操作权限',
     permissions: [
-      { id: 'attendance:read', name: '查看考勤', description: '查看考勤记录', resource: 'attendance', action: 'read' },
-      { id: 'attendance:manage', name: '管理考勤', description: '管理考勤记录和设置', resource: 'attendance', action: 'manage' },
-      { id: 'attendance:approve', name: '审批考勤', description: '审批请假和异常', resource: 'attendance', action: 'approve' }
+      {
+        id: 'attendance:read',
+        name: '查看考勤',
+        description: '查看考勤记录',
+        resource: 'attendance',
+        action: 'read'
+      },
+      {
+        id: 'attendance:manage',
+        name: '管理考勤',
+        description: '管理考勤记录和设置',
+        resource: 'attendance',
+        action: 'manage'
+      },
+      {
+        id: 'attendance:approve',
+        name: '审批考勤',
+        description: '审批请假和异常',
+        resource: 'attendance',
+        action: 'approve'
+      }
     ]
   },
   {
@@ -291,9 +363,27 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     name: '统计分析',
     description: '统计分析相关权限',
     permissions: [
-      { id: 'statistics:read', name: '查看统计', description: '查看统计报表', resource: 'statistics', action: 'read' },
-      { id: 'statistics:export', name: '导出数据', description: '导出统计数据', resource: 'statistics', action: 'export' },
-      { id: 'statistics:advanced', name: '高级分析', description: '查看高级分析功能', resource: 'statistics', action: 'advanced' }
+      {
+        id: 'statistics:read',
+        name: '查看统计',
+        description: '查看统计报表',
+        resource: 'statistics',
+        action: 'read'
+      },
+      {
+        id: 'statistics:export',
+        name: '导出数据',
+        description: '导出统计数据',
+        resource: 'statistics',
+        action: 'export'
+      },
+      {
+        id: 'statistics:advanced',
+        name: '高级分析',
+        description: '查看高级分析功能',
+        resource: 'statistics',
+        action: 'advanced'
+      }
     ]
   },
   {
@@ -301,9 +391,27 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     name: '系统管理',
     description: '系统管理相关权限',
     permissions: [
-      { id: 'system:settings', name: '系统设置', description: '修改系统设置', resource: 'system', action: 'settings' },
-      { id: 'system:logs', name: '查看日志', description: '查看系统日志', resource: 'system', action: 'logs' },
-      { id: 'system:backup', name: '备份管理', description: '管理系统备份', resource: 'system', action: 'backup' }
+      {
+        id: 'system:settings',
+        name: '系统设置',
+        description: '修改系统设置',
+        resource: 'system',
+        action: 'settings'
+      },
+      {
+        id: 'system:logs',
+        name: '查看日志',
+        description: '查看系统日志',
+        resource: 'system',
+        action: 'logs'
+      },
+      {
+        id: 'system:backup',
+        name: '备份管理',
+        description: '管理系统备份',
+        resource: 'system',
+        action: 'backup'
+      }
     ]
   }
 ]
@@ -311,22 +419,32 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
 // 默认角色权限映射
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
   admin: [
-    'tasks:read', 'tasks:create', 'tasks:update', 'tasks:delete', 'tasks:assign',
-    'members:read', 'members:create', 'members:update', 'members:delete',
-    'attendance:read', 'attendance:manage', 'attendance:approve',
-    'statistics:read', 'statistics:export', 'statistics:advanced',
-    'system:settings', 'system:logs', 'system:backup'
+    'tasks:read',
+    'tasks:create',
+    'tasks:update',
+    'tasks:delete',
+    'tasks:assign',
+    'members:read',
+    'members:create',
+    'members:update',
+    'members:delete',
+    'attendance:read',
+    'attendance:manage',
+    'attendance:approve',
+    'statistics:read',
+    'statistics:export',
+    'statistics:advanced',
+    'system:settings',
+    'system:logs',
+    'system:backup'
   ],
   user: [
-    'tasks:read', 'tasks:create', 'tasks:update',
+    'tasks:read',
+    'tasks:create',
+    'tasks:update',
     'members:read',
     'attendance:read',
     'statistics:read'
   ],
-  viewer: [
-    'tasks:read',
-    'members:read',
-    'attendance:read',
-    'statistics:read'
-  ]
+  viewer: ['tasks:read', 'members:read', 'attendance:read', 'statistics:read']
 }

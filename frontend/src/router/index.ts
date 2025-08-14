@@ -219,7 +219,10 @@ router.beforeEach(async (to, from, next) => {
     }
 
     // 检查权限
-    if (to.meta?.permission && !authStore.checkPermission(to.meta.permission as string)) {
+    if (
+      to.meta?.permission &&
+      !authStore.checkPermission(to.meta.permission as string)
+    ) {
       next('/403')
       return
     }

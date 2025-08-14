@@ -7,7 +7,12 @@
         <p class="page-subtitle">考勤管理系统数据概览</p>
       </div>
       <div class="header-actions">
-        <el-button type="primary" :icon="Refresh" @click="refreshData" :loading="isRefreshing">
+        <el-button
+          type="primary"
+          :icon="Refresh"
+          @click="refreshData"
+          :loading="isRefreshing"
+        >
           刷新数据
         </el-button>
       </div>
@@ -16,7 +21,13 @@
     <!-- 快速统计卡片 -->
     <div class="stats-section">
       <el-row :gutter="20">
-        <el-col :xs="24" :sm="12" :md="6" v-for="stat in statsCards" :key="stat.key">
+        <el-col
+          :xs="24"
+          :sm="12"
+          :md="6"
+          v-for="stat in statsCards"
+          :key="stat.key"
+        >
           <div class="stat-card" :class="stat.className">
             <div class="stat-icon">
               <el-icon :size="32" :color="stat.iconColor">
@@ -24,9 +35,15 @@
               </el-icon>
             </div>
             <div class="stat-content">
-              <div class="stat-value">{{ formatNumber(dashboardStats[stat.key]) }}</div>
+              <div class="stat-value">
+                {{ formatNumber(dashboardStats[stat.key]) }}
+              </div>
               <div class="stat-label">{{ stat.label }}</div>
-              <div class="stat-change" v-if="stat.change" :class="stat.change > 0 ? 'positive' : 'negative'">
+              <div
+                class="stat-change"
+                v-if="stat.change"
+                :class="stat.change > 0 ? 'positive' : 'negative'"
+              >
                 <el-icon :size="12">
                   <component :is="stat.change > 0 ? ArrowUp : ArrowDown" />
                 </el-icon>
@@ -48,7 +65,11 @@
             <div class="card-header">
               <span class="card-title">工时趋势</span>
               <div class="card-actions">
-                <el-radio-group v-model="trendPeriod" size="small" @change="loadWorkHoursTrend">
+                <el-radio-group
+                  v-model="trendPeriod"
+                  size="small"
+                  @change="loadWorkHoursTrend"
+                >
                   <el-radio-button label="7">7天</el-radio-button>
                   <el-radio-button label="30">30天</el-radio-button>
                   <el-radio-button label="90">90天</el-radio-button>
@@ -56,7 +77,11 @@
               </div>
             </div>
           </template>
-          <div ref="workHoursChart" class="chart-container" v-loading="chartsLoading"></div>
+          <div
+            ref="workHoursChart"
+            class="chart-container"
+            v-loading="chartsLoading"
+          ></div>
         </el-card>
 
         <!-- 任务分布饼图 -->
@@ -64,7 +89,11 @@
           <template #header>
             <span class="card-title">任务类型分布</span>
           </template>
-          <div ref="taskDistributionChart" class="chart-container" v-loading="chartsLoading"></div>
+          <div
+            ref="taskDistributionChart"
+            class="chart-container"
+            v-loading="chartsLoading"
+          ></div>
         </el-card>
       </el-col>
 
@@ -79,9 +108,9 @@
             </div>
           </template>
           <div class="alerts-list">
-            <div 
-              class="alert-item" 
-              v-for="alert in alerts.slice(0, 5)" 
+            <div
+              class="alert-item"
+              v-for="alert in alerts.slice(0, 5)"
               :key="alert.id"
               :class="`alert-${alert.level}`"
             >
@@ -94,9 +123,9 @@
                 <div class="alert-title">{{ alert.title }}</div>
                 <div class="alert-time">{{ formatTime(alert.timestamp) }}</div>
               </div>
-              <el-button 
-                type="text" 
-                size="small" 
+              <el-button
+                type="text"
+                size="small"
                 @click="resolveAlert(alert.id)"
                 v-if="!alert.resolved"
               >
@@ -117,7 +146,11 @@
             <span class="card-title">最近活动</span>
           </template>
           <div class="activities-list">
-            <div class="activity-item" v-for="activity in recentActivities.slice(0, 6)" :key="activity.id">
+            <div
+              class="activity-item"
+              v-for="activity in recentActivities.slice(0, 6)"
+              :key="activity.id"
+            >
               <div class="activity-icon">
                 <el-icon :color="getActivityColor(activity.type)">
                   <component :is="getActivityIcon(activity.type)" />
@@ -126,7 +159,9 @@
               <div class="activity-content">
                 <div class="activity-title">{{ activity.title }}</div>
                 <div class="activity-desc">{{ activity.description }}</div>
-                <div class="activity-time">{{ formatTime(activity.timestamp) }}</div>
+                <div class="activity-time">
+                  {{ formatTime(activity.timestamp) }}
+                </div>
               </div>
             </div>
           </div>
@@ -138,8 +173,8 @@
             <span class="card-title">快速操作</span>
           </template>
           <div class="quick-actions">
-            <el-button 
-              v-for="action in quickActions" 
+            <el-button
+              v-for="action in quickActions"
               :key="action.id"
               :type="action.color"
               :icon="action.icon"
@@ -161,39 +196,61 @@
           <el-button type="text" @click="viewAllMembers">查看详情</el-button>
         </div>
       </template>
-      <el-table 
-        :data="memberPerformance" 
+      <el-table
+        :data="memberPerformance"
         style="width: 100%"
         v-loading="tableLoading"
         empty-text="暂无数据"
       >
         <el-table-column prop="memberName" label="成员姓名" width="120" />
-        <el-table-column prop="completedTasks" label="完成任务" width="100" align="center" />
-        <el-table-column prop="workHours" label="工作时长" width="100" align="center">
-          <template #default="scope">
-            {{ scope.row.workHours }}h
-          </template>
+        <el-table-column
+          prop="completedTasks"
+          label="完成任务"
+          width="100"
+          align="center"
+        />
+        <el-table-column
+          prop="workHours"
+          label="工作时长"
+          width="100"
+          align="center"
+        >
+          <template #default="scope"> {{ scope.row.workHours }}h </template>
         </el-table-column>
-        <el-table-column prop="attendanceRate" label="出勤率" width="100" align="center">
+        <el-table-column
+          prop="attendanceRate"
+          label="出勤率"
+          width="100"
+          align="center"
+        >
           <template #default="scope">
             <el-tag :type="getAttendanceTagType(scope.row.attendanceRate)">
               {{ (scope.row.attendanceRate * 100).toFixed(1) }}%
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="efficiency" label="工作效率" width="120" align="center">
+        <el-table-column
+          prop="efficiency"
+          label="工作效率"
+          width="120"
+          align="center"
+        >
           <template #default="scope">
-            <el-progress 
-              :percentage="scope.row.efficiency" 
+            <el-progress
+              :percentage="scope.row.efficiency"
               :color="getEfficiencyColor(scope.row.efficiency)"
               :show-text="true"
-              :format="(percentage) => `${percentage}%`"
+              :format="percentage => `${percentage}%`"
             />
           </template>
         </el-table-column>
         <el-table-column label="操作" align="center">
           <template #default="scope">
-            <el-button type="text" size="small" @click="viewMemberDetail(scope.row.memberId)">
+            <el-button
+              type="text"
+              size="small"
+              @click="viewMemberDetail(scope.row.memberId)"
+            >
               详情
             </el-button>
           </template>
@@ -226,13 +283,13 @@ import {
 import * as echarts from 'echarts'
 import { dashboardApi } from '@/api/dashboard'
 import { statisticsApi } from '@/api/statistics'
-import type { 
-  DashboardStats, 
-  TaskDistribution, 
-  WorkHoursTrend, 
-  MemberPerformance, 
-  RecentActivity, 
-  AlertItem 
+import type {
+  DashboardStats,
+  TaskDistribution,
+  WorkHoursTrend,
+  MemberPerformance,
+  RecentActivity,
+  AlertItem
 } from '@/types/dashboard'
 
 const router = useRouter()
@@ -256,7 +313,11 @@ const dashboardStats = reactive<DashboardStats>({
   completionRate: 0.78
 })
 
-const taskDistribution = ref<TaskDistribution>({ repair: 45, monitoring: 32, assistance: 21 })
+const taskDistribution = ref<TaskDistribution>({
+  repair: 45,
+  monitoring: 32,
+  assistance: 21
+})
 const workHoursTrend = ref<WorkHoursTrend[]>([])
 const memberPerformance = ref<MemberPerformance[]>([])
 const recentActivities = ref<RecentActivity[]>([])
@@ -306,10 +367,34 @@ const statsCards = [
 
 // 快速操作配置
 const quickActions = [
-  { id: 'new-task', title: '新建任务', icon: Plus, color: 'primary', route: '/tasks/create' },
-  { id: 'view-members', title: '成员管理', icon: User, color: 'success', route: '/members' },
-  { id: 'attendance', title: '考勤记录', icon: Clock, color: 'warning', route: '/attendance' },
-  { id: 'reports', title: '报表统计', icon: DataLine, color: 'info', route: '/statistics' }
+  {
+    id: 'new-task',
+    title: '新建任务',
+    icon: Plus,
+    color: 'primary',
+    route: '/tasks/create'
+  },
+  {
+    id: 'view-members',
+    title: '成员管理',
+    icon: User,
+    color: 'success',
+    route: '/members'
+  },
+  {
+    id: 'attendance',
+    title: '考勤记录',
+    icon: Clock,
+    color: 'warning',
+    route: '/attendance'
+  },
+  {
+    id: 'reports',
+    title: '报表统计',
+    icon: DataLine,
+    color: 'info',
+    route: '/statistics'
+  }
 ]
 
 // 方法
@@ -324,7 +409,7 @@ const formatTime = (timestamp: string): string => {
   const date = new Date(timestamp)
   const now = new Date()
   const diff = now.getTime() - date.getTime()
-  
+
   if (diff < 60000) return '刚刚'
   if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`
   if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`
@@ -333,36 +418,50 @@ const formatTime = (timestamp: string): string => {
 
 const getAlertIcon = (level: string) => {
   switch (level) {
-    case 'critical': return WarningFilled
-    case 'high': return Warning
-    case 'medium': return InfoFilled
-    default: return InfoFilled
+    case 'critical':
+      return WarningFilled
+    case 'high':
+      return Warning
+    case 'medium':
+      return InfoFilled
+    default:
+      return InfoFilled
   }
 }
 
 const getActivityIcon = (type: string) => {
   switch (type) {
-    case 'task_completed': return CircleCheck
-    case 'task_assigned': return Document
-    case 'member_joined': return User
-    case 'attendance': return Clock
-    default: return InfoFilled
+    case 'task_completed':
+      return CircleCheck
+    case 'task_assigned':
+      return Document
+    case 'member_joined':
+      return User
+    case 'attendance':
+      return Clock
+    default:
+      return InfoFilled
   }
 }
 
 const getActivityColor = (type: string): string => {
   switch (type) {
-    case 'task_completed': return '#67C23A'
-    case 'task_assigned': return '#409EFF'
-    case 'member_joined': return '#E6A23C'
-    case 'attendance': return '#909399'
-    default: return '#909399'
+    case 'task_completed':
+      return '#67C23A'
+    case 'task_assigned':
+      return '#409EFF'
+    case 'member_joined':
+      return '#E6A23C'
+    case 'attendance':
+      return '#909399'
+    default:
+      return '#909399'
   }
 }
 
 const getAttendanceTagType = (rate: number): string => {
   if (rate >= 0.95) return 'success'
-  if (rate >= 0.90) return 'warning'
+  if (rate >= 0.9) return 'warning'
   return 'danger'
 }
 
@@ -377,7 +476,7 @@ const loadDashboardStats = async () => {
   try {
     // 调用统计API获取真实数据
     const statsResponse = await statisticsApi.getOverview()
-    
+
     // 更新仪表板统计数据
     Object.assign(dashboardStats, {
       totalTasks: statsResponse.tasks?.total || 0,
@@ -386,12 +485,21 @@ const loadDashboardStats = async () => {
       overdueTasks: statsResponse.tasks?.overdue || 0,
       totalMembers: statsResponse.members?.total || 0,
       activeMembers: statsResponse.members?.active || 0,
-      totalWorkHours: Math.round((statsResponse.tasks?.total_work_hours || 0)),
-      monthlyWorkHours: Math.round((statsResponse.tasks?.avg_work_hours || 0) * 30),
-      attendanceRate: (statsResponse.attendance?.total_records || 0) > 0 ? 
-        1 - ((statsResponse.attendance?.late_checkins || 0) / (statsResponse.attendance?.total_records || 1)) : 0.92,
-      completionRate: (statsResponse.tasks?.total || 0) > 0 ? 
-        (statsResponse.tasks?.completed || 0) / (statsResponse.tasks?.total || 1) : 0.78
+      totalWorkHours: Math.round(statsResponse.tasks?.total_work_hours || 0),
+      monthlyWorkHours: Math.round(
+        (statsResponse.tasks?.avg_work_hours || 0) * 30
+      ),
+      attendanceRate:
+        (statsResponse.attendance?.total_records || 0) > 0
+          ? 1 -
+            (statsResponse.attendance?.late_checkins || 0) /
+              (statsResponse.attendance?.total_records || 1)
+          : 0.92,
+      completionRate:
+        (statsResponse.tasks?.total || 0) > 0
+          ? (statsResponse.tasks?.completed || 0) /
+            (statsResponse.tasks?.total || 1)
+          : 0.78
     })
   } catch (error) {
     console.error('加载统计数据失败:', error)
@@ -404,14 +512,14 @@ const loadTaskDistribution = async () => {
     // 获取任务统计数据
     const statsResponse = await statisticsApi.getOverview()
     const categories = statsResponse.categories || {}
-    
+
     // 更新任务分布数据
     taskDistribution.value = {
       repair: categories.repair || 0,
       monitoring: categories.monitoring || 0,
       assistance: categories.assistance || 0
     }
-    
+
     await nextTick()
     initTaskDistributionChart()
   } catch (error) {
@@ -426,7 +534,7 @@ const loadWorkHoursTrend = async () => {
     // 生成模拟数据
     const days = parseInt(trendPeriod.value)
     const trendData: WorkHoursTrend[] = []
-    
+
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date()
       date.setDate(date.getDate() - i)
@@ -436,7 +544,7 @@ const loadWorkHoursTrend = async () => {
         target: 40
       })
     }
-    
+
     workHoursTrend.value = trendData
     await nextTick()
     initWorkHoursChart()
@@ -452,11 +560,46 @@ const loadMemberPerformance = async () => {
     tableLoading.value = true
     // 模拟数据
     memberPerformance.value = [
-      { memberId: 1, memberName: '张三', completedTasks: 15, workHours: 120, attendanceRate: 0.95, efficiency: 85 },
-      { memberId: 2, memberName: '李四', completedTasks: 12, workHours: 98, attendanceRate: 0.92, efficiency: 78 },
-      { memberId: 3, memberName: '王五', completedTasks: 18, workHours: 135, attendanceRate: 0.98, efficiency: 92 },
-      { memberId: 4, memberName: '赵六', completedTasks: 10, workHours: 88, attendanceRate: 0.88, efficiency: 72 },
-      { memberId: 5, memberName: '孙七', completedTasks: 14, workHours: 110, attendanceRate: 0.94, efficiency: 80 }
+      {
+        memberId: 1,
+        memberName: '张三',
+        completedTasks: 15,
+        workHours: 120,
+        attendanceRate: 0.95,
+        efficiency: 85
+      },
+      {
+        memberId: 2,
+        memberName: '李四',
+        completedTasks: 12,
+        workHours: 98,
+        attendanceRate: 0.92,
+        efficiency: 78
+      },
+      {
+        memberId: 3,
+        memberName: '王五',
+        completedTasks: 18,
+        workHours: 135,
+        attendanceRate: 0.98,
+        efficiency: 92
+      },
+      {
+        memberId: 4,
+        memberName: '赵六',
+        completedTasks: 10,
+        workHours: 88,
+        attendanceRate: 0.88,
+        efficiency: 72
+      },
+      {
+        memberId: 5,
+        memberName: '孙七',
+        completedTasks: 14,
+        workHours: 110,
+        attendanceRate: 0.94,
+        efficiency: 80
+      }
     ]
   } catch (error) {
     console.error('加载成员绩效失败:', error)
@@ -469,9 +612,27 @@ const loadRecentActivities = async () => {
   try {
     // 模拟数据
     recentActivities.value = [
-      { id: 1, type: 'task_completed', title: '任务完成', description: '张三完成了网络故障修复任务', timestamp: new Date(Date.now() - 3600000).toISOString() },
-      { id: 2, type: 'task_assigned', title: '任务分配', description: '新任务已分配给李四', timestamp: new Date(Date.now() - 7200000).toISOString() },
-      { id: 3, type: 'attendance', title: '考勤异常', description: '王五今日迟到30分钟', timestamp: new Date(Date.now() - 14400000).toISOString() }
+      {
+        id: 1,
+        type: 'task_completed',
+        title: '任务完成',
+        description: '张三完成了网络故障修复任务',
+        timestamp: new Date(Date.now() - 3600000).toISOString()
+      },
+      {
+        id: 2,
+        type: 'task_assigned',
+        title: '任务分配',
+        description: '新任务已分配给李四',
+        timestamp: new Date(Date.now() - 7200000).toISOString()
+      },
+      {
+        id: 3,
+        type: 'attendance',
+        title: '考勤异常',
+        description: '王五今日迟到30分钟',
+        timestamp: new Date(Date.now() - 14400000).toISOString()
+      }
     ]
   } catch (error) {
     console.error('加载最近活动失败:', error)
@@ -482,8 +643,24 @@ const loadAlerts = async () => {
   try {
     // 模拟数据
     alerts.value = [
-      { id: 1, type: 'overdue', level: 'high', title: '任务超期', message: '有3个任务已超期', timestamp: new Date().toISOString(), resolved: false },
-      { id: 2, type: 'system', level: 'medium', title: '系统提醒', message: '备份任务需要执行', timestamp: new Date().toISOString(), resolved: false }
+      {
+        id: 1,
+        type: 'overdue',
+        level: 'high',
+        title: '任务超期',
+        message: '有3个任务已超期',
+        timestamp: new Date().toISOString(),
+        resolved: false
+      },
+      {
+        id: 2,
+        type: 'system',
+        level: 'medium',
+        title: '系统提醒',
+        message: '备份任务需要执行',
+        timestamp: new Date().toISOString(),
+        resolved: false
+      }
     ]
   } catch (error) {
     console.error('加载警告信息失败:', error)
@@ -493,13 +670,13 @@ const loadAlerts = async () => {
 // 图表初始化
 const initWorkHoursChart = () => {
   if (!workHoursChart.value) return
-  
+
   if (workHoursChartInstance) {
     workHoursChartInstance.dispose()
   }
-  
+
   workHoursChartInstance = echarts.init(workHoursChart.value)
-  
+
   const option = {
     tooltip: {
       trigger: 'axis',
@@ -542,19 +719,19 @@ const initWorkHoursChart = () => {
       }
     ]
   }
-  
+
   workHoursChartInstance.setOption(option)
 }
 
 const initTaskDistributionChart = () => {
   if (!taskDistributionChart.value) return
-  
+
   if (taskDistributionChartInstance) {
     taskDistributionChartInstance.dispose()
   }
-  
+
   taskDistributionChartInstance = echarts.init(taskDistributionChart.value)
-  
+
   const option = {
     tooltip: {
       trigger: 'item',
@@ -572,9 +749,21 @@ const initTaskDistributionChart = () => {
         radius: ['40%', '70%'],
         center: ['60%', '50%'],
         data: [
-          { value: taskDistribution.value.repair, name: '维修任务', itemStyle: { color: '#409EFF' } },
-          { value: taskDistribution.value.monitoring, name: '监控任务', itemStyle: { color: '#67C23A' } },
-          { value: taskDistribution.value.assistance, name: '协助任务', itemStyle: { color: '#E6A23C' } }
+          {
+            value: taskDistribution.value.repair,
+            name: '维修任务',
+            itemStyle: { color: '#409EFF' }
+          },
+          {
+            value: taskDistribution.value.monitoring,
+            name: '监控任务',
+            itemStyle: { color: '#67C23A' }
+          },
+          {
+            value: taskDistribution.value.assistance,
+            name: '协助任务',
+            itemStyle: { color: '#E6A23C' }
+          }
         ],
         emphasis: {
           itemStyle: {
@@ -586,7 +775,7 @@ const initTaskDistributionChart = () => {
       }
     ]
   }
-  
+
   taskDistributionChartInstance.setOption(option)
 }
 
@@ -638,7 +827,7 @@ const viewMemberDetail = (memberId: number) => {
 // 生命周期
 onMounted(async () => {
   await refreshData()
-  
+
   // 监听窗口大小变化
   window.addEventListener('resize', () => {
     workHoursChartInstance?.resize()
@@ -667,7 +856,7 @@ onMounted(async () => {
   background: $background-color-white;
   border-radius: $border-radius-base;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  
+
   .header-content {
     .page-title {
       margin: 0 0 $spacing-extra-small 0;
@@ -675,7 +864,7 @@ onMounted(async () => {
       font-weight: 600;
       color: $text-color-primary;
     }
-    
+
     .page-subtitle {
       margin: 0;
       font-size: $font-size-small;
@@ -697,12 +886,12 @@ onMounted(async () => {
   transition: all $transition-base;
   margin-bottom: $spacing-small; // 防止垂直重叠
   position: relative;
-  
+
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   }
-  
+
   .stat-icon {
     @include flex-center;
     width: 60px;
@@ -710,50 +899,50 @@ onMounted(async () => {
     border-radius: 50%;
     margin-right: $spacing-base;
   }
-  
+
   .stat-content {
     flex: 1;
-    
+
     .stat-value {
       font-size: $font-size-title;
       font-weight: 700;
       color: $text-color-primary;
       line-height: 1.2;
     }
-    
+
     .stat-label {
       font-size: $font-size-small;
       color: $text-color-secondary;
       margin: $spacing-extra-small 0;
     }
-    
+
     .stat-change {
       @include flex-start;
       font-size: $font-size-extra-small;
       gap: 2px;
-      
+
       &.positive {
         color: $success-color;
       }
-      
+
       &.negative {
         color: $danger-color;
       }
     }
   }
-  
+
   &.stat-primary .stat-icon {
     background: color.adjust($primary-color, $lightness: 45%);
   }
-  
+
   &.stat-success .stat-icon {
     background: color.adjust($success-color, $lightness: 45%);
   }
-  
+
   &.stat-warning .stat-icon {
     background: color.adjust($warning-color, $lightness: 45%);
   }
-  
+
   &.stat-danger .stat-icon {
     background: color.adjust($danger-color, $lightness: 45%);
   }
@@ -763,36 +952,41 @@ onMounted(async () => {
   margin-bottom: $spacing-large;
 }
 
-.chart-card, .info-card, .performance-card {
+.chart-card,
+.info-card,
+.performance-card {
   margin-bottom: $spacing-base;
-  
+
   .card-header {
     @include flex-between;
-    
+
     .card-title {
       font-size: $font-size-medium;
       font-weight: 600;
       color: $text-color-primary;
     }
   }
-  
+
   .chart-container {
     height: 300px;
     width: 100%;
   }
 }
 
-.alerts-list, .activities-list {
-  .alert-item, .activity-item {
+.alerts-list,
+.activities-list {
+  .alert-item,
+  .activity-item {
     @include flex-start;
     padding: $spacing-small 0;
     border-bottom: 1px solid $border-color-extra-light;
-    
+
     &:last-child {
       border-bottom: none;
     }
-    
-    .alert-icon, .activity-icon {
+
+    .alert-icon,
+    .activity-icon {
       @include flex-center;
       width: 32px;
       height: 32px;
@@ -800,44 +994,47 @@ onMounted(async () => {
       margin-right: $spacing-small;
       flex-shrink: 0;
     }
-    
-    .alert-content, .activity-content {
+
+    .alert-content,
+    .activity-content {
       flex: 1;
       min-width: 0;
-      
-      .alert-title, .activity-title {
+
+      .alert-title,
+      .activity-title {
         font-size: $font-size-small;
         font-weight: 500;
         color: $text-color-primary;
         margin-bottom: 2px;
         @include text-ellipsis;
       }
-      
+
       .activity-desc {
         font-size: $font-size-extra-small;
         color: $text-color-secondary;
         margin-bottom: 2px;
         @include text-ellipsis;
       }
-      
-      .alert-time, .activity-time {
+
+      .alert-time,
+      .activity-time {
         font-size: $font-size-extra-small;
         color: $text-color-placeholder;
       }
     }
   }
-  
+
   .alert-item {
     &.alert-critical .alert-icon {
       background: color.adjust($danger-color, $lightness: 45%);
       color: $danger-color;
     }
-    
+
     &.alert-high .alert-icon {
       background: color.adjust($warning-color, $lightness: 45%);
       color: $warning-color;
     }
-    
+
     &.alert-medium .alert-icon {
       background: color.adjust($info-color, $lightness: 45%);
       color: $info-color;
@@ -849,7 +1046,7 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: $spacing-small;
-  
+
   .quick-action-btn {
     width: 100%;
     height: 40px;
@@ -868,12 +1065,12 @@ onMounted(async () => {
     padding: $spacing-small;
     padding-bottom: calc(#{$spacing-small} + 60px); // 避免与底部导航重叠
   }
-  
+
   .dashboard-header {
     flex-direction: column;
     gap: $spacing-base;
     align-items: stretch;
-    
+
     .header-actions {
       align-self: flex-end;
     }
@@ -884,45 +1081,46 @@ onMounted(async () => {
   .dashboard {
     padding-bottom: calc(#{$spacing-small} + 80px); // 移动端底部导航更高
   }
-  
+
   .stats-section {
     margin-bottom: $spacing-base;
-    
+
     .el-col {
       margin-bottom: $spacing-small; // 卡片间距
     }
   }
-  
+
   .main-content {
     .el-col {
       margin-bottom: $spacing-base; // 主要内容区间距
     }
   }
-  
-  .chart-card, .info-card {
+
+  .chart-card,
+  .info-card {
     margin-bottom: $spacing-base;
     overflow: hidden; // 防止内容溢出
   }
-  
+
   .quick-actions {
     grid-template-columns: 1fr;
     gap: $spacing-extra-small;
   }
-  
+
   .chart-container {
     height: 250px;
     min-height: 200px; // 确保最小高度
   }
-  
+
   .stat-card {
     padding: $spacing-small;
     margin-bottom: $spacing-small;
-    
+
     .stat-icon {
       width: 48px;
       height: 48px;
     }
-    
+
     .stat-content {
       .stat-value {
         font-size: $font-size-large;

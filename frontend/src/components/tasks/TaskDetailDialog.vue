@@ -9,7 +9,7 @@
       <p>任务详情组件开发中...</p>
       <p v-if="taskId">当前查看任务ID：{{ taskId }}</p>
     </div>
-    
+
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="visible = false">关闭</el-button>
@@ -40,7 +40,7 @@ const emit = defineEmits<{
 // 计算属性
 const visible = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: value => emit('update:modelValue', value)
 })
 
 // 方法

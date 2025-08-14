@@ -11,7 +11,7 @@
         <template #header>
           <span>基本信息</span>
         </template>
-        
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-descriptions :column="1" border>
@@ -33,7 +33,7 @@
               </el-descriptions-item>
             </el-descriptions>
           </el-col>
-          
+
           <el-col :span="12">
             <el-descriptions :column="1" border>
               <el-descriptions-item label="创建时间">
@@ -58,7 +58,7 @@
         <template #header>
           <span>工时计算详情</span>
         </template>
-        
+
         <div class="hours-breakdown">
           <el-row :gutter="20">
             <el-col :span="6">
@@ -67,21 +67,21 @@
                 <div class="hours-label">基础工时</div>
               </div>
             </el-col>
-            
+
             <el-col :span="6">
               <div class="hours-item bonus">
                 <div class="hours-value">+{{ workHour.bonusHours }}h</div>
                 <div class="hours-label">奖励工时</div>
               </div>
             </el-col>
-            
+
             <el-col :span="6">
               <div class="hours-item penalty">
                 <div class="hours-value">-{{ workHour.penaltyHours }}h</div>
                 <div class="hours-label">惩罚工时</div>
               </div>
             </el-col>
-            
+
             <el-col :span="6">
               <div class="hours-item total">
                 <div class="hours-value">{{ workHour.totalHours }}h</div>
@@ -93,14 +93,13 @@
 
         <!-- 工时计算公式展示 -->
         <el-divider />
-        
+
         <div class="calculation-formula">
           <h4>计算公式</h4>
-          <div class="formula">
-            总工时 = 基础工时 + 奖励工时 - 惩罚工时
-          </div>
+          <div class="formula">总工时 = 基础工时 + 奖励工时 - 惩罚工时</div>
           <div class="formula-detail">
-            {{ workHour.totalHours }}h = {{ workHour.baseHours }}h + {{ workHour.bonusHours }}h - {{ workHour.penaltyHours }}h
+            {{ workHour.totalHours }}h = {{ workHour.baseHours }}h +
+            {{ workHour.bonusHours }}h - {{ workHour.penaltyHours }}h
           </div>
         </div>
       </el-card>
@@ -110,7 +109,7 @@
         <template #header>
           <span>调整记录</span>
         </template>
-        
+
         <el-timeline>
           <el-timeline-item
             v-for="adjustment in adjustments"
@@ -121,13 +120,18 @@
             <el-card>
               <div class="adjustment-content">
                 <div class="adjustment-header">
-                  <span class="adjustment-type">{{ getAdjustmentTypeText(adjustment.adjustmentType) }}</span>
+                  <span class="adjustment-type">{{
+                    getAdjustmentTypeText(adjustment.adjustmentType)
+                  }}</span>
                   <span class="adjustment-hours">
-                    {{ adjustment.originalHours }}h → {{ adjustment.adjustedHours }}h
+                    {{ adjustment.originalHours }}h →
+                    {{ adjustment.adjustedHours }}h
                   </span>
                 </div>
                 <div class="adjustment-reason">{{ adjustment.reason }}</div>
-                <div class="adjustment-author">调整人：{{ adjustment.adjustedBy }}</div>
+                <div class="adjustment-author">
+                  调整人：{{ adjustment.adjustedBy }}
+                </div>
               </div>
             </el-card>
           </el-timeline-item>
@@ -139,7 +143,7 @@
         <template #header>
           <span>审核记录</span>
         </template>
-        
+
         <el-timeline>
           <el-timeline-item
             v-for="review in reviews"
@@ -157,7 +161,9 @@
                     调整为：{{ review.adjustedHours }}h
                   </span>
                 </div>
-                <div class="review-notes" v-if="review.reviewNotes">{{ review.reviewNotes }}</div>
+                <div class="review-notes" v-if="review.reviewNotes">
+                  {{ review.reviewNotes }}
+                </div>
                 <div class="review-author">审核人：{{ review.reviewedBy }}</div>
               </div>
             </el-card>
@@ -166,13 +172,19 @@
       </el-card>
 
       <!-- 备注信息 -->
-      <el-card class="notes-card" v-if="workHour.adjustmentReason || workHour.adminNotes">
+      <el-card
+        class="notes-card"
+        v-if="workHour.adjustmentReason || workHour.adminNotes"
+      >
         <template #header>
           <span>备注信息</span>
         </template>
-        
+
         <el-descriptions :column="1" border>
-          <el-descriptions-item label="调整原因" v-if="workHour.adjustmentReason">
+          <el-descriptions-item
+            label="调整原因"
+            v-if="workHour.adjustmentReason"
+          >
             {{ workHour.adjustmentReason }}
           </el-descriptions-item>
           <el-descriptions-item label="管理员备注" v-if="workHour.adminNotes">
@@ -199,7 +211,11 @@ import { ref, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 import { workHoursApi } from '@/api/workHours'
-import type { WorkHour, WorkHourAdjustment, WorkHourReview } from '@/types/workHours'
+import type {
+  WorkHour,
+  WorkHourAdjustment,
+  WorkHourReview
+} from '@/types/workHours'
 
 interface Props {
   visible: boolean
@@ -219,15 +235,18 @@ const loading = ref(false)
 const adjustments = ref<WorkHourAdjustment[]>([])
 const reviews = ref<WorkHourReview[]>([])
 
-watch(() => props.visible, (visible) => {
-  dialogVisible.value = visible
-  if (visible && props.workHour) {
-    loadAdjustments()
-    loadReviews()
+watch(
+  () => props.visible,
+  visible => {
+    dialogVisible.value = visible
+    if (visible && props.workHour) {
+      loadAdjustments()
+      loadReviews()
+    }
   }
-})
+)
 
-watch(dialogVisible, (visible) => {
+watch(dialogVisible, visible => {
   emit('update:visible', visible)
 })
 
@@ -235,7 +254,9 @@ const loadAdjustments = async () => {
   if (!props.workHour) return
 
   try {
-    adjustments.value = await workHoursApi.getWorkHourAdjustments(props.workHour.id)
+    adjustments.value = await workHoursApi.getWorkHourAdjustments(
+      props.workHour.id
+    )
   } catch (error) {
     console.error('加载调整记录失败:', error)
   }
@@ -355,7 +376,7 @@ const formatDateTime = (dateStr: string) => {
       text-align: center;
       padding: 20px;
       border-radius: 8px;
-      
+
       .hours-value {
         font-size: 24px;
         font-weight: bold;

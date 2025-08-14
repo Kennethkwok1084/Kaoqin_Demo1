@@ -1,5 +1,5 @@
 import { http } from './client'
-import type { 
+import type {
   Task,
   CreateTaskRequest,
   UpdateTaskRequest,
@@ -26,7 +26,7 @@ export const tasksApi = {
       sortBy: params?.sortBy || 'createdAt',
       sortOrder: params?.sortOrder || 'desc'
     }
-    
+
     // 处理筛选条件
     if (params?.filters) {
       if (params.filters.search) {
@@ -42,7 +42,7 @@ export const tasksApi = {
         queryParams.assigned_to = params.filters.assigneeId
       }
     }
-    
+
     const response = await http.get('/tasks', { params: queryParams })
     return response.data.data || { items: [], total: 0, page: 1, pageSize: 20 }
   },
@@ -60,7 +60,7 @@ export const tasksApi = {
    */
   async createTask(data: CreateTaskRequest): Promise<Task> {
     const formData = new FormData()
-    
+
     // 处理文件上传
     if (data.attachments) {
       data.attachments.forEach((file, index) => {
@@ -68,7 +68,7 @@ export const tasksApi = {
       })
       delete data.attachments
     }
-    
+
     Object.entries(data).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         if (Array.isArray(value)) {
@@ -113,7 +113,9 @@ export const tasksApi = {
    * 分配任务
    */
   async assignTask(id: number, assigneeId: number): Promise<Task> {
-    const response = await http.post<Task>(`/tasks/${id}/assign`, { assigneeId })
+    const response = await http.post<Task>(`/tasks/${id}/assign`, {
+      assigneeId
+    })
     return response.data
   },
 
@@ -129,7 +131,9 @@ export const tasksApi = {
    * 完成任务
    */
   async completeTask(id: number, actualHours?: number): Promise<Task> {
-    const response = await http.post<Task>(`/tasks/${id}/complete`, { actualHours })
+    const response = await http.post<Task>(`/tasks/${id}/complete`, {
+      actualHours
+    })
     return response.data
   },
 
@@ -177,7 +181,9 @@ export const tasksApi = {
    * 添加任务评论
    */
   async addComment(taskId: number, content: string): Promise<TaskComment> {
-    const response = await http.post<TaskComment>(`/tasks/${taskId}/comments`, { content })
+    const response = await http.post<TaskComment>(`/tasks/${taskId}/comments`, {
+      content
+    })
     return response.data
   },
 
@@ -199,8 +205,15 @@ export const tasksApi = {
   /**
    * 评价任务
    */
-  async evaluateTask(taskId: number, rating: number, comment: string): Promise<TaskEvaluation> {
-    const response = await http.post<TaskEvaluation>(`/tasks/${taskId}/evaluate`, { rating, comment })
+  async evaluateTask(
+    taskId: number,
+    rating: number,
+    comment: string
+  ): Promise<TaskEvaluation> {
+    const response = await http.post<TaskEvaluation>(
+      `/tasks/${taskId}/evaluate`,
+      { rating, comment }
+    )
     return response.data
   },
 
@@ -215,8 +228,15 @@ export const tasksApi = {
   /**
    * 添加工时记录
    */
-  async addWorkLog(taskId: number, description: string, hours: number): Promise<TaskWorkLog> {
-    const response = await http.post<TaskWorkLog>(`/tasks/${taskId}/work-logs`, { description, hours })
+  async addWorkLog(
+    taskId: number,
+    description: string,
+    hours: number
+  ): Promise<TaskWorkLog> {
+    const response = await http.post<TaskWorkLog>(
+      `/tasks/${taskId}/work-logs`,
+      { description, hours }
+    )
     return response.data
   },
 
@@ -230,10 +250,13 @@ export const tasksApi = {
   /**
    * 上传任务附件
    */
-  async uploadAttachment(taskId: number, file: File): Promise<{ id: number, fileName: string, fileUrl: string }> {
+  async uploadAttachment(
+    taskId: number,
+    file: File
+  ): Promise<{ id: number; fileName: string; fileUrl: string }> {
     const formData = new FormData()
     formData.append('file', file)
-    
+
     const response = await http.post(`/tasks/${taskId}/attachments`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
@@ -252,24 +275,38 @@ export const tasksApi = {
   /**
    * 下载任务附件
    */
-  async downloadAttachment(taskId: number, attachmentId: number, fileName: string): Promise<void> {
-    await http.download(`/tasks/${taskId}/attachments/${attachmentId}/download`, fileName)
+  async downloadAttachment(
+    taskId: number,
+    attachmentId: number,
+    fileName: string
+  ): Promise<void> {
+    await http.download(
+      `/tasks/${taskId}/attachments/${attachmentId}/download`,
+      fileName
+    )
   },
 
   /**
    * 导出任务列表
    */
-  async exportTasks(filters?: any, format: 'excel' | 'csv' = 'excel'): Promise<void> {
-    await http.download('/tasks/export', `tasks_export.${format}`, { params: { ...filters, format } })
+  async exportTasks(
+    filters?: any,
+    format: 'excel' | 'csv' = 'excel'
+  ): Promise<void> {
+    await http.download('/tasks/export', `tasks_export.${format}`, {
+      params: { ...filters, format }
+    })
   },
 
   /**
    * 批量导入任务
    */
-  async importTasks(file: File): Promise<{ success: number, failed: number, errors: string[] }> {
+  async importTasks(
+    file: File
+  ): Promise<{ success: number; failed: number; errors: string[] }> {
     const formData = new FormData()
     formData.append('file', file)
-    
+
     const response = await http.post('/tasks/import', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
@@ -282,18 +319,35 @@ export const tasksApi = {
    * 导入维护工单（A-B表匹配）
    */
   async importMaintenanceOrders(data: {
-    matched_data: any[],
-    import_type: 'ab_matched' | 'online_only' | 'a_table' | 'b_table',
+    matched_data: any[]
+    import_type: 'ab_matched' | 'online_only' | 'a_table' | 'b_table'
     auto_match?: boolean
-  }): Promise<{ success: number, failed: number, matched: number, partial: number, errors: string[] }> {
+  }): Promise<{
+    success: number
+    failed: number
+    matched: number
+    partial: number
+    errors: string[]
+  }> {
     // 转换数据格式以匹配后端期望
     const backendData = {
       maintenance_orders: data.matched_data,
       auto_match: data.auto_match !== false,
       import_type: data.import_type
     }
-    const response = await http.post('/tasks/maintenance-orders/import', backendData)
-    return response.data.data || { success: 0, failed: 0, matched: 0, partial: 0, errors: [] }
+    const response = await http.post(
+      '/tasks/maintenance-orders/import',
+      backendData
+    )
+    return (
+      response.data.data || {
+        success: 0,
+        failed: 0,
+        matched: 0,
+        partial: 0,
+        errors: []
+      }
+    )
   },
 
   /**
@@ -308,8 +362,8 @@ export const tasksApi = {
    * 搜索任务
    */
   async searchTasks(query: string, filters?: any): Promise<Task[]> {
-    const response = await http.get<Task[]>('/tasks/search', { 
-      params: { q: query, ...filters } 
+    const response = await http.get<Task[]>('/tasks/search', {
+      params: { q: query, ...filters }
     })
     return response.data
   },
@@ -325,15 +379,26 @@ export const tasksApi = {
   /**
    * 获取维护工单导入模板
    */
-  async downloadMaintenanceTemplate(type: 'a-table' | 'b-table'): Promise<void> {
-    await http.download(`/tasks/maintenance-orders/template/${type}`, `${type === 'a-table' ? 'A表' : 'B表'}_维护工单模板.xlsx`)
+  async downloadMaintenanceTemplate(
+    type: 'a-table' | 'b-table'
+  ): Promise<void> {
+    await http.download(
+      `/tasks/maintenance-orders/template/${type}`,
+      `${type === 'a-table' ? 'A表' : 'B表'}_维护工单模板.xlsx`
+    )
   },
 
   /**
    * 验证维护工单数据
    */
-  async validateMaintenanceData(data: any[], type: 'a-table' | 'b-table'): Promise<{ valid: boolean, errors: string[] }> {
-    const response = await http.post('/tasks/maintenance-orders/validate', { data, type })
+  async validateMaintenanceData(
+    data: any[],
+    type: 'a-table' | 'b-table'
+  ): Promise<{ valid: boolean; errors: string[] }> {
+    const response = await http.post('/tasks/maintenance-orders/validate', {
+      data,
+      type
+    })
     return response.data.data || { valid: false, errors: [] }
   }
 }

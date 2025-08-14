@@ -1,15 +1,27 @@
 <template>
   <div class="app-container">
     <!-- 移动端侧边栏蒙层 -->
-    <div 
-      class="sidebar-overlay" 
+    <div
+      class="sidebar-overlay"
       :class="{ visible: showMobileSidebar }"
       @click="closeMobileSidebar"
     ></div>
-    
-    <div class="layout-container" :class="{ collapsed: sidebarCollapsed, 'mobile-sidebar-open': showMobileSidebar }">
+
+    <div
+      class="layout-container"
+      :class="{
+        collapsed: sidebarCollapsed,
+        'mobile-sidebar-open': showMobileSidebar
+      }"
+    >
       <!-- 侧边栏 -->
-      <aside class="sidebar" :class="{ collapsed: sidebarCollapsed, 'mobile-visible': showMobileSidebar }">
+      <aside
+        class="sidebar"
+        :class="{
+          collapsed: sidebarCollapsed,
+          'mobile-visible': showMobileSidebar
+        }"
+      >
         <div class="sidebar-header">
           <div class="logo">
             <div class="logo-icon">
@@ -18,7 +30,7 @@
             <span v-show="!sidebarCollapsed" class="logo-text">考勤系统</span>
           </div>
         </div>
-        
+
         <div class="sidebar-content">
           <el-menu
             :default-active="activeMenuIndex"
@@ -31,7 +43,7 @@
               <el-icon><Monitor /></el-icon>
               <template #title>仪表板</template>
             </el-menu-item>
-            
+
             <el-sub-menu index="tasks">
               <template #title>
                 <el-icon><Document /></el-icon>
@@ -41,22 +53,22 @@
               <el-menu-item index="/tasks/monitoring">监控任务</el-menu-item>
               <el-menu-item index="/tasks/assistance">协助任务</el-menu-item>
             </el-sub-menu>
-            
+
             <el-menu-item index="/members">
               <el-icon><User /></el-icon>
               <template #title>成员管理</template>
             </el-menu-item>
-            
+
             <el-menu-item index="/attendance">
               <el-icon><Clock /></el-icon>
               <template #title>考勤管理</template>
             </el-menu-item>
-            
+
             <el-menu-item index="/statistics">
-              <el-icon><DataLine /></el-icon>  
+              <el-icon><DataLine /></el-icon>
               <template #title>统计报表</template>
             </el-menu-item>
-            
+
             <el-menu-item index="/settings" v-if="authStore.isAdmin">
               <el-icon><Setting /></el-icon>
               <template #title>系统设置</template>
@@ -79,7 +91,7 @@
             >
               <el-icon><Menu /></el-icon>
             </el-button>
-            
+
             <!-- 移动端菜单切换 -->
             <el-button
               type="text"
@@ -89,7 +101,7 @@
             >
               <el-icon><Menu /></el-icon>
             </el-button>
-            
+
             <el-breadcrumb separator="/" class="breadcrumb hidden-xs">
               <el-breadcrumb-item
                 v-for="item in breadcrumbList"
@@ -100,7 +112,7 @@
               </el-breadcrumb-item>
             </el-breadcrumb>
           </div>
-          
+
           <div class="header-right">
             <!-- 全屏切换 (桌面端) -->
             <el-tooltip content="全屏" placement="bottom" class="hidden-xs">
@@ -108,24 +120,29 @@
                 <el-icon><FullScreen /></el-icon>
               </el-button>
             </el-tooltip>
-            
+
             <!-- 通知 -->
-            <el-badge :value="notificationCount" :hidden="notificationCount === 0">
+            <el-badge
+              :value="notificationCount"
+              :hidden="notificationCount === 0"
+            >
               <el-button type="text" size="large" @click="showNotifications">
                 <el-icon><Bell /></el-icon>
               </el-button>
             </el-badge>
-            
+
             <!-- 用户菜单 -->
             <el-dropdown @command="handleUserMenuCommand" class="user-dropdown">
               <div class="user-info">
                 <el-avatar :size="32" :src="authStore.userInfo?.avatar">
                   {{ authStore.userInfo?.full_name?.charAt(0) }}
                 </el-avatar>
-                <span class="username hidden-xs">{{ authStore.userInfo?.full_name }}</span>
+                <span class="username hidden-xs">{{
+                  authStore.userInfo?.full_name
+                }}</span>
                 <el-icon class="dropdown-icon hidden-xs"><ArrowDown /></el-icon>
               </div>
-              
+
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item command="profile">
@@ -156,7 +173,7 @@
         </main>
       </div>
     </div>
-    
+
     <!-- 移动端底部导航 -->
     <MobileBottomNav />
   </div>
@@ -248,15 +265,11 @@ const handleUserMenuCommand = async (command: string) => {
       break
     case 'logout':
       try {
-        await ElMessageBox.confirm(
-          '确定要退出登录吗？',
-          '退出确认',
-          {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning'
-          }
-        )
+        await ElMessageBox.confirm('确定要退出登录吗？', '退出确认', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
         await authStore.logout()
         ElMessage.success('已安全退出')
       } catch {
@@ -307,12 +320,12 @@ onUnmounted(() => {
 .layout-container {
   @include flex-start;
   height: 100%;
-  
+
   &.collapsed {
     .sidebar {
       width: $sidebar-collapsed-width;
     }
-    
+
     .main-content {
       margin-left: $sidebar-collapsed-width;
     }
@@ -331,21 +344,21 @@ onUnmounted(() => {
   transition: width $transition-base;
   z-index: 1000;
   overflow: hidden;
-  
+
   &.collapsed {
     width: $sidebar-collapsed-width;
   }
-  
+
   .sidebar-header {
     height: $header-height;
     @include flex-center;
     border-bottom: 1px solid $border-color-extra-light;
     padding: 0 $spacing-base;
-    
+
     .logo {
       @include flex-center;
       gap: $spacing-small;
-      
+
       .logo-icon {
         width: 32px;
         height: 32px;
@@ -353,7 +366,7 @@ onUnmounted(() => {
         border-radius: 50%;
         background: color.adjust($primary-color, $lightness: 45%);
       }
-      
+
       .logo-text {
         font-size: $font-size-medium;
         font-weight: 600;
@@ -361,23 +374,23 @@ onUnmounted(() => {
       }
     }
   }
-  
+
   .sidebar-content {
     height: calc(100vh - #{$header-height});
     overflow-y: auto;
-    
+
     .sidebar-menu {
       border: none;
-      
+
       .el-menu-item,
       .el-sub-menu__title {
         height: 50px;
         line-height: 50px;
-        
+
         &:hover {
           background: $background-color-light;
         }
-        
+
         &.is-active {
           background: color.adjust($primary-color, $lightness: 45%);
           color: $primary-color;
@@ -405,26 +418,26 @@ onUnmounted(() => {
   padding: 0 $spacing-base;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   z-index: 999;
-  
+
   .header-left {
     @include flex-start;
     gap: $spacing-base;
-    
+
     .sidebar-toggle {
       .el-icon {
         font-size: 18px;
       }
     }
-    
+
     .breadcrumb {
       font-size: $font-size-small;
     }
   }
-  
+
   .header-right {
     @include flex-end;
     gap: $spacing-small;
-    
+
     .user-dropdown {
       .user-info {
         @include flex-center;
@@ -433,17 +446,17 @@ onUnmounted(() => {
         border-radius: $border-radius-base;
         cursor: pointer;
         transition: background-color $transition-base;
-        
+
         &:hover {
           background: $background-color-light;
         }
-        
+
         .username {
           font-size: $font-size-small;
           color: $text-color-primary;
           font-weight: 500;
         }
-        
+
         .dropdown-icon {
           font-size: 12px;
           color: $text-color-secondary;
@@ -487,7 +500,7 @@ onUnmounted(() => {
   background: rgba(0, 0, 0, 0.5);
   z-index: 1000;
   transition: opacity $transition-base;
-  
+
   &.visible {
     display: block;
   }
@@ -496,7 +509,7 @@ onUnmounted(() => {
 // 移动端专用样式
 .mobile-only {
   display: none;
-  
+
   @include mobile-only {
     display: block;
   }
@@ -517,27 +530,27 @@ onUnmounted(() => {
       }
     }
   }
-  
+
   .sidebar {
     width: 280px;
     transform: translateX(-100%);
     transition: transform $transition-base;
     z-index: 1001;
     @include safe-area-padding;
-    
+
     &.mobile-visible {
       transform: translateX(0);
     }
-    
+
     &.collapsed {
       width: 280px;
       transform: translateX(-100%);
-      
+
       &.mobile-visible {
         transform: translateX(0);
       }
     }
-    
+
     .sidebar-menu {
       .el-menu-item,
       .el-submenu__title {
@@ -546,7 +559,7 @@ onUnmounted(() => {
         font-size: $font-size-base;
         @include touch-target(50px);
       }
-      
+
       .el-submenu {
         .el-menu-item {
           height: 45px;
@@ -556,12 +569,12 @@ onUnmounted(() => {
       }
     }
   }
-  
+
   .main-content {
     margin-left: 0;
     width: 100%;
   }
-  
+
   .layout-container.collapsed {
     .main-content {
       margin-left: 0;
@@ -576,17 +589,17 @@ onUnmounted(() => {
     @include safe-area-padding;
     padding: $spacing-small;
     height: calc(#{$header-height} + env(safe-area-inset-top, 0px));
-    
+
     .header-left {
       .mobile-menu-toggle {
         @include touch-target(44px);
         margin-right: $spacing-small;
       }
     }
-    
+
     .header-right {
       gap: $spacing-small;
-      
+
       .user-dropdown .user-info {
         .username,
         .dropdown-icon {
@@ -595,7 +608,7 @@ onUnmounted(() => {
       }
     }
   }
-  
+
   .content-area {
     padding: $spacing-small;
     @include mobile-scroll;
