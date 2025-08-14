@@ -5,14 +5,15 @@
 
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field, ConfigDict
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.member import UserRole
 
 
 class LoginResponse(BaseModel):
     """Response model for successful login."""
-    
+
     success: bool = Field(..., description="Login success status")
     message: str = Field(..., description="Success message")
     access_token: str = Field(..., description="JWT access token")
@@ -20,7 +21,7 @@ class LoginResponse(BaseModel):
     token_type: str = Field(default="bearer", description="Token type")
     expires_in: int = Field(..., description="Token expiration time in seconds")
     user: dict = Field(..., description="User profile information")
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -34,8 +35,8 @@ class LoginResponse(BaseModel):
                     "id": 1,
                     "name": "张三",
                     "student_id": "2021001001",
-                    "role": "member"
-                }
+                    "role": "member",
+                },
             }
         }
     )
@@ -43,20 +44,17 @@ class LoginResponse(BaseModel):
 
 class ChangePasswordRequest(BaseModel):
     """Request model for changing password - alias for PasswordChangeRequest."""
-    
+
     current_password: str = Field(..., description="Current password")
     new_password: str = Field(
-        ..., 
-        min_length=8,
-        max_length=128,
-        description="New password"
+        ..., min_length=8, max_length=128, description="New password"
     )
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "current_password": "OldPassword123!",
-                "new_password": "NewSecurePassword123!"
+                "new_password": "NewSecurePassword123!",
             }
         }
     )
@@ -64,17 +62,17 @@ class ChangePasswordRequest(BaseModel):
 
 class UserProfileUpdate(BaseModel):
     """Request model for updating user profile."""
-    
+
     name: Optional[str] = Field(None, max_length=50, description="User name")
     email: Optional[str] = Field(None, description="Email address")
     class_name: Optional[str] = Field(None, max_length=50, description="Class name")
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "name": "张三丰",
                 "email": "zhangsan@newdomain.com",
-                "class_name": "计算机科学与技术2102"
+                "class_name": "计算机科学与技术2102",
             }
         }
     )
@@ -82,44 +80,32 @@ class UserProfileUpdate(BaseModel):
 
 class LoginRequest(BaseModel):
     """Login request model."""
-    
-    student_id: str = Field(
-        ..., 
-        min_length=1, 
-        max_length=20,
-        description="Student ID"
-    )
-    password: str = Field(
-        ..., 
-        min_length=1,
-        description="User password"
-    )
-    
+
+    student_id: str = Field(..., min_length=1, max_length=20, description="Student ID")
+    password: str = Field(..., min_length=1, description="User password")
+
     model_config = ConfigDict(
         json_schema_extra={
-            "example": {
-                "student_id": "2021001001",
-                "password": "MySecurePassword123!"
-            }
+            "example": {"student_id": "2021001001", "password": "MySecurePassword123!"}
         }
     )
 
 
 class TokenResponse(BaseModel):
     """Response model for token-related endpoints."""
-    
+
     access_token: str = Field(..., description="JWT access token")
     refresh_token: Optional[str] = Field(None, description="JWT refresh token")
     token_type: str = Field(default="bearer", description="Token type")
     expires_in: int = Field(..., description="Token expiration time in seconds")
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                 "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                 "token_type": "bearer",
-                "expires_in": 3600
+                "expires_in": 3600,
             }
         }
     )
@@ -127,7 +113,7 @@ class TokenResponse(BaseModel):
 
 class UserProfileResponse(BaseModel):
     """Response model for user profile."""
-    
+
     id: int = Field(..., description="User ID")
     name: str = Field(..., description="User name")
     student_id: str = Field(..., description="Student ID")
@@ -140,7 +126,7 @@ class UserProfileResponse(BaseModel):
     last_login: Optional[datetime] = Field(None, description="Last login time")
     login_count: int = Field(..., description="Login count")
     created_at: datetime = Field(..., description="Account creation time")
-    
+
     model_config = ConfigDict(
         from_attributes=True,
         json_schema_extra={
@@ -156,42 +142,37 @@ class UserProfileResponse(BaseModel):
                 "is_verified": True,
                 "last_login": "2025-01-27T10:30:00",
                 "login_count": 15,
-                "created_at": "2025-01-01T00:00:00"
+                "created_at": "2025-01-01T00:00:00",
             }
-        }
+        },
     )
 
 
 class RefreshTokenRequest(BaseModel):
     """Request model for refreshing tokens."""
-    
+
     refresh_token: str = Field(..., description="Refresh token")
-    
+
     model_config = ConfigDict(
         json_schema_extra={
-            "example": {
-                "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-            }
+            "example": {"refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}
         }
     )
 
 
 class PasswordChangeRequest(BaseModel):
     """Request model for changing password."""
-    
+
     current_password: str = Field(..., description="Current password")
     new_password: str = Field(
-        ..., 
-        min_length=8,
-        max_length=128,
-        description="New password"
+        ..., min_length=8, max_length=128, description="New password"
     )
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "current_password": "OldPassword123!",
-                "new_password": "NewSecurePassword123!"
+                "new_password": "NewSecurePassword123!",
             }
         }
     )
@@ -199,15 +180,15 @@ class PasswordChangeRequest(BaseModel):
 
 class LogoutResponse(BaseModel):
     """Response model for logout."""
-    
+
     message: str = Field(..., description="Logout message")
     logged_out_at: datetime = Field(..., description="Logout timestamp")
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "message": "成功退出登录",
-                "logged_out_at": "2025-01-27T15:30:00"
+                "logged_out_at": "2025-01-27T15:30:00",
             }
         }
     )
@@ -215,17 +196,17 @@ class LogoutResponse(BaseModel):
 
 class AuthStatusResponse(BaseModel):
     """Response model for authentication status check."""
-    
+
     authenticated: bool = Field(..., description="Whether user is authenticated")
     user_id: Optional[int] = Field(None, description="User ID if authenticated")
     expires_at: Optional[datetime] = Field(None, description="Token expiration time")
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "authenticated": True,
                 "user_id": 1,
-                "expires_at": "2025-01-27T16:30:00"
+                "expires_at": "2025-01-27T16:30:00",
             }
         }
     )

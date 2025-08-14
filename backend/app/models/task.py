@@ -5,13 +5,24 @@ Includes repair tasks, monitoring tasks, and assistance tasks.
 
 import enum
 from datetime import datetime
-from typing import List, TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy import (
-    Boolean, Column, DateTime, Enum, ForeignKey, Integer, String, Text, Table,
-    Float, UniqueConstraint, Index, JSON
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Table,
+    Text,
+    UniqueConstraint,
 )
-from sqlalchemy.orm import relationship, Mapped
+from sqlalchemy.orm import Mapped, relationship
 
 from app.models.base import BaseModel
 
@@ -21,117 +32,111 @@ if TYPE_CHECKING:
 
 class TaskCategory(enum.Enum):
     """Task category enumeration."""
-    NETWORK_REPAIR = "network_repair"      # 网络维修
-    HARDWARE_REPAIR = "hardware_repair"    # 硬件维修
+
+    NETWORK_REPAIR = "network_repair"  # 网络维修
+    HARDWARE_REPAIR = "hardware_repair"  # 硬件维修
     SOFTWARE_SUPPORT = "software_support"  # 软件支持
-    MONITORING = "monitoring"              # 日常监控
-    ASSISTANCE = "assistance"              # 协助任务
-    OTHER = "other"                        # 其他
+    MONITORING = "monitoring"  # 日常监控
+    ASSISTANCE = "assistance"  # 协助任务
+    OTHER = "other"  # 其他
 
 
 class TaskPriority(enum.Enum):
     """Task priority enumeration."""
-    LOW = "low"           # 低优先级
-    MEDIUM = "medium"     # 中优先级
-    HIGH = "high"         # 高优先级
-    URGENT = "urgent"     # 紧急
+
+    LOW = "low"  # 低优先级
+    MEDIUM = "medium"  # 中优先级
+    HIGH = "high"  # 高优先级
+    URGENT = "urgent"  # 紧急
 
 
 class TaskStatus(enum.Enum):
     """Task status enumeration."""
-    PENDING = "pending"         # 待处理
-    IN_PROGRESS = "in_progress" # 处理中
-    COMPLETED = "completed"     # 已完成
-    CANCELLED = "cancelled"     # 已取消
-    ON_HOLD = "on_hold"        # 暂停
+
+    PENDING = "pending"  # 待处理
+    IN_PROGRESS = "in_progress"  # 处理中
+    COMPLETED = "completed"  # 已完成
+    CANCELLED = "cancelled"  # 已取消
+    ON_HOLD = "on_hold"  # 暂停
 
 
 class TaskType(enum.Enum):
     """Task type for work hour calculation."""
-    ONLINE = "online"     # 线上任务 (40分钟)
-    OFFLINE = "offline"   # 线下任务 (100分钟)
+
+    ONLINE = "online"  # 线上任务 (40分钟)
+    OFFLINE = "offline"  # 线下任务 (100分钟)
 
 
 class TaskTagType(enum.Enum):
     """Task tag type enumeration for work hour calculation."""
-    RUSH_ORDER = "rush_order"                    # 爆单标记
-    NON_DEFAULT_RATING = "non_default_rating"    # 非默认好评
-    TIMEOUT_RESPONSE = "timeout_response"        # 超时响应
-    TIMEOUT_PROCESSING = "timeout_processing"    # 超时处理
-    BAD_RATING = "bad_rating"                    # 差评
-    BONUS = "bonus"                              # 一般奖励标签
-    PENALTY = "penalty"                          # 一般惩罚标签
-    CATEGORY = "category"                        # 分类标签
+
+    RUSH_ORDER = "rush_order"  # 爆单标记
+    NON_DEFAULT_RATING = "non_default_rating"  # 非默认好评
+    TIMEOUT_RESPONSE = "timeout_response"  # 超时响应
+    TIMEOUT_PROCESSING = "timeout_processing"  # 超时处理
+    BAD_RATING = "bad_rating"  # 差评
+    BONUS = "bonus"  # 一般奖励标签
+    PENALTY = "penalty"  # 一般惩罚标签
+    CATEGORY = "category"  # 分类标签
 
 
 # Association table for task tags (many-to-many)
 task_tag_association = Table(
-    'task_tag_associations',
+    "task_tag_associations",
     BaseModel.metadata,
-    Column('task_id', Integer, ForeignKey('repair_tasks.id'), primary_key=True),
-    Column('tag_id', Integer, ForeignKey('task_tags.id'), primary_key=True),
-    comment='Association table for tasks and tags'
+    Column("task_id", Integer, ForeignKey("repair_tasks.id"), primary_key=True),
+    Column("tag_id", Integer, ForeignKey("task_tags.id"), primary_key=True),
+    comment="Association table for tasks and tags",
 )
 
 
 class TaskTag(BaseModel):
     """
     Task tag model for categorizing and calculating work hours.
-    
+
     Used to apply bonuses/penalties and categorize tasks.
     Examples: 爆单任务, 非默认好评, 超时响应, etc.
     """
-    
+
     __tablename__ = "task_tags"
-    
+
     name = Column(
-        String(50),
-        unique=True,
-        nullable=False,
-        index=True,
-        comment="Tag name"
+        String(50), unique=True, nullable=False, index=True, comment="Tag name"
     )
-    
-    description = Column(
-        Text,
-        nullable=True,
-        comment="Tag description"
-    )
-    
+
+    description = Column(Text, nullable=True, comment="Tag description")
+
     work_minutes_modifier = Column(
         Integer,
         default=0,
         nullable=False,
-        comment="Work minutes modifier (+/- minutes)"
+        comment="Work minutes modifier (+/- minutes)",
     )
-    
+
     is_active = Column(
-        Boolean,
-        default=True,
-        nullable=False,
-        comment="Whether the tag is active"
+        Boolean, default=True, nullable=False, comment="Whether the tag is active"
     )
-    
+
     # Tag type for categorization
     tag_type = Column(
         Enum(TaskTagType),
         default=TaskTagType.CATEGORY,
         nullable=False,
-        comment="Tag type for categorization and work hour calculation"
+        comment="Tag type for categorization and work hour calculation",
     )
-    
+
     # Relationships
     tasks: Mapped[List["RepairTask"]] = relationship(
         "RepairTask",
         secondary=task_tag_association,
         back_populates="tags",
-        lazy="dynamic"
+        lazy="dynamic",
     )
-    
+
     def __repr__(self) -> str:
         """String representation."""
         return f"<TaskTag(id={self.id}, name='{self.name}', type='{self.tag_type.value}', modifier={self.work_minutes_modifier})>"
-    
+
     @classmethod
     def create_rush_order_tag(cls) -> "TaskTag":
         """创建爆单标签"""
@@ -140,9 +145,9 @@ class TaskTag(BaseModel):
             description="爆单任务标记，独立计算工时15分钟",
             work_minutes_modifier=15,
             tag_type=TaskTagType.RUSH_ORDER,
-            is_active=True
+            is_active=True,
         )
-    
+
     @classmethod
     def create_non_default_rating_tag(cls) -> "TaskTag":
         """创建非默认好评标签"""
@@ -151,9 +156,9 @@ class TaskTag(BaseModel):
             description="用户给出非默认好评，奖励30分钟",
             work_minutes_modifier=30,
             tag_type=TaskTagType.NON_DEFAULT_RATING,
-            is_active=True
+            is_active=True,
         )
-    
+
     @classmethod
     def create_timeout_response_tag(cls) -> "TaskTag":
         """创建超时响应标签"""
@@ -162,9 +167,9 @@ class TaskTag(BaseModel):
             description="响应超过24小时，扣除30分钟",
             work_minutes_modifier=-30,
             tag_type=TaskTagType.TIMEOUT_RESPONSE,
-            is_active=True
+            is_active=True,
         )
-    
+
     @classmethod
     def create_timeout_processing_tag(cls) -> "TaskTag":
         """创建超时处理标签"""
@@ -173,9 +178,9 @@ class TaskTag(BaseModel):
             description="处理超过48小时，扣除30分钟",
             work_minutes_modifier=-30,
             tag_type=TaskTagType.TIMEOUT_PROCESSING,
-            is_active=True
+            is_active=True,
         )
-    
+
     @classmethod
     def create_bad_rating_tag(cls) -> "TaskTag":
         """创建差评标签"""
@@ -184,302 +189,244 @@ class TaskTag(BaseModel):
             description="用户差评（2星及以下），扣除60分钟",
             work_minutes_modifier=-60,
             tag_type=TaskTagType.BAD_RATING,
-            is_active=True
+            is_active=True,
         )
-    
+
     @classmethod
     def get_standard_tags(cls) -> List["TaskTag"]:
         """获取标准标签列表"""
         return [
             cls.create_rush_order_tag(),
-            cls.create_non_default_rating_tag(), 
+            cls.create_non_default_rating_tag(),
             cls.create_timeout_response_tag(),
             cls.create_timeout_processing_tag(),
-            cls.create_bad_rating_tag()
+            cls.create_bad_rating_tag(),
         ]
-    
+
     def is_rush_order_tag(self) -> bool:
         """判断是否为爆单标签"""
         return self.tag_type == TaskTagType.RUSH_ORDER
-    
+
     def is_penalty_tag(self) -> bool:
         """判断是否为惩罚标签"""
         return self.tag_type in [
             TaskTagType.TIMEOUT_RESPONSE,
-            TaskTagType.TIMEOUT_PROCESSING, 
+            TaskTagType.TIMEOUT_PROCESSING,
             TaskTagType.BAD_RATING,
-            TaskTagType.PENALTY
+            TaskTagType.PENALTY,
         ]
-    
+
     def is_bonus_tag(self) -> bool:
         """判断是否为奖励标签"""
-        return self.tag_type in [
-            TaskTagType.NON_DEFAULT_RATING,
-            TaskTagType.BONUS
-        ]
+        return self.tag_type in [TaskTagType.NON_DEFAULT_RATING, TaskTagType.BONUS]
 
 
 class RepairTask(BaseModel):
     """
     Repair task model.
-    
+
     Represents wireless/network repair tasks submitted by users.
     Core entity for work hour calculation and attendance tracking.
     """
-    
+
     __tablename__ = "repair_tasks"
-    
+
     # Task identification
     task_id = Column(
         String(50),
         unique=True,
         nullable=False,
         index=True,
-        comment="External task ID from work order system"
+        comment="External task ID from work order system",
     )
-    
+
     # Assignment
     member_id = Column(
         Integer,
         ForeignKey("members.id"),
         nullable=False,
         index=True,
-        comment="Assigned member ID"
+        comment="Assigned member ID",
     )
-    
+
     # Task details
-    title = Column(
-        String(200),
-        nullable=False,
-        comment="Task title"
-    )
-    
-    description = Column(
-        Text,
-        nullable=True,
-        comment="Detailed task description"
-    )
-    
-    location = Column(
-        String(200),
-        nullable=True,
-        comment="Task location"
-    )
-    
+    title = Column(String(200), nullable=False, comment="Task title")
+
+    description = Column(Text, nullable=True, comment="Detailed task description")
+
+    location = Column(String(200), nullable=True, comment="Task location")
+
     # Task categorization
     category = Column(
         Enum(TaskCategory),
         default=TaskCategory.NETWORK_REPAIR,
         nullable=False,
-        comment="Task category"
+        comment="Task category",
     )
-    
+
     priority = Column(
         Enum(TaskPriority),
         default=TaskPriority.MEDIUM,
         nullable=False,
-        comment="Task priority"
+        comment="Task priority",
     )
-    
+
     status = Column(
         Enum(TaskStatus),
         default=TaskStatus.PENDING,
         nullable=False,
         index=True,
-        comment="Task status"
+        comment="Task status",
     )
-    
+
     task_type = Column(
         Enum(TaskType),
         default=TaskType.ONLINE,
         nullable=False,
-        comment="Task type (online/offline)"
+        comment="Task type (online/offline)",
     )
-    
+
     # Time tracking
     report_time = Column(
-        DateTime(timezone=True),
-        nullable=False,
-        index=True,
-        comment="Task report time"
+        DateTime(timezone=True), nullable=False, index=True, comment="Task report time"
     )
-    
+
     response_time = Column(
-        DateTime(timezone=True),
-        nullable=True,
-        comment="Task response time"
+        DateTime(timezone=True), nullable=True, comment="Task response time"
     )
-    
+
     completion_time = Column(
-        DateTime(timezone=True),
-        nullable=True,
-        comment="Task completion time"
+        DateTime(timezone=True), nullable=True, comment="Task completion time"
     )
-    
+
     due_date = Column(
         DateTime(timezone=True),
         nullable=True,
-        comment="Task due date (usually equals completion_time from import data)"
+        comment="Task due date (usually equals completion_time from import data)",
     )
-    
+
     # User feedback
-    feedback = Column(
-        Text,
-        nullable=True,
-        comment="User feedback"
-    )
-    
-    rating = Column(
-        Integer,
-        nullable=True,
-        comment="User rating (1-5 stars)"
-    )
-    
+    feedback = Column(Text, nullable=True, comment="User feedback")
+
+    rating = Column(Integer, nullable=True, comment="User rating (1-5 stars)")
+
     # Reporter information
-    reporter_name = Column(
-        String(50),
-        nullable=True,
-        comment="Reporter name"
-    )
-    
+    reporter_name = Column(String(50), nullable=True, comment="Reporter name")
+
     reporter_contact = Column(
-        String(100),
-        nullable=True,
-        comment="Reporter contact information"
+        String(100), nullable=True, comment="Reporter contact information"
     )
-    
+
     # Work hour calculation
     work_minutes = Column(
-        Integer,
-        default=0,
-        nullable=False,
-        comment="Calculated work minutes"
+        Integer, default=0, nullable=False, comment="Calculated work minutes"
     )
-    
+
     base_work_minutes = Column(
-        Integer,
-        default=0,
-        nullable=False,
-        comment="Base work minutes before modifiers"
+        Integer, default=0, nullable=False, comment="Base work minutes before modifiers"
     )
-    
+
     # Import tracking
     import_batch_id = Column(
-        String(50),
-        nullable=True,
-        comment="Import batch ID for tracking"
+        String(50), nullable=True, comment="Import batch ID for tracking"
     )
-    
+
     is_matched = Column(
         Boolean,
         default=False,
         nullable=False,
-        comment="Whether task was matched during import"
+        comment="Whether task was matched during import",
     )
-    
+
     # 重构新增字段：完整数据导入支持
-    original_data = Column(
-        JSON,
-        nullable=True,
-        comment="A表原始数据完整保存"
-    )
-    
-    matched_member_data = Column(
-        JSON,
-        nullable=True,
-        comment="B表匹配的成员数据"
-    )
-    
+    original_data = Column(JSON, nullable=True, comment="A表原始数据完整保存")
+
+    matched_member_data = Column(JSON, nullable=True, comment="B表匹配的成员数据")
+
     is_rush_order = Column(
-        Boolean,
-        default=False,
-        nullable=False,
-        comment="爆单标记，独立计算工时"
+        Boolean, default=False, nullable=False, comment="爆单标记，独立计算工时"
     )
-    
+
     work_order_status = Column(
-        String(50),
-        nullable=True,
-        comment="A表工单状态（用于状态映射）"
+        String(50), nullable=True, comment="A表工单状态（用于状态映射）"
     )
-    
+
     repair_form = Column(
-        String(50),
-        nullable=True,
-        comment="B表检修形式（用于线上/线下判断）"
+        String(50), nullable=True, comment="B表检修形式（用于线上/线下判断）"
     )
-    
+
     # Relationships
     member: Mapped["Member"] = relationship("Member", back_populates="repair_tasks")
-    
+
     tags: Mapped[List[TaskTag]] = relationship(
-        TaskTag,
-        secondary=task_tag_association,
-        back_populates="tasks",
-        lazy="dynamic"
+        TaskTag, secondary=task_tag_association, back_populates="tasks", lazy="dynamic"
     )
-    
+
     # Constraints and indexes
     __table_args__ = (
-        UniqueConstraint('task_id', name='uq_repair_task_task_id'),
-        Index('idx_repair_task_report_time', 'report_time'),
-        Index('idx_repair_task_member_status', 'member_id', 'status'),
-        Index('idx_repair_task_import_batch', 'import_batch_id'),
-        {'comment': 'Repair tasks table'}
+        UniqueConstraint("task_id", name="uq_repair_task_task_id"),
+        Index("idx_repair_task_report_time", "report_time"),
+        Index("idx_repair_task_member_status", "member_id", "status"),
+        Index("idx_repair_task_import_batch", "import_batch_id"),
+        {"comment": "Repair tasks table"},
     )
-    
+
     def __repr__(self) -> str:
         """String representation."""
         return f"<RepairTask(id={self.id}, task_id='{self.task_id}', status='{self.status.value}')>"
-    
+
     @property
     def is_overdue_response(self) -> bool:
         """Check if response is overdue (>24 hours)."""
         if self.response_time or self.status != TaskStatus.PENDING:
             return False
-        
-        hours_since_report = (datetime.utcnow() - self.report_time).total_seconds() / 3600
+
+        hours_since_report = (
+            datetime.utcnow() - self.report_time
+        ).total_seconds() / 3600
         return hours_since_report > 24
-    
+
     @property
     def is_overdue_completion(self) -> bool:
         """Check if completion is overdue (>48 hours from response)."""
         if self.completion_time or not self.response_time:
             return False
-        
-        hours_since_response = (datetime.utcnow() - self.response_time).total_seconds() / 3600
+
+        hours_since_response = (
+            datetime.utcnow() - self.response_time
+        ).total_seconds() / 3600
         return hours_since_response > 48
-    
+
     @property
     def is_positive_review(self) -> bool:
         """Check if task has positive review (>=4 stars)."""
         return self.rating is not None and self.rating >= 4
-    
+
     @property
     def is_negative_review(self) -> bool:
         """Check if task has negative review (<=2 stars)."""
         return self.rating is not None and self.rating <= 2
-    
+
     @property
     def is_non_default_positive_review(self) -> bool:
         """Check if task has non-default positive review."""
         if not self.is_positive_review or not self.feedback:
             return False
-        
+
         # Check if feedback is not default
         default_keywords = ["系统默认好评", "默认", "自动好评"]
         feedback_lower = self.feedback.lower()
         return not any(keyword in feedback_lower for keyword in default_keywords)
-    
+
     def get_base_work_minutes(self) -> int:
         """Get base work minutes based on task type."""
         from app.core.config import settings
-        
+
         if self.task_type == TaskType.ONLINE:
             return settings.DEFAULT_ONLINE_TASK_MINUTES
         else:
             return settings.DEFAULT_OFFLINE_TASK_MINUTES
-    
+
     def calculate_work_minutes(self) -> int:
         """
         Calculate total work minutes including modifiers.
@@ -490,121 +437,133 @@ class RepairTask(BaseModel):
         # 爆单任务独立计算
         if self.is_rush_order:
             rush_minutes = 15  # 爆单任务固定15分钟
-            
+
             # 爆单任务仍然可以与异常扣时叠加
             penalty_minutes = 0
-            
+
             # 应用异常扣时标签
             for tag in self.tags:
                 if tag.is_active and tag.is_penalty_tag():
-                    penalty_minutes += abs(tag.work_minutes_modifier)  # 扣时标签为负数，这里取绝对值
-            
+                    penalty_minutes += abs(
+                        tag.work_minutes_modifier
+                    )  # 扣时标签为负数，这里取绝对值
+
             # Apply time-based penalties
             if self.is_overdue_response:
                 from app.core.config import settings
+
                 penalty_minutes += settings.LATE_RESPONSE_PENALTY_MINUTES
-            
+
             if self.is_overdue_completion:
                 from app.core.config import settings
+
                 penalty_minutes += settings.LATE_COMPLETION_PENALTY_MINUTES
-            
+
             if self.is_negative_review:
                 from app.core.config import settings
+
                 penalty_minutes += settings.NEGATIVE_REVIEW_PENALTY_MINUTES
-            
+
             return max(0, rush_minutes - penalty_minutes)
-        
+
         # 非爆单任务：传统叠加计算
         base_minutes = self.get_base_work_minutes()
         total_minutes = base_minutes
-        
+
         # Apply tag modifiers
         for tag in self.tags:
             if tag.is_active:
                 total_minutes += tag.work_minutes_modifier
-        
+
         # Apply time-based penalties
         if self.is_overdue_response:
             from app.core.config import settings
+
             total_minutes -= settings.LATE_RESPONSE_PENALTY_MINUTES
-        
+
         if self.is_overdue_completion:
             from app.core.config import settings
+
             total_minutes -= settings.LATE_COMPLETION_PENALTY_MINUTES
-        
+
         if self.is_negative_review:
             from app.core.config import settings
+
             total_minutes -= settings.NEGATIVE_REVIEW_PENALTY_MINUTES
-        
+
         # Ensure minimum 0 minutes
         return max(0, total_minutes)
-    
+
     def update_work_minutes(self) -> None:
         """Update calculated work minutes."""
         self.base_work_minutes = self.get_base_work_minutes()
         self.work_minutes = self.calculate_work_minutes()
-    
+
     def add_tag(self, tag: TaskTag) -> None:
         """Add a tag to the task."""
         if tag not in self.tags:
             self.tags.append(tag)
             self.update_work_minutes()
-    
+
     def remove_tag(self, tag: TaskTag) -> None:
         """Remove a tag from the task."""
         if tag in self.tags:
             self.tags.remove(tag)
             self.update_work_minutes()
-    
+
     # 重构新增方法：数据完整性支持
-    
+
     def set_original_data(self, data: dict) -> None:
         """设置A表原始数据"""
         self.original_data = data
-    
+
     def set_matched_member_data(self, member_data: dict) -> None:
         """设置B表匹配的成员数据"""
         self.matched_member_data = member_data
-    
+
     def mark_as_rush_order(self, is_rush: bool = True) -> None:
         """标记/取消爆单任务"""
         self.is_rush_order = is_rush
         self.update_work_minutes()  # 重新计算工时
-    
+
     def set_task_type_by_repair_form(self, repair_form: str) -> None:
         """根据B表检修形式设置任务类型"""
         if not repair_form:
             return
-        
+
         self.repair_form = repair_form
         repair_form_lower = repair_form.lower()
-        
+
         # 根据检修形式判断线上/线下
         if "远程" in repair_form_lower or "线上" in repair_form_lower:
             self.task_type = TaskType.ONLINE
-        elif "现场" in repair_form_lower or "线下" in repair_form_lower or "实地" in repair_form_lower:
+        elif (
+            "现场" in repair_form_lower
+            or "线下" in repair_form_lower
+            or "实地" in repair_form_lower
+        ):
             self.task_type = TaskType.OFFLINE
         else:
             # 默认为线上任务
             self.task_type = TaskType.ONLINE
-        
+
         # 更新基础工时
         self.base_work_minutes = self.get_base_work_minutes()
         self.update_work_minutes()
-    
+
     def set_status_by_work_order_status(self, work_order_status: str) -> None:
         """根据A表工单状态设置任务状态"""
         if not work_order_status:
             return
-        
+
         self.work_order_status = work_order_status
         status_lower = work_order_status.lower()
-        
+
         # 状态映射规则
         if "已完成" in status_lower or "完成" in status_lower:
             self.status = TaskStatus.COMPLETED
         elif "进行中" in status_lower or "处理中" in status_lower:
-            self.status = TaskStatus.IN_PROGRESS  
+            self.status = TaskStatus.IN_PROGRESS
         elif "待处理" in status_lower or "未处理" in status_lower:
             self.status = TaskStatus.PENDING
         elif "已取消" in status_lower or "取消" in status_lower:
@@ -612,15 +571,17 @@ class RepairTask(BaseModel):
         else:
             # 默认状态
             self.status = TaskStatus.PENDING
-    
+
     def get_rush_order_info(self) -> dict:
         """获取爆单任务信息"""
         return {
             "is_rush_order": self.is_rush_order,
             "rush_work_minutes": 15 if self.is_rush_order else 0,
-            "normal_work_minutes": self.calculate_work_minutes() if not self.is_rush_order else 0
+            "normal_work_minutes": (
+                self.calculate_work_minutes() if not self.is_rush_order else 0
+            ),
         }
-    
+
     def get_import_data_summary(self) -> dict:
         """获取导入数据摘要"""
         return {
@@ -629,102 +590,80 @@ class RepairTask(BaseModel):
             "is_matched": self.is_matched,
             "import_batch_id": self.import_batch_id,
             "work_order_status": self.work_order_status,
-            "repair_form": self.repair_form
+            "repair_form": self.repair_form,
         }
 
 
 class MonitoringTask(BaseModel):
     """
     Monitoring task model.
-    
+
     Represents daily monitoring and inspection tasks.
     Members manually log these tasks with time tracking.
     """
-    
+
     __tablename__ = "monitoring_tasks"
-    
+
     # Assignment
     member_id = Column(
         Integer,
         ForeignKey("members.id"),
         nullable=False,
         index=True,
-        comment="Assigned member ID"
+        comment="Assigned member ID",
     )
-    
+
     # Task details
-    title = Column(
-        String(200),
-        nullable=False,
-        comment="Task title"
-    )
-    
-    description = Column(
-        Text,
-        nullable=True,
-        comment="Task description"
-    )
-    
-    location = Column(
-        String(200),
-        nullable=True,
-        comment="Monitoring location"
-    )
-    
+    title = Column(String(200), nullable=False, comment="Task title")
+
+    description = Column(Text, nullable=True, comment="Task description")
+
+    location = Column(String(200), nullable=True, comment="Monitoring location")
+
     # Task categorization
     monitoring_type = Column(
         String(50),
         nullable=False,
-        comment="Monitoring type (inspection, maintenance, etc.)"
+        comment="Monitoring type (inspection, maintenance, etc.)",
     )
-    
+
     # Time tracking
     start_time = Column(
-        DateTime(timezone=True),
-        nullable=False,
-        comment="Task start time"
+        DateTime(timezone=True), nullable=False, comment="Task start time"
     )
-    
-    end_time = Column(
-        DateTime(timezone=True),
-        nullable=False,
-        comment="Task end time"
-    )
-    
-    work_minutes = Column(
-        Integer,
-        nullable=False,
-        comment="Actual work minutes"
-    )
-    
+
+    end_time = Column(DateTime(timezone=True), nullable=False, comment="Task end time")
+
+    work_minutes = Column(Integer, nullable=False, comment="Actual work minutes")
+
     # Status
     status = Column(
         Enum(TaskStatus),
         default=TaskStatus.COMPLETED,
         nullable=False,
-        comment="Task status"
+        comment="Task status",
     )
-    
+
     # Relationships
     member: Mapped["Member"] = relationship("Member", back_populates="monitoring_tasks")
-    
+
     # Constraints and indexes
     __table_args__ = (
-        Index('idx_monitoring_task_member_time', 'member_id', 'start_time'),
-        {'comment': 'Monitoring tasks table'}
+        Index("idx_monitoring_task_member_time", "member_id", "start_time"),
+        {"comment": "Monitoring tasks table"},
     )
-    
+
     def __repr__(self) -> str:
         """String representation."""
         return f"<MonitoringTask(id={self.id}, member_id={self.member_id}, work_minutes={self.work_minutes})>"
-    
+
     def calculate_duration_minutes(self) -> int:
         """Calculate duration in minutes."""
         if self.end_time and self.start_time:
             duration = self.end_time - self.start_time
             return int(duration.total_seconds() / 60)
         return 0
-    
+
     def update_work_minutes(self) -> None:
         """Update work minutes based on duration."""
         self.work_minutes = self.calculate_duration_minutes()
@@ -733,93 +672,69 @@ class MonitoringTask(BaseModel):
 class AssistanceTask(BaseModel):
     """
     Assistance task model.
-    
+
     Represents tasks where members assist other departments or teams.
     """
-    
+
     __tablename__ = "assistance_tasks"
-    
+
     # Assignment
     member_id = Column(
         Integer,
         ForeignKey("members.id"),
         nullable=False,
         index=True,
-        comment="Assisting member ID"
+        comment="Assisting member ID",
     )
-    
+
     # Task details
-    title = Column(
-        String(200),
-        nullable=False,
-        comment="Assistance task title"
-    )
-    
-    description = Column(
-        Text,
-        nullable=True,
-        comment="Task description"
-    )
-    
+    title = Column(String(200), nullable=False, comment="Assistance task title")
+
+    description = Column(Text, nullable=True, comment="Task description")
+
     assisted_department = Column(
-        String(100),
-        nullable=True,
-        comment="Assisted department/team"
+        String(100), nullable=True, comment="Assisted department/team"
     )
-    
-    assisted_person = Column(
-        String(50),
-        nullable=True,
-        comment="Assisted person name"
-    )
-    
+
+    assisted_person = Column(String(50), nullable=True, comment="Assisted person name")
+
     # Time tracking
     start_time = Column(
-        DateTime(timezone=True),
-        nullable=False,
-        comment="Task start time"
+        DateTime(timezone=True), nullable=False, comment="Task start time"
     )
-    
-    end_time = Column(
-        DateTime(timezone=True),
-        nullable=False,
-        comment="Task end time"
-    )
-    
-    work_minutes = Column(
-        Integer,
-        nullable=False,
-        comment="Assistance work minutes"
-    )
-    
+
+    end_time = Column(DateTime(timezone=True), nullable=False, comment="Task end time")
+
+    work_minutes = Column(Integer, nullable=False, comment="Assistance work minutes")
+
     # Status
     status = Column(
         Enum(TaskStatus),
         default=TaskStatus.COMPLETED,
         nullable=False,
-        comment="Task status"
+        comment="Task status",
     )
-    
+
     # Relationships
     member: Mapped["Member"] = relationship("Member", back_populates="assistance_tasks")
-    
+
     # Constraints and indexes
     __table_args__ = (
-        Index('idx_assistance_task_member_time', 'member_id', 'start_time'),
-        {'comment': 'Assistance tasks table'}
+        Index("idx_assistance_task_member_time", "member_id", "start_time"),
+        {"comment": "Assistance tasks table"},
     )
-    
+
     def __repr__(self) -> str:
         """String representation."""
         return f"<AssistanceTask(id={self.id}, member_id={self.member_id}, work_minutes={self.work_minutes})>"
-    
+
     def calculate_duration_minutes(self) -> int:
         """Calculate duration in minutes."""
         if self.end_time and self.start_time:
             duration = self.end_time - self.start_time
             return int(duration.total_seconds() / 60)
         return 0
-    
+
     def update_work_minutes(self) -> None:
         """Update work minutes based on duration."""
         self.work_minutes = self.calculate_duration_minutes()

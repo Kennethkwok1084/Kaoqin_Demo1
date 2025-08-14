@@ -15,11 +15,11 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.core.config import settings, get_cors_origins, get_log_config
-from app.core.database import init_database, close_database, check_database_health
+from app.core.cache import cleanup_cache, init_cache
+from app.core.config import get_cors_origins, get_log_config, settings
+from app.core.database import check_database_health, close_database, init_database
 from app.core.exceptions import BaseCustomException, create_http_exception
 from app.core.security import get_security_headers
-from app.core.cache import init_cache, cleanup_cache
 
 # Configure logging
 logging.config.dictConfig(get_log_config())
@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan handler."""
     # Startup
     logger.info("Starting up application...")
-    
+
     # Skip all external connections in testing mode
     if settings.TESTING:
         logger.info("Running in testing mode - skipping external service connections")
@@ -40,22 +40,22 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         if settings.DEBUG:
             await init_database()
             logger.info("Database initialized")
-        
+
         # Check database health
         db_healthy = await check_database_health()
         if not db_healthy:
             logger.error("Database health check failed!")
         else:
             logger.info("Database health check passed")
-        
+
         # Initialize cache
         await init_cache()
         logger.info("Cache initialized")
-    
+
     logger.info("Application startup complete")
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down application...")
     if not settings.TESTING:
@@ -75,17 +75,18 @@ app = FastAPI(
     redoc_url="/redoc" if settings.DEBUG else None,
 )
 
+
 # Add security headers middleware
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     """Add security headers to all responses."""
     response = await call_next(request)
-    
+
     if settings.SECURITY_HEADERS_ENABLED:
         headers = get_security_headers()
         for header, value in headers.items():
             response.headers[header] = value
-    
+
     return response
 
 
@@ -102,7 +103,7 @@ app.add_middleware(
 if not settings.DEBUG:
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=["localhost", "127.0.0.1", "*.yourdomain.com"]
+        allowed_hosts=["localhost", "127.0.0.1", "*.yourdomain.com"],
     )
 
 
@@ -117,8 +118,8 @@ async def custom_exception_handler(request: Request, exc: BaseCustomException):
             "error": True,
             "message": exc.message,
             "details": exc.details,
-            "type": exc.__class__.__name__
-        }
+            "type": exc.__class__.__name__,
+        },
     )
 
 
@@ -132,8 +133,8 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
             "error": True,
             "message": exc.detail,
             "details": {},
-            "type": "HTTPException"
-        }
+            "type": "HTTPException",
+        },
     )
 
 
@@ -141,21 +142,21 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """Handle request validation errors."""
     logger.warning(f"Validation error: {exc.errors()}")
-    
+
     # Format validation errors
     errors = {}
     for error in exc.errors():
         field = ".".join(str(loc) for loc in error["loc"][1:])  # Skip 'body'
         errors[field] = error["msg"]
-    
+
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
             "error": True,
             "message": "Validation failed",
             "details": {"field_errors": errors},
-            "type": "ValidationError"
-        }
+            "type": "ValidationError",
+        },
     )
 
 
@@ -163,18 +164,19 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 async def global_exception_handler(request: Request, exc: Exception):
     """Handle unexpected exceptions."""
     logger.error(f"Unexpected error: {str(exc)}", exc_info=exc)
-    
+
     if settings.DEBUG:
         # In debug mode, return detailed error info
         import traceback
+
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
                 "error": True,
                 "message": str(exc),
                 "details": {"traceback": traceback.format_exc()},
-                "type": exc.__class__.__name__
-            }
+                "type": exc.__class__.__name__,
+            },
         )
     else:
         # In production, return generic error
@@ -184,8 +186,8 @@ async def global_exception_handler(request: Request, exc: Exception):
                 "error": True,
                 "message": "Internal server error",
                 "details": {},
-                "type": "InternalServerError"
-            }
+                "type": "InternalServerError",
+            },
         )
 
 
@@ -194,12 +196,12 @@ async def global_exception_handler(request: Request, exc: Exception):
 async def health_check():
     """Health check endpoint."""
     db_healthy = await check_database_health()
-    
+
     return {
         "status": "healthy" if db_healthy else "unhealthy",
         "version": settings.APP_VERSION,
         "database": "connected" if db_healthy else "disconnected",
-        "debug": settings.DEBUG
+        "debug": settings.DEBUG,
     }
 
 
@@ -207,12 +209,12 @@ async def health_check():
 async def api_health_check():
     """API health check endpoint."""
     db_healthy = await check_database_health()
-    
+
     return {
         "status": "healthy" if db_healthy else "unhealthy",
         "api_version": "v1",
         "database": "connected" if db_healthy else "disconnected",
-        "endpoints": "operational"
+        "endpoints": "operational",
     }
 
 
@@ -223,13 +225,15 @@ async def root():
         "message": "欢迎使用考勤管理系统 API",
         "version": settings.APP_VERSION,
         "docs": "/docs" if settings.DEBUG else "disabled",
-        "health": "/health"
+        "health": "/health",
     }
 
 
 # Include API routers
-from app.api.v1 import auth, members, tasks, attendance, statistics
+from app.api.v1 import attendance, auth
 from app.api.v1 import import_api as import_router
+from app.api.v1 import members, statistics, tasks
+
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(members.router, prefix="/api/v1/members", tags=["Members"])
 app.include_router(tasks.router, prefix="/api/v1/tasks", tags=["Tasks"])
@@ -240,27 +244,30 @@ app.include_router(import_router.router, prefix="/api/v1/import", tags=["Import"
 
 # Development utilities
 if settings.DEBUG:
+
     @app.get("/debug/config", tags=["Debug"])
     async def debug_config():
         """Debug endpoint to view configuration (development only)."""
         return {
             "app_name": settings.APP_NAME,
             "debug": settings.DEBUG,
-            "database_url": settings.DATABASE_URL.replace(
-                settings.DATABASE_URL.split("@")[0].split(":")[-1],
-                "***"
-            ) if "@" in settings.DATABASE_URL else "***",
+            "database_url": (
+                settings.DATABASE_URL.replace(
+                    settings.DATABASE_URL.split("@")[0].split(":")[-1], "***"
+                )
+                if "@" in settings.DATABASE_URL
+                else "***"
+            ),
             "cors_origins": get_cors_origins(),
             "log_level": settings.LOG_LEVEL,
         }
-    
+
     @app.get("/debug/db-tables", tags=["Debug"])
     async def debug_db_tables():
         """Debug endpoint to view database tables (development only)."""
         from app.core.database import get_table_names
-        return {
-            "tables": get_table_names()
-        }
+
+        return {"tables": get_table_names()}
 
 
 # Application factory function
@@ -273,7 +280,7 @@ def create_app() -> FastAPI:
 def run():
     """Run the application with uvicorn (development only)."""
     import uvicorn
-    
+
     uvicorn.run(
         "app.main:app",
         host=settings.HOST,

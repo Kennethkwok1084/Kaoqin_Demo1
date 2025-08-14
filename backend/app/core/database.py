@@ -6,10 +6,10 @@ Handles SQLAlchemy async and sync database connections.
 import logging
 from typing import AsyncGenerator, Generator
 
-from sqlalchemy import create_engine, MetaData
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy import MetaData, create_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import get_database_url, get_database_url_sync, settings
 
@@ -24,7 +24,7 @@ convention = {
     "uq": "uq_%(table_name)s_%(column_0_name)s",
     "ck": "ck_%(table_name)s_%(constraint_name)s",
     "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
-    "pk": "pk_%(table_name)s"
+    "pk": "pk_%(table_name)s",
 }
 Base.metadata = MetaData(naming_convention=convention)
 
@@ -37,6 +37,12 @@ async_engine = create_async_engine(
     pool_size=10,
     max_overflow=20,
     pool_recycle=3600,  # Recycle connections every hour
+    connect_args={
+        "statement_cache_size": 0,  # Disable prepared statements for pgbouncer compatibility
+        "server_settings": {
+            "application_name": "kaoqin_backend",
+        }
+    }
 )
 
 # Async Session Factory
@@ -109,6 +115,7 @@ async def check_database_health() -> bool:
     """
     try:
         from sqlalchemy import text
+
         async with AsyncSessionLocal() as session:
             await session.execute(text("SELECT 1"))
             return True
@@ -126,7 +133,8 @@ async def init_database() -> None:
     if settings.DEBUG or settings.TESTING:
         async with async_engine.begin() as conn:
             # Import all models to ensure they are registered
-            from app.models import member, task, attendance  # noqa
+            from app.models import attendance, member, task  # noqa
+
             await conn.run_sync(Base.metadata.create_all)
             logger.info("Database tables created successfully")
     else:
@@ -147,13 +155,13 @@ async def close_database() -> None:
 # Transaction Helper
 class DatabaseTransaction:
     """Context manager for database transactions."""
-    
+
     def __init__(self, session: AsyncSession):
         self.session = session
-    
+
     async def __aenter__(self) -> AsyncSession:
         return self.session
-    
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if exc_type is not None:
             await self.session.rollback()
@@ -165,13 +173,13 @@ class DatabaseTransaction:
 # Bulk Operations Helper
 class BulkOperations:
     """Helper class for bulk database operations."""
-    
+
     @staticmethod
     async def bulk_insert(session: AsyncSession, instances: list) -> None:
         """Bulk insert instances."""
         session.add_all(instances)
         await session.flush()
-    
+
     @staticmethod
     async def bulk_update(session: AsyncSession, mappings: list) -> None:
         """Bulk update instances."""
@@ -190,7 +198,7 @@ def get_model_by_tablename(tablename: str):
     """Get model class by table name."""
     for mapper in Base.registry.mappers:
         model = mapper.class_
-        if hasattr(model, '__tablename__') and model.__tablename__ == tablename:
+        if hasattr(model, "__tablename__") and model.__tablename__ == tablename:
             return model
     return None
 
@@ -215,16 +223,20 @@ from sqlalchemy import event
 
 
 @event.listens_for(async_engine.sync_engine, "before_cursor_execute")
-def receive_before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+def receive_before_cursor_execute(
+    conn, cursor, statement, parameters, context, executemany
+):
     """Log slow queries in debug mode."""
     if settings.DEBUG:
         context._query_start_time = time.time()
 
 
 @event.listens_for(async_engine.sync_engine, "after_cursor_execute")
-def receive_after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+def receive_after_cursor_execute(
+    conn, cursor, statement, parameters, context, executemany
+):
     """Log query execution time in debug mode."""
-    if settings.DEBUG and hasattr(context, '_query_start_time'):
+    if settings.DEBUG and hasattr(context, "_query_start_time"):
         total = time.time() - context._query_start_time
         if total > 0.1:  # Log queries taking more than 100ms
             logger.warning(f"Slow query ({total:.3f}s): {statement[:100]}...")

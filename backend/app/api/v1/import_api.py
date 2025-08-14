@@ -10,7 +10,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi import status as http_status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db, get_current_user, create_response, create_error_response
+from app.api.deps import (
+    create_error_response,
+    create_response,
+    get_current_user,
+    get_db,
+)
 from app.models.member import Member
 from app.services.import_service import DataImportService
 
@@ -20,9 +25,11 @@ router = APIRouter()
 
 @router.get("/field-mapping", response_model=Dict[str, Any])
 async def get_import_field_mapping(
-    table_type: Optional[str] = Query("task_table", description="表格类型: task_table, member_table, mixed_table"),
+    table_type: Optional[str] = Query(
+        "task_table", description="表格类型: task_table, member_table, mixed_table"
+    ),
     current_user: Member = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     获取导入字段映射表
@@ -31,17 +38,17 @@ async def get_import_field_mapping(
     try:
         # 初始化导入服务获取字段映射
         import_service = DataImportService(db)
-        
+
         # 获取字段映射配置
         field_mappings = import_service.column_mappings.get(table_type, {})
-        
+
         if not field_mappings:
             available_types = list(import_service.column_mappings.keys())
             raise HTTPException(
                 status_code=http_status.HTTP_400_BAD_REQUEST,
-                detail=f"不支持的表格类型: {table_type}。支持的类型: {available_types}"
+                detail=f"不支持的表格类型: {table_type}。支持的类型: {available_types}",
             )
-        
+
         # 构建详细的字段映射信息
         detailed_mapping = {}
         for field_key, possible_columns in field_mappings.items():
@@ -52,9 +59,9 @@ async def get_import_field_mapping(
                 "required": _is_field_required(field_key),
                 "data_type": _get_field_data_type(field_key),
                 "description": _get_field_description(field_key),
-                "example_values": _get_field_example_values(field_key)
+                "example_values": _get_field_example_values(field_key),
             }
-        
+
         # 额外的导入配置信息
         import_config = {
             "supported_file_types": [".xlsx", ".xls", ".csv"],
@@ -64,19 +71,19 @@ async def get_import_field_mapping(
             "table_types": {
                 "task_table": {
                     "name": "维修任务表",
-                    "description": "包含报修单数据的A表"
+                    "description": "包含报修单数据的A表",
                 },
                 "member_table": {
-                    "name": "人员信息表", 
-                    "description": "包含维护人员信息的B表"
+                    "name": "人员信息表",
+                    "description": "包含维护人员信息的B表",
                 },
                 "mixed_table": {
                     "name": "混合表",
-                    "description": "包含任务和人员信息的综合表"
-                }
-            }
+                    "description": "包含任务和人员信息的综合表",
+                },
+            },
         }
-        
+
         # 业务规则说明
         business_rules = {
             "matching_strategy": {
@@ -84,7 +91,7 @@ async def get_import_field_mapping(
                 "description": "使用【报修人姓名 + 联系方式】作为关键字段进行匹配",
                 "key_fields": ["reporter_name", "reporter_contact"],
                 "fuzzy_matching": True,
-                "confidence_threshold": 0.8
+                "confidence_threshold": 0.8,
             },
             "work_hour_calculation": {
                 "online_task_minutes": 40,
@@ -93,20 +100,25 @@ async def get_import_field_mapping(
                 "positive_review_bonus_minutes": 30,
                 "late_response_penalty_minutes": 30,
                 "late_completion_penalty_minutes": 30,
-                "negative_review_penalty_minutes": 60
+                "negative_review_penalty_minutes": 60,
             },
             "status_mapping": {
                 "completed_keywords": ["已完成", "完成", "finished", "completed"],
-                "in_progress_keywords": ["进行中", "处理中", "in_progress", "processing"],
+                "in_progress_keywords": [
+                    "进行中",
+                    "处理中",
+                    "in_progress",
+                    "processing",
+                ],
                 "pending_keywords": ["待处理", "未处理", "pending", "new"],
-                "cancelled_keywords": ["已取消", "取消", "cancelled", "canceled"]
+                "cancelled_keywords": ["已取消", "取消", "cancelled", "canceled"],
             },
             "task_type_detection": {
                 "offline_keywords": ["现场", "线下", "实地", "offline", "onsite"],
-                "online_keywords": ["远程", "线上", "online", "remote"]
-            }
+                "online_keywords": ["远程", "线上", "online", "remote"],
+            },
         }
-        
+
         return create_response(
             data={
                 "table_type": table_type,
@@ -114,18 +126,19 @@ async def get_import_field_mapping(
                 "import_config": import_config,
                 "business_rules": business_rules,
                 "total_fields": len(detailed_mapping),
-                "required_fields": [k for k, v in detailed_mapping.items() if v["required"]]
+                "required_fields": [
+                    k for k, v in detailed_mapping.items() if v["required"]
+                ],
             },
-            message=f"成功获取{table_type}字段映射配置"
+            message=f"成功获取{table_type}字段映射配置",
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Get field mapping error: {str(e)}")
         return create_error_response(
-            message="获取字段映射失败",
-            details={"error": str(e)}
+            message="获取字段映射失败", details={"error": str(e)}
         )
 
 
@@ -156,7 +169,7 @@ def _get_field_display_name(field_key: str) -> str:
         "employee_id": "工号",
         "class_name": "班级",
         "skill_level": "技能等级",
-        "work_area": "工作区域"
+        "work_area": "工作区域",
     }
     return display_names.get(field_key, field_key.replace("_", " ").title())
 
@@ -171,7 +184,7 @@ def _get_field_data_type(field_key: str) -> str:
     """获取字段数据类型"""
     data_types = {
         "task_id": "string",
-        "title": "string", 
+        "title": "string",
         "description": "text",
         "reporter_name": "string",
         "reporter_contact": "string",
@@ -194,7 +207,7 @@ def _get_field_data_type(field_key: str) -> str:
         "employee_id": "string",
         "class_name": "string",
         "skill_level": "string",
-        "work_area": "string"
+        "work_area": "string",
     }
     return data_types.get(field_key, "string")
 
@@ -226,7 +239,7 @@ def _get_field_description(field_key: str) -> str:
         "employee_id": "员工编号或学号",
         "class_name": "班级或小组",
         "skill_level": "技能水平等级",
-        "work_area": "负责的工作区域"
+        "work_area": "负责的工作区域",
     }
     return descriptions.get(field_key, f"{field_key}字段")
 
@@ -258,7 +271,7 @@ def _get_field_example_values(field_key: str) -> List[str]:
         "employee_id": ["2024001", "EMP001", "20210001"],
         "class_name": ["计算机1班", "网络技术组", "维修小组"],
         "skill_level": ["初级", "中级", "高级"],
-        "work_area": ["A区", "B栋", "全校区"]
+        "work_area": ["A区", "B栋", "全校区"],
     }
     return examples.get(field_key, [f"{field_key}示例值"])
 
@@ -267,7 +280,7 @@ def _get_field_example_values(field_key: str) -> List[str]:
 async def get_import_template(
     template_type: str = "repair_task",
     current_user: Member = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     获取导入模板
@@ -276,23 +289,21 @@ async def get_import_template(
     try:
         import_service = DataImportService(db)
         template = await import_service.get_import_template(template_type)
-        
+
         if not template:
             raise HTTPException(
                 status_code=http_status.HTTP_404_NOT_FOUND,
-                detail=f"未找到模板类型: {template_type}"
+                detail=f"未找到模板类型: {template_type}",
             )
-        
+
         return create_response(
-            data=template,
-            message=f"成功获取{template_type}导入模板"
+            data=template, message=f"成功获取{template_type}导入模板"
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Get import template error: {str(e)}")
         return create_error_response(
-            message="获取导入模板失败",
-            details={"error": str(e)}
+            message="获取导入模板失败", details={"error": str(e)}
         )

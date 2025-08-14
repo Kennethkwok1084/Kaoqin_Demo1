@@ -23,5 +23,5 @@ def benchmark_config():
         "max_time": 0.1,  # 100ms max for single operations
         "min_rounds": 5,
         "warmup": True,
-        "warmup_iterations": 2
+        "warmup_iterations": 2,
     }
