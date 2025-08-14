@@ -7,7 +7,6 @@ import enum
 from datetime import date, datetime
 from typing import TYPE_CHECKING, List
 
-from app.models.base import BaseModel
 from sqlalchemy import (
     Boolean,
     Column,
@@ -19,6 +18,8 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, relationship
+
+from app.models.base import BaseModel
 
 if TYPE_CHECKING:
     from app.models.attendance import (

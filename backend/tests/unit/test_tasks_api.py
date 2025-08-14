@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+from fastapi import HTTPException
+
 from app.api.v1.tasks import (
     get_all_tasks,
     get_assistance_tasks,
@@ -16,7 +18,6 @@ from app.api.v1.tasks import (
 )
 from app.models.member import Member, UserRole
 from app.models.task import RepairTask, TaskCategory, TaskPriority, TaskStatus, TaskType
-from fastapi import HTTPException
 
 
 class TestTasksAPI:

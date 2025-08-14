@@ -6,7 +6,6 @@
 from datetime import datetime
 from typing import Optional
 
-from app.models.member import UserRole
 from pydantic import BaseModel, ConfigDict, Field
 
 

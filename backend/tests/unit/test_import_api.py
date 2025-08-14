@@ -3,10 +3,10 @@ Unit tests for Import API endpoints.
 Tests the field mapping and import functionality with mocked dependencies.
 """
 
-from typing import Any, Dict
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock
 
 import pytest
+
 from app.api.v1.import_api import get_import_field_mapping
 from app.models.member import Member, UserRole
 

@@ -7,6 +7,12 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import status as http_status
+from sqlalchemy import and_, desc, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload, selectinload
+
 from app.api.deps import (
     create_error_response,
     create_response,
@@ -15,41 +21,23 @@ from app.api.deps import (
     get_current_user,
     get_db,
 )
-from app.core.config import settings
 from app.models.member import Member, UserRole
 from app.models.task import (
-    AssistanceTask,
-    MonitoringTask,
     RepairTask,
     TaskCategory,
     TaskPriority,
     TaskStatus,
     TaskTag,
     TaskType,
-    task_tag_association,
 )
 from app.schemas.task import (
     TaskAssignment,
     TaskCreate,
-    TaskDetailResponse,
-    TaskImportRequest,
-    TaskImportResult,
-    TaskListResponse,
-    TaskResponse,
-    TaskSearchParams,
-    TaskStatistics,
     TaskStatusUpdate,
     TaskTagCreate,
-    TaskTagResponse,
     TaskUpdate,
     WorkHourCalculation,
-    WorkHourResult,
 )
-from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi import status as http_status
-from sqlalchemy import and_, delete, desc, func, or_, select, update
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload, selectinload
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -2432,7 +2420,7 @@ async def batch_mark_rush_tasks(
     权限：仅管理员可标记爆单任务
     """
     try:
-        from datetime import date
+        pass
 
         from app.services.work_hours_service import RushTaskMarkingService
 
@@ -3678,10 +3666,6 @@ async def enhanced_import_with_ab_matching(
     权限：组长及以上可执行增强导入
     """
     try:
-        from app.services.ab_table_matching_service import (
-            ABTableMatchingService,
-            MatchingStrategy,
-        )
         from app.services.import_service import ImportService
 
         import_service = ImportService(db)
@@ -3914,7 +3898,7 @@ async def bulk_recalculate_work_hours_enhanced(
     权限：仅管理员可批量重算工时
     """
     try:
-        from datetime import date
+        pass
 
         from app.services.work_hours_service import RushTaskMarkingService
 

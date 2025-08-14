@@ -4,11 +4,11 @@
 """
 
 from datetime import datetime
-from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from app.models.task import TaskPriority, TaskStatus, TaskType
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from app.models.task import TaskPriority, TaskStatus, TaskType
 
 
 class TaskTagBase(BaseModel):
@@ -331,17 +331,17 @@ class TaskSearchParams(BaseModel):
     @model_validator(mode="after")
     def validate_date_ranges(self):
         """验证日期范围"""
-        date_from = values.get("date_from")
-        date_to = values.get("date_to")
+        date_from = self.date_from
+        date_to = self.date_to
         if date_from and date_to and date_from > date_to:
             raise ValueError("创建时间起始不能晚于结束时间")
 
-        deadline_from = values.get("deadline_from")
-        deadline_to = values.get("deadline_to")
+        deadline_from = self.deadline_from
+        deadline_to = self.deadline_to
         if deadline_from and deadline_to and deadline_from > deadline_to:
             raise ValueError("截止时间起始不能晚于结束时间")
 
-        return values
+        return self
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -373,13 +373,13 @@ class TaskStatusUpdate(BaseModel):
     @model_validator(mode="after")
     def validate_completion_data(self):
         """验证完成数据"""
-        status = values.get("status")
-        actual_minutes = values.get("actual_minutes")
+        status = self.status
+        actual_minutes = self.actual_minutes
 
         if status == TaskStatus.COMPLETED and actual_minutes is None:
             raise ValueError("完成任务时必须提供实际工时")
 
-        return values
+        return self
 
     model_config = ConfigDict(
         json_schema_extra={

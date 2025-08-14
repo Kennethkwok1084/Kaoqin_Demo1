@@ -8,10 +8,14 @@ import os
 import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
-from app.core.config import get_upload_path, settings
+from fastapi import UploadFile
+from sqlalchemy import and_, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.config import get_upload_path
 from app.models.member import Member
 from app.models.task import (
     RepairTask,
@@ -19,7 +23,6 @@ from app.models.task import (
     TaskPriority,
     TaskStatus,
     TaskTag,
-    TaskTagType,
     TaskType,
 )
 from app.services.ab_table_matching_service import (
@@ -27,10 +30,6 @@ from app.services.ab_table_matching_service import (
     MatchingStrategy,
 )
 from app.services.task_service import TaskService
-from fastapi import UploadFile
-from sqlalchemy import and_, func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 logger = logging.getLogger(__name__)
 

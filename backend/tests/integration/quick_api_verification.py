@@ -3,7 +3,6 @@
 验证新增的业务逻辑API是否正常响应
 """
 
-import asyncio
 import sys
 import traceback
 from pathlib import Path
@@ -12,7 +11,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from fastapi.testclient import TestClient
 

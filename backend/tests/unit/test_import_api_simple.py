@@ -3,9 +3,10 @@ Simplified unit tests for Import API endpoints.
 Tests the field mapping functionality with the actual API structure.
 """
 
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock
 
 import pytest
+
 from app.api.v1.import_api import get_import_field_mapping
 from app.models.member import Member, UserRole
 

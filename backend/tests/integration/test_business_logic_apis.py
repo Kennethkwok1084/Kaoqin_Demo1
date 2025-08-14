@@ -4,15 +4,12 @@
 """
 
 import asyncio
-from datetime import date, datetime, timedelta
-from typing import Any, Dict
+from datetime import datetime, timedelta
+from typing import Dict
 
-import pytest
-from app.core.config import settings
-from app.models.attendance import AttendanceRecord
-from app.models.member import Member, UserRole
-from app.models.task import RepairTask, TaskCategory, TaskPriority, TaskStatus, TaskType
 from httpx import AsyncClient
+
+from app.models.task import TaskCategory, TaskPriority, TaskStatus, TaskType
 
 
 class TestWorkHoursManagementAPI:

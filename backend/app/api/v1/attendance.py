@@ -5,14 +5,14 @@
 """
 
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from typing import Any, Dict, List, Optional
 
-from app.api.deps import get_current_user, get_db
-from app.core.config import settings
-from app.models.member import Member
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.deps import get_current_user, get_db
+from app.models.member import Member
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +42,10 @@ async def get_work_hours_records(
     - 管理员可查看所有人的记录
     """
     try:
+        from sqlalchemy import and_, select
+
         from app.models.member import Member
-        from app.models.task import AssistanceTask, MonitoringTask, RepairTask
-        from sqlalchemy import and_, or_, select
+        from app.models.task import RepairTask
 
         # 权限检查
         if member_id and member_id != current_user.id:
@@ -171,9 +172,10 @@ async def get_monthly_work_hours_summary(
 
         target_member_id = member_id or current_user.id
 
+        from sqlalchemy import func, select
+
         from app.models.member import Member
         from app.models.task import AssistanceTask, MonitoringTask, RepairTask
-        from sqlalchemy import func, select
 
         # 获取成员信息
         member_query = select(Member).where(Member.id == target_member_id)
@@ -288,9 +290,10 @@ async def get_today_work_hours_summary(
 ):
     """获取今日工时统计概览"""
     try:
+        from sqlalchemy import func, select
+
         from app.models.member import Member
         from app.models.task import AssistanceTask, MonitoringTask, RepairTask
-        from sqlalchemy import func, select
 
         today = datetime.now().date()
         today_start = datetime.combine(today, datetime.min.time())
@@ -403,15 +406,14 @@ async def export_work_hours_data(
                 detail="只有管理员可以导出工时数据",
             )
 
-        import io
-        import os
         import tempfile
         from datetime import datetime as dt
 
         import pandas as pd
-        from app.models.member import Member
-        from app.models.task import AssistanceTask, MonitoringTask, RepairTask
         from sqlalchemy import and_, select
+
+        from app.models.member import Member
+        from app.models.task import RepairTask
 
         # 构建时间范围
         date_from_dt = datetime.combine(date_from, datetime.min.time())
@@ -529,9 +531,10 @@ async def get_work_hours_stats(
     获取指定时间范围内的工时统计数据
     """
     try:
-        from app.models.member import Member
-        from app.models.task import AssistanceTask, MonitoringTask, RepairTask
         from sqlalchemy import func, select
+
+        from app.models.member import Member
+        from app.models.task import RepairTask
 
         # 解析日期
         try:
@@ -636,11 +639,11 @@ async def get_work_hours_chart_data(
     获取工时图表数据，支持按日、周、月聚合
     """
     try:
-        import calendar
+        pass
 
-        from app.models.member import Member
-        from app.models.task import RepairTask
         from sqlalchemy import func, select, text
+
+        from app.models.task import RepairTask
 
         # 验证图表类型
         if type not in ["daily", "weekly", "monthly"]:

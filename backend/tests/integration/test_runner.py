@@ -3,20 +3,15 @@
 运行完整的集成测试套件并生成详细的测试报告
 """
 
-import asyncio
 import json
 import os
 import subprocess
 import sys
-import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
 import pytest
-import pytest_asyncio
-import pytest_html
-from pytest_html import extras
 
 
 class IntegrationTestRunner:

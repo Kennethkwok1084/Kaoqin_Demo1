@@ -6,7 +6,7 @@ Handles all application settings using Pydantic Settings.
 import secrets
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import AnyHttpUrl, EmailStr, Field, validator
+from pydantic import EmailStr, Field, validator
 
 try:
     from pydantic_settings import BaseSettings

@@ -5,6 +5,9 @@
 
 import pytest
 import pytest_asyncio
+from sqlalchemy import select, text
+from sqlalchemy.exc import IntegrityError
+
 from app.core.security import get_password_hash
 from app.models import Member, UserRole
 from app.models.attendance import (
@@ -13,8 +16,6 @@ from app.models.attendance import (
     AttendanceRecord,
 )
 from app.models.task import RepairTask, TaskPriority, TaskStatus, TaskType
-from sqlalchemy import select, text
-from sqlalchemy.exc import IntegrityError
 
 
 class TestDatabaseConnection:
@@ -165,7 +166,7 @@ class TestTaskModel:
     @pytest.mark.asyncio
     async def test_create_repair_task(self):
         """测试创建维修任务"""
-        from datetime import datetime, timedelta
+        from datetime import datetime
 
         task = RepairTask(
             title="网络维修任务",
@@ -194,7 +195,7 @@ class TestTaskModel:
     @pytest.mark.asyncio
     async def test_task_member_relationship(self):
         """测试任务与成员的关系"""
-        from datetime import datetime, timedelta
+        from datetime import datetime
 
         task = RepairTask(
             title="关系测试任务",
@@ -225,7 +226,7 @@ class TestTaskModel:
     @pytest.mark.asyncio
     async def test_task_number_unique(self):
         """测试任务编号唯一性"""
-        from datetime import datetime, timedelta
+        from datetime import datetime
 
         task1 = RepairTask(
             title="任务1",

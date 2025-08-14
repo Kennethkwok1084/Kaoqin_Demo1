@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from app.core.celery_app import celery_app
-from app.core.database import AsyncSessionLocal, get_async_session
+from app.core.database import AsyncSessionLocal
 from app.services.stats_service import StatisticsService
 from app.services.work_hour_automation import WorkHourAutomationService
 

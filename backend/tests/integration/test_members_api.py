@@ -3,10 +3,9 @@
 测试成员CRUD操作、权限控制、数据验证等
 """
 
-import pytest
 import pytest_asyncio
+
 from app.models import Member, UserRole
-from sqlalchemy import select
 
 
 class TestMembersCRUD:

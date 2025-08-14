@@ -6,6 +6,8 @@ Tests the complete API flow with database interactions.
 from datetime import datetime, timedelta
 
 import pytest
+from httpx import AsyncClient
+
 from app.models.member import Member, UserRole
 from app.models.task import (
     RepairTask,
@@ -13,11 +15,8 @@ from app.models.task import (
     TaskPriority,
     TaskStatus,
     TaskTag,
-    TaskTagType,
     TaskType,
 )
-from httpx import AsyncClient
-from tests.conftest import AsyncTestClient
 
 
 class TestTasksIntegration:

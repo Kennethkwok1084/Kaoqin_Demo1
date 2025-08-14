@@ -3,12 +3,10 @@ Integration tests for Import API endpoints.
 Tests the complete import API flow with database interactions.
 """
 
-from datetime import datetime, timedelta
-
 import pytest
-from app.models.member import Member, UserRole
 from httpx import AsyncClient
-from tests.conftest import AsyncTestClient
+
+from app.models.member import Member, UserRole
 
 
 class TestImportIntegration:

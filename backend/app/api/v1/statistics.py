@@ -8,40 +8,58 @@ from calendar import monthrange
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import and_, case, desc, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
+
 from app.api.deps import (
-    create_error_response,
     create_response,
     get_current_active_admin,
     get_current_active_group_leader,
     get_current_user,
     get_db,
 )
-from app.core.config import settings
 from app.models.attendance import (
-    AttendanceException,
-    AttendanceExceptionStatus,
     AttendanceRecord,
 )
 from app.models.member import Member, UserRole
 from app.models.task import (
-    AssistanceTask,
-    MonitoringTask,
     RepairTask,
-    TaskCategory,
-    TaskPriority,
     TaskStatus,
-    TaskTag,
     TaskType,
 )
 from app.services.attendance_service import AttendanceService
 from app.services.task_service import TaskService
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import and_, case, desc, extract, func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload, selectinload
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def _calculate_efficiency_score(
+    avg_work_minutes: float,
+    avg_completion_hours: float,
+    avg_rating: float,
+    total_tasks: int,
+) -> float:
+    """计算效率分数"""
+    if total_tasks == 0:
+        return 0.0
+
+    # 基础分数
+    base_score = min(avg_rating * 20, 100)  # 5星满分对应100分
+
+    # 工时效率调整 (工时越短越好)
+    if avg_work_minutes > 0:
+        work_efficiency = max(0, 100 - (avg_work_minutes - 60) / 10)  # 60分钟为基准
+        base_score = (base_score + work_efficiency) / 2
+
+    # 完成速度调整 (完成时间越短越好)
+    if avg_completion_hours > 0:
+        time_efficiency = max(0, 100 - (avg_completion_hours - 24) / 2)  # 24小时为基准
+        base_score = (base_score + time_efficiency) / 2
+
+    return round(min(100, max(0, base_score)), 2)
 
 
 # ============= 综合数据概览 =============
@@ -361,7 +379,7 @@ async def get_efficiency_analysis(
                         "avg_rating": round(avg_rating, 2),
                         "online_tasks": online_count,
                         "offline_tasks": offline_count,
-                        "efficiency_score": self._calculate_efficiency_score(
+                        "efficiency_score": _calculate_efficiency_score(
                             avg_work_minutes,
                             avg_completion_hours,
                             avg_rating,
@@ -927,8 +945,9 @@ async def get_attendance_statistics(
 ):
     """获取考勤统计数据（基于工时）"""
     try:
-        from app.models.task import AssistanceTask, MonitoringTask, RepairTask
         from sqlalchemy import func, select
+
+        from app.models.task import RepairTask
 
         # 解析日期范围
         start_date_obj = datetime.strptime(start_date, "%Y-%m-%d").date()

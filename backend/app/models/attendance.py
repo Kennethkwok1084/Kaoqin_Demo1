@@ -3,12 +3,16 @@ Attendance models for daily attendance tracking and exception management.
 Includes attendance records, exceptions, and related enums.
 """
 
-from datetime import date, datetime, time
+from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Optional
 
-from app.models.base import BaseModel
-from sqlalchemy import Boolean, Column, Date, DateTime
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+)
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy import (
     Float,
@@ -17,10 +21,11 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
-    Time,
     UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, relationship
+
+from app.models.base import BaseModel
 
 if TYPE_CHECKING:
     from app.models.member import Member

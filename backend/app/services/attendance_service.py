@@ -8,24 +8,22 @@ from calendar import monthrange
 from datetime import date, datetime, time, timedelta
 from typing import Any, Dict, List, Optional
 
-from app.core.config import settings
+from sqlalchemy import and_, desc, extract, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
+
 from app.models.attendance import (
     AttendanceException,
     AttendanceExceptionStatus,
     AttendanceRecord,
-    MonthlyAttendanceSummary,
 )
 from app.models.member import Member
 from app.schemas.attendance import (
-    AttendanceExceptionResponse,
     AttendanceRecordCreate,
     AttendanceStatisticsResponse,
     AttendanceSummaryResponse,
 )
 from app.services.work_hours_service import WorkHoursCalculationService
-from sqlalchemy import and_, desc, extract, func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload, selectinload
 
 logger = logging.getLogger(__name__)
 

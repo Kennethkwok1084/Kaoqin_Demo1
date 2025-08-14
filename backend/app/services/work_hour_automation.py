@@ -7,21 +7,18 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
+from sqlalchemy import and_, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload, selectinload
+
 from app.core.config import settings
-from app.models.member import Member
 from app.models.task import (
-    AssistanceTask,
-    MonitoringTask,
     RepairTask,
     TaskStatus,
     TaskTag,
-    TaskType,
     task_tag_association,
 )
 from app.services.task_service import TaskService
-from sqlalchemy import and_, func, or_, select, update
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload, selectinload
 
 logger = logging.getLogger(__name__)
 
@@ -556,7 +553,6 @@ class WorkHourAutomationService:
                 f"for task {task_info['task_id']}"
             )
             # 实际的通知发送逻辑
-            pass
 
         # 记录通知历史
         # 可以创建一个NotificationLog模型来记录所有通知

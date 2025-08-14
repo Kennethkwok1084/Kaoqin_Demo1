@@ -8,24 +8,21 @@ import hashlib
 import logging
 from calendar import monthrange
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
-from app.core.cache import cache, cached, invalidate_cache
+from sqlalchemy import and_, case, desc, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.cache import cache
 from app.models.attendance import AttendanceRecord
 from app.models.member import Member, UserRole
 from app.models.task import (
     AssistanceTask,
     MonitoringTask,
     RepairTask,
-    TaskCategory,
-    TaskPriority,
     TaskStatus,
-    TaskTag,
     TaskType,
 )
-from sqlalchemy import and_, case, desc, func, or_, select, text
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload, selectinload
 
 logger = logging.getLogger(__name__)
 

@@ -3,12 +3,12 @@ Exception handling tests for WorkHoursCalculationService.
 Tests input validation and error handling for core service methods.
 """
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from unittest.mock import AsyncMock, Mock
 
 import pytest
-from app.models.member import Member, UserRole
-from app.models.task import RepairTask, TaskStatus, TaskType
+
+from app.models.task import TaskType
 from app.services.work_hours_service import (
     RushTaskMarkingService,
     WorkHoursCalculationService,

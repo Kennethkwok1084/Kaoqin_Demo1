@@ -6,9 +6,7 @@ Tests response times for critical API endpoints.
 import asyncio
 
 import pytest
-import pytest_benchmark
 from httpx import AsyncClient
-from tests.conftest import AsyncTestClient
 
 
 class TestAPIPerformance:

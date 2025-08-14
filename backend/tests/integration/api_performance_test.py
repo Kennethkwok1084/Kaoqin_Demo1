@@ -3,7 +3,6 @@ API性能测试脚本
 测试新增业务逻辑API的性能和响应时间
 """
 
-import asyncio
 import statistics
 import sys
 import time
@@ -15,8 +14,9 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 try:
-    from app.main import app
     from fastapi.testclient import TestClient
+
+    from app.main import app
 
     print("Successfully imported test dependencies")
 except ImportError as e:

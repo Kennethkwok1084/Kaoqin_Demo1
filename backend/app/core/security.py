@@ -4,25 +4,21 @@ Handles JWT tokens, password hashing, and data encryption.
 """
 
 import base64
-import os
 import secrets
 from datetime import datetime, timedelta
 from typing import Any, Optional, Union
 
-from app.core.config import settings
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
+from app.core.config import settings
+
 # Password hashing context
-if settings.PWD_CONTEXT_DEPRECATED:
-    pwd_context = CryptContext(
-        schemes=settings.PWD_CONTEXT_SCHEMES, deprecated=settings.PWD_CONTEXT_DEPRECATED
-    )
-else:
-    pwd_context = CryptContext(schemes=settings.PWD_CONTEXT_SCHEMES)
+# Always use simple bcrypt context to avoid deprecated scheme issues
+pwd_context = CryptContext(schemes=settings.PWD_CONTEXT_SCHEMES)
 
 
 # Password utilities

@@ -6,10 +6,13 @@
 
 import logging
 from calendar import monthrange
-from datetime import date, datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import date, datetime
+from typing import Dict, List, Optional
 
-from app.core.config import settings
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
 from app.models.attendance import MonthlyAttendanceSummary
 from app.models.member import Member
 from app.models.task import (
@@ -21,9 +24,6 @@ from app.models.task import (
     TaskTagType,
     TaskType,
 )
-from sqlalchemy import and_, desc, extract, func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload, selectinload
 
 logger = logging.getLogger(__name__)
 

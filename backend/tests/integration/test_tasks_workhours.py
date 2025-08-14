@@ -6,9 +6,8 @@
 from datetime import datetime, timedelta
 
 import pytest
-import pytest_asyncio
-from app.models.task import RepairTask, TaskPriority, TaskStatus, TaskType
-from sqlalchemy import select
+
+from app.models.task import TaskPriority, TaskStatus
 
 
 class TestTasksCRUD:
@@ -132,7 +131,7 @@ class TestTasksCRUD:
             assert "priority" in task
             assert "created_at" in task
 
-    def test_get_tasks_with_filters(self, client, auth_headers_admin):
+    def test_get_tasks_with_filters(self, client, auth_headers_admin, test_member_user):
         """测试筛选任务"""
         # 按状态筛选
         response = client.get(

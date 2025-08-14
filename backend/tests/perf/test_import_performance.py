@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List
 
 import pytest
-import pytest_benchmark
+
 from app.models.member import Member, UserRole
 from app.models.task import RepairTask, TaskCategory, TaskPriority, TaskStatus, TaskType
 from app.services.import_service import DataImportService

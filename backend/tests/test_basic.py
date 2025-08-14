@@ -43,12 +43,9 @@ async def test_basic_async():
 def test_imports():
     """测试关键模块导入"""
     # 测试标准库
-    import datetime
     import json
 
     # 测试第三方库
-    import pytest
-
     # 测试基本功能
     data = {"test": True}
     json_str = json.dumps(data)

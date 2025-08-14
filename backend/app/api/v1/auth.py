@@ -7,8 +7,12 @@ import logging
 from datetime import timedelta
 from typing import Any, Dict
 
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.api.deps import (
-    create_error_response,
     create_response,
     get_current_user,
     get_db,
@@ -23,20 +27,13 @@ from app.core.security import (
     verify_password,
     verify_token,
 )
-from app.models.member import Member, UserRole
+from app.models.member import Member
 from app.schemas.auth import (
     ChangePasswordRequest,
     LoginRequest,
-    LoginResponse,
     RefreshTokenRequest,
-    TokenResponse,
-    UserProfileResponse,
     UserProfileUpdate,
 )
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
