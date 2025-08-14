@@ -4,7 +4,7 @@ export interface Task {
   id: number
   title: string
   description: string
-  type: 'repair' | 'monitoring' | 'assistance'
+  type: 'network_repair' | 'hardware_repair' | 'software_support' | 'monitoring' | 'assistance' | 'other'  // 修复：使用后端TaskCategory枚举值
   priority: 'low' | 'medium' | 'high' | 'urgent'
   status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
   assigneeId: number | null
@@ -12,7 +12,7 @@ export interface Task {
   reporterId: number
   reporterName: string
   location: string
-  contactInfo: string
+  reporter_contact: string  // 修复：使用reporter_contact与后端保持一致
   estimatedHours: number
   actualHours: number | null
   startedAt: string | null
@@ -55,11 +55,11 @@ export interface TaskEvaluation {
 export interface CreateTaskRequest {
   title: string
   description: string
-  type: 'repair' | 'monitoring' | 'assistance'
+  type: 'network_repair' | 'hardware_repair' | 'software_support' | 'monitoring' | 'assistance' | 'other'  // 修复：使用后端TaskCategory枚举值
   priority: 'low' | 'medium' | 'high' | 'urgent'
   assigneeId?: number
   location: string
-  contactInfo: string
+  reporter_contact: string  // 修复：使用reporter_contact与后端保持一致
   estimatedHours: number
   dueDate: string
   tags?: string[]
@@ -69,7 +69,7 @@ export interface CreateTaskRequest {
 export interface UpdateTaskRequest {
   title?: string
   description?: string
-  type?: 'repair' | 'monitoring' | 'assistance'
+  type?: 'network_repair' | 'hardware_repair' | 'software_support' | 'monitoring' | 'assistance' | 'other'
   priority?: 'low' | 'medium' | 'high' | 'urgent'
   status?: 'pending' | 'in_progress' | 'completed' | 'cancelled'
   assigneeId?: number
@@ -83,7 +83,7 @@ export interface UpdateTaskRequest {
 
 export interface TaskFilters {
   status?: ('pending' | 'in_progress' | 'completed' | 'cancelled')[]
-  type?: ('repair' | 'monitoring' | 'assistance')[]
+  type?: ('network_repair' | 'hardware_repair' | 'software_support' | 'monitoring' | 'assistance' | 'other')[]
   priority?: ('low' | 'medium' | 'high' | 'urgent')[]
   assigneeId?: number
   reporterId?: number
@@ -116,9 +116,12 @@ export interface TaskStats {
   cancelled: number
   overdue: number
   byType: {
-    repair: number
+    network_repair: number
+    hardware_repair: number
+    software_support: number
     monitoring: number
     assistance: number
+    other: number
   }
   byPriority: {
     low: number
@@ -179,16 +182,28 @@ export const TASK_STATUS_TRANSITIONS: TaskTransition[] = [
   }
 ]
 
-// 任务类型配置
+// 任务类型配置 - 修复：匹配后端TaskCategory枚举
 export const TASK_TYPE_CONFIG = {
-  repair: {
-    label: '维修任务',
+  network_repair: {
+    label: '网络维修',
     color: '#409EFF',
     icon: 'Tools',
-    description: '设备维修和故障处理'
+    description: '网络设备维修和故障处理'
+  },
+  hardware_repair: {
+    label: '硬件维修',
+    color: '#F56C6C',
+    icon: 'Tools',
+    description: '硬件设备维修和更换'
+  },
+  software_support: {
+    label: '软件支持',
+    color: '#909399',
+    icon: 'Computer',
+    description: '软件安装配置和技术支持'
   },
   monitoring: {
-    label: '监控任务',
+    label: '日常监控',
     color: '#67C23A',
     icon: 'Monitor',
     description: '系统监控和巡检'
@@ -198,6 +213,12 @@ export const TASK_TYPE_CONFIG = {
     color: '#E6A23C',
     icon: 'Connection',
     description: '技术支持和协助'
+  },
+  other: {
+    label: '其他任务',
+    color: '#606266',
+    icon: 'More',
+    description: '其他类型任务'
   }
 }
 
