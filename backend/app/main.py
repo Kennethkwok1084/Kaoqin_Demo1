@@ -81,9 +81,9 @@ app = FastAPI(
 
 # Add security headers middleware
 @app.middleware("http")
-async def add_security_headers(request: Request, call_next) -> Response:
+async def add_security_headers(request: Request, call_next: Any) -> Response:
     """Add security headers to all responses."""
-    response = await call_next(request)
+    response: Response = await call_next(request)  # type: ignore[no-any-return]
 
     if settings.SECURITY_HEADERS_ENABLED:
         headers = get_security_headers()

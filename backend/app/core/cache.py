@@ -7,7 +7,7 @@ import hashlib
 import json
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import redis.asyncio as redis
 
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class RedisCache:
     """Redis缓存管理类"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.redis_client: Optional[redis.Redis] = None
         self.is_connected = False
 
@@ -70,7 +70,7 @@ class RedisCache:
             self.is_connected = False
             logger.info("Redis connection closed")
 
-    def _generate_cache_key(self, key_type: str, **kwargs) -> str:
+    def _generate_cache_key(self, key_type: str, **kwargs: Any) -> str:
         """生成缓存键"""
         # 根据参数生成唯一的缓存键
         param_string = "_".join(
@@ -137,7 +137,7 @@ class RedisCache:
             if keys:
                 deleted = await self.redis_client.delete(*keys)
                 logger.info(f"Deleted {deleted} cache keys matching pattern: {pattern}")
-                return deleted
+                return int(deleted)
             return 0
         except Exception as e:
             logger.warning(
@@ -162,7 +162,7 @@ class RedisCache:
             return -1
 
         try:
-            return await self.redis_client.ttl(key)
+            return int(await self.redis_client.ttl(key))
         except Exception as e:
             logger.warning(f"Cache TTL error for key {key}: {str(e)}")
             return -1
@@ -170,7 +170,7 @@ class RedisCache:
     # 统计数据缓存方法
 
     async def get_stats_cache(
-        self, cache_type: str, **kwargs
+        self, cache_type: str, **kwargs: Any
     ) -> Optional[Dict[str, Any]]:
         """获取统计数据缓存"""
         cache_key = self._generate_cache_key(
@@ -179,7 +179,7 @@ class RedisCache:
         return await self.get(cache_key)
 
     async def set_stats_cache(
-        self, cache_type: str, data: Dict[str, Any], ttl: Optional[int] = None, **kwargs
+        self, cache_type: str, data: Dict[str, Any], ttl: Optional[int] = None, **kwargs: Any
     ) -> bool:
         """设置统计数据缓存"""
         cache_key = self._generate_cache_key(
@@ -243,7 +243,7 @@ class RedisCache:
     # 任务数据缓存方法
 
     async def get_task_cache(
-        self, cache_type: str, **kwargs
+        self, cache_type: str, **kwargs: Any
     ) -> Optional[Dict[str, Any]]:
         """获取任务数据缓存"""
         cache_key = self._generate_cache_key(
@@ -252,7 +252,7 @@ class RedisCache:
         return await self.get(cache_key)
 
     async def set_task_cache(
-        self, cache_type: str, data: Dict[str, Any], ttl: Optional[int] = None, **kwargs
+        self, cache_type: str, data: Dict[str, Any], ttl: Optional[int] = None, **kwargs: Any
     ) -> bool:
         """设置任务数据缓存"""
         cache_key = self._generate_cache_key(
@@ -319,7 +319,7 @@ class RedisCache:
     # 缓存装饰器支持方法
 
     async def cache_or_compute(
-        self, key: str, compute_func, ttl: Optional[int] = None, *args, **kwargs
+        self, key: str, compute_func: Callable[..., Any], ttl: Optional[int] = None, *args: Any, **kwargs: Any
     ) -> Any:
         """缓存或计算数据"""
         # 先尝试从缓存获取
@@ -342,7 +342,7 @@ class RedisCache:
 
     async def health_check(self) -> Dict[str, Any]:
         """Redis健康检查"""
-        health_info = {
+        health_info: Dict[str, Any] = {
             "connected": self.is_connected,
             "redis_url": settings.REDIS_URL is not None,
             "info": None,
@@ -391,7 +391,7 @@ cache = RedisCache()
 
 
 # 缓存装饰器
-def cached(key_pattern: str, ttl: int = 3600, cache_type: str = "general"):
+def cached(key_pattern: str, ttl: int = 3600, cache_type: str = "general") -> Callable[..., Any]:
     """
     缓存装饰器
 
@@ -401,8 +401,8 @@ def cached(key_pattern: str, ttl: int = 3600, cache_type: str = "general"):
         cache_type: 缓存类型
     """
 
-    def decorator(func):
-        async def wrapper(*args, **kwargs):
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
             # 生成缓存键
             try:
                 cache_key = key_pattern.format(*args, **kwargs)
@@ -421,7 +421,7 @@ def cached(key_pattern: str, ttl: int = 3600, cache_type: str = "general"):
 
 
 # 缓存失效装饰器
-def invalidate_cache(patterns: List[str]):
+def invalidate_cache(patterns: List[str]) -> Callable[..., Any]:
     """
     缓存失效装饰器
 
@@ -429,8 +429,8 @@ def invalidate_cache(patterns: List[str]):
         patterns: 要失效的缓存模式列表
     """
 
-    def decorator(func):
-        async def wrapper(*args, **kwargs):
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
             result = await func(*args, **kwargs)
 
             # 执行成功后失效相关缓存

@@ -3,17 +3,18 @@
 """
 
 import logging
-from typing import Any
+from typing import Any, Optional
 
-from sqlalchemy import create_engine, text
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy import create_engine, text, Row
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlalchemy.engine import Engine, Connection
 
 from app.core.config import get_database_url
 
 logger = logging.getLogger(__name__)
 
 
-def create_remote_optimized_engine(database_url: str, is_async: bool = True) -> Any:
+def create_remote_optimized_engine(database_url: str, is_async: bool = True) -> AsyncEngine | Engine:
     """
     创建针对远程数据库优化的引擎
     - 低并发设置
@@ -46,25 +47,29 @@ def create_remote_optimized_engine(database_url: str, is_async: bool = True) -> 
         )
 
 
-async def init_remote_database() -> None:
+async def init_remote_database() -> bool:
     """初始化远程数据库表结构"""
     print("=== Initializing Remote Database ===")
 
     try:
-        from app.models.base import Base
+        from app.core.database import Base
 
         # 创建优化的引擎
         engine = create_remote_optimized_engine(get_database_url())
+        assert isinstance(engine, AsyncEngine), "Expected AsyncEngine"
 
         # 创建所有表
         async with engine.begin() as conn:
             # 先检查数据库连接
             result = await conn.execute(text("SELECT version()"))
-            version = result.fetchone()
-            print(f"[OK] Connected to: {version[0]}")
+            version: Optional[Row[Any]] = result.fetchone()
+            if version:
+                print(f"[OK] Connected to: {version[0]}")
 
             # 创建表结构
-            await conn.run_sync(Base.metadata.create_all)
+            def create_tables(connection: Connection) -> None:
+                Base.metadata.create_all(bind=connection)
+            await conn.run_sync(create_tables)
             print("[OK] Database tables created successfully")
 
             # 验证表是否存在
@@ -91,7 +96,7 @@ async def init_remote_database() -> None:
         return False
 
 
-async def test_single_connection() -> None:
+async def test_single_connection() -> bool:
     """测试单个数据库连接"""
     print("=== Testing Single Connection ===")
 
@@ -108,8 +113,9 @@ async def test_single_connection() -> None:
         async with engine.begin() as conn:
             # 测试基础查询
             result = await conn.execute(text("SELECT 1 as test, now() as time"))
-            test_result = result.fetchone()
-            print(f"[OK] Connection test: {test_result[0]}, Time: {test_result[1]}")
+            test_result: Optional[Row[Any]] = result.fetchone()
+            if test_result:
+                print(f"[OK] Connection test: {test_result[0]}, Time: {test_result[1]}")
 
             # 检查members表是否存在
             result = await conn.execute(
@@ -123,8 +129,10 @@ async def test_single_connection() -> None:
             """
                 )
             )
-            table_exists = result.fetchone()[0]
-            print(f"[OK] Members table exists: {table_exists}")
+            table_exists_row: Optional[Row[Any]] = result.fetchone()
+            if table_exists_row:
+                table_exists = table_exists_row[0]
+                print(f"[OK] Members table exists: {table_exists}")
 
         await engine.dispose()
         return True
@@ -137,7 +145,7 @@ async def test_single_connection() -> None:
 if __name__ == "__main__":
     import asyncio
 
-    async def main():
+    async def main() -> None:
         # 首先测试连接
         if await test_single_connection():
             # 然后初始化数据库

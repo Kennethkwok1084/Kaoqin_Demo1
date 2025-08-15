@@ -130,35 +130,55 @@ class StatisticsService:
             )
 
             # 处理异常结果
+            member_stats_data: Dict[str, Any]
+            task_stats_data: Dict[str, Any]
+            work_hour_stats_data: Dict[str, Any]
+            performance_stats_data: Dict[str, Any]
+            attendance_stats_data: Dict[str, Any]
+            
             if isinstance(member_stats, Exception):
                 logger.error(f"Member stats error: {member_stats}")
-                member_stats = {}
+                member_stats_data = {}
+            else:
+                member_stats_data = member_stats
+                
             if isinstance(task_stats, Exception):
                 logger.error(f"Task stats error: {task_stats}")
-                task_stats = {}
+                task_stats_data = {}
+            else:
+                task_stats_data = task_stats
+                
             if isinstance(work_hour_stats, Exception):
                 logger.error(f"Work hour stats error: {work_hour_stats}")
-                work_hour_stats = {}
+                work_hour_stats_data = {}
+            else:
+                work_hour_stats_data = work_hour_stats
+                
             if isinstance(performance_stats, Exception):
                 logger.error(f"Performance stats error: {performance_stats}")
-                performance_stats = {}
+                performance_stats_data = {}
+            else:
+                performance_stats_data = performance_stats
+                
             if isinstance(attendance_stats, Exception):
                 logger.error(f"Attendance stats error: {attendance_stats}")
-                attendance_stats = {}
+                attendance_stats_data = {}
+            else:
+                attendance_stats_data = attendance_stats
 
             result = {
                 "period": {"from": date_from.isoformat(), "to": date_to.isoformat()},
-                "members": member_stats,
-                "tasks": task_stats,
-                "work_hours": work_hour_stats,
-                "performance": performance_stats,
-                "attendance": attendance_stats,
+                "members": member_stats_data,
+                "tasks": task_stats_data,
+                "work_hours": work_hour_stats_data,
+                "performance": performance_stats_data,
+                "attendance": attendance_stats_data,
                 "summary": {
-                    "total_active_members": member_stats.get("active_count", 0),
-                    "total_tasks_completed": task_stats.get("completed_count", 0),
-                    "total_work_hours": work_hour_stats.get("total_hours", 0),
-                    "average_rating": performance_stats.get("overall_rating", 0),
-                    "attendance_rate": attendance_stats.get("overall_rate", 0),
+                    "total_active_members": member_stats_data.get("active_count", 0),
+                    "total_tasks_completed": task_stats_data.get("completed_count", 0),
+                    "total_work_hours": work_hour_stats_data.get("total_hours", 0),
+                    "average_rating": performance_stats_data.get("overall_rating", 0),
+                    "attendance_rate": attendance_stats_data.get("overall_rate", 0),
                 },
                 "generated_at": datetime.now().isoformat(),
             }
@@ -191,21 +211,30 @@ class StatisticsService:
         # 查询数据库
         member_query = select(
             func.count(Member.id).label("total_count"),
-            func.count(case((Member.is_active, 1))).label("active_count"),
-            func.count(case((Member.role == UserRole.ADMIN, 1))).label("admin_count"),
-            func.count(case((Member.role == UserRole.MEMBER, 1))).label("member_count"),
+            func.count(case((Member.is_active == True, 1))).label("active_count"),  # type: ignore[arg-type]
+            func.count(case((Member.role == UserRole.ADMIN, 1))).label("admin_count"),  # type: ignore[arg-type]
+            func.count(case((Member.role == UserRole.MEMBER, 1))).label("member_count"),  # type: ignore[arg-type]
         )
 
         result = await self.db.execute(member_query)
         stats = result.first()
 
-        data = {
-            "total_count": stats.total_count or 0,
-            "active_count": stats.active_count or 0,
-            "admin_count": stats.admin_count or 0,
-            "member_count": stats.member_count or 0,
-            "inactive_count": (stats.total_count or 0) - (stats.active_count or 0),
-        }
+        if stats is None:
+            data = {
+                "total_count": 0,
+                "active_count": 0,
+                "admin_count": 0,
+                "member_count": 0,
+                "inactive_count": 0,
+            }
+        else:
+            data = {
+                "total_count": stats.total_count or 0,
+                "active_count": stats.active_count or 0,
+                "admin_count": stats.admin_count or 0,
+                "member_count": stats.member_count or 0,
+                "inactive_count": (stats.total_count or 0) - (stats.active_count or 0),
+            }
 
         # 存入缓存（5分钟过期）
         await cache.set_stats_cache("member", data, ttl=300)
@@ -225,19 +254,19 @@ class StatisticsService:
         # 查询维修任务统计
         repair_query = select(
             func.count(RepairTask.id).label("total_count"),
-            func.count(case((RepairTask.status == TaskStatus.COMPLETED, 1))).label(
+            func.count(case((RepairTask.status == TaskStatus.COMPLETED, 1))).label(  # type: ignore[arg-type]
                 "completed_count"
             ),
-            func.count(case((RepairTask.status == TaskStatus.PENDING, 1))).label(
+            func.count(case((RepairTask.status == TaskStatus.PENDING, 1))).label(  # type: ignore[arg-type]
                 "pending_count"
             ),
-            func.count(case((RepairTask.status == TaskStatus.IN_PROGRESS, 1))).label(
+            func.count(case((RepairTask.status == TaskStatus.IN_PROGRESS, 1))).label(  # type: ignore[arg-type]
                 "in_progress_count"
             ),
-            func.count(case((RepairTask.task_type == TaskType.ONLINE, 1))).label(
+            func.count(case((RepairTask.task_type == TaskType.ONLINE, 1))).label(  # type: ignore[arg-type]
                 "online_count"
             ),
-            func.count(case((RepairTask.task_type == TaskType.OFFLINE, 1))).label(
+            func.count(case((RepairTask.task_type == TaskType.OFFLINE, 1))).label(  # type: ignore[arg-type]
                 "offline_count"
             ),
             func.sum(RepairTask.work_minutes).label("total_minutes"),
@@ -277,34 +306,49 @@ class StatisticsService:
         assistance_result = await self.db.execute(assistance_query)
         assistance_stats = assistance_result.first()
 
+        # 安全地访问 Row 对象属性
+        repair_total = repair_stats.total_count if repair_stats else 0
+        repair_completed = repair_stats.completed_count if repair_stats else 0
+        repair_pending = repair_stats.pending_count if repair_stats else 0
+        repair_in_progress = repair_stats.in_progress_count if repair_stats else 0
+        repair_online = repair_stats.online_count if repair_stats else 0
+        repair_offline = repair_stats.offline_count if repair_stats else 0
+        repair_rating = repair_stats.avg_rating if repair_stats else 0
+        
+        monitoring_total = monitoring_stats.total_count if monitoring_stats else 0
+        monitoring_minutes = monitoring_stats.total_minutes if monitoring_stats else 0
+        
+        assistance_total = assistance_stats.total_count if assistance_stats else 0
+        assistance_minutes = assistance_stats.total_minutes if assistance_stats else 0
+
         data = {
             "repair_tasks": {
-                "total_count": repair_stats.total_count or 0,
-                "completed_count": repair_stats.completed_count or 0,
-                "pending_count": repair_stats.pending_count or 0,
-                "in_progress_count": repair_stats.in_progress_count or 0,
-                "online_count": repair_stats.online_count or 0,
-                "offline_count": repair_stats.offline_count or 0,
+                "total_count": repair_total or 0,
+                "completed_count": repair_completed or 0,
+                "pending_count": repair_pending or 0,
+                "in_progress_count": repair_in_progress or 0,
+                "online_count": repair_online or 0,
+                "offline_count": repair_offline or 0,
                 "completion_rate": round(
-                    (repair_stats.completed_count or 0)
-                    / max(repair_stats.total_count or 1, 1)
+                    (repair_completed or 0)
+                    / max(repair_total or 1, 1)
                     * 100,
                     2,
                 ),
-                "avg_rating": round(repair_stats.avg_rating or 0, 2),
+                "avg_rating": round(repair_rating or 0, 2),
             },
             "monitoring_tasks": {
-                "total_count": monitoring_stats.total_count or 0,
-                "total_minutes": monitoring_stats.total_minutes or 0,
+                "total_count": monitoring_total or 0,
+                "total_minutes": monitoring_minutes or 0,
             },
             "assistance_tasks": {
-                "total_count": assistance_stats.total_count or 0,
-                "total_minutes": assistance_stats.total_minutes or 0,
+                "total_count": assistance_total or 0,
+                "total_minutes": assistance_minutes or 0,
             },
-            "total_count": (repair_stats.total_count or 0)
-            + (monitoring_stats.total_count or 0)
-            + (assistance_stats.total_count or 0),
-            "completed_count": repair_stats.completed_count or 0,
+            "total_count": (repair_total or 0)
+            + (monitoring_total or 0)
+            + (assistance_total or 0),
+            "completed_count": repair_completed or 0,
         }
 
         # 存入缓存（5分钟过期）
@@ -338,8 +382,8 @@ class StatisticsService:
                 func.count(RepairTask.id).label("repair_count"),
             )
             .select_from(
-                RepairTask.__table__.outerjoin(MonitoringTask.__table__).outerjoin(
-                    AssistanceTask.__table__
+                RepairTask.__table__.outerjoin(MonitoringTask.__table__).outerjoin(  # type: ignore[attr-defined]
+                    AssistanceTask.__table__  # type: ignore[attr-defined]
                 )
             )
             .where(
@@ -363,9 +407,17 @@ class StatisticsService:
         result = await self.db.execute(work_hour_query)
         stats = result.first()
 
-        repair_minutes = stats.repair_minutes or 0
-        monitoring_minutes = stats.monitoring_minutes or 0
-        assistance_minutes = stats.assistance_minutes or 0
+        if stats is None:
+            repair_minutes = 0
+            monitoring_minutes = 0
+            assistance_minutes = 0
+            avg_repair_minutes = 0
+        else:
+            repair_minutes = stats.repair_minutes or 0
+            monitoring_minutes = stats.monitoring_minutes or 0
+            assistance_minutes = stats.assistance_minutes or 0
+            avg_repair_minutes = stats.avg_repair_minutes or 0
+            
         total_minutes = repair_minutes + monitoring_minutes + assistance_minutes
 
         data = {
@@ -377,8 +429,8 @@ class StatisticsService:
             "monitoring_hours": round(monitoring_minutes / 60, 2),
             "assistance_minutes": assistance_minutes,
             "assistance_hours": round(assistance_minutes / 60, 2),
-            "avg_task_minutes": round(stats.avg_repair_minutes or 0, 2),
-            "avg_task_hours": round((stats.avg_repair_minutes or 0) / 60, 2),
+            "avg_task_minutes": round(avg_repair_minutes, 2),
+            "avg_task_hours": round(avg_repair_minutes / 60, 2),
         }
 
         # 存入缓存（5分钟过期）
@@ -405,9 +457,9 @@ class StatisticsService:
         # 查询绩效统计
         performance_query = select(
             func.avg(RepairTask.rating).label("overall_rating"),
-            func.count(case((RepairTask.rating >= 4, 1))).label("good_rating_count"),
-            func.count(case((RepairTask.rating <= 2, 1))).label("poor_rating_count"),
-            func.count(case((RepairTask.rating.isnot(None), 1))).label("rated_count"),
+            func.count(case((RepairTask.rating >= 4, 1))).label("good_rating_count"),  # type: ignore[arg-type]
+            func.count(case((RepairTask.rating <= 2, 1))).label("poor_rating_count"),  # type: ignore[arg-type]
+            func.count(case((RepairTask.rating.isnot(None), 1))).label("rated_count"),  # type: ignore[arg-type]
             func.count(RepairTask.id).label("total_tasks"),
         ).where(
             and_(RepairTask.report_time >= date_from, RepairTask.report_time <= date_to)
@@ -416,20 +468,30 @@ class StatisticsService:
         result = await self.db.execute(performance_query)
         stats = result.first()
 
-        rated_count = stats.rated_count or 0
-        total_tasks = stats.total_tasks or 0
+        if stats is None:
+            overall_rating = 0
+            rated_count = 0
+            total_tasks = 0
+            good_rating_count = 0
+            poor_rating_count = 0
+        else:
+            overall_rating = stats.overall_rating or 0
+            rated_count = stats.rated_count or 0
+            total_tasks = stats.total_tasks or 0
+            good_rating_count = stats.good_rating_count or 0
+            poor_rating_count = stats.poor_rating_count or 0
 
         data = {
-            "overall_rating": round(stats.overall_rating or 0, 2),
+            "overall_rating": round(overall_rating, 2),
             "rated_count": rated_count,
             "rating_rate": round(rated_count / max(total_tasks, 1) * 100, 2),
-            "good_rating_count": stats.good_rating_count or 0,
-            "poor_rating_count": stats.poor_rating_count or 0,
+            "good_rating_count": good_rating_count,
+            "poor_rating_count": poor_rating_count,
             "good_rating_rate": round(
-                (stats.good_rating_count or 0) / max(rated_count, 1) * 100, 2
+                good_rating_count / max(rated_count, 1) * 100, 2
             ),
             "poor_rating_rate": round(
-                (stats.poor_rating_count or 0) / max(rated_count, 1) * 100, 2
+                poor_rating_count / max(rated_count, 1) * 100, 2
             ),
         }
 
@@ -458,16 +520,16 @@ class StatisticsService:
             # 查询考勤统计
             attendance_query = select(
                 func.count(AttendanceRecord.id).label("total_records"),
-                func.count(case((AttendanceRecord.checkin_time.isnot(None), 1))).label(
+                func.count(case((AttendanceRecord.checkin_time.isnot(None), 1))).label(  # type: ignore[arg-type]
                     "checkin_count"
                 ),
-                func.count(case((AttendanceRecord.checkout_time.isnot(None), 1))).label(
+                func.count(case((AttendanceRecord.checkout_time.isnot(None), 1))).label(  # type: ignore[arg-type]
                     "checkout_count"
                 ),
-                func.count(case((AttendanceRecord.is_late_checkin, 1))).label(
+                func.count(case((AttendanceRecord.is_late_checkin == True, 1))).label(  # type: ignore[arg-type]
                     "late_count"
                 ),
-                func.count(case((AttendanceRecord.is_early_checkout, 1))).label(
+                func.count(case((AttendanceRecord.is_early_checkout == True, 1))).label(  # type: ignore[arg-type]
                     "early_count"
                 ),
                 func.avg(AttendanceRecord.work_hours).label("avg_work_hours"),
@@ -482,25 +544,38 @@ class StatisticsService:
             result = await self.db.execute(attendance_query)
             stats = result.first()
 
-            total_records = stats.total_records or 0
-            checkin_count = stats.checkin_count or 0
+            if stats is None:
+                total_records = 0
+                checkin_count = 0
+                checkout_count = 0
+                late_count = 0
+                early_count = 0
+                avg_work_hours = 0
+                total_work_hours = 0
+            else:
+                total_records = stats.total_records or 0
+                checkin_count = stats.checkin_count or 0
+                checkout_count = stats.checkout_count or 0
+                late_count = stats.late_count or 0
+                early_count = stats.early_count or 0
+                avg_work_hours = stats.avg_work_hours or 0
+                total_work_hours = stats.total_work_hours or 0
 
             data = {
                 "total_records": total_records,
                 "checkin_count": checkin_count,
-                "checkout_count": stats.checkout_count or 0,
-                "late_count": stats.late_count or 0,
-                "early_count": stats.early_count or 0,
+                "checkout_count": checkout_count,
+                "late_count": late_count,
+                "early_count": early_count,
                 "overall_rate": round(checkin_count / max(total_records, 1) * 100, 2),
                 "late_rate": round(
-                    (stats.late_count or 0) / max(checkin_count, 1) * 100, 2
+                    late_count / max(checkin_count, 1) * 100, 2
                 ),
                 "early_checkout_rate": round(
-                    (stats.early_count or 0) / max(stats.checkout_count or 1, 1) * 100,
-                    2,
+                    early_count / max(checkout_count, 1) * 100, 2
                 ),
-                "avg_work_hours": round(stats.avg_work_hours or 0, 2),
-                "total_work_hours": round(stats.total_work_hours or 0, 2),
+                "avg_work_hours": round(avg_work_hours, 2),
+                "total_work_hours": round(total_work_hours, 2),
             }
 
         except Exception as e:
@@ -585,7 +660,7 @@ class StatisticsService:
                     "id": member.id,
                     "name": member.name,
                     "student_id": member.student_id,
-                    "group_id": member.group_id,
+                    "department": member.department,
                     "role": member.role.value,
                 },
                 "period": {
@@ -608,7 +683,7 @@ class StatisticsService:
 
     async def get_team_comparison_report(
         self,
-        group_id: Optional[int] = None,
+        department: Optional[str] = None,
         date_from: Optional[datetime] = None,
         date_to: Optional[datetime] = None,
         limit: int = 10,
@@ -617,7 +692,7 @@ class StatisticsService:
         获取团队对比报告
 
         Args:
-            group_id: 工作组ID
+            department: 部门名称
             date_from: 开始时间
             date_to: 结束时间
             limit: 显示成员数量限制
@@ -635,8 +710,8 @@ class StatisticsService:
 
             # 获取团队成员
             member_query = select(Member).where(Member.is_active)
-            if group_id:
-                member_query = member_query.where(Member.group_id == group_id)
+            if department:
+                member_query = member_query.where(Member.department == department)
 
             member_result = await self.db.execute(member_query)
             members = member_result.scalars().all()
@@ -651,7 +726,7 @@ class StatisticsService:
                     "id": member.id,
                     "name": member.name,
                     "student_id": member.student_id,
-                    "group_id": member.group_id,
+                    "department": member.department,
                     "role": member.role.value,
                 }
                 member_stats.append(stats)
@@ -670,7 +745,7 @@ class StatisticsService:
 
             return {
                 "period": {"from": date_from.isoformat(), "to": date_to.isoformat()},
-                "group_id": group_id,
+                "department": department,
                 "team_summary": team_summary,
                 "member_rankings": member_stats,
                 "generated_at": datetime.now().isoformat(),
@@ -681,14 +756,14 @@ class StatisticsService:
             raise
 
     async def get_monthly_trends(
-        self, months: int = 6, group_id: Optional[int] = None
+        self, months: int = 6, department: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         获取月度趋势分析
 
         Args:
             months: 分析月份数
-            group_id: 工作组ID
+            department: 部门名称
 
         Returns:
             Dict: 月度趋势数据
@@ -709,7 +784,7 @@ class StatisticsService:
 
                 # 获取月度统计
                 monthly_stats = await self._get_monthly_statistics(
-                    start_date, end_date, group_id
+                    start_date, end_date, department
                 )
                 monthly_stats["period"] = {
                     "year": year,
@@ -727,7 +802,7 @@ class StatisticsService:
 
             return {
                 "analysis_months": months,
-                "group_id": group_id,
+                "department": department,
                 "monthly_data": trends,
                 "trend_analysis": trend_analysis,
                 "generated_at": datetime.now().isoformat(),
@@ -743,7 +818,7 @@ class StatisticsService:
         date_from: datetime,
         date_to: datetime,
         member_ids: Optional[List[int]] = None,
-        group_id: Optional[int] = None,
+        department: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         导出统计数据
@@ -753,20 +828,20 @@ class StatisticsService:
             date_from: 开始时间
             date_to: 结束时间
             member_ids: 成员ID列表
-            group_id: 工作组ID
+            department: 部门名称
 
         Returns:
             Dict: 导出数据
         """
         try:
             if export_type == "summary":
-                return await self._export_summary_data(date_from, date_to, group_id)
+                return await self._export_summary_data(date_from, date_to, department)
             elif export_type == "detailed":
                 return await self._export_detailed_data(
-                    date_from, date_to, member_ids, group_id
+                    date_from, date_to, member_ids, department
                 )
             elif export_type == "comparison":
-                return await self._export_comparison_data(date_from, date_to, group_id)
+                return await self._export_comparison_data(date_from, date_to, department)
             else:
                 raise ValueError("不支持的导出类型")
 
@@ -1207,7 +1282,7 @@ class StatisticsService:
         }
 
     async def _get_monthly_statistics(
-        self, start_date: datetime, end_date: datetime, group_id: Optional[int] = None
+        self, start_date: datetime, end_date: datetime, department: Optional[str] = None
     ) -> Dict[str, Any]:
         """获取月度统计"""
         # 任务统计
@@ -1217,8 +1292,8 @@ class StatisticsService:
             )
         )
 
-        if group_id:
-            task_query = task_query.join(Member).where(Member.group_id == group_id)
+        if department:
+            task_query = task_query.join(Member).where(Member.department == department)
 
         task_result = await self.db.execute(task_query)
         tasks = task_result.scalars().all()
@@ -1264,7 +1339,7 @@ class StatisticsService:
         }
 
     async def _export_summary_data(
-        self, date_from: datetime, date_to: datetime, group_id: Optional[int] = None
+        self, date_from: datetime, date_to: datetime, department: Optional[str] = None
     ) -> Dict[str, Any]:
         """导出汇总数据"""
         overview = await self.get_overview_statistics(date_from, date_to)
@@ -1280,15 +1355,15 @@ class StatisticsService:
         date_from: datetime,
         date_to: datetime,
         member_ids: Optional[List[int]] = None,
-        group_id: Optional[int] = None,
+        department: Optional[str] = None,
     ) -> Dict[str, Any]:
         """导出详细数据"""
         # 获取成员列表
         member_query = select(Member).where(Member.is_active)
         if member_ids:
             member_query = member_query.where(Member.id.in_(member_ids))
-        elif group_id:
-            member_query = member_query.where(Member.group_id == group_id)
+        elif department:
+            member_query = member_query.where(Member.department == department)
 
         member_result = await self.db.execute(member_query)
         members = member_result.scalars().all()
@@ -1303,7 +1378,7 @@ class StatisticsService:
                 "id": member.id,
                 "name": member.name,
                 "student_id": member.student_id,
-                "group_id": member.group_id,
+                "department": member.department,
             }
             detailed_data.append(member_data)
 
@@ -1315,11 +1390,11 @@ class StatisticsService:
         }
 
     async def _export_comparison_data(
-        self, date_from: datetime, date_to: datetime, group_id: Optional[int] = None
+        self, date_from: datetime, date_to: datetime, department: Optional[str] = None
     ) -> Dict[str, Any]:
         """导出对比数据"""
         comparison_report = await self.get_team_comparison_report(
-            group_id, date_from, date_to
+            department, date_from, date_to
         )
 
         return {

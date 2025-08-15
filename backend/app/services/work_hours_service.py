@@ -180,7 +180,7 @@ class WorkHoursCalculationService:
             for tag in task.tags:
                 if tag.is_active:
                     if tag.tag_type == TaskTagType.NON_DEFAULT_RATING:
-                        positive_review_minutes += tag.work_minutes_modifier
+                        positive_review_minutes += tag.work_minutes_modifier  # type: ignore[assignment]
                     elif tag.is_penalty_tag():
                         if tag.tag_type == TaskTagType.TIMEOUT_RESPONSE:
                             late_response_penalty += abs(tag.work_minutes_modifier)
@@ -311,7 +311,7 @@ class WorkHoursCalculationService:
                         RepairTask.report_time >= first_day,
                         RepairTask.report_time <= last_day,
                         RepairTask.status.in_(
-                            [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS]
+                            [TaskStatus.COMPLETED.value, TaskStatus.IN_PROGRESS.value]
                         ),
                     )
                 )
@@ -328,7 +328,7 @@ class WorkHoursCalculationService:
                     MonitoringTask.member_id == member_id,
                     MonitoringTask.start_time >= first_day,
                     MonitoringTask.start_time <= last_day,
-                    MonitoringTask.status == TaskStatus.COMPLETED,
+                    MonitoringTask.status == TaskStatus.COMPLETED.value,
                 )
             )
             monitoring_result = await self.db.execute(monitoring_tasks_query)
@@ -345,7 +345,7 @@ class WorkHoursCalculationService:
                     AssistanceTask.member_id == member_id,
                     AssistanceTask.start_time >= first_day,
                     AssistanceTask.start_time <= last_day,
-                    AssistanceTask.status == TaskStatus.COMPLETED,
+                    AssistanceTask.status == TaskStatus.COMPLETED.value,
                 )
             )
             assistance_result = await self.db.execute(assistance_tasks_query)
@@ -473,7 +473,7 @@ class WorkHoursCalculationService:
                 for key, value in work_hours_data.items():
                     if hasattr(summary, key) and not key.endswith("_count"):
                         setattr(summary, key, value)
-                summary.updated_at = datetime.utcnow()
+                summary.updated_at = datetime.utcnow()  # type: ignore[assignment]
             else:
                 # 创建新记录
                 summary = MonthlyAttendanceSummary(
@@ -546,7 +546,7 @@ class WorkHoursCalculationService:
             if member_ids:
                 members_query = select(Member).where(Member.id.in_(member_ids))
             else:
-                members_query = select(Member).where(Member.is_active)
+                members_query = select(Member).where(Member.is_active == True)  # type: ignore[assignment]
 
             members_result = await self.db.execute(members_query)
             members = members_result.scalars().all()
@@ -647,7 +647,7 @@ class WorkHoursCalculationService:
             logger.info(
                 f"Applied {penalty_type} penalty to {len(affected_member_ids)} members"
             )
-            return affected_member_ids
+            return affected_member_ids  # type: ignore[return-value]
 
         except ValueError:
             # Re-raise validation errors as-is
@@ -710,7 +710,7 @@ class WorkHoursCalculationService:
         hours_since_report = (
             datetime.utcnow() - task.report_time
         ).total_seconds() / 3600
-        return hours_since_report > self.RESPONSE_TIMEOUT_HOURS
+        return hours_since_report > self.RESPONSE_TIMEOUT_HOURS  # type: ignore[return-value]
 
     def _is_completion_overdue(self, task: RepairTask) -> bool:
         """检查是否超时处理"""
@@ -720,11 +720,11 @@ class WorkHoursCalculationService:
         hours_since_response = (
             datetime.utcnow() - task.response_time
         ).total_seconds() / 3600
-        return hours_since_response > self.COMPLETION_TIMEOUT_HOURS
+        return hours_since_response > self.COMPLETION_TIMEOUT_HOURS  # type: ignore[return-value]
 
     def _is_negative_review(self, task: RepairTask) -> bool:
         """检查是否为差评"""
-        return task.rating is not None and task.rating <= 2
+        return task.rating is not None and task.rating <= 2  # type: ignore[return-value]
 
     async def _get_or_create_penalty_tag(self, penalty_type: str) -> TaskTag:
         """获取或创建惩罚标签"""
@@ -893,7 +893,7 @@ class RushTaskMarkingService:
                         RepairTask.report_time >= date_from,
                         RepairTask.report_time <= date_to,
                         RepairTask.status.in_(
-                            [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS]
+                            [TaskStatus.COMPLETED.value, TaskStatus.IN_PROGRESS.value]
                         ),
                     )
                 )
@@ -921,7 +921,7 @@ class RushTaskMarkingService:
 
                 if not already_marked:
                     # 标记为爆单任务
-                    task.is_rush_order = True
+                    task.is_rush_order = True  # type: ignore[assignment]
 
                     # 添加爆单标签（如果还没有）
                     if rush_tag not in task.tags:
