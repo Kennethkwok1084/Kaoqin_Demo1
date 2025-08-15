@@ -347,7 +347,9 @@ def create_response(
 
 
 def create_error_response(
-    message: str = "An error occurred", details: Optional[Dict[str, Any]] = None, status_code: int = 400
+    message: str = "An error occurred",
+    details: Optional[Dict[str, Any]] = None,
+    status_code: int = 400,
 ) -> Dict[str, Any]:
     """Create standardized API error response."""
     return {

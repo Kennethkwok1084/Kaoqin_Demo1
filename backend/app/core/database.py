@@ -166,7 +166,12 @@ class DatabaseTransaction:
     async def __aenter__(self) -> AsyncSession:
         return self.session
 
-    async def __aexit__(self, exc_type: Optional[type], exc_val: Optional[Exception], exc_tb: Optional[Any]) -> None:
+    async def __aexit__(
+        self,
+        exc_type: Optional[type],
+        exc_val: Optional[Exception],
+        exc_tb: Optional[Any],
+    ) -> None:
         if exc_type is not None:
             await self.session.rollback()
             logger.error(f"Transaction rolled back due to: {exc_val}")
@@ -212,11 +217,11 @@ async def get_pool_status() -> Dict[str, Any]:
     """Get connection pool status for monitoring."""
     pool = async_engine.pool
     return {
-        "pool_size": getattr(pool, 'size', lambda: 0)(),
-        "checked_in": getattr(pool, 'checkedin', lambda: 0)(),
-        "checked_out": getattr(pool, 'checkedout', lambda: 0)(),
-        "overflow": getattr(pool, 'overflow', lambda: 0)(),
-        "invalid": getattr(pool, 'invalid', lambda: 0)(),
+        "pool_size": getattr(pool, "size", lambda: 0)(),
+        "checked_in": getattr(pool, "checkedin", lambda: 0)(),
+        "checked_out": getattr(pool, "checkedout", lambda: 0)(),
+        "overflow": getattr(pool, "overflow", lambda: 0)(),
+        "invalid": getattr(pool, "invalid", lambda: 0)(),
     }
 
 
@@ -227,7 +232,12 @@ async def get_pool_status() -> Dict[str, Any]:
 
 @event.listens_for(async_engine.sync_engine, "before_cursor_execute")
 def receive_before_cursor_execute(
-    conn: Any, cursor: Any, statement: str, parameters: Any, context: Any, executemany: bool
+    conn: Any,
+    cursor: Any,
+    statement: str,
+    parameters: Any,
+    context: Any,
+    executemany: bool,
 ) -> None:
     """Log slow queries in debug mode."""
     if settings.DEBUG:
@@ -236,7 +246,12 @@ def receive_before_cursor_execute(
 
 @event.listens_for(async_engine.sync_engine, "after_cursor_execute")
 def receive_after_cursor_execute(
-    conn: Any, cursor: Any, statement: str, parameters: Any, context: Any, executemany: bool
+    conn: Any,
+    cursor: Any,
+    statement: str,
+    parameters: Any,
+    context: Any,
+    executemany: bool,
 ) -> None:
     """Log query execution time in debug mode."""
     if settings.DEBUG and hasattr(context, "_query_start_time"):

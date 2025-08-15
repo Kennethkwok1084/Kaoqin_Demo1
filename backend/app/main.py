@@ -112,7 +112,9 @@ if not settings.DEBUG:
 
 # Exception handlers
 @app.exception_handler(BaseCustomException)
-async def custom_exception_handler(request: Request, exc: BaseCustomException) -> JSONResponse:
+async def custom_exception_handler(
+    request: Request, exc: BaseCustomException
+) -> JSONResponse:
     """Handle custom exceptions."""
     logger.error(f"Custom exception: {exc.message}", exc_info=exc)
     return JSONResponse(
@@ -127,7 +129,9 @@ async def custom_exception_handler(request: Request, exc: BaseCustomException) -
 
 
 @app.exception_handler(StarletteHTTPException)
-async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+async def http_exception_handler(
+    request: Request, exc: StarletteHTTPException
+) -> JSONResponse:
     """Handle HTTP exceptions."""
     logger.warning(f"HTTP exception: {exc.status_code} - {exc.detail}")
     return JSONResponse(
@@ -142,7 +146,9 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException) 
 
 
 @app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
     """Handle request validation errors."""
     logger.warning(f"Validation error: {exc.errors()}")
 

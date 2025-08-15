@@ -31,11 +31,11 @@ class Settings(BaseSettings):
     # Database Configuration
     DATABASE_URL: str = Field(
         default="postgresql+asyncpg://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev",
-        description="PostgreSQL database URL for async operations"
+        description="PostgreSQL database URL for async operations",
     )
     DATABASE_URL_SYNC: str = Field(
         default="postgresql://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev",
-        description="PostgreSQL database URL for sync operations"
+        description="PostgreSQL database URL for sync operations",
     )
 
     @validator("DATABASE_URL", pre=True)
