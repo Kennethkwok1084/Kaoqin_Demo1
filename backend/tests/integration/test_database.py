@@ -49,7 +49,8 @@ class TestDatabaseConnection:
         for table_name in tables_to_check:
             result = await self.db.execute(
                 text(
-                    f"SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename='{table_name}'"
+                    f"SELECT tablename FROM pg_tables "
+                    f"WHERE schemaname='public' AND tablename='{table_name}'"
                 )
             )
             assert result.scalar() is not None, f"Table {table_name} should exist"
@@ -386,7 +387,7 @@ class TestModelRelationships:
     async def test_member_tasks_relationship(self):
         """测试成员与任务的关系"""
         # 创建测试任务
-        tasks = await self.helper.create_test_tasks(self.db, self.member.id, 3)
+        await self.helper.create_test_tasks(self.db, self.member.id, 3)
 
         # 通过成员查询关联任务
         result = await self.db.execute(
@@ -408,7 +409,7 @@ class TestModelRelationships:
     async def test_member_attendance_relationship(self):
         """测试成员与考勤记录的关系"""
         # 创建测试考勤记录
-        records = await self.helper.create_test_attendance_records(
+        await self.helper.create_test_attendance_records(
             self.db, self.member.id, 5
         )
 

@@ -144,10 +144,6 @@ class TestTasksAPI:
     @pytest.mark.asyncio
     async def test_get_repair_list_success(self):
         """Test repair tasks list endpoint - success case."""
-        # Mock dependencies
-        mock_db = AsyncMock()
-        mock_user = Member(id=1, username="test_user", role=UserRole.MEMBER)
-
         # Call endpoint (get_repair_list doesn't take parameters in actual implementation)
         result = await get_repair_list()
 

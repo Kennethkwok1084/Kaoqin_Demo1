@@ -556,7 +556,8 @@ def main():
         for module_name, module_stats in results["test_results_by_module"].items():
             status = "✅" if module_stats["failed"] == 0 else "❌"
             print(
-                f"  {status} {module_name}: {module_stats['passed']}/{module_stats['total']} ({module_stats['success_rate']}%)"
+                f"  {status} {module_name}: {module_stats['passed']}/"
+                f"{module_stats['total']} ({module_stats['success_rate']}%)"
             )
 
         # 显示建议

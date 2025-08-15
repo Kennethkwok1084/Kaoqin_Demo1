@@ -281,8 +281,6 @@ class TestImportPerformance:
 
         await db_session.flush()
 
-        import_service = DataImportService(db_session)
-
         # Test data with various name formats (including brackets)
         test_names = [
             "张三(信息处)",

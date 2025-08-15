@@ -164,15 +164,17 @@ def main():
     print("\n=== Summary ===")
     import_success_rate = (import_results["success"] / import_results["total"]) * 100
     print(
-        f"Import success rate: {import_success_rate:.1f}% ({import_results['success']}/{import_results['total']})"
-    )
+            f"Import success rate: {import_success_rate:.1f}% "
+            f"({import_results['success']}/{import_results['total']})"
+        )
 
     if "error" not in route_results:
         route_success_rate = (
             route_results["new_paths_found"] / route_results["new_paths_expected"]
         ) * 100
         print(
-            f"New API routes found: {route_success_rate:.1f}% ({route_results['new_paths_found']}/{route_results['new_paths_expected']})"
+            f"New API routes found: {route_success_rate:.1f}% "
+            f"({route_results['new_paths_found']}/{route_results['new_paths_expected']})"
         )
 
     if "error" not in response_results:
@@ -184,7 +186,8 @@ def main():
             (successful_responses / total_responses) * 100 if total_responses > 0 else 0
         )
         print(
-            f"API response success rate: {response_success_rate:.1f}% ({successful_responses}/{total_responses})"
+            f"API response success rate: {response_success_rate:.1f}% "
+            f"({successful_responses}/{total_responses})"
         )
 
     # Overall assessment

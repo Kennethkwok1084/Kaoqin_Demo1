@@ -842,7 +842,6 @@ class TestAttendanceIntegration:
             headers=auth_headers_member,
         )
         assert checkin_response.status_code == 200
-        record_id = checkin_response.json()["record_id"]
 
         # 2. 签退
         checkout_response = client.post(
