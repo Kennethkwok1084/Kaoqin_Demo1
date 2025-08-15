@@ -164,9 +164,9 @@ def main():
     print("\n=== Summary ===")
     import_success_rate = (import_results["success"] / import_results["total"]) * 100
     print(
-            f"Import success rate: {import_success_rate:.1f}% "
-            f"({import_results['success']}/{import_results['total']})"
-        )
+        f"Import success rate: {import_success_rate:.1f}% "
+        f"({import_results['success']}/{import_results['total']})"
+    )
 
     if "error" not in route_results:
         route_success_rate = (

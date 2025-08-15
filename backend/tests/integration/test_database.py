@@ -409,9 +409,7 @@ class TestModelRelationships:
     async def test_member_attendance_relationship(self):
         """测试成员与考勤记录的关系"""
         # 创建测试考勤记录
-        await self.helper.create_test_attendance_records(
-            self.db, self.member.id, 5
-        )
+        await self.helper.create_test_attendance_records(self.db, self.member.id, 5)
 
         # 通过成员查询关联考勤记录
         attendance_records = await self.db.execute(
