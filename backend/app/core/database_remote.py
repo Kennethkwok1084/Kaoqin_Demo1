@@ -14,7 +14,9 @@ from app.core.config import get_database_url
 logger = logging.getLogger(__name__)
 
 
-def create_remote_optimized_engine(database_url: str, is_async: bool = True) -> AsyncEngine | Engine:
+def create_remote_optimized_engine(
+    database_url: str, is_async: bool = True
+) -> AsyncEngine | Engine:
     """
     创建针对远程数据库优化的引擎
     - 低并发设置
@@ -69,6 +71,7 @@ async def init_remote_database() -> bool:
             # 创建表结构
             def create_tables(connection: Connection) -> None:
                 Base.metadata.create_all(bind=connection)
+
             await conn.run_sync(create_tables)
             print("[OK] Database tables created successfully")
 

@@ -86,7 +86,7 @@ async def get_work_hours_records(
                 RepairTask.member_id == target_member_id,
                 RepairTask.status == TaskStatus.COMPLETED,
                 RepairTask.completion_time.isnot(None),
-                *date_filters
+                *date_filters,
             )
             .order_by(RepairTask.completion_time.desc())
         )
@@ -199,7 +199,7 @@ async def get_monthly_work_hours_summary(
         )
         repair_result = await db.execute(repair_query)
         repair_stats = repair_result.fetchone()
-        
+
         # Handle null result for repair stats
         if repair_stats is None:
             repair_total_minutes = 0
@@ -222,7 +222,7 @@ async def get_monthly_work_hours_summary(
         )
         monitoring_result = await db.execute(monitoring_query)
         monitoring_stats = monitoring_result.fetchone()
-        
+
         # Handle null result for monitoring stats
         if monitoring_stats is None:
             monitoring_total_minutes = 0
@@ -243,7 +243,7 @@ async def get_monthly_work_hours_summary(
         )
         assistance_result = await db.execute(assistance_query)
         assistance_stats = assistance_result.fetchone()
-        
+
         # Handle null result for assistance stats
         if assistance_stats is None:
             assistance_total_minutes = 0
@@ -253,7 +253,9 @@ async def get_monthly_work_hours_summary(
             assistance_task_count = assistance_stats.task_count or 0
 
         # 计算总计
-        total_minutes = repair_total_minutes + monitoring_total_minutes + assistance_total_minutes
+        total_minutes = (
+            repair_total_minutes + monitoring_total_minutes + assistance_total_minutes
+        )
 
         return {
             "success": True,
@@ -283,7 +285,9 @@ async def get_monthly_work_hours_summary(
                 "total": {
                     "hours": round(total_minutes / 60, 2),
                     "minutes": total_minutes,
-                    "task_count": repair_task_count + monitoring_task_count + assistance_task_count,
+                    "task_count": repair_task_count
+                    + monitoring_task_count
+                    + assistance_task_count,
                 },
             },
             "status_code": 200,
@@ -460,7 +464,7 @@ async def export_work_hours_data(
                 RepairTask.completion_time >= date_from_dt,
                 RepairTask.completion_time <= date_to_dt,
                 RepairTask.status == TaskStatus.COMPLETED,
-                *member_filter
+                *member_filter,
             )
             .order_by(RepairTask.completion_time.desc())
         )
@@ -584,12 +588,12 @@ async def get_work_hours_stats(
             RepairTask.member_id == target_member_id,
             RepairTask.completion_time >= start_datetime,
             RepairTask.completion_time <= end_datetime,
-            RepairTask.status == TaskStatus.COMPLETED  # type: ignore[arg-type]
+            RepairTask.status == TaskStatus.COMPLETED,  # type: ignore[arg-type]
         )
 
         repair_result = await db.execute(repair_query)
         repair_stats = repair_result.fetchone()
-        
+
         # Handle null result for repair stats
         if repair_stats is None:
             total_minutes = 0
@@ -719,7 +723,7 @@ async def get_work_hours_chart_data(
                     RepairTask.completion_time >= start_datetime,
                     RepairTask.completion_time <= end_datetime,
                     RepairTask.status == TaskStatus.COMPLETED,  # type: ignore[arg-type]
-                    *([RepairTask.member_id == memberId] if memberId else [])
+                    *([RepairTask.member_id == memberId] if memberId else []),
                 )
                 .group_by(func.date(RepairTask.completion_time))
                 .order_by(func.date(RepairTask.completion_time))
@@ -747,7 +751,7 @@ async def get_work_hours_chart_data(
                     RepairTask.completion_time >= start_datetime,
                     RepairTask.completion_time <= end_datetime,
                     RepairTask.status == TaskStatus.COMPLETED,  # type: ignore[arg-type]
-                    *([RepairTask.member_id == memberId] if memberId else [])
+                    *([RepairTask.member_id == memberId] if memberId else []),
                 )
                 .group_by(
                     func.extract("year", RepairTask.completion_time),
@@ -781,7 +785,7 @@ async def get_work_hours_chart_data(
                     RepairTask.completion_time >= start_datetime,
                     RepairTask.completion_time <= end_datetime,
                     RepairTask.status == TaskStatus.COMPLETED,  # type: ignore[arg-type]
-                    *([RepairTask.member_id == memberId] if memberId else [])
+                    *([RepairTask.member_id == memberId] if memberId else []),
                 )
                 .group_by(
                     func.extract("year", RepairTask.completion_time),

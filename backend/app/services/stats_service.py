@@ -135,31 +135,31 @@ class StatisticsService:
             work_hour_stats_data: Dict[str, Any]
             performance_stats_data: Dict[str, Any]
             attendance_stats_data: Dict[str, Any]
-            
+
             if isinstance(member_stats, Exception):
                 logger.error(f"Member stats error: {member_stats}")
                 member_stats_data = {}
             else:
                 member_stats_data = member_stats
-                
+
             if isinstance(task_stats, Exception):
                 logger.error(f"Task stats error: {task_stats}")
                 task_stats_data = {}
             else:
                 task_stats_data = task_stats
-                
+
             if isinstance(work_hour_stats, Exception):
                 logger.error(f"Work hour stats error: {work_hour_stats}")
                 work_hour_stats_data = {}
             else:
                 work_hour_stats_data = work_hour_stats
-                
+
             if isinstance(performance_stats, Exception):
                 logger.error(f"Performance stats error: {performance_stats}")
                 performance_stats_data = {}
             else:
                 performance_stats_data = performance_stats
-                
+
             if isinstance(attendance_stats, Exception):
                 logger.error(f"Attendance stats error: {attendance_stats}")
                 attendance_stats_data = {}
@@ -314,10 +314,10 @@ class StatisticsService:
         repair_online = repair_stats.online_count if repair_stats else 0
         repair_offline = repair_stats.offline_count if repair_stats else 0
         repair_rating = repair_stats.avg_rating if repair_stats else 0
-        
+
         monitoring_total = monitoring_stats.total_count if monitoring_stats else 0
         monitoring_minutes = monitoring_stats.total_minutes if monitoring_stats else 0
-        
+
         assistance_total = assistance_stats.total_count if assistance_stats else 0
         assistance_minutes = assistance_stats.total_minutes if assistance_stats else 0
 
@@ -330,9 +330,7 @@ class StatisticsService:
                 "online_count": repair_online or 0,
                 "offline_count": repair_offline or 0,
                 "completion_rate": round(
-                    (repair_completed or 0)
-                    / max(repair_total or 1, 1)
-                    * 100,
+                    (repair_completed or 0) / max(repair_total or 1, 1) * 100,
                     2,
                 ),
                 "avg_rating": round(repair_rating or 0, 2),
@@ -417,7 +415,7 @@ class StatisticsService:
             monitoring_minutes = stats.monitoring_minutes or 0
             assistance_minutes = stats.assistance_minutes or 0
             avg_repair_minutes = stats.avg_repair_minutes or 0
-            
+
         total_minutes = repair_minutes + monitoring_minutes + assistance_minutes
 
         data = {
@@ -487,12 +485,8 @@ class StatisticsService:
             "rating_rate": round(rated_count / max(total_tasks, 1) * 100, 2),
             "good_rating_count": good_rating_count,
             "poor_rating_count": poor_rating_count,
-            "good_rating_rate": round(
-                good_rating_count / max(rated_count, 1) * 100, 2
-            ),
-            "poor_rating_rate": round(
-                poor_rating_count / max(rated_count, 1) * 100, 2
-            ),
+            "good_rating_rate": round(good_rating_count / max(rated_count, 1) * 100, 2),
+            "poor_rating_rate": round(poor_rating_count / max(rated_count, 1) * 100, 2),
         }
 
         # 存入缓存（5分钟过期）
@@ -568,9 +562,7 @@ class StatisticsService:
                 "late_count": late_count,
                 "early_count": early_count,
                 "overall_rate": round(checkin_count / max(total_records, 1) * 100, 2),
-                "late_rate": round(
-                    late_count / max(checkin_count, 1) * 100, 2
-                ),
+                "late_rate": round(late_count / max(checkin_count, 1) * 100, 2),
                 "early_checkout_rate": round(
                     early_count / max(checkout_count, 1) * 100, 2
                 ),
@@ -841,7 +833,9 @@ class StatisticsService:
                     date_from, date_to, member_ids, department
                 )
             elif export_type == "comparison":
-                return await self._export_comparison_data(date_from, date_to, department)
+                return await self._export_comparison_data(
+                    date_from, date_to, department
+                )
             else:
                 raise ValueError("不支持的导出类型")
 
