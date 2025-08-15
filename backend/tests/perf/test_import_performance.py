@@ -55,7 +55,7 @@ def sample_work_hour_task(db_session) -> RepairTask:
     """Create a sample task for work hour calculation testing."""
     # Create a test member first
     member = Member(
-        username=f"test_perf_user",
+        username="test_perf_user",
         name="性能测试用户",
         student_id="PERF001",
         phone="13800138000",
@@ -133,7 +133,7 @@ class TestImportPerformance:
             benchmark_result["mean"] < 30.0
         ), f"Import took {benchmark_result['mean']:.2f}s, should be < 30s"
 
-        print(f"\n📊 Import Performance Results:")
+        print("\n📊 Import Performance Results:")
         print(f"   Mean time: {benchmark_result['mean']:.3f}s")
         print(f"   Min time:  {benchmark_result['min']:.3f}s")
         print(f"   Max time:  {benchmark_result['max']:.3f}s")
@@ -173,7 +173,7 @@ class TestImportPerformance:
             benchmark_result["mean"] < 0.1
         ), f"Calculation took {benchmark_result['mean']:.4f}s, should be < 0.1s"
 
-        print(f"\n📊 Work Hour Calculation Performance Results:")
+        print("\n📊 Work Hour Calculation Performance Results:")
         print(f"   Mean time: {benchmark_result['mean']*1000:.2f}ms")
         print(f"   Min time:  {benchmark_result['min']*1000:.2f}ms")
         print(f"   Max time:  {benchmark_result['max']*1000:.2f}ms")
@@ -251,7 +251,7 @@ class TestImportPerformance:
             benchmark_result["mean"] < 10.0
         ), f"Batch calculation took {benchmark_result['mean']:.2f}s, should be < 10s"
 
-        print(f"\n📊 Batch Work Hour Calculation Performance Results:")
+        print("\n📊 Batch Work Hour Calculation Performance Results:")
         print(f"   Mean time: {benchmark_result['mean']:.3f}s")
         print(f"   Tasks/second: {100 / benchmark_result['mean']:.1f}")
 
@@ -329,7 +329,7 @@ class TestImportPerformance:
             benchmark_result["mean"] < 5.0
         ), f"Fuzzy matching took {benchmark_result['mean']:.3f}s, should be < 5s"
 
-        print(f"\n📊 Fuzzy Member Matching Performance Results:")
+        print("\n📊 Fuzzy Member Matching Performance Results:")
         print(f"   Mean time: {benchmark_result['mean']:.3f}s")
         print(f"   Matches/second: {1000 / benchmark_result['mean']:.0f}")
 

@@ -15,6 +15,9 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.api.v1 import attendance, auth
+from app.api.v1 import import_api as import_router
+from app.api.v1 import members, statistics, tasks
 from app.core.cache import cleanup_cache, init_cache
 from app.core.config import get_cors_origins, get_log_config, settings
 from app.core.database import check_database_health, close_database, init_database
@@ -230,9 +233,6 @@ async def root():
 
 
 # Include API routers
-from app.api.v1 import attendance, auth
-from app.api.v1 import import_api as import_router
-from app.api.v1 import members, statistics, tasks
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(members.router, prefix="/api/v1/members", tags=["Members"])

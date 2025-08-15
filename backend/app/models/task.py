@@ -134,7 +134,10 @@ class TaskTag(BaseModel):
 
     def __repr__(self) -> str:
         """String representation."""
-        return f"<TaskTag(id={self.id}, name='{self.name}', type='{self.tag_type.value}', modifier={self.work_minutes_modifier})>"
+        return (
+            f"<TaskTag(id={self.id}, name='{self.name}', "
+            f"type='{self.tag_type.value}', modifier={self.work_minutes_modifier})>"
+        )
 
     @classmethod
     def create_rush_order_tag(cls) -> "TaskTag":
@@ -654,7 +657,10 @@ class MonitoringTask(BaseModel):
 
     def __repr__(self) -> str:
         """String representation."""
-        return f"<MonitoringTask(id={self.id}, member_id={self.member_id}, work_minutes={self.work_minutes})>"
+        return (
+            f"<MonitoringTask(id={self.id}, member_id={self.member_id}, "
+            f"work_minutes={self.work_minutes})>"
+        )
 
     def calculate_duration_minutes(self) -> int:
         """Calculate duration in minutes."""
@@ -725,7 +731,10 @@ class AssistanceTask(BaseModel):
 
     def __repr__(self) -> str:
         """String representation."""
-        return f"<AssistanceTask(id={self.id}, member_id={self.member_id}, work_minutes={self.work_minutes})>"
+        return (
+            f"<AssistanceTask(id={self.id}, member_id={self.member_id}, "
+            f"work_minutes={self.work_minutes})>"
+        )
 
     def calculate_duration_minutes(self) -> int:
         """Calculate duration in minutes."""

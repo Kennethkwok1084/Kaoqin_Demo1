@@ -456,7 +456,10 @@ async def import_members(
                 detail="批量导入提交失败",
             )
 
-    result_message = f"导入完成：成功 {successful_imports} 条，失败 {failed_imports} 条，跳过 {skipped_duplicates} 条"
+    result_message = (
+        f"导入完成：成功 {successful_imports} 条，"
+        f"失败 {failed_imports} 条，跳过 {skipped_duplicates} 条"
+    )
 
     return create_response(
         data={
@@ -539,7 +542,7 @@ async def get_member_stats(
         total_members = result.scalar()
 
         # 在职成员数
-        active_query = select(func.count(Member.id)).where(Member.is_active == True)
+        active_query = select(func.count(Member.id)).where(Member.is_active)
         result = await db.execute(active_query)
         active_members = result.scalar()
 

@@ -89,7 +89,7 @@ def performance_report():
 def pytest_benchmark_group_stats(config, benchmarks, group_by):
     """收集性能统计信息"""
     if benchmarks:
-        print(f"\n📊 性能测试统计:")
+        print("\n📊 性能测试统计:")
         for benchmark in benchmarks:
             mean_time = benchmark.stats["mean"] * 1000  # 转换为毫秒
             print(f"   {benchmark.name}: {mean_time:.2f}ms")

@@ -991,7 +991,10 @@ async def batch_delete_tasks(
         if in_progress_tasks:
             raise HTTPException(
                 status_code=http_status.HTTP_400_BAD_REQUEST,
-                detail=f"以下任务正在进行中，无法删除: {', '.join(in_progress_tasks[:3])}{'等' if len(in_progress_tasks) > 3 else ''}",
+                detail=(
+                    f"以下任务正在进行中，无法删除: {', '.join(in_progress_tasks[:3])}"
+                    f"{'等' if len(in_progress_tasks) > 3 else ''}"
+                ),
             )
 
         # 执行批量删除
@@ -1105,7 +1108,8 @@ async def update_task_status(
         await db.refresh(task)
 
         logger.info(
-            f"Task {task_id} status updated from {old_status.value} to {new_status.value} by {current_user.student_id}"
+            f"Task {task_id} status updated from {old_status.value} to "
+            f"{new_status.value} by {current_user.student_id}"
         )
 
         return create_response(
@@ -1795,15 +1799,6 @@ async def get_task_statistics(
         work_minutes_result = await db.execute(work_minutes_query)
         total_work_minutes = work_minutes_result.scalar() or 0
         total_work_hours = round(total_work_minutes / 60.0, 2)
-
-        # 平均完成时间（已完成任务）
-        completed_query = base_query.where(
-            and_(
-                RepairTask.status == TaskStatus.COMPLETED,
-                RepairTask.completion_time.isnot(None),
-                RepairTask.report_time.isnot(None),
-            )
-        )
 
         # 这里简化计算，实际应该计算平均完成时间
         avg_completion_hours = 0.0
@@ -2577,8 +2572,6 @@ async def import_maintenance_orders(
 
         # 解析导入数据
         maintenance_data = import_data.get("maintenance_orders", [])
-        auto_match = import_data.get("auto_match", True)
-        import_type = import_data.get("import_type", "ab_matched")
 
         if not maintenance_data:
             raise HTTPException(
@@ -2594,9 +2587,6 @@ async def import_maintenance_orders(
 
         for data in maintenance_data:
             try:
-                # 生成唯一标识符用于重复检测
-                unique_key = f"{data.get('title', '维修任务')}-{data.get('location', '')}-{data.get('reporter_name', '')}-{data.get('reporter_contact', '')}"
-
                 # 检查是否已存在相同的任务
                 existing_task_query = select(RepairTask).where(
                     and_(
@@ -2663,7 +2653,7 @@ async def import_maintenance_orders(
                                     Member.name.ilike(f"%{clean_name}"),  # 后缀匹配
                                 )
                             )
-                            .where(Member.is_active == True)
+                            .where(Member.is_active)
                         )  # 只匹配在职成员
 
                         member_result = await db.execute(member_query)
@@ -2676,7 +2666,8 @@ async def import_maintenance_orders(
                                 f"'{assignee_name}' -> '{matched_member.name}'"
                             )
                             logger.info(
-                                f"Found matching member: '{assignee_name}' -> '{matched_member.name}' (ID: {matched_member.id})"
+                                f"Found matching member: '{assignee_name}' -> "
+                                f"'{matched_member.name}' (ID: {matched_member.id})"
                             )
                         else:
                             # 如果还是找不到，尝试只用姓氏匹配（适用于中文姓名）
@@ -2684,7 +2675,7 @@ async def import_maintenance_orders(
                                 surname_query = (
                                     select(Member)
                                     .where(Member.name.ilike(f"{clean_name[0]}%"))
-                                    .where(Member.is_active == True)
+                                    .where(Member.is_active)
                                 )
 
                                 surname_result = await db.execute(surname_query)
@@ -2699,15 +2690,19 @@ async def import_maintenance_orders(
                                         f"'{assignee_name}' -> '{matched_member.name}' (姓氏匹配)"
                                     )
                                     logger.info(
-                                        f"Found member by surname: '{assignee_name}' -> '{matched_member.name}' (ID: {matched_member.id})"
+                                        f"Found by surname: '{assignee_name}'"
+                                        f" -> "
+                                        f"'{matched_member.name}' (ID: {matched_member.id})"
                                     )
                                 else:
                                     logger.warning(
-                                        f"No matching member found for: '{assignee_name}' (cleaned: '{clean_name}')"
+                                        f"No matching member found for: '{assignee_name}' "
+                                        f"(cleaned: '{clean_name}')"
                                     )
                             else:
                                 logger.warning(
-                                    f"No matching member found for: '{assignee_name}' (cleaned: '{clean_name}')"
+                                    f"No matching member found for: '{assignee_name}' "
+                                    f"(cleaned: '{clean_name}')"
                                 )
 
                 # 处理时间字段
@@ -3141,12 +3136,13 @@ async def recalculate_single_task_hours(
         }
 
         logger.info(
-            f"Task {task_id} work hours recalculated by {current_user.student_id}: {old_minutes} -> {task.work_minutes}"
+            f"Task {task_id} work hours recalculated by {current_user.student_id}: "
+            f"{old_minutes} -> {task.work_minutes}"
         )
 
         return create_response(
             data=result_data,
-            message=f"任务工时重新计算完成"
+            message="任务工时重新计算完成"
             + (
                 f"：{old_minutes}分钟 -> {task.work_minutes}分钟"
                 if changed
@@ -3343,7 +3339,8 @@ async def adjust_task_work_hours(
 
         # 记录调整日志
         logger.info(
-            f"Task {task_id} work hours manually adjusted by {current_user.student_id}: {original_minutes} -> {task.work_minutes} minutes, reason: {reason}"
+            f"Task {task_id} work hours manually adjusted by {current_user.student_id}: "
+            f"{original_minutes} -> {task.work_minutes} minutes, reason: {reason}"
         )
 
         await db.commit()
@@ -3713,7 +3710,8 @@ async def enhanced_import_with_ab_matching(
         }
 
         logger.info(
-            f"Enhanced import executed by {current_user.student_id}: {success_rate:.2%} success rate"
+            f"Enhanced import executed by {current_user.student_id}: "
+            f"{success_rate:.2%} success rate"
         )
 
         return create_response(
@@ -3744,7 +3742,6 @@ async def apply_status_mapping(
     try:
         # 解析请求数据
         task_ids = request_data.get("task_ids", [])
-        mapping_rules = request_data.get("mapping_rules", {})
         apply_to_all = request_data.get("apply_to_all", False)
 
         if not apply_to_all and not task_ids:
@@ -3920,7 +3917,10 @@ async def bulk_recalculate_work_hours_enhanced(
 
         return create_response(
             data=result,
-            message=f"批量工时重算完成，重算 {result['recalculated_tasks']} 个任务，更新 {result['updated_summaries']} 个汇总",
+            message=(
+                f"批量工时重算完成，重算 {result['recalculated_tasks']} 个任务，"
+                f"更新 {result['updated_summaries']} 个汇总"
+            ),
         )
 
     except Exception as e:

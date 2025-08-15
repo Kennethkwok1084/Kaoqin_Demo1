@@ -7,7 +7,7 @@ import logging
 import time
 from typing import AsyncGenerator, Generator
 
-from sqlalchemy import MetaData, create_engine
+from sqlalchemy import MetaData, create_engine, event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
@@ -221,7 +221,6 @@ async def get_pool_status() -> dict:
 
 
 # Database Event Listeners
-from sqlalchemy import event
 
 # Note: SQLite-specific pragmas removed as we use PostgreSQL exclusively
 

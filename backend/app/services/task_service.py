@@ -307,7 +307,10 @@ class TaskService:
             # 添加备注
             if completion_note:
                 if task.description:
-                    task.description += f"\n\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {completion_note}"
+                    task.description += (
+                        f"\n\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - "
+                        f"{completion_note}"
+                    )
                 else:
                     task.description = completion_note
 
@@ -369,7 +372,10 @@ class TaskService:
 
             # 添加分配记录
             if assignment_note:
-                assignment_log = f"\n\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - 任务分配：{assignment_note}"
+                assignment_log = (
+                    f"\n\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - "
+                    f"任务分配：{assignment_note}"
+                )
                 if task.description:
                     task.description += assignment_log
                 else:
@@ -598,7 +604,7 @@ class TaskService:
             query = (
                 select(RepairTask)
                 .options(selectinload(RepairTask.tags), joinedload(RepairTask.member))
-                .where(RepairTask.is_rush_order == True)
+                .where(RepairTask.is_rush_order)
             )
 
             if date_from:
@@ -685,7 +691,7 @@ class TaskService:
             base_query = (
                 select(RepairTask)
                 .options(joinedload(RepairTask.member))
-                .where(RepairTask.is_rush_order == True)
+                .where(RepairTask.is_rush_order)
             )
 
             if date_from:
@@ -1702,7 +1708,8 @@ class AssistanceTaskService:
                 )
             except Exception as e:
                 logger.warning(
-                    f"Failed to update monthly summary for member {member_id}, {year}-{month}: {str(e)}"
+                    f"Failed to update monthly summary for member {member_id}, "
+                    f"{year}-{month}: {str(e)}"
                 )
 
     async def _recalculate_work_hours_for_marked_tasks(

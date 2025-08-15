@@ -188,44 +188,6 @@ class AttendanceStatisticsResponse(BaseModel):
     exception_statistics: Dict[str, int]
 
 
-# 数据验证
-
-
-class AttendanceRecordCreate(AttendanceRecordBase):
-    """创建考勤记录的请求模型"""
-
-    checkin_time: Optional[datetime] = Field(None, description="签到时间")
-    checkout_time: Optional[datetime] = Field(None, description="签退时间")
-
-    @model_validator(mode="after")
-    def validate_times(self):
-        """验证时间逻辑"""
-        if self.checkin_time and self.checkout_time:
-            if self.checkout_time <= self.checkin_time:
-                raise ValueError("签退时间必须晚于签到时间")
-
-        return self
-
-
-class AttendanceExceptionRequest(AttendanceExceptionBase):
-    """考勤异常申请请求模型"""
-
-    supporting_documents: Optional[str] = Field(None, description="支持材料")
-
-    @field_validator("exception_date")
-    @classmethod
-    def validate_exception_date(cls, v: date) -> date:
-        """验证异常日期不能是未来日期"""
-        if v > date.today():
-            raise ValueError("异常日期不能是未来日期")
-
-        # 不能申请超过30天前的异常
-        if (date.today() - v).days > 30:
-            raise ValueError("不能申请超过30天前的考勤异常")
-
-        return v
-
-
 # 批量操作schemas
 
 

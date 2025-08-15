@@ -172,7 +172,10 @@ class Member(BaseModel):
 
     def __repr__(self) -> str:
         """字符串表示"""
-        return f"<Member(id={self.id}, username='{self.username}', name='{self.name}', student_id='{self.student_id}')>"
+        return (
+            f"<Member(id={self.id}, username='{self.username}', "
+            f"name='{self.name}', student_id='{self.student_id}')>"
+        )
 
     @property
     def is_admin(self) -> bool:

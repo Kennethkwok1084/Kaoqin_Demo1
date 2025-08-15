@@ -455,7 +455,7 @@ class AttendanceService:
             existing_exception = existing_result.scalar_one_or_none()
 
             if existing_exception:
-                raise ValueError(f"该日期已有相同类型的异常申请正在处理中")
+                raise ValueError("该日期已有相同类型的异常申请正在处理中")
 
             # 创建新的异常申请
             exception = AttendanceException(

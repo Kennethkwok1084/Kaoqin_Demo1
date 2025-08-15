@@ -30,7 +30,6 @@ from app.models.task import (
     TaskType,
 )
 from app.services.attendance_service import AttendanceService
-from app.services.task_service import TaskService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -117,7 +116,7 @@ async def get_statistics_overview(
         # 成员统计
         member_query = select(
             func.count().label("total_members"),
-            func.count(case((Member.is_active == True, 1))).label("active_members"),
+            func.count(case((Member.is_active, 1))).label("active_members"),
             func.count(case((Member.role == UserRole.ADMIN, 1))).label("admin_count"),
             func.count(case((Member.role == UserRole.GROUP_LEADER, 1))).label(
                 "leader_count"
@@ -142,10 +141,10 @@ async def get_statistics_overview(
 
         attendance_query = select(
             func.count().label("total_attendance"),
-            func.count(case((AttendanceRecord.is_late_checkin == True, 1))).label(
+            func.count(case((AttendanceRecord.is_late_checkin, 1))).label(
                 "late_checkins"
             ),
-            func.count(case((AttendanceRecord.is_early_checkout == True, 1))).label(
+            func.count(case((AttendanceRecord.is_early_checkout, 1))).label(
                 "early_checkouts"
             ),
             func.avg(AttendanceRecord.work_hours).label("avg_work_hours"),
@@ -535,8 +534,7 @@ async def get_monthly_report(
         first_datetime = datetime.combine(first_day, datetime.min.time())
         last_datetime = datetime.combine(last_day, datetime.max.time())
 
-        # 任务服务和考勤服务
-        task_service = TaskService(db)
+        # 考勤服务
         attendance_service = AttendanceService(db)
 
         report_data = {
@@ -809,7 +807,8 @@ async def export_statistics_data(
         }
 
         logger.info(
-            f"Statistics data exported by {current_user.student_id}: {export_type} in {format} format"
+            f"Statistics data exported by {current_user.student_id}: "
+            f"{export_type} in {format} format"
         )
 
         return create_response(
@@ -823,57 +822,6 @@ async def export_statistics_data(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="导出统计数据失败"
         )
-
-
-# ============= 私有辅助方法 =============
-
-
-def _calculate_efficiency_score(
-    avg_work_minutes: float,
-    avg_completion_hours: float,
-    avg_rating: float,
-    total_tasks: int,
-) -> float:
-    """
-    计算效率评分
-
-    评分逻辑：
-    - 工时效率：标准工时与实际工时的比值
-    - 完成速度：完成时间的倒数
-    - 质量评分：平均评分
-    - 工作量：任务数量
-    """
-    try:
-        # 标准工时（在线40分钟，离线100分钟，这里取平均70分钟）
-        standard_minutes = 70
-        work_efficiency = min(
-            standard_minutes / max(avg_work_minutes, 1), 2.0
-        )  # 最高2倍效率
-
-        # 完成速度评分（24小时内完成为满分，超过时间递减）
-        speed_score = min(24 / max(avg_completion_hours, 1), 2.0)
-
-        # 质量评分（5分制转为2分制）
-        quality_score = avg_rating / 2.5 if avg_rating > 0 else 1.0
-
-        # 工作量评分（对数增长，鼓励多做任务但不过分依赖数量）
-        import math
-
-        volume_score = math.log(total_tasks + 1) / 5.0  # 归一化到合理范围
-
-        # 综合评分（加权平均）
-        efficiency_score = (
-            work_efficiency * 0.3  # 工时效率 30%
-            + speed_score * 0.3  # 完成速度 30%
-            + quality_score * 0.3  # 质量评分 30%
-            + volume_score * 0.1  # 工作量 10%
-        )
-
-        return round(efficiency_score, 2)
-
-    except Exception as e:
-        logger.warning(f"Error calculating efficiency score: {str(e)}")
-        return 1.0  # 默认评分
 
 
 # 图表数据端点
@@ -1071,7 +1019,7 @@ async def get_work_hours_overview(
             )
 
             # 获取所有活跃成员的工时数据
-            members_query = select(Member).where(Member.is_active == True)
+            members_query = select(Member).where(Member.is_active)
             members_result = await db.execute(members_query)
             members = members_result.scalars().all()
 
@@ -1174,9 +1122,7 @@ async def get_work_hours_analysis(
     """
     try:
         from app.models.attendance import MonthlyAttendanceSummary
-        from app.services.work_hours_service import WorkHoursCalculationService
 
-        work_hours_service = WorkHoursCalculationService(db)
         analysis_data = {
             "analysis_type": analysis_type,
             "period": {"year": year, "month": month},

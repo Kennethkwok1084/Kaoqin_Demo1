@@ -114,7 +114,6 @@ async def get_work_hours_records(
             )
 
         # 手动分页
-        total_records = len(work_records)
         start_idx = (page - 1) * size
         end_idx = start_idx + size
         paginated_records = work_records[start_idx:end_idx]
@@ -344,9 +343,7 @@ async def get_today_work_hours_summary(
         active_members = active_result.scalar() or 0
 
         # 获取总成员数
-        total_members_query = select(func.count(Member.id)).where(
-            Member.is_active == True
-        )
+        total_members_query = select(func.count(Member.id)).where(Member.is_active)
         total_members_result = await db.execute(total_members_query)
         total_members = total_members_result.scalar() or 0
 
@@ -493,7 +490,6 @@ async def export_work_hours_data(
                 mode="w", delete=False, suffix=".csv", encoding="utf-8-sig"
             ) as tmp_file:
                 df.to_csv(tmp_file.name, index=False, encoding="utf-8-sig")
-                temp_path = tmp_file.name
         else:
             filename = f"work_hours_export_{timestamp}.xlsx"
             # 创建临时文件
@@ -501,7 +497,6 @@ async def export_work_hours_data(
                 df.to_excel(
                     tmp_file.name, index=False, engine="openpyxl", sheet_name="工时统计"
                 )
-                temp_path = tmp_file.name
 
         return {
             "success": True,

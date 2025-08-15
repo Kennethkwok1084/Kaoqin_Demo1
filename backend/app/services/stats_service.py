@@ -183,8 +183,6 @@ class StatisticsService:
 
     async def _get_member_statistics_cached(self) -> Dict[str, Any]:
         """获取成员统计（缓存版本）"""
-        cache_key = "member_statistics"
-
         # 尝试从缓存获取
         cached_data = await cache.get_stats_cache("member")
         if cached_data:
@@ -193,7 +191,7 @@ class StatisticsService:
         # 查询数据库
         member_query = select(
             func.count(Member.id).label("total_count"),
-            func.count(case((Member.is_active == True, 1))).label("active_count"),
+            func.count(case((Member.is_active, 1))).label("active_count"),
             func.count(case((Member.role == UserRole.ADMIN, 1))).label("admin_count"),
             func.count(case((Member.role == UserRole.MEMBER, 1))).label("member_count"),
         )
@@ -466,10 +464,10 @@ class StatisticsService:
                 func.count(case((AttendanceRecord.checkout_time.isnot(None), 1))).label(
                     "checkout_count"
                 ),
-                func.count(case((AttendanceRecord.is_late_checkin == True, 1))).label(
+                func.count(case((AttendanceRecord.is_late_checkin, 1))).label(
                     "late_count"
                 ),
-                func.count(case((AttendanceRecord.is_early_checkout == True, 1))).label(
+                func.count(case((AttendanceRecord.is_early_checkout, 1))).label(
                     "early_count"
                 ),
                 func.avg(AttendanceRecord.work_hours).label("avg_work_hours"),
@@ -636,7 +634,7 @@ class StatisticsService:
                 date_to = datetime.now()
 
             # 获取团队成员
-            member_query = select(Member).where(Member.is_active == True)
+            member_query = select(Member).where(Member.is_active)
             if group_id:
                 member_query = member_query.where(Member.group_id == group_id)
 
@@ -786,7 +784,7 @@ class StatisticsService:
         total_members = total_result.scalar()
 
         # 活跃成员数
-        active_query = select(func.count()).where(Member.is_active == True)
+        active_query = select(func.count()).where(Member.is_active)
         active_result = await self.db.execute(active_query)
         active_members = active_result.scalar()
 
@@ -1076,7 +1074,7 @@ class StatisticsService:
                     RepairTask.report_time <= end_date,
                 ),
             )
-            .where(Member.is_active == True)
+            .where(Member.is_active)
             .group_by(Member.id, Member.name)
             .order_by(desc("total_minutes"))
         )
@@ -1286,7 +1284,7 @@ class StatisticsService:
     ) -> Dict[str, Any]:
         """导出详细数据"""
         # 获取成员列表
-        member_query = select(Member).where(Member.is_active == True)
+        member_query = select(Member).where(Member.is_active)
         if member_ids:
             member_query = member_query.where(Member.id.in_(member_ids))
         elif group_id:

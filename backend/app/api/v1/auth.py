@@ -264,7 +264,8 @@ async def update_user_profile(
             if field in update_data:
                 if not current_user.is_admin:
                     logger.warning(
-                        f"User {current_user.student_id} attempted to update sensitive field: {field}"
+                        f"User {current_user.student_id} attempted to update "
+                        f"sensitive field: {field}"
                     )
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,

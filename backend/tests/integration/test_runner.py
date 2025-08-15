@@ -80,7 +80,7 @@ class IntegrationTestRunner:
             )
             json_report_path.parent.mkdir(exist_ok=True)
             pytest_args.extend(
-                [f"--json-report", f"--json-report-file={json_report_path}"]
+                ["--json-report", f"--json-report-file={json_report_path}"]
             )
 
         # 添加测试文件路径
@@ -90,7 +90,7 @@ class IntegrationTestRunner:
                 pytest_args.append(str(test_path))
 
         # 运行pytest
-        print(f"开始运行集成测试套件...")
+        print("开始运行集成测试套件...")
         print(f"测试文件: {', '.join(test_files)}")
         print(f"pytest参数: {' '.join(pytest_args)}")
 
@@ -437,7 +437,7 @@ class IntegrationTestRunner:
         markdown_file = reports_dir / "test_report.md"
         self._generate_markdown_report(report, markdown_file)
 
-        print(f"报告已保存到:")
+        print("报告已保存到:")
         print(f"  JSON格式: {json_file}")
         print(f"  Markdown格式: {markdown_file}")
 

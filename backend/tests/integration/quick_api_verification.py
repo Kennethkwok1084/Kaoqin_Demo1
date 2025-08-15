@@ -5,15 +5,14 @@
 
 import sys
 import traceback
+from datetime import datetime
 from pathlib import Path
+
+from fastapi.testclient import TestClient
 
 # 添加项目根目录到路径
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
-
-from datetime import datetime
-
-from fastapi.testclient import TestClient
 
 # 尝试导入应用
 try:
@@ -149,7 +148,7 @@ def test_new_api_endpoints():
                             details += f", 响应: {json_data.get('message', 'OK')}"
                         else:
                             details += ", 响应格式正确"
-                    except:
+                    except Exception:
                         details += ", 响应内容无法解析"
 
             else:
@@ -161,7 +160,7 @@ def test_new_api_endpoints():
                 try:
                     error_detail = response.json()
                     details += f", 错误: {error_detail.get('detail', 'Unknown')}"
-                except:
+                except Exception:
                     details += f", 响应文本: {response.text[:100]}..."
 
             test_results["test_details"].append(
@@ -256,7 +255,7 @@ def test_api_documentation():
                     "status": "OK 正常",
                     "details": "Swagger UI可访问",
                 }
-                print(f"  OK Swagger UI: 可访问")
+                print("  OK Swagger UI: 可访问")
             else:
                 doc_results["swagger"] = {
                     "status": "FAIL 失败",
@@ -275,7 +274,7 @@ def test_api_documentation():
             "status": "SKIP 跳过",
             "details": "非开发模式，跳过Swagger UI测试",
         }
-        print(f"  SKIP Swagger UI: 非开发模式，跳过测试")
+        print("  SKIP Swagger UI: 非开发模式，跳过测试")
 
     return doc_results
 
@@ -293,7 +292,7 @@ def main():
         doc_results = test_api_documentation()
 
         # 汇总结果
-        print(f"\nSUMMARY 测试汇总:")
+        print("\nSUMMARY 测试汇总:")
         print(
             f"  API端点测试: {api_results['passed_tests']}/{api_results['total_tests']} 通过"
         )
@@ -308,7 +307,7 @@ def main():
         print(f"  成功率: {success_rate:.1f}%")
 
         if api_results["failed_tests"] > 0:
-            print(f"\nFAILED 失败的测试:")
+            print("\nFAILED 失败的测试:")
             for detail in api_results["test_details"]:
                 if "FAIL" in detail["status"] or "ERROR" in detail["status"]:
                     print(f"    - {detail['name']}: {detail['details']}")

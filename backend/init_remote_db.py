@@ -39,8 +39,8 @@ async def test_basic_connection():
         # 检查现有表
         tables = await conn.fetch(
             """
-            SELECT table_name FROM information_schema.tables 
-            WHERE table_schema = 'public' 
+            SELECT table_name FROM information_schema.tables
+            WHERE table_schema = 'public'
             ORDER BY table_name
         """
         )
@@ -50,8 +50,8 @@ async def test_basic_connection():
         members_exists = await conn.fetchval(
             """
             SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_schema = 'public' 
+                SELECT FROM information_schema.tables
+                WHERE table_schema = 'public'
                 AND table_name = 'members'
             )
         """

@@ -196,7 +196,10 @@ class AttendanceException(BaseModel):
     )
 
     def __repr__(self) -> str:
-        return f"<AttendanceException(member_id={self.member_id}, type={self.exception_type}, date={self.exception_date})>"
+        return (
+            f"<AttendanceException(member_id={self.member_id}, "
+            f"type={self.exception_type}, date={self.exception_date})>"
+        )
 
 
 class MonthlyAttendanceSummary(BaseModel):

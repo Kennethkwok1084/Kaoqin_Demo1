@@ -4,6 +4,7 @@ Provides database setup, test client, and common fixtures.
 """
 
 import asyncio
+import os
 from typing import AsyncGenerator, Generator
 
 import pytest
@@ -20,9 +21,7 @@ from app.models.member import Member, UserRole
 # Export AsyncClient as AsyncTestClient for backward compatibility
 AsyncTestClient = AsyncClient
 
-
 # Test database URL - use PostgreSQL for testing
-import os
 
 TEST_DATABASE_URL = os.getenv(
     "DATABASE_URL",

@@ -40,7 +40,7 @@ class TestAPIPerformance:
             benchmark_result["mean"] < 0.5
         ), f"API took {benchmark_result['mean']:.3f}s, should be < 0.5s"
 
-        print(f"\n📊 Tasks List API Performance:")
+        print("\n📊 Tasks List API Performance:")
         print(f"   Mean time: {benchmark_result['mean']*1000:.1f}ms")
         print(f"   Status: {response.status_code}")
 
@@ -73,7 +73,7 @@ class TestAPIPerformance:
             benchmark_result["mean"] < 0.2
         ), f"API took {benchmark_result['mean']:.3f}s, should be < 0.2s"
 
-        print(f"\n📊 Work Time Detail API Performance:")
+        print("\n📊 Work Time Detail API Performance:")
         print(f"   Mean time: {benchmark_result['mean']*1000:.1f}ms")
         print(f"   Status: {response.status_code}")
 
@@ -102,7 +102,7 @@ class TestAPIPerformance:
             benchmark_result["mean"] < 0.1
         ), f"API took {benchmark_result['mean']:.3f}s, should be < 0.1s"
 
-        print(f"\n📊 Field Mapping API Performance:")
+        print("\n📊 Field Mapping API Performance:")
         print(f"   Mean time: {benchmark_result['mean']*1000:.1f}ms")
         print(f"   Status: {response.status_code}")
 
@@ -139,7 +139,7 @@ class TestAPIPerformance:
             benchmark_result["mean"] < 2.0
         ), f"Concurrent requests took {benchmark_result['mean']:.3f}s, should be < 2s"
 
-        print(f"\n📊 Concurrent API Performance:")
+        print("\n📊 Concurrent API Performance:")
         print(f"   Mean time: {benchmark_result['mean']:.3f}s")
         print(f"   Requests/second: {10 / benchmark_result['mean']:.1f}")
 

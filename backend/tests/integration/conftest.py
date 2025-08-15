@@ -13,6 +13,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
+from app.core.config import settings
+from app.core.database import get_async_session, get_sync_session
+from app.core.security import get_password_hash
+from app.main import app
+from app.models import Base, Member, UserRole
+
 # Set testing environment before importing app
 os.environ["TESTING"] = "1"
 os.environ["DATABASE_URL"] = os.getenv(
@@ -24,9 +30,6 @@ os.environ["DATABASE_URL_SYNC"] = os.getenv(
 )
 os.environ["REDIS_URL"] = "redis://localhost:6379/1"
 
-from app.core.config import settings
-from app.main import app
-
 # Override settings for testing
 settings.TESTING = True
 settings.DATABASE_URL = os.getenv(
@@ -36,9 +39,6 @@ settings.DATABASE_URL = os.getenv(
 settings.DATABASE_URL_SYNC = os.getenv(
     "DATABASE_URL_SYNC", "postgresql://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev"
 )
-from app.core.database import get_async_session, get_sync_session
-from app.core.security import get_password_hash
-from app.models import Base, Member, UserRole
 
 # 测试数据库配置
 TEST_DATABASE_URL = os.getenv(

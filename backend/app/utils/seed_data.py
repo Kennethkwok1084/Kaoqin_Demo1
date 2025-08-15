@@ -254,11 +254,11 @@ async def seed_database():
             for user in users:
                 print(f"  • {user.name} ({user.student_id}) - {user.role.value}")
                 if user.student_id == "admin":
-                    print(f"    Password: Admin123!")
+                    print("    Password: Admin123!")
                 elif user.role == UserRole.GROUP_LEADER:
-                    print(f"    Password: Leader123!")
+                    print("    Password: Leader123!")
                 else:
-                    print(f"    Password: Member123!")
+                    print("    Password: Member123!")
 
             print(f"\nTask Tags Created: {len(tags)} tags")
             print("\nYou can now start the server and test the authentication API!")

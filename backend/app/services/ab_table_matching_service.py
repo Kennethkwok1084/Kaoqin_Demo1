@@ -241,7 +241,7 @@ class ABTableMatchingService:
 
     async def _get_all_active_members(self) -> List[Member]:
         """获取所有活跃成员"""
-        query = select(Member).where(Member.is_active == True)
+        query = select(Member).where(Member.is_active)
         result = await self.db.execute(query)
         return result.scalars().all()
 

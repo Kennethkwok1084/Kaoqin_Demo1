@@ -647,7 +647,7 @@ class DataImportService:
 
         try:
             # 获取现有成员数据用于匹配
-            member_query = select(Member).where(Member.is_active == True)
+            member_query = select(Member).where(Member.is_active)
             member_result = await self.db.execute(member_query)
             existing_members = {
                 self._create_match_key(m.name, getattr(m, "phone", "")): m
@@ -706,7 +706,8 @@ class DataImportService:
                     )
 
             logger.info(
-                f"Fallback matching completed: {len(matched_data)} matched, {len(unmatched_data)} unmatched"
+                f"Fallback matching completed: {len(matched_data)} matched, "
+                f"{len(unmatched_data)} unmatched"
             )
 
             return {"matched": matched_data, "unmatched": unmatched_data}
@@ -1027,9 +1028,7 @@ class DataImportService:
                         skipped_count += 1
                 else:
                     # 创建新任务（重构版）
-                    task = await self._create_repair_task_from_import_data(
-                        row, creator_id
-                    )
+                    _ = await self._create_repair_task_from_import_data(row, creator_id)
                     created_count += 1
 
             except Exception as e:
@@ -1062,7 +1061,7 @@ class DataImportService:
             # 清理文件描述符
             try:
                 os.close(temp_fd)
-            except:
+            except OSError:
                 pass
             raise e
 
@@ -1213,7 +1212,9 @@ class DataImportService:
                 repair_form=import_data.get("repair_form"),
                 # 导入跟踪字段
                 is_matched=import_data.get("is_matched", False),
-                import_batch_id=f"import_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{creator_id}",
+                import_batch_id=(
+                    f"import_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{creator_id}"
+                ),
             )
 
             # 设置基础工时

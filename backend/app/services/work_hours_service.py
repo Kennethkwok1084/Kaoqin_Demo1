@@ -239,7 +239,8 @@ class WorkHoursCalculationService:
             raise
         except Exception as e:
             logger.error(
-                f"Unexpected error calculating task {task.id if hasattr(task, 'id') else 'unknown'} work minutes: {str(e)}"
+                f"Unexpected error calculating task "
+                f"{task.id if hasattr(task, 'id') else 'unknown'} work minutes: {str(e)}"
             )
             raise RuntimeError(f"工时计算过程发生未预期错误: {str(e)}")
 
@@ -545,7 +546,7 @@ class WorkHoursCalculationService:
             if member_ids:
                 members_query = select(Member).where(Member.id.in_(member_ids))
             else:
-                members_query = select(Member).where(Member.is_active == True)
+                members_query = select(Member).where(Member.is_active)
 
             members_result = await self.db.execute(members_query)
             members = members_result.scalars().all()
@@ -616,7 +617,7 @@ class WorkHoursCalculationService:
             member_query = select(Member).where(
                 and_(
                     Member.department == task.member.department,
-                    Member.is_active == True,
+                    Member.is_active,
                 )
             )
             member_result = await self.db.execute(member_query)
@@ -627,7 +628,7 @@ class WorkHoursCalculationService:
             # 为每个组成员添加惩罚标签
             for member in group_members:
                 # 创建惩罚标签（如果不存在）
-                penalty_tag = await self._get_or_create_penalty_tag(penalty_type)
+                _ = await self._get_or_create_penalty_tag(penalty_type)
 
                 # 为该成员的当月汇总添加惩罚时长
                 task_month = task.report_time.month
@@ -1042,7 +1043,8 @@ class RushTaskMarkingService:
 
                     if old_work_minutes != task.work_minutes:
                         logger.debug(
-                            f"Task {task.id} work minutes updated: {old_work_minutes} -> {task.work_minutes}"
+                            f"Task {task.id} work minutes updated: "
+                            f"{old_work_minutes} -> {task.work_minutes}"
                         )
 
                     recalculated_count += 1
@@ -1072,11 +1074,13 @@ class RushTaskMarkingService:
                         updated_summaries += 1
                     except Exception as e:
                         logger.warning(
-                            f"Failed to update summary for member {member_id}, {year}-{month}: {str(e)}"
+                            f"Failed to update summary for member {member_id}, "
+                            f"{year}-{month}: {str(e)}"
                         )
 
             logger.info(
-                f"Batch recalculated {recalculated_count} tasks, updated {updated_summaries} summaries"
+                f"Batch recalculated {recalculated_count} tasks, "
+                f"updated {updated_summaries} summaries"
             )
             return {
                 "recalculated_tasks": recalculated_count,
