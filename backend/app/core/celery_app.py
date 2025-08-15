@@ -4,6 +4,7 @@ Celery配置和任务定义
 """
 
 import logging
+from typing import Any, Dict
 
 from celery import Celery
 from celery.schedules import crontab
@@ -89,7 +90,7 @@ celery_app.conf.update(
 
 # 健康检查任务
 @celery_app.task(bind=True)
-def health_check(self):
+def health_check(self) -> Dict[str, Any]:
     """Celery健康检查任务"""
     try:
         return {"status": "healthy", "task_id": self.request.id, "timestamp": "now"}
@@ -106,7 +107,7 @@ def get_celery_app() -> Celery:
 
 # Celery信号处理
 @celery_app.on_after_configure.connect
-def setup_periodic_tasks(sender, **kwargs):
+def setup_periodic_tasks(sender, **kwargs) -> None:
     """设置周期性任务"""
     logger.info("Setting up periodic tasks...")
 
@@ -114,7 +115,7 @@ def setup_periodic_tasks(sender, **kwargs):
 
 
 @celery_app.on_after_finalize.connect
-def setup_queues(sender, **kwargs):
+def setup_queues(sender, **kwargs) -> None:
     """设置队列"""
     logger.info("Setting up task queues...")
 

@@ -16,7 +16,7 @@ from app.services.work_hour_automation import WorkHourAutomationService
 logger = logging.getLogger(__name__)
 
 
-def run_async_task(async_func, *args, **kwargs):
+def run_async_task(async_func, *args, **kwargs) -> Any:
     """运行异步任务的辅助函数"""
     try:
         loop = asyncio.get_event_loop()
@@ -35,7 +35,7 @@ def run_async_task(async_func, *args, **kwargs):
 
 
 @celery_app.task(bind=True, name="app.core.celery_tasks.schedule_overdue_detection")
-def schedule_overdue_detection(self):
+def schedule_overdue_detection(self) -> Dict[str, Any]:
     """
     定时检测超时任务
     每小时执行一次，检测延迟响应和延迟完成的任务
@@ -61,7 +61,7 @@ def schedule_overdue_detection(self):
 
 
 @celery_app.task(bind=True, name="app.core.celery_tasks.process_review_bonuses")
-def process_review_bonuses(self):
+def process_review_bonuses(self) -> Dict[str, Any]:
     """
     处理评价奖励
     每30分钟执行一次，处理最近的任务评价
@@ -86,7 +86,7 @@ def process_review_bonuses(self):
 
 
 @celery_app.task(bind=True, name="app.core.celery_tasks.send_notifications")
-def send_notifications(self):
+def send_notifications(self) -> Dict[str, Any]:
     """
     发送超时提醒通知
     每15分钟执行一次，发送即将超时的任务提醒
@@ -111,7 +111,7 @@ def send_notifications(self):
 
 
 @celery_app.task(bind=True, name="app.core.celery_tasks.cleanup_expired_data")
-def cleanup_expired_data(self, days_to_keep: int = 90):
+def cleanup_expired_data(self, days_to_keep: int = 90) -> Dict[str, Any]:
     """
     清理过期数据
     每天凌晨2点执行，清理过期的任务数据
@@ -138,7 +138,7 @@ def cleanup_expired_data(self, days_to_keep: int = 90):
 
 
 @celery_app.task(bind=True, name="app.core.celery_tasks.generate_daily_statistics")
-def generate_daily_statistics(self):
+def generate_daily_statistics(self) -> Dict[str, Any]:
     """
     生成每日统计报告
     每天凌晨3点执行，生成前一天的统计数据
@@ -186,7 +186,7 @@ def generate_daily_statistics(self):
 
 
 @celery_app.task(bind=True, name="app.core.celery_tasks.weekly_work_hour_recalculation")
-def weekly_work_hour_recalculation(self):
+def weekly_work_hour_recalculation(self) -> Dict[str, Any]:
     """
     每周工时重算
     每周日凌晨4点执行，重新计算上周的所有任务工时
@@ -230,7 +230,7 @@ def weekly_work_hour_recalculation(self):
 
 
 @celery_app.task(bind=True, name="app.core.celery_tasks.batch_apply_penalties")
-def batch_apply_penalties(self, task_ids: Optional[List[int]] = None):
+def batch_apply_penalties(self, task_ids: Optional[List[int]] = None) -> Dict[str, Any]:
     """
     批量应用惩罚标签
     手动触发或定时执行，对指定任务批量应用惩罚
@@ -313,7 +313,7 @@ def export_statistics_report(
 
 
 @celery_app.task(bind=True, name="app.core.celery_tasks.system_health_check")
-def system_health_check(self):
+def system_health_check(self) -> Dict[str, Any]:
     """
     系统健康检查
     定期检查系统各组件的健康状态

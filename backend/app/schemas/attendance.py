@@ -233,7 +233,7 @@ class AttendanceQueryParams(BaseModel):
     size: int = Field(20, ge=1, le=100, description="每页大小")
 
     @model_validator(mode="after")
-    def validate_date_range(self):
+    def validate_date_range(self) -> "AttendanceQueryParams":
         """验证日期范围"""
         if self.date_from and self.date_to:
             if self.date_to < self.date_from:
@@ -256,7 +256,7 @@ class AttendanceExportRequest(BaseModel):
     include_summary: bool = Field(True, description="是否包含汇总信息")
 
     @model_validator(mode="after")
-    def validate_export_params(self):
+    def validate_export_params(self) -> "AttendanceExportRequest":
         """验证导出参数"""
         if self.date_to < self.date_from:
             raise ValueError("结束日期不能早于开始日期")

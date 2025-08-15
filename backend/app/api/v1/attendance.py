@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
 from app.models.member import Member
+from app.models.task import TaskStatus
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +84,7 @@ async def get_work_hours_records(
             .where(
                 and_(
                     RepairTask.member_id == target_member_id,
-                    RepairTask.status == "COMPLETED",
+                    RepairTask.status == TaskStatus.COMPLETED,
                     RepairTask.completion_time.isnot(None),
                     *date_filters,
                 )
@@ -195,7 +196,7 @@ async def get_monthly_work_hours_summary(
             RepairTask.member_id == target_member_id,
             RepairTask.completion_time >= month_start,
             RepairTask.completion_time <= month_end,
-            RepairTask.status == "COMPLETED",
+            RepairTask.status == TaskStatus.COMPLETED,
         )
         repair_result = await db.execute(repair_query)
         repair_stats = repair_result.fetchone()
@@ -208,7 +209,7 @@ async def get_monthly_work_hours_summary(
             MonitoringTask.member_id == target_member_id,
             MonitoringTask.end_time >= month_start,
             MonitoringTask.end_time <= month_end,
-            MonitoringTask.status == "COMPLETED",
+            MonitoringTask.status == TaskStatus.COMPLETED,
         )
         monitoring_result = await db.execute(monitoring_query)
         monitoring_stats = monitoring_result.fetchone()
@@ -221,7 +222,7 @@ async def get_monthly_work_hours_summary(
             AssistanceTask.member_id == target_member_id,
             AssistanceTask.end_time >= month_start,
             AssistanceTask.end_time <= month_end,
-            AssistanceTask.status == "COMPLETED",
+            AssistanceTask.status == TaskStatus.COMPLETED,
         )
         assistance_result = await db.execute(assistance_query)
         assistance_stats = assistance_result.fetchone()
@@ -302,7 +303,7 @@ async def get_today_work_hours_summary(
         repair_hours_query = select(func.sum(RepairTask.work_minutes)).where(
             RepairTask.completion_time >= today_start,
             RepairTask.completion_time <= today_end,
-            RepairTask.status == "COMPLETED",
+            RepairTask.status == TaskStatus.COMPLETED,
         )
         repair_result = await db.execute(repair_hours_query)
         repair_minutes = repair_result.scalar() or 0
@@ -311,7 +312,7 @@ async def get_today_work_hours_summary(
         monitoring_hours_query = select(func.sum(MonitoringTask.work_minutes)).where(
             MonitoringTask.end_time >= today_start,
             MonitoringTask.end_time <= today_end,
-            MonitoringTask.status == "COMPLETED",
+            MonitoringTask.status == TaskStatus.COMPLETED,
         )
         monitoring_result = await db.execute(monitoring_hours_query)
         monitoring_minutes = monitoring_result.scalar() or 0
@@ -320,7 +321,7 @@ async def get_today_work_hours_summary(
         assistance_hours_query = select(func.sum(AssistanceTask.work_minutes)).where(
             AssistanceTask.end_time >= today_start,
             AssistanceTask.end_time <= today_end,
-            AssistanceTask.status == "COMPLETED",
+            AssistanceTask.status == TaskStatus.COMPLETED,
         )
         assistance_result = await db.execute(assistance_hours_query)
         assistance_minutes = assistance_result.scalar() or 0
@@ -337,7 +338,7 @@ async def get_today_work_hours_summary(
         ).where(
             RepairTask.completion_time >= today_start,
             RepairTask.completion_time <= today_end,
-            RepairTask.status == "COMPLETED",
+            RepairTask.status == TaskStatus.COMPLETED,
         )
         active_result = await db.execute(active_members_query)
         active_members = active_result.scalar() or 0
@@ -439,7 +440,7 @@ async def export_work_hours_data(
                 and_(
                     RepairTask.completion_time >= date_from_dt,
                     RepairTask.completion_time <= date_to_dt,
-                    RepairTask.status == "COMPLETED",
+                    RepairTask.status == TaskStatus.COMPLETED,
                     *member_filter,
                 )
             )
@@ -565,7 +566,7 @@ async def get_work_hours_stats(
             RepairTask.member_id == target_member_id,
             RepairTask.completion_time >= start_datetime,
             RepairTask.completion_time <= end_datetime,
-            RepairTask.status == "COMPLETED",
+            RepairTask.status == TaskStatus.COMPLETED,
         )
 
         repair_result = await db.execute(repair_query)
@@ -672,7 +673,7 @@ async def get_work_hours_chart_data(
         query_conditions = [
             RepairTask.completion_time >= start_datetime,
             RepairTask.completion_time <= end_datetime,
-            RepairTask.status == "COMPLETED",
+            RepairTask.status == TaskStatus.COMPLETED,
         ]
 
         if memberId:
@@ -811,7 +812,7 @@ async def get_work_hours_chart_data(
 
 
 @router.get("/health", response_model=Dict[str, Any], summary="健康检查")
-async def health_check():
+async def health_check() -> Dict[str, Any]:
     """
     工时管理服务健康检查
     """

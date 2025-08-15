@@ -7,7 +7,7 @@ import re
 from datetime import date, datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.models.member import UserRole
 
@@ -30,29 +30,33 @@ class MemberBase(BaseModel):
     is_active: bool = Field(default=True, description="在职状态")
     profile_completed: bool = Field(default=False, description="是否已完善个人信息")
 
-    @validator("username")
-    def validate_username(cls, v):
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, v: str) -> str:
         """验证用户名格式"""
         if not re.match(r"^[a-zA-Z0-9_]+$", v):
             raise ValueError("用户名只能包含字母、数字和下划线")
         return v
 
-    @validator("student_id")
-    def validate_student_id(cls, v):
+    @field_validator("student_id")
+    @classmethod
+    def validate_student_id(cls, v: Optional[str]) -> Optional[str]:
         """验证学号格式"""
         if v is not None and not re.match(r"^\d+$", v):
             raise ValueError("学号必须为纯数字")
         return v
 
-    @validator("phone")
-    def validate_phone(cls, v):
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, v: Optional[str]) -> Optional[str]:
         """验证手机号格式"""
         if v is not None and not re.match(r"^\d{11}$", v):
             raise ValueError("手机号必须为11位数字")
         return v
 
-    @validator("name")
-    def validate_name(cls, v):
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
         """验证姓名格式"""
         # 允许中文、字母和·符号
         if not re.match(r"^[\u4e00-\u9fa5a-zA-Z·]+$", v):
@@ -102,22 +106,25 @@ class MemberUpdate(BaseModel):
     is_active: Optional[bool] = Field(None, description="在职状态")
     profile_completed: Optional[bool] = Field(None, description="是否已完善个人信息")
 
-    @validator("username")
-    def validate_username(cls, v):
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, v: Optional[str]) -> Optional[str]:
         """验证用户名格式"""
         if v is not None and not re.match(r"^[a-zA-Z0-9_]+$", v):
             raise ValueError("用户名只能包含字母、数字和下划线")
         return v
 
-    @validator("phone")
-    def validate_phone(cls, v):
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, v: Optional[str]) -> Optional[str]:
         """验证手机号格式"""
         if v is not None and not re.match(r"^\d{11}$", v):
             raise ValueError("手机号必须为11位数字")
         return v
 
-    @validator("name")
-    def validate_name(cls, v):
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: Optional[str]) -> Optional[str]:
         """验证姓名格式"""
         if v is not None and not re.match(r"^[\u4e00-\u9fa5a-zA-Z·]+$", v):
             raise ValueError("姓名只能包含中文、字母和·符号")
@@ -235,8 +242,9 @@ class MemberImportItem(BaseModel):
     class_name: str = Field(..., description="班级")
     role: Optional[str] = Field(default="member", description="角色")
 
-    @validator("student_id", pre=True)
-    def validate_student_id(cls, v):
+    @field_validator("student_id", mode="before")
+    @classmethod
+    def validate_student_id(cls, v) -> Optional[str]:
         """验证学号格式"""
         if v is None or v == "" or v == "null" or v == "undefined":
             return None
@@ -244,8 +252,9 @@ class MemberImportItem(BaseModel):
             raise ValueError("学号必须为纯数字")
         return str(v)
 
-    @validator("phone", pre=True)
-    def validate_phone(cls, v):
+    @field_validator("phone", mode="before")
+    @classmethod
+    def validate_phone(cls, v) -> Optional[str]:
         """验证手机号格式"""
         if v is None or v == "" or v == "null" or v == "undefined":
             return None
@@ -254,8 +263,9 @@ class MemberImportItem(BaseModel):
             raise ValueError("手机号必须为11位数字，且以1开头")
         return phone_str
 
-    @validator("name", pre=True)
-    def validate_name(cls, v):
+    @field_validator("name", mode="before")
+    @classmethod
+    def validate_name(cls, v) -> str:
         """验证姓名格式"""
         if not v or not str(v).strip():
             raise ValueError("姓名不能为空")
@@ -264,7 +274,8 @@ class MemberImportItem(BaseModel):
             raise ValueError("姓名只能包含中文、字母、·和空格")
         return name_str
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def clean_empty_fields(cls, values):
         """清理空字段"""
         cleaned = {}

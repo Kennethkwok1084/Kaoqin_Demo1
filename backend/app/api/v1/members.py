@@ -582,7 +582,7 @@ async def get_member_stats(
 
 
 @router.get("/health", response_model=Dict[str, Any])
-async def members_health_check():
+async def members_health_check() -> Dict[str, Any]:
     """成员管理模块健康检查"""
     return create_response(
         data={"module": "members", "status": "healthy", "version": "2.0"},

@@ -6,9 +6,9 @@ Main application factory and configuration.
 import logging
 import logging.config
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator, Dict
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -81,7 +81,7 @@ app = FastAPI(
 
 # Add security headers middleware
 @app.middleware("http")
-async def add_security_headers(request: Request, call_next):
+async def add_security_headers(request: Request, call_next) -> Response:
     """Add security headers to all responses."""
     response = await call_next(request)
 
@@ -112,7 +112,7 @@ if not settings.DEBUG:
 
 # Exception handlers
 @app.exception_handler(BaseCustomException)
-async def custom_exception_handler(request: Request, exc: BaseCustomException):
+async def custom_exception_handler(request: Request, exc: BaseCustomException) -> JSONResponse:
     """Handle custom exceptions."""
     logger.error(f"Custom exception: {exc.message}", exc_info=exc)
     return JSONResponse(
@@ -127,7 +127,7 @@ async def custom_exception_handler(request: Request, exc: BaseCustomException):
 
 
 @app.exception_handler(StarletteHTTPException)
-async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
     """Handle HTTP exceptions."""
     logger.warning(f"HTTP exception: {exc.status_code} - {exc.detail}")
     return JSONResponse(
@@ -142,7 +142,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 
 
 @app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     """Handle request validation errors."""
     logger.warning(f"Validation error: {exc.errors()}")
 
@@ -164,7 +164,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 @app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
+async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle unexpected exceptions."""
     logger.error(f"Unexpected error: {str(exc)}", exc_info=exc)
 
@@ -196,7 +196,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Health check endpoints
 @app.get("/health", tags=["Health"])
-async def health_check():
+async def health_check() -> Dict[str, Any]:
     """Health check endpoint."""
     db_healthy = await check_database_health()
 
@@ -209,7 +209,7 @@ async def health_check():
 
 
 @app.get("/api/health", tags=["Health"])
-async def api_health_check():
+async def api_health_check() -> Dict[str, Any]:
     """API health check endpoint."""
     db_healthy = await check_database_health()
 
@@ -222,7 +222,7 @@ async def api_health_check():
 
 
 @app.get("/", tags=["Root"])
-async def root():
+async def root() -> Dict[str, Any]:
     """Root endpoint."""
     return {
         "message": "欢迎使用考勤管理系统 API",
@@ -246,7 +246,7 @@ app.include_router(import_router.router, prefix="/api/v1/import", tags=["Import"
 if settings.DEBUG:
 
     @app.get("/debug/config", tags=["Debug"])
-    async def debug_config():
+    async def debug_config() -> Dict[str, Any]:
         """Debug endpoint to view configuration (development only)."""
         return {
             "app_name": settings.APP_NAME,
@@ -263,7 +263,7 @@ if settings.DEBUG:
         }
 
     @app.get("/debug/db-tables", tags=["Debug"])
-    async def debug_db_tables():
+    async def debug_db_tables() -> Dict[str, Any]:
         """Debug endpoint to view database tables (development only)."""
         from app.core.database import get_table_names
 
@@ -277,7 +277,7 @@ def create_app() -> FastAPI:
 
 
 # Run function for development
-def run():
+def run() -> None:
     """Run the application with uvicorn (development only)."""
     import uvicorn
 

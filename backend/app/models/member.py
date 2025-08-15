@@ -5,7 +5,7 @@
 
 import enum
 from datetime import date, datetime
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Dict, Any
 
 from sqlalchemy import (
     Boolean,
@@ -93,7 +93,7 @@ class Member(BaseModel):
     )
 
     # 状态和权限
-    role = Column(
+    role: UserRole = Column(  # type: ignore[assignment]
         Enum(UserRole), default=UserRole.MEMBER, nullable=False, comment="用户角色"
     )
 
@@ -180,27 +180,27 @@ class Member(BaseModel):
     @property
     def is_admin(self) -> bool:
         """检查是否为管理员"""
-        return self.role == UserRole.ADMIN
+        return bool(self.role == UserRole.ADMIN)
 
     @property
     def is_group_leader(self) -> bool:
         """检查是否为组长"""
-        return self.role == UserRole.GROUP_LEADER
+        return bool(self.role == UserRole.GROUP_LEADER)
 
     @property
     def can_manage_group(self) -> bool:
         """检查是否可以管理组员"""
-        return self.role in [UserRole.ADMIN, UserRole.GROUP_LEADER]
+        return bool(self.role in [UserRole.ADMIN, UserRole.GROUP_LEADER])
 
     @property
     def can_import_data(self) -> bool:
         """检查是否可以导入数据"""
-        return self.role == UserRole.ADMIN
+        return bool(self.role == UserRole.ADMIN)
 
     @property
     def can_mark_rush_tasks(self) -> bool:
         """检查是否可以标记紧急任务"""
-        return self.role == UserRole.ADMIN
+        return bool(self.role == UserRole.ADMIN)
 
     @property
     def status_display(self) -> str:
@@ -211,7 +211,7 @@ class Member(BaseModel):
         """获取显示名称"""
         return f"{self.name} ({self.student_id})"
 
-    def get_safe_dict(self) -> dict:
+    def get_safe_dict(self) -> Dict[str, Any]:
         """获取安全的字典表示（用于API返回）"""
         return {
             "id": self.id,
@@ -248,5 +248,5 @@ class Member(BaseModel):
 
     def update_login_info(self) -> None:
         """更新登录信息"""
-        self.last_login = datetime.utcnow()
-        self.login_count += 1
+        self.last_login = datetime.utcnow()  # type: ignore[assignment]
+        self.login_count += 1  # type: ignore[assignment]

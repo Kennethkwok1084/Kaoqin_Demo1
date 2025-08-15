@@ -86,7 +86,7 @@ class TaskBase(BaseModel):
 
     @field_validator("title")
     @classmethod
-    def validate_title(cls, v):
+    def validate_title(cls, v: str) -> str:
         """验证任务标题"""
         if not v or not v.strip():
             raise ValueError("任务标题不能为空")
@@ -110,7 +110,7 @@ class TaskCreate(TaskBase):
 
     @field_validator("deadline")
     @classmethod
-    def validate_deadline(cls, v):
+    def validate_deadline(cls, v: Optional[datetime]) -> Optional[datetime]:
         """验证截止时间"""
         if v and v <= datetime.now():
             raise ValueError("截止时间必须在当前时间之后")
@@ -161,7 +161,7 @@ class TaskUpdate(BaseModel):
 
     @field_validator("title")
     @classmethod
-    def validate_title(cls, v):
+    def validate_title(cls, v: Optional[str]) -> Optional[str]:
         """验证任务标题"""
         if v is not None and (not v or not v.strip()):
             raise ValueError("任务标题不能为空")

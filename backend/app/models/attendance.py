@@ -149,7 +149,7 @@ class AttendanceException(BaseModel):
     )
 
     # Request status and processing
-    status = Column(
+    status: AttendanceExceptionStatus = Column(  # type: ignore[assignment]
         SQLEnum(AttendanceExceptionStatus),
         default=AttendanceExceptionStatus.PENDING,
         nullable=False,
@@ -322,7 +322,7 @@ class MonthlyAttendanceSummary(BaseModel):
         """Calculate attendance rate."""
         if self.total_work_days == 0:
             return 0.0
-        return (self.attended_days / self.total_work_days) * 100
+        return float((self.attended_days / self.total_work_days) * 100)
 
     def __repr__(self) -> str:
         return f"<MonthlyAttendanceSummary(member_id={self.member_id}, month={self.month_string})>"

@@ -4,7 +4,7 @@
 """
 
 from datetime import datetime
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -18,7 +18,7 @@ class LoginResponse(BaseModel):
     refresh_token: str = Field(..., description="JWT refresh token")
     token_type: str = Field(default="bearer", description="Token type")
     expires_in: int = Field(..., description="Token expiration time in seconds")
-    user: dict = Field(..., description="User profile information")
+    user: Dict[str, Any] = Field(..., description="User profile information")
 
     model_config = ConfigDict(
         json_schema_extra={

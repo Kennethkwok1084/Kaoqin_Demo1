@@ -11,7 +11,7 @@ from pydantic import EmailStr, Field, validator
 try:
     from pydantic_settings import BaseSettings
 except ImportError:
-    from pydantic import BaseSettings
+    from pydantic import BaseSettings  # type: ignore[no-redef]
 
 
 class Settings(BaseSettings):
@@ -30,10 +30,12 @@ class Settings(BaseSettings):
 
     # Database Configuration
     DATABASE_URL: str = Field(
-        ..., description="PostgreSQL database URL for async operations"
+        default="postgresql+asyncpg://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev",
+        description="PostgreSQL database URL for async operations"
     )
     DATABASE_URL_SYNC: str = Field(
-        ..., description="PostgreSQL database URL for sync operations"
+        default="postgresql://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev",
+        description="PostgreSQL database URL for sync operations"
     )
 
     @validator("DATABASE_URL", pre=True)
@@ -41,7 +43,7 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             return v
         # Fallback construction if needed
-        return "postgresql+asyncpg://kwok:Onjuju1084@localhost:5432/attendence_dev"
+        return "postgresql+asyncpg://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev"
 
     @validator("DATABASE_URL_SYNC", pre=True)
     def assemble_db_connection_sync(
@@ -52,7 +54,7 @@ class Settings(BaseSettings):
         # Fallback construction - convert async URL to sync
         async_url = values.get(
             "DATABASE_URL",
-            "postgresql+asyncpg://kwok:Onjuju1084@localhost:5432/attendence_dev",
+            "postgresql+asyncpg://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev",
         )
         return async_url.replace("postgresql+asyncpg://", "postgresql://")
 

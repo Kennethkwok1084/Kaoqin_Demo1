@@ -5,7 +5,7 @@ Handles SQLAlchemy async and sync database connections.
 
 import logging
 import time
-from typing import AsyncGenerator, Generator
+from typing import Any, AsyncGenerator, Dict, Generator, List, Optional
 
 from sqlalchemy import MetaData, create_engine, event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -166,7 +166,7 @@ class DatabaseTransaction:
     async def __aenter__(self) -> AsyncSession:
         return self.session
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type: Optional[type], exc_val: Optional[Exception], exc_tb: Optional[Any]) -> None:
         if exc_type is not None:
             await self.session.rollback()
             logger.error(f"Transaction rolled back due to: {exc_val}")
@@ -179,13 +179,13 @@ class BulkOperations:
     """Helper class for bulk database operations."""
 
     @staticmethod
-    async def bulk_insert(session: AsyncSession, instances: list) -> None:
+    async def bulk_insert(session: AsyncSession, instances: List[Any]) -> None:
         """Bulk insert instances."""
         session.add_all(instances)
         await session.flush()
 
     @staticmethod
-    async def bulk_update(session: AsyncSession, mappings: list) -> None:
+    async def bulk_update(session: AsyncSession, mappings: List[Any]) -> None:
         """Bulk update instances."""
         for mapping in mappings:
             await session.merge(mapping)
@@ -193,12 +193,12 @@ class BulkOperations:
 
 
 # Database Utilities
-def get_table_names() -> list[str]:
+def get_table_names() -> List[str]:
     """Get all table names from metadata."""
     return list(Base.metadata.tables.keys())
 
 
-def get_model_by_tablename(tablename: str):
+def get_model_by_tablename(tablename: str) -> Optional[Any]:
     """Get model class by table name."""
     for mapper in Base.registry.mappers:
         model = mapper.class_
@@ -208,15 +208,15 @@ def get_model_by_tablename(tablename: str):
 
 
 # Connection Pool Monitoring
-async def get_pool_status() -> dict:
+async def get_pool_status() -> Dict[str, Any]:
     """Get connection pool status for monitoring."""
     pool = async_engine.pool
     return {
-        "pool_size": pool.size(),
-        "checked_in": pool.checkedin(),
-        "checked_out": pool.checkedout(),
-        "overflow": pool.overflow(),
-        "invalid": pool.invalid(),
+        "pool_size": getattr(pool, 'size', lambda: 0)(),
+        "checked_in": getattr(pool, 'checkedin', lambda: 0)(),
+        "checked_out": getattr(pool, 'checkedout', lambda: 0)(),
+        "overflow": getattr(pool, 'overflow', lambda: 0)(),
+        "invalid": getattr(pool, 'invalid', lambda: 0)(),
     }
 
 
@@ -227,8 +227,8 @@ async def get_pool_status() -> dict:
 
 @event.listens_for(async_engine.sync_engine, "before_cursor_execute")
 def receive_before_cursor_execute(
-    conn, cursor, statement, parameters, context, executemany
-):
+    conn: Any, cursor: Any, statement: str, parameters: Any, context: Any, executemany: bool
+) -> None:
     """Log slow queries in debug mode."""
     if settings.DEBUG:
         context._query_start_time = time.time()
@@ -236,8 +236,8 @@ def receive_before_cursor_execute(
 
 @event.listens_for(async_engine.sync_engine, "after_cursor_execute")
 def receive_after_cursor_execute(
-    conn, cursor, statement, parameters, context, executemany
-):
+    conn: Any, cursor: Any, statement: str, parameters: Any, context: Any, executemany: bool
+) -> None:
     """Log query execution time in debug mode."""
     if settings.DEBUG and hasattr(context, "_query_start_time"):
         total = time.time() - context._query_start_time

@@ -3,6 +3,7 @@
 """
 
 import logging
+from typing import Any
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -12,7 +13,7 @@ from app.core.config import get_database_url
 logger = logging.getLogger(__name__)
 
 
-def create_remote_optimized_engine(database_url: str, is_async: bool = True):
+def create_remote_optimized_engine(database_url: str, is_async: bool = True) -> Any:
     """
     创建针对远程数据库优化的引擎
     - 低并发设置
@@ -45,7 +46,7 @@ def create_remote_optimized_engine(database_url: str, is_async: bool = True):
         )
 
 
-async def init_remote_database():
+async def init_remote_database() -> None:
     """初始化远程数据库表结构"""
     print("=== Initializing Remote Database ===")
 
@@ -90,7 +91,7 @@ async def init_remote_database():
         return False
 
 
-async def test_single_connection():
+async def test_single_connection() -> None:
     """测试单个数据库连接"""
     print("=== Testing Single Connection ===")
 

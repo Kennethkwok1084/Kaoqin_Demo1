@@ -3,7 +3,7 @@ Dependency injection module for FastAPI.
 Provides common dependencies for database sessions, authentication, and pagination.
 """
 
-from typing import Generator, Optional
+from typing import AsyncGenerator, Generator, Optional, Dict, Any, List
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -19,7 +19,7 @@ from app.models.member import Member
 security = HTTPBearer()
 
 
-async def get_db() -> AsyncSession:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Get async database session dependency."""
     async for session in get_async_session():
         yield session
@@ -27,8 +27,7 @@ async def get_db() -> AsyncSession:
 
 def get_sync_db() -> Generator[Session, None, None]:
     """Get sync database session dependency."""
-    with get_sync_session() as session:
-        yield session
+    yield from get_sync_session()
 
 
 async def get_current_user(
@@ -57,7 +56,7 @@ async def get_current_user(
     try:
         # Verify and decode token
         payload = verify_token(credentials.credentials)
-        user_id_str = payload.get("sub")
+        user_id_str = payload.get("sub") if payload else None
         if user_id_str is None:
             raise credentials_exception
         user_id = int(user_id_str)  # Convert string to integer
@@ -325,7 +324,7 @@ def get_member_query_params(
 class PaginatedResponse:
     """Base class for paginated responses."""
 
-    def __init__(self, items: list, total: int, page: int, size: int):
+    def __init__(self, items: List[Any], total: int, page: int, size: int) -> None:
         self.items = items
         self.total = total
         self.page = page
@@ -336,8 +335,8 @@ class PaginatedResponse:
 
 
 def create_response(
-    data: any = None, message: str = "Success", status_code: int = 200
-) -> dict:
+    data: Any = None, message: str = "Success", status_code: int = 200
+) -> Dict[str, Any]:
     """Create standardized API response."""
     return {
         "success": status_code < 400,
@@ -348,8 +347,8 @@ def create_response(
 
 
 def create_error_response(
-    message: str = "An error occurred", details: dict = None, status_code: int = 400
-) -> dict:
+    message: str = "An error occurred", details: Optional[Dict[str, Any]] = None, status_code: int = 400
+) -> Dict[str, Any]:
     """Create standardized API error response."""
     return {
         "success": False,

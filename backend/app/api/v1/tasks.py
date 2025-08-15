@@ -47,7 +47,7 @@ router = APIRouter()
 
 
 @router.get("/status", response_model=Dict[str, Any])
-async def status_check():
+async def status_check() -> Dict[str, Any]:
     """状态检查端点"""
     return create_response(
         data={"status": "ok", "service": "tasks"}, message="任务服务运行正常"
@@ -584,7 +584,7 @@ async def get_tasks_stats(
 
 
 @router.get("/repair-list", response_model=Dict[str, Any])
-async def get_repair_list():
+async def get_repair_list() -> Dict[str, Any]:
     """
     获取维修任务列表 - 测试端点（重命名路径）
     """

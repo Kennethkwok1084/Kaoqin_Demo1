@@ -34,7 +34,7 @@ class RedisCache:
         self.member_prefix = f"{self.key_prefix}member:"
         self.task_prefix = f"{self.key_prefix}task:"
 
-    async def connect(self):
+    async def connect(self) -> None:
         """连接Redis"""
         try:
             if not settings.REDIS_URL:
@@ -63,7 +63,7 @@ class RedisCache:
             self.is_connected = False
             self.redis_client = None
 
-    async def disconnect(self):
+    async def disconnect(self) -> None:
         """断开Redis连接"""
         if self.redis_client:
             await self.redis_client.close()
@@ -451,11 +451,11 @@ def invalidate_cache(patterns: List[str]):
 
 
 # 初始化和清理函数
-async def init_cache():
+async def init_cache() -> None:
     """初始化缓存连接"""
     await cache.connect()
 
 
-async def cleanup_cache():
+async def cleanup_cache() -> None:
     """清理缓存连接"""
     await cache.disconnect()

@@ -5,7 +5,7 @@ Includes repair tasks, monitoring tasks, and assistance tasks.
 
 import enum
 from datetime import datetime
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Dict, List, Any
 
 from sqlalchemy import (
     JSON,
@@ -80,9 +80,11 @@ class TaskTagType(enum.Enum):
 
 
 # Association table for task tags (many-to-many)
+from app.models.base import Base
+
 task_tag_association = Table(
     "task_tag_associations",
-    BaseModel.metadata,
+    Base.metadata,  # type: ignore[attr-defined]
     Column("task_id", Integer, ForeignKey("repair_tasks.id"), primary_key=True),
     Column("tag_id", Integer, ForeignKey("task_tags.id"), primary_key=True),
     comment="Association table for tasks and tags",
@@ -117,7 +119,7 @@ class TaskTag(BaseModel):
     )
 
     # Tag type for categorization
-    tag_type = Column(
+    tag_type: TaskTagType = Column(  # type: ignore[assignment]
         Enum(TaskTagType),
         default=TaskTagType.CATEGORY,
         nullable=False,
@@ -142,57 +144,57 @@ class TaskTag(BaseModel):
     @classmethod
     def create_rush_order_tag(cls) -> "TaskTag":
         """创建爆单标签"""
-        return cls(
-            name="爆单任务",
-            description="爆单任务标记，独立计算工时15分钟",
-            work_minutes_modifier=15,
-            tag_type=TaskTagType.RUSH_ORDER,
-            is_active=True,
-        )
+        tag = cls()
+        tag.name = "爆单任务"  # type: ignore[assignment]
+        tag.description = "爆单任务标记，独立计算工时15分钟"  # type: ignore[assignment]
+        tag.work_minutes_modifier = 15  # type: ignore[assignment]
+        tag.tag_type = TaskTagType.RUSH_ORDER
+        tag.is_active = True  # type: ignore[assignment]
+        return tag
 
     @classmethod
     def create_non_default_rating_tag(cls) -> "TaskTag":
         """创建非默认好评标签"""
-        return cls(
-            name="非默认好评",
-            description="用户给出非默认好评，奖励30分钟",
-            work_minutes_modifier=30,
-            tag_type=TaskTagType.NON_DEFAULT_RATING,
-            is_active=True,
-        )
+        tag = cls()
+        tag.name = "非默认好评"  # type: ignore[assignment]
+        tag.description = "用户给出非默认好评，奖励30分钟"  # type: ignore[assignment]
+        tag.work_minutes_modifier = 30  # type: ignore[assignment]
+        tag.tag_type = TaskTagType.NON_DEFAULT_RATING
+        tag.is_active = True  # type: ignore[assignment]
+        return tag
 
     @classmethod
     def create_timeout_response_tag(cls) -> "TaskTag":
         """创建超时响应标签"""
-        return cls(
-            name="超时响应",
-            description="响应超过24小时，扣除30分钟",
-            work_minutes_modifier=-30,
-            tag_type=TaskTagType.TIMEOUT_RESPONSE,
-            is_active=True,
-        )
+        tag = cls()
+        tag.name = "超时响应"  # type: ignore[assignment]
+        tag.description = "响应超过24小时，扣除30分钟"  # type: ignore[assignment]
+        tag.work_minutes_modifier = -30  # type: ignore[assignment]
+        tag.tag_type = TaskTagType.TIMEOUT_RESPONSE
+        tag.is_active = True  # type: ignore[assignment]
+        return tag
 
     @classmethod
     def create_timeout_processing_tag(cls) -> "TaskTag":
         """创建超时处理标签"""
-        return cls(
-            name="超时处理",
-            description="处理超过48小时，扣除30分钟",
-            work_minutes_modifier=-30,
-            tag_type=TaskTagType.TIMEOUT_PROCESSING,
-            is_active=True,
-        )
+        tag = cls()
+        tag.name = "超时处理"  # type: ignore[assignment]
+        tag.description = "处理超过48小时，扣除30分钟"  # type: ignore[assignment]
+        tag.work_minutes_modifier = -30  # type: ignore[assignment]
+        tag.tag_type = TaskTagType.TIMEOUT_PROCESSING
+        tag.is_active = True  # type: ignore[assignment]
+        return tag
 
     @classmethod
     def create_bad_rating_tag(cls) -> "TaskTag":
         """创建差评标签"""
-        return cls(
-            name="差评",
-            description="用户差评（2星及以下），扣除60分钟",
-            work_minutes_modifier=-60,
-            tag_type=TaskTagType.BAD_RATING,
-            is_active=True,
-        )
+        tag = cls()
+        tag.name = "差评"  # type: ignore[assignment]
+        tag.description = "用户差评（2星及以下），扣除60分钟"  # type: ignore[assignment]
+        tag.work_minutes_modifier = -60  # type: ignore[assignment]
+        tag.tag_type = TaskTagType.BAD_RATING
+        tag.is_active = True  # type: ignore[assignment]
+        return tag
 
     @classmethod
     def get_standard_tags(cls) -> List["TaskTag"]:
@@ -207,7 +209,7 @@ class TaskTag(BaseModel):
 
     def is_rush_order_tag(self) -> bool:
         """判断是否为爆单标签"""
-        return self.tag_type == TaskTagType.RUSH_ORDER
+        return bool(self.tag_type == TaskTagType.RUSH_ORDER)
 
     def is_penalty_tag(self) -> bool:
         """判断是否为惩罚标签"""
@@ -259,21 +261,21 @@ class RepairTask(BaseModel):
     location = Column(String(200), nullable=True, comment="Task location")
 
     # Task categorization
-    category = Column(
+    category: TaskCategory = Column(  # type: ignore[assignment]
         Enum(TaskCategory),
         default=TaskCategory.NETWORK_REPAIR,
         nullable=False,
         comment="Task category",
     )
 
-    priority = Column(
+    priority: TaskPriority = Column(  # type: ignore[assignment]
         Enum(TaskPriority),
         default=TaskPriority.MEDIUM,
         nullable=False,
         comment="Task priority",
     )
 
-    status = Column(
+    status: TaskStatus = Column(  # type: ignore[assignment]
         Enum(TaskStatus),
         default=TaskStatus.PENDING,
         nullable=False,
@@ -281,7 +283,7 @@ class RepairTask(BaseModel):
         comment="Task status",
     )
 
-    task_type = Column(
+    task_type: TaskType = Column(  # type: ignore[assignment]
         Enum(TaskType),
         default=TaskType.ONLINE,
         nullable=False,
@@ -386,7 +388,7 @@ class RepairTask(BaseModel):
         hours_since_report = (
             datetime.utcnow() - self.report_time
         ).total_seconds() / 3600
-        return hours_since_report > 24
+        return bool(hours_since_report > 24)
 
     @property
     def is_overdue_completion(self) -> bool:
@@ -397,17 +399,17 @@ class RepairTask(BaseModel):
         hours_since_response = (
             datetime.utcnow() - self.response_time
         ).total_seconds() / 3600
-        return hours_since_response > 48
+        return bool(hours_since_response > 48)
 
     @property
     def is_positive_review(self) -> bool:
         """Check if task has positive review (>=4 stars)."""
-        return self.rating is not None and self.rating >= 4
+        return bool(self.rating is not None and self.rating >= 4)
 
     @property
     def is_negative_review(self) -> bool:
         """Check if task has negative review (<=2 stars)."""
-        return self.rating is not None and self.rating <= 2
+        return bool(self.rating is not None and self.rating <= 2)
 
     @property
     def is_non_default_positive_review(self) -> bool:
@@ -475,7 +477,7 @@ class RepairTask(BaseModel):
         # Apply tag modifiers
         for tag in self.tags:
             if tag.is_active:
-                total_minutes += tag.work_minutes_modifier
+                total_minutes += tag.work_minutes_modifier  # type: ignore[assignment]
 
         # Apply time-based penalties
         if self.is_overdue_response:
@@ -498,8 +500,8 @@ class RepairTask(BaseModel):
 
     def update_work_minutes(self) -> None:
         """Update calculated work minutes."""
-        self.base_work_minutes = self.get_base_work_minutes()
-        self.work_minutes = self.calculate_work_minutes()
+        self.base_work_minutes = self.get_base_work_minutes()  # type: ignore[assignment]
+        self.work_minutes = self.calculate_work_minutes()  # type: ignore[assignment]
 
     def add_tag(self, tag: TaskTag) -> None:
         """Add a tag to the task."""
@@ -515,17 +517,17 @@ class RepairTask(BaseModel):
 
     # 重构新增方法：数据完整性支持
 
-    def set_original_data(self, data: dict) -> None:
+    def set_original_data(self, data: Dict[str, Any]) -> None:
         """设置A表原始数据"""
-        self.original_data = data
+        self.original_data = data  # type: ignore[assignment]
 
-    def set_matched_member_data(self, member_data: dict) -> None:
+    def set_matched_member_data(self, member_data: Dict[str, Any]) -> None:
         """设置B表匹配的成员数据"""
-        self.matched_member_data = member_data
+        self.matched_member_data = member_data  # type: ignore[assignment]
 
     def mark_as_rush_order(self, is_rush: bool = True) -> None:
         """标记/取消爆单任务"""
-        self.is_rush_order = is_rush
+        self.is_rush_order = is_rush  # type: ignore[assignment]
         self.update_work_minutes()  # 重新计算工时
 
     def set_task_type_by_repair_form(self, repair_form: str) -> None:
@@ -533,7 +535,7 @@ class RepairTask(BaseModel):
         if not repair_form:
             return
 
-        self.repair_form = repair_form
+        self.repair_form = repair_form  # type: ignore[assignment]
         repair_form_lower = repair_form.lower()
 
         # 根据检修形式判断线上/线下
@@ -550,7 +552,7 @@ class RepairTask(BaseModel):
             self.task_type = TaskType.ONLINE
 
         # 更新基础工时
-        self.base_work_minutes = self.get_base_work_minutes()
+        self.base_work_minutes = self.get_base_work_minutes()  # type: ignore[assignment]
         self.update_work_minutes()
 
     def set_status_by_work_order_status(self, work_order_status: str) -> None:
@@ -558,7 +560,7 @@ class RepairTask(BaseModel):
         if not work_order_status:
             return
 
-        self.work_order_status = work_order_status
+        self.work_order_status = work_order_status  # type: ignore[assignment]
         status_lower = work_order_status.lower()
 
         # 状态映射规则
@@ -574,7 +576,7 @@ class RepairTask(BaseModel):
             # 默认状态
             self.status = TaskStatus.PENDING
 
-    def get_rush_order_info(self) -> dict:
+    def get_rush_order_info(self) -> Dict[str, Any]:
         """获取爆单任务信息"""
         return {
             "is_rush_order": self.is_rush_order,
@@ -584,7 +586,7 @@ class RepairTask(BaseModel):
             ),
         }
 
-    def get_import_data_summary(self) -> dict:
+    def get_import_data_summary(self) -> Dict[str, Any]:
         """获取导入数据摘要"""
         return {
             "has_original_data": bool(self.original_data),
@@ -639,7 +641,7 @@ class MonitoringTask(BaseModel):
     work_minutes = Column(Integer, nullable=False, comment="Actual work minutes")
 
     # Status
-    status = Column(
+    status: TaskStatus = Column(  # type: ignore[assignment]
         Enum(TaskStatus),
         default=TaskStatus.COMPLETED,
         nullable=False,
@@ -671,7 +673,7 @@ class MonitoringTask(BaseModel):
 
     def update_work_minutes(self) -> None:
         """Update work minutes based on duration."""
-        self.work_minutes = self.calculate_duration_minutes()
+        self.work_minutes = self.calculate_duration_minutes()  # type: ignore[assignment]
 
 
 class AssistanceTask(BaseModel):
@@ -713,7 +715,7 @@ class AssistanceTask(BaseModel):
     work_minutes = Column(Integer, nullable=False, comment="Assistance work minutes")
 
     # Status
-    status = Column(
+    status: TaskStatus = Column(  # type: ignore[assignment]
         Enum(TaskStatus),
         default=TaskStatus.COMPLETED,
         nullable=False,
@@ -745,4 +747,4 @@ class AssistanceTask(BaseModel):
 
     def update_work_minutes(self) -> None:
         """Update work minutes based on duration."""
-        self.work_minutes = self.calculate_duration_minutes()
+        self.work_minutes = self.calculate_duration_minutes()  # type: ignore[assignment]

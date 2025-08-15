@@ -230,7 +230,7 @@ async def create_default_task_tags(db: AsyncSession) -> List[TaskTag]:
     return created_tags
 
 
-async def seed_database():
+async def seed_database() -> None:
     """Main function to seed the database with initial data."""
     logger.info("Starting database seeding...")
 
@@ -270,7 +270,7 @@ async def seed_database():
         raise
 
 
-async def clear_database():
+async def clear_database() -> None:
     """Clear all data from database (use with caution!)."""
     logger.warning("Clearing database...")
 

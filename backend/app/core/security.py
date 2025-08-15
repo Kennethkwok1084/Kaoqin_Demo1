@@ -6,7 +6,7 @@ Handles JWT tokens, password hashing, and data encryption.
 import base64
 import secrets
 from datetime import datetime, timedelta
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, Dict, List, Tuple
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
@@ -37,7 +37,7 @@ def create_access_token(
     encoded_jwt = jwt.encode(
         to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
     )
-    return encoded_jwt
+    return str(encoded_jwt)
 
 
 def create_refresh_token(
@@ -53,10 +53,10 @@ def create_refresh_token(
     encoded_jwt = jwt.encode(
         to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
     )
-    return encoded_jwt
+    return str(encoded_jwt)
 
 
-def verify_token(token: str, token_type: str = "access") -> Optional[dict]:
+def verify_token(token: str, token_type: str = "access") -> Optional[Dict[str, Any]]:
     """Verify JWT token and return payload."""
     try:
         payload = jwt.decode(
@@ -73,30 +73,30 @@ def verify_token(token: str, token_type: str = "access") -> Optional[dict]:
             return None
 
         # Get subject
-        subject: str = payload.get("sub")
+        subject = payload.get("sub")
         if subject is None:
             return None
 
-        return payload
+        return dict(payload)
     except JWTError:
         return None
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    return bool(pwd_context.verify(plain_password, hashed_password))
 
 
 def get_password_hash(password: str) -> str:
     """Generate password hash."""
-    return pwd_context.hash(password)
+    return str(pwd_context.hash(password))
 
 
 # Data Encryption utilities (AES-256-GCM)
 class DataEncryption:
     """Data encryption utility using AES-256-GCM."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._cipher = self._get_cipher()
 
     def _get_cipher(self) -> Fernet:
@@ -167,7 +167,7 @@ def generate_password_reset_token(email: str) -> str:
         settings.SECRET_KEY,
         algorithm=settings.ALGORITHM,
     )
-    return encoded_jwt
+    return str(encoded_jwt)
 
 
 def verify_password_reset_token(token: str) -> Optional[str]:
@@ -181,7 +181,7 @@ def verify_password_reset_token(token: str) -> Optional[str]:
         if decoded_token.get("type") != "password_reset":
             return None
 
-        return decoded_token.get("sub")
+        return str(decoded_token.get("sub")) if decoded_token.get("sub") else None
     except JWTError:
         return None
 
@@ -194,12 +194,12 @@ def generate_api_key() -> str:
 
 def hash_api_key(api_key: str) -> str:
     """Hash an API key for storage."""
-    return pwd_context.hash(api_key)
+    return str(pwd_context.hash(api_key))
 
 
 def verify_api_key(api_key: str, hashed_api_key: str) -> bool:
     """Verify an API key against its hash."""
-    return pwd_context.verify(api_key, hashed_api_key)
+    return bool(pwd_context.verify(api_key, hashed_api_key))
 
 
 # Session utilities
@@ -220,7 +220,7 @@ def verify_csrf_token(token: str, session_token: str) -> bool:
 
 
 # Security Headers
-def get_security_headers() -> dict:
+def get_security_headers() -> Dict[str, str]:
     """Get security headers for responses."""
     if not settings.SECURITY_HEADERS_ENABLED:
         return {}
@@ -240,8 +240,8 @@ def get_security_headers() -> dict:
 class RateLimiter:
     """Simple in-memory rate limiter."""
 
-    def __init__(self):
-        self._requests = {}
+    def __init__(self) -> None:
+        self._requests: Dict[str, List[datetime]] = {}
 
     def is_allowed(
         self, identifier: str, max_requests: int, window_seconds: int
@@ -307,7 +307,7 @@ def validate_phone_format(phone: str) -> bool:
 
 
 # Password strength validation
-def validate_password_strength(password: str) -> tuple[bool, list[str]]:
+def validate_password_strength(password: str) -> Tuple[bool, List[str]]:
     """Validate password strength."""
     errors = []
 

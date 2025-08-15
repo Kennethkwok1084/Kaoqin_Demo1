@@ -908,7 +908,7 @@ async def get_attendance_statistics(
         ).where(
             RepairTask.completion_time >= start_date_obj,
             RepairTask.completion_time <= end_date_obj,
-            RepairTask.status == "COMPLETED",
+            RepairTask.status == TaskStatus.COMPLETED,
         )
 
         repair_result = await db.execute(repair_query)
@@ -1560,7 +1560,7 @@ async def get_work_hours_trend(
 
 # 健康检查
 @router.get("/health", response_model=Dict[str, Any])
-async def statistics_health_check():
+async def statistics_health_check() -> Dict[str, Any]:
     """统计分析服务健康检查"""
     return create_response(
         data={"service": "statistics", "status": "healthy"},

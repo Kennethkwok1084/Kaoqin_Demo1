@@ -4,7 +4,7 @@ Provides common fields and functionality for all models.
 """
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Dict
 
 from sqlalchemy import Column, DateTime, Integer
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
@@ -19,7 +19,7 @@ class Base:
     __name__: str
 
     # Generate __tablename__ automatically
-    @declared_attr
+    @declared_attr.directive
     def __tablename__(cls) -> str:
         return cls.__name__.lower()
 
@@ -56,10 +56,10 @@ class BaseModel(Base, TimestampMixin):
         """String representation of the model."""
         return f"<{self.__class__.__name__}(id={self.id})>"
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> Dict[str, Any]:
         """Convert model to dictionary."""
-        result = {}
-        for column in self.__table__.columns:
+        result: Dict[str, Any] = {}
+        for column in self.__table__.columns:  # type: ignore[attr-defined]
             value = getattr(self, column.name)
             if isinstance(value, datetime):
                 value = value.isoformat()
@@ -67,11 +67,11 @@ class BaseModel(Base, TimestampMixin):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict) -> "BaseModel":
+    def from_dict(cls, data: Dict[str, Any]) -> "BaseModel":
         """Create model instance from dictionary."""
         return cls(**data)
 
-    def update_from_dict(self, data: dict) -> None:
+    def update_from_dict(self, data: Dict[str, Any]) -> None:
         """Update model instance from dictionary."""
         for key, value in data.items():
             if hasattr(self, key):
