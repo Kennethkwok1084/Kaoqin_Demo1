@@ -23,7 +23,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, relationship
 
-from app.models.base import BaseModel
+from app.models.base import Base, BaseModel
 
 if TYPE_CHECKING:
     from app.models.member import Member
@@ -80,8 +80,6 @@ class TaskTagType(enum.Enum):
 
 
 # Association table for task tags (many-to-many)
-from app.models.base import Base
-
 task_tag_association = Table(
     "task_tag_associations",
     Base.metadata,  # type: ignore[attr-defined]
