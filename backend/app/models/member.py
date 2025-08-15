@@ -5,7 +5,7 @@
 
 import enum
 from datetime import date, datetime
-from typing import TYPE_CHECKING, List, Dict, Any
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from sqlalchemy import (
     Boolean,

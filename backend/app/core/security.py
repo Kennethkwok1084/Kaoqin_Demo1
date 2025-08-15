@@ -6,7 +6,7 @@ Handles JWT tokens, password hashing, and data encryption.
 import base64
 import secrets
 from datetime import datetime, timedelta
-from typing import Any, Optional, Union, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes

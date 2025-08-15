@@ -3,7 +3,7 @@ Dependency injection module for FastAPI.
 Provides common dependencies for database sessions, authentication, and pagination.
 """
 
-from typing import AsyncGenerator, Generator, Optional, Dict, Any, List
+from typing import Any, AsyncGenerator, Dict, Generator, List, Optional
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer

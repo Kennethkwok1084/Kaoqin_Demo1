@@ -5,7 +5,7 @@ Includes repair tasks, monitoring tasks, and assistance tasks.
 
 import enum
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Any
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from sqlalchemy import (
     JSON,
