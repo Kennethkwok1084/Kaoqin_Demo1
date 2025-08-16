@@ -311,13 +311,13 @@ class WorkHoursCalculationService:
                         RepairTask.report_time >= first_day,
                         RepairTask.report_time <= last_day,
                         RepairTask.status.in_(
-                            [TaskStatus.COMPLETED.value, TaskStatus.IN_PROGRESS.value]
+                            [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS]
                         ),
                     )
                 )
             )
             repair_result = await self.db.execute(repair_tasks_query)
-            repair_tasks = repair_result.scalars().all()
+            repair_tasks = list(repair_result.scalars().all())
 
             # 计算报修任务工时
             repair_stats = await self._calculate_repair_tasks_hours(repair_tasks)
@@ -328,7 +328,7 @@ class WorkHoursCalculationService:
                     MonitoringTask.member_id == member_id,
                     MonitoringTask.start_time >= first_day,
                     MonitoringTask.start_time <= last_day,
-                    MonitoringTask.status == TaskStatus.COMPLETED.value,
+                    MonitoringTask.status == TaskStatus.COMPLETED,
                 )
             )
             monitoring_result = await self.db.execute(monitoring_tasks_query)
@@ -345,7 +345,7 @@ class WorkHoursCalculationService:
                     AssistanceTask.member_id == member_id,
                     AssistanceTask.start_time >= first_day,
                     AssistanceTask.start_time <= last_day,
-                    AssistanceTask.status == TaskStatus.COMPLETED.value,
+                    AssistanceTask.status == TaskStatus.COMPLETED,
                 )
             )
             assistance_result = await self.db.execute(assistance_tasks_query)
@@ -546,7 +546,7 @@ class WorkHoursCalculationService:
             if member_ids:
                 members_query = select(Member).where(Member.id.in_(member_ids))
             else:
-                members_query = select(Member).where(Member.is_active == True)  # type: ignore[assignment]
+                members_query = select(Member).where(Member.is_active.is_(True))
 
             members_result = await self.db.execute(members_query)
             members = members_result.scalars().all()
@@ -710,7 +710,7 @@ class WorkHoursCalculationService:
         hours_since_report = (
             datetime.utcnow() - task.report_time
         ).total_seconds() / 3600
-        return hours_since_report > self.RESPONSE_TIMEOUT_HOURS  # type: ignore[return-value]
+        return hours_since_report > self.RESPONSE_TIMEOUT_HOURS
 
     def _is_completion_overdue(self, task: RepairTask) -> bool:
         """检查是否超时处理"""
@@ -720,11 +720,11 @@ class WorkHoursCalculationService:
         hours_since_response = (
             datetime.utcnow() - task.response_time
         ).total_seconds() / 3600
-        return hours_since_response > self.COMPLETION_TIMEOUT_HOURS  # type: ignore[return-value]
+        return hours_since_response > self.COMPLETION_TIMEOUT_HOURS
 
     def _is_negative_review(self, task: RepairTask) -> bool:
         """检查是否为差评"""
-        return task.rating is not None and task.rating <= 2  # type: ignore[return-value]
+        return task.rating is not None and task.rating <= 2
 
     async def _get_or_create_penalty_tag(self, penalty_type: str) -> TaskTag:
         """获取或创建惩罚标签"""
@@ -893,7 +893,7 @@ class RushTaskMarkingService:
                         RepairTask.report_time >= date_from,
                         RepairTask.report_time <= date_to,
                         RepairTask.status.in_(
-                            [TaskStatus.COMPLETED.value, TaskStatus.IN_PROGRESS.value]
+                            [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS]
                         ),
                     )
                 )

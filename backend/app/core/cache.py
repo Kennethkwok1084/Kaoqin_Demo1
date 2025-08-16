@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class RedisCache:
     """Redis缓存管理类"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.redis_client: Optional[redis.Redis] = None
         self.is_connected = False
 
@@ -70,7 +70,7 @@ class RedisCache:
             self.is_connected = False
             logger.info("Redis connection closed")
 
-    def _generate_cache_key(self, key_type: str, **kwargs) -> str:
+    def _generate_cache_key(self, key_type: str, **kwargs: Any) -> str:
         """生成缓存键"""
         # 根据参数生成唯一的缓存键
         param_string = "_".join(
@@ -179,7 +179,11 @@ class RedisCache:
         return await self.get(cache_key)
 
     async def set_stats_cache(
-        self, cache_type: str, data: Dict[str, Any], ttl: Optional[int] = None, **kwargs: Any
+        self,
+        cache_type: str,
+        data: Dict[str, Any],
+        ttl: Optional[int] = None,
+        **kwargs: Any,
     ) -> bool:
         """设置统计数据缓存"""
         cache_key = self._generate_cache_key(
@@ -252,7 +256,11 @@ class RedisCache:
         return await self.get(cache_key)
 
     async def set_task_cache(
-        self, cache_type: str, data: Dict[str, Any], ttl: Optional[int] = None, **kwargs: Any
+        self,
+        cache_type: str,
+        data: Dict[str, Any],
+        ttl: Optional[int] = None,
+        **kwargs: Any,
     ) -> bool:
         """设置任务数据缓存"""
         cache_key = self._generate_cache_key(
@@ -319,7 +327,12 @@ class RedisCache:
     # 缓存装饰器支持方法
 
     async def cache_or_compute(
-        self, key: str, compute_func: Callable[..., Any], ttl: Optional[int] = None, *args: Any, **kwargs: Any
+        self,
+        key: str,
+        compute_func: Callable[..., Any],
+        ttl: Optional[int] = None,
+        *args: Any,
+        **kwargs: Any,
     ) -> Any:
         """缓存或计算数据"""
         # 先尝试从缓存获取
@@ -391,7 +404,9 @@ cache = RedisCache()
 
 
 # 缓存装饰器
-def cached(key_pattern: str, ttl: int = 3600, cache_type: str = "general") -> Callable[..., Any]:
+def cached(
+    key_pattern: str, ttl: int = 3600, cache_type: str = "general"
+) -> Callable[..., Any]:
     """
     缓存装饰器
 

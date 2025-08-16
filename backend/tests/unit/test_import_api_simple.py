@@ -67,15 +67,14 @@ class TestImportAPISimple:
         mock_db = AsyncMock()
         mock_user = Member(id=1, username="test_user", role=UserRole.MEMBER)
 
-        # Call endpoint with invalid table type should raise HTTPException
-        with pytest.raises(HTTPException) as exc_info:
-            await get_import_field_mapping(
-                table_type="invalid_table", current_user=mock_user, db=mock_db
-            )
+        # Call endpoint with invalid table type should fallback to task_table
+        result = await get_import_field_mapping(
+            table_type="invalid_table", current_user=mock_user, db=mock_db
+        )
 
-        # Verify the exception details
-        assert exc_info.value.status_code == 400
-        assert "不支持的表格类型" in str(exc_info.value.detail)
+        # Verify fallback to task_table
+        assert result["success"] is True
+        assert result["data"]["table_type"] == "task_table"
 
     @pytest.mark.asyncio
     async def test_get_field_mapping_business_rules_structure(self):

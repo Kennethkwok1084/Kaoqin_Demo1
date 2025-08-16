@@ -273,7 +273,7 @@ class RepairTask(BaseModel):
         comment="Task priority",
     )
 
-    status: TaskStatus = Column(  # type: ignore[assignment]
+    status = Column(
         Enum(TaskStatus),
         default=TaskStatus.PENDING,
         nullable=False,
@@ -281,7 +281,7 @@ class RepairTask(BaseModel):
         comment="Task status",
     )
 
-    task_type: TaskType = Column(  # type: ignore[assignment]
+    task_type = Column(
         Enum(TaskType),
         default=TaskType.ONLINE,
         nullable=False,
@@ -639,7 +639,7 @@ class MonitoringTask(BaseModel):
     work_minutes = Column(Integer, nullable=False, comment="Actual work minutes")
 
     # Status
-    status: TaskStatus = Column(  # type: ignore[assignment]
+    status = Column(
         Enum(TaskStatus),
         default=TaskStatus.COMPLETED,
         nullable=False,
@@ -713,7 +713,7 @@ class AssistanceTask(BaseModel):
     work_minutes = Column(Integer, nullable=False, comment="Assistance work minutes")
 
     # Status
-    status: TaskStatus = Column(  # type: ignore[assignment]
+    status = Column(
         Enum(TaskStatus),
         default=TaskStatus.COMPLETED,
         nullable=False,

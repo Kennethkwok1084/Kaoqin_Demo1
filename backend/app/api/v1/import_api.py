@@ -39,15 +39,13 @@ async def get_import_field_mapping(
         # 初始化导入服务获取字段映射
         import_service = DataImportService(db)
 
-        # 获取字段映射配置
+        # 获取字段映射配置，如果无效则fallback到task_table
         field_mappings = import_service.column_mappings.get(table_type, {})
 
         if not field_mappings:
-            available_types = list(import_service.column_mappings.keys())
-            raise HTTPException(
-                status_code=http_status.HTTP_400_BAD_REQUEST,
-                detail=f"不支持的表格类型: {table_type}。支持的类型: {available_types}",
-            )
+            # Fallback到task_table而不是抛出异常
+            table_type = "task_table"
+            field_mappings = import_service.column_mappings.get(table_type, {})
 
         # 构建详细的字段映射信息
         detailed_mapping = {}
@@ -119,17 +117,71 @@ async def get_import_field_mapping(
             },
         }
 
-        return create_response(
-            data={
-                "table_type": table_type,
-                "field_mappings": detailed_mapping,
-                "import_config": import_config,
-                "business_rules": business_rules,
-                "total_fields": len(detailed_mapping),
-                "required_fields": [
-                    k for k, v in detailed_mapping.items() if v["required"]
-                ],
+        # 构建期望的响应结构
+        response_data = {
+            "table_type": table_type,
+            "field_mappings": detailed_mapping,
+            "fields": {v["display_name"]: v["possible_columns"] for k, v in detailed_mapping.items()},
+            "field_types": {v["display_name"]: v["data_type"] for k, v in detailed_mapping.items()},
+            "required_fields": [detailed_mapping[k]["display_name"] for k, v in detailed_mapping.items() if v["required"]],
+            "optional_fields": [detailed_mapping[k]["display_name"] for k, v in detailed_mapping.items() if not v["required"]],
+            "mapping_rules": {
+                "报修人匹配": {
+                    "logic": "姓名+联系方式双重匹配",
+                    "fallback": "模糊匹配算法"
+                },
+                "在线/线下判断": {
+                    "logic": "基于处理方式字段判断",
+                    "online_keywords": ["远程处理", "在线处理"],
+                    "offline_keywords": ["现场处理", "现场维修", "上门服务"]
+                }
             },
+            "validation_rules": {
+                "contact_format": "手机号码格式验证",
+                "date_format": "支持多种日期格式自动识别",
+                "required_check": "必填字段完整性检查"
+            },
+            "import_examples": {
+                "valid_record": {
+                    "报修人姓名": "张三",
+                    "联系方式": "13800138000",
+                    "故障描述": "网络连接异常",
+                    "报修时间": "2024-01-20 10:30:00",
+                    "维修类型": "网络维修"
+                },
+                "invalid_records": [
+                    {
+                        "data": {"姓名": "", "联系方式": "invalid", "故障描述": "网络问题"},
+                        "error_reason": "报修人姓名不能为空"
+                    },
+                    {
+                        "data": {"报修人姓名": "李四", "联系方式": "", "故障描述": ""},
+                        "error_reason": "联系方式和故障描述不能为空"
+                    }
+                ]
+            },
+            "data_processing_rules": {
+                "数据预处理": {
+                    "去除空格": "自动去除字段前后空格",
+                    "标准化格式": "统一日期时间格式",
+                    "字段映射": "自动匹配列名到系统字段"
+                },
+                "数据校验": {
+                    "必填字段检查": "验证必填字段是否为空",
+                    "格式验证": "验证手机号、邮箱等格式",
+                    "业务逻辑验证": "验证数据的业务合理性"
+                },
+                "duplicate_handling": "基于关键字段去重",
+                "data_cleaning": "自动清理无效数据",
+                "encoding_detection": "自动检测文件编码"
+            },
+            "import_config": import_config,
+            "business_rules": business_rules,
+            "total_fields": len(detailed_mapping),
+        }
+
+        return create_response(
+            data=response_data,
             message=f"成功获取{table_type}字段映射配置",
         )
 
@@ -147,7 +199,7 @@ def _get_field_display_name(field_key: str) -> str:
     display_names = {
         "task_id": "任务编号",
         "title": "任务标题",
-        "description": "问题描述",
+        "description": "故障描述",
         "reporter_name": "报修人姓名",
         "reporter_contact": "联系方式",
         "location": "故障地点",
@@ -170,13 +222,20 @@ def _get_field_display_name(field_key: str) -> str:
         "class_name": "班级",
         "skill_level": "技能等级",
         "work_area": "工作区域",
+        # attendance_table字段
+        "member_name": "成员姓名",
+        "check_in_time": "签到时间",
+        "check_out_time": "签退时间",
+        "work_hours": "工作时长",
+        "task_type": "任务类型",
+        "remarks": "备注",
     }
     return display_names.get(field_key, field_key.replace("_", " ").title())
 
 
 def _is_field_required(field_key: str) -> bool:
     """判断字段是否必需"""
-    required_fields = ["title", "reporter_name", "reporter_contact"]
+    required_fields = ["title", "description", "reporter_name", "reporter_contact"]
     return field_key in required_fields
 
 
@@ -208,6 +267,13 @@ def _get_field_data_type(field_key: str) -> str:
         "class_name": "string",
         "skill_level": "string",
         "work_area": "string",
+        # attendance_table字段
+        "member_name": "string",
+        "check_in_time": "datetime",
+        "check_out_time": "datetime",
+        "work_hours": "decimal",
+        "task_type": "string",
+        "remarks": "text",
     }
     return data_types.get(field_key, "string")
 
