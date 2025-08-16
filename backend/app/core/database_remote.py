@@ -5,9 +5,9 @@
 import logging
 from typing import Any, Optional
 
-from sqlalchemy import create_engine, text, Row
+from sqlalchemy import Row, create_engine, text
+from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
-from sqlalchemy.engine import Engine, Connection
 
 from app.core.config import get_database_url
 

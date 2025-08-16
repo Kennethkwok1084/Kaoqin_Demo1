@@ -5,11 +5,12 @@
 import asyncio
 import os
 
+from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from app.core.database import Base
 from app.core.security import get_password_hash
 from app.models import Member
-from sqlalchemy import create_engine
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 # 设置测试环境
 os.environ["ENVIRONMENT"] = "test"
