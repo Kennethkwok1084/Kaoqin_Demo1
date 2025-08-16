@@ -29,32 +29,27 @@ class Settings(BaseSettings):
     RELOAD: bool = False
 
     # Database Configuration
-    DATABASE_URL: str = Field(
-        description="Database URL for async operations"
-    )
-    DATABASE_URL_SYNC: str = Field(
-        description="Database URL for sync operations"
-    )
+    DATABASE_URL: str = Field(default="", description="Database URL for async operations")
+    DATABASE_URL_SYNC: str = Field(default="", description="Database URL for sync operations")
 
     @validator("DATABASE_URL", pre=True)
-    def assemble_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> str:
+    def assemble_db_connection(cls, v: Optional[str]) -> str:
         if isinstance(v, str) and v:
             return v
         # Fallback to PostgreSQL if no environment variable is set
         return "postgresql+asyncpg://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev"
 
     @validator("DATABASE_URL_SYNC", pre=True)
-    def assemble_db_connection_sync(
-        cls, v: Optional[str], values: Dict[str, Any]
-    ) -> str:
+    def assemble_db_connection_sync(cls, v: Optional[str], values: Dict[str, Any]) -> str:
         if isinstance(v, str) and v:
             return v
         # Fallback construction - convert async URL to sync or use default
         async_url = values.get("DATABASE_URL")
-        if async_url and "postgresql+asyncpg://" in async_url:
-            return async_url.replace("postgresql+asyncpg://", "postgresql://")
-        elif async_url and "sqlite+aiosqlite://" in async_url:
-            return async_url.replace("sqlite+aiosqlite://", "sqlite://")
+        if isinstance(async_url, str):
+            if "postgresql+asyncpg://" in async_url:
+                return async_url.replace("postgresql+asyncpg://", "postgresql://")
+            elif "sqlite+aiosqlite://" in async_url:
+                return async_url.replace("sqlite+aiosqlite://", "sqlite://")
         # Default fallback
         return "postgresql://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev"
 

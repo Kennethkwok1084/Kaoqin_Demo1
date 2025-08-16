@@ -139,7 +139,7 @@ class TestTasksAPI:
             await get_work_time_detail(task_id=1, current_user=mock_user, db=mock_db)
 
         assert exc_info.value.status_code == 403
-        assert "权限不足" in str(exc_info.value.detail)
+        assert "无权限查看" in str(exc_info.value.detail)
 
     @pytest.mark.asyncio
     async def test_get_repair_list_success(self):
@@ -150,7 +150,7 @@ class TestTasksAPI:
         # Verify results (based on actual implementation)
         assert result["success"] is True
         assert "data" in result
-        assert "tasks" in result["data"]
+        assert "items" in result["data"]
 
     @pytest.mark.asyncio
     async def test_get_monitoring_tasks_success(self):
@@ -166,7 +166,7 @@ class TestTasksAPI:
 
         # Call endpoint
         result = await get_monitoring_tasks(
-            skip=0, limit=10, current_user=mock_user, db=mock_db
+            page=1, pageSize=10, current_user=mock_user, db=mock_db
         )
 
         # Verify results
@@ -188,7 +188,7 @@ class TestTasksAPI:
 
         # Call endpoint
         result = await get_assistance_tasks(
-            skip=0, limit=10, current_user=mock_user, db=mock_db
+            page=1, pageSize=10, current_user=mock_user, db=mock_db
         )
 
         # Verify results
@@ -212,7 +212,7 @@ class TestTasksAPI:
 
         # Call endpoint
         result = await get_all_tasks(
-            skip=0, limit=10, current_user=mock_admin_user, db=mock_db
+            page=1, pageSize=10, current_user=mock_admin_user, db=mock_db
         )
 
         # Verify admin endpoint works

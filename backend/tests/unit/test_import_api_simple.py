@@ -161,7 +161,7 @@ class TestImportAPISimple:
         assert isinstance(required_fields, list)
         assert len(required_fields) > 0
 
-        # Should have at least these core required fields
-        expected_required = ["title", "reporter_name", "reporter_contact"]
+        # Should have at least these core required fields (using display names)
+        expected_required = ["任务标题", "报修人姓名", "联系方式"]
         for field in expected_required:
             assert field in required_fields

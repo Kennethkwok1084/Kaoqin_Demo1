@@ -199,8 +199,20 @@ class DataImportService:
             # 考勤表可能的列名
             "attendance_table": {
                 "member_name": ["成员姓名", "姓名", "工作人员", "name", "人员"],
-                "check_in_time": ["签到时间", "上班时间", "开始时间", "check_in", "到岗时间"],
-                "check_out_time": ["签退时间", "下班时间", "结束时间", "check_out", "离岗时间"],
+                "check_in_time": [
+                    "签到时间",
+                    "上班时间",
+                    "开始时间",
+                    "check_in",
+                    "到岗时间",
+                ],
+                "check_out_time": [
+                    "签退时间",
+                    "下班时间",
+                    "结束时间",
+                    "check_out",
+                    "离岗时间",
+                ],
                 "work_hours": ["工作时长", "工时", "工作小时", "hours", "时长"],
                 "task_type": ["任务类型", "工作类型", "task_type", "type", "工作内容"],
                 "location": ["工作地点", "地点", "位置", "location", "工作位置"],

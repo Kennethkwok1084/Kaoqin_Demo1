@@ -21,7 +21,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.orm import Mapped, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, BaseModel
 
@@ -117,7 +117,7 @@ class TaskTag(BaseModel):
     )
 
     # Tag type for categorization
-    tag_type: TaskTagType = Column(  # type: ignore[assignment]
+    tag_type: Mapped[TaskTagType] = mapped_column(
         Enum(TaskTagType),
         default=TaskTagType.CATEGORY,
         nullable=False,
@@ -259,21 +259,21 @@ class RepairTask(BaseModel):
     location = Column(String(200), nullable=True, comment="Task location")
 
     # Task categorization
-    category: TaskCategory = Column(  # type: ignore[assignment]
+    category: Mapped[TaskCategory] = mapped_column(
         Enum(TaskCategory),
         default=TaskCategory.NETWORK_REPAIR,
         nullable=False,
         comment="Task category",
     )
 
-    priority: TaskPriority = Column(  # type: ignore[assignment]
+    priority: Mapped[TaskPriority] = mapped_column(
         Enum(TaskPriority),
         default=TaskPriority.MEDIUM,
         nullable=False,
         comment="Task priority",
     )
 
-    status = Column(
+    status: Mapped[TaskStatus] = mapped_column(
         Enum(TaskStatus),
         default=TaskStatus.PENDING,
         nullable=False,
@@ -281,7 +281,7 @@ class RepairTask(BaseModel):
         comment="Task status",
     )
 
-    task_type = Column(
+    task_type: Mapped[TaskType] = mapped_column(
         Enum(TaskType),
         default=TaskType.ONLINE,
         nullable=False,
@@ -639,7 +639,7 @@ class MonitoringTask(BaseModel):
     work_minutes = Column(Integer, nullable=False, comment="Actual work minutes")
 
     # Status
-    status = Column(
+    status: Mapped[TaskStatus] = mapped_column(
         Enum(TaskStatus),
         default=TaskStatus.COMPLETED,
         nullable=False,
@@ -713,7 +713,7 @@ class AssistanceTask(BaseModel):
     work_minutes = Column(Integer, nullable=False, comment="Assistance work minutes")
 
     # Status
-    status = Column(
+    status: Mapped[TaskStatus] = mapped_column(
         Enum(TaskStatus),
         default=TaskStatus.COMPLETED,
         nullable=False,

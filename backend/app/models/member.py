@@ -81,6 +81,8 @@ class Member(BaseModel):
     )
 
     class_name = Column(String(50), nullable=False, comment="班级（必填）")
+    
+    group_id = Column(Integer, nullable=True, comment="小组ID（可选）")
 
     # 时间信息
     join_date = Column(
