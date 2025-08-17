@@ -3,8 +3,9 @@ Tests for modules with 0% coverage to improve overall coverage.
 Focus on basic imports and simple functionality.
 """
 
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
 
 
 class TestZeroCoverageModules:
@@ -156,12 +157,12 @@ class TestZeroCoverageModules:
     def test_exception_handling(self):
         """Test custom exception classes."""
         from app.core.exceptions import (
-            ValidationError,
             AuthenticationError,
             AuthorizationError,
+            BusinessLogicError,
             DatabaseError,
             ExternalServiceError,
-            BusinessLogicError,
+            ValidationError,
         )
 
         # Test exception instantiation
@@ -200,7 +201,7 @@ class TestZeroCoverageModules:
 
     def test_schema_imports(self):
         """Test that schema modules can be imported."""
-        from app.schemas import auth, member, task, attendance
+        from app.schemas import attendance, auth, member, task
 
         assert auth is not None
         assert member is not None
@@ -209,7 +210,7 @@ class TestZeroCoverageModules:
 
     def test_model_imports(self):
         """Test that model modules can be imported."""
-        from app.models import base, member, task, attendance
+        from app.models import attendance, base, member, task
 
         assert base is not None
         assert member is not None

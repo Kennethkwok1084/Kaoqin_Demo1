@@ -3,14 +3,15 @@ Unit tests for Work Hour Automation Service.
 Tests automated task detection, penalty application, and scheduling functionality.
 """
 
-import pytest
-from unittest.mock import AsyncMock, Mock, patch
 from datetime import datetime, timedelta
 from typing import Any, Dict, List
+from unittest.mock import AsyncMock, Mock, patch
 
-from app.services.work_hour_automation import WorkHourAutomationService
-from app.models.task import RepairTask, TaskStatus, TaskTag, TaskType
+import pytest
+
 from app.models.member import Member, UserRole
+from app.models.task import RepairTask, TaskStatus, TaskTag, TaskType
+from app.services.work_hour_automation import WorkHourAutomationService
 
 
 class TestWorkHourAutomationService:

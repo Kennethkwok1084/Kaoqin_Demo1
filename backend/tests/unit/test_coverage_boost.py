@@ -3,8 +3,9 @@ Final coverage boost tests.
 Simple tests focused on improving coverage of key modules.
 """
 
+from unittest.mock import Mock
+
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
 
 
 class TestCoverageBoost:
@@ -12,8 +13,9 @@ class TestCoverageBoost:
 
     def test_core_security_functions(self):
         """Test core security functions."""
-        from app.core.security import create_access_token, create_refresh_token
         from datetime import timedelta
+
+        from app.core.security import create_access_token, create_refresh_token
 
         # Test token creation with basic data
         token_data = {"sub": "test_user", "user_id": 1}
@@ -88,12 +90,12 @@ class TestCoverageBoost:
     def test_exception_hierarchy(self):
         """Test exception class hierarchy."""
         from app.core.exceptions import (
-            ValidationError,
             AuthenticationError,
             AuthorizationError,
+            BusinessLogicError,
             DatabaseError,
             ExternalServiceError,
-            BusinessLogicError,
+            ValidationError,
         )
 
         # Test that all exceptions inherit from base Exception
@@ -106,7 +108,7 @@ class TestCoverageBoost:
 
     def test_api_router_registration(self):
         """Test API router registration."""
-        from app.api.v1 import auth, members, tasks, attendance, statistics, import_api
+        from app.api.v1 import attendance, auth, import_api, members, statistics, tasks
 
         # Test that routers exist
         assert hasattr(auth, "router")
@@ -118,11 +120,11 @@ class TestCoverageBoost:
 
     def test_service_initialization(self):
         """Test service class initialization."""
-        from app.services.stats_service import StatisticsService
-        from app.services.work_hour_automation import WorkHourAutomationService
         from app.services.attendance_service import AttendanceService
-        from app.services.task_service import TaskService
         from app.services.import_service import DataImportService
+        from app.services.stats_service import StatisticsService
+        from app.services.task_service import TaskService
+        from app.services.work_hour_automation import WorkHourAutomationService
 
         mock_db = Mock()
 
@@ -145,7 +147,7 @@ class TestCoverageBoost:
     def test_enum_values_access(self):
         """Test enum values can be accessed."""
         from app.models.member import UserRole
-        from app.models.task import TaskStatus, TaskType, TaskCategory, TaskPriority
+        from app.models.task import TaskCategory, TaskPriority, TaskStatus, TaskType
 
         # Test enum value access
         assert UserRole.ADMIN.value == "admin"
@@ -240,7 +242,7 @@ class TestCoverageBoost:
 
     def test_attendance_model_properties(self):
         """Test attendance model properties."""
-        from app.models.attendance import AttendanceRecord, AttendanceException
+        from app.models.attendance import AttendanceException, AttendanceRecord
 
         # Test model instantiation
         record = AttendanceRecord()
@@ -265,7 +267,7 @@ class TestCoverageBoost:
     def test_basic_utilities(self):
         """Test basic utility functions."""
         # Test datetime utilities
-        from datetime import datetime, timedelta, date
+        from datetime import date, datetime, timedelta
 
         now = datetime.utcnow()
         yesterday = now - timedelta(days=1)

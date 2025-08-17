@@ -3,22 +3,23 @@ Unit tests for Authentication API endpoints.
 Tests login, refresh token, profile management and password change functionality.
 """
 
-import pytest
 from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 from fastapi import HTTPException, status
 
 from app.api.v1.auth import (
-    login,
-    refresh_token,
     change_password,
     get_current_user_profile,
+    login,
+    refresh_token,
     update_user_profile,
 )
 from app.models.member import Member, UserRole
 from app.schemas.auth import (
+    ChangePasswordRequest,
     LoginRequest,
     RefreshTokenRequest,
-    ChangePasswordRequest,
     UserProfileUpdate,
 )
 

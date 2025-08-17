@@ -3,14 +3,15 @@ Unit tests for Statistics Service.
 Tests statistical analysis, performance metrics, and caching functionality.
 """
 
-import pytest
-from unittest.mock import AsyncMock, Mock, patch
-from datetime import datetime, timedelta, date
+from datetime import date, datetime, timedelta
 from typing import Any, Dict, List
+from unittest.mock import AsyncMock, Mock, patch
 
-from app.services.stats_service import StatisticsService
+import pytest
+
 from app.models.member import Member, UserRole
-from app.models.task import RepairTask, TaskStatus, TaskType, TaskCategory, TaskPriority
+from app.models.task import RepairTask, TaskCategory, TaskPriority, TaskStatus, TaskType
+from app.services.stats_service import StatisticsService
 
 
 class TestStatisticsService:

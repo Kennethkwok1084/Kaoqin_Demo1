@@ -144,10 +144,17 @@ jobs:
         fi
 
     - name: Database setup and migration
+      env:
+        DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence
+        DATABASE_URL_SYNC: postgresql://postgres:postgres@localhost:5432/test_attendence
+        CI: true
+        GITHUB_ACTIONS: true
+        TESTING: true
       run: |
         cd backend
         # 连接PostgreSQL数据库
         echo "连接本地PostgreSQL数据库..."
+        echo "使用数据库URL: $DATABASE_URL_SYNC"
         python simple_db_test.py || {
           echo "PostgreSQL数据库连接失败，停止构建"
           exit 1
@@ -163,11 +170,17 @@ jobs:
         echo "数据库迁移完成"
 
     - name: Run unit tests
+      env:
+        DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence
+        DATABASE_URL_SYNC: postgresql://postgres:postgres@localhost:5432/test_attendence
+        CI: true
+        GITHUB_ACTIONS: true
+        TESTING: true
       run: |
         cd backend
         # 运行单元测试（使用PostgreSQL数据库）
         echo "运行单元测试..."
-        TESTING=true python -m pytest tests/unit/ -v --tb=short --cov=app --cov-report=xml --cov-report=html --cov-report=term || echo "单元测试失败，但继续集成测试"
+        python -m pytest tests/unit/ -v --tb=short --cov=app --cov-report=xml --cov-report=html --cov-report=term || echo "单元测试失败，但继续集成测试"
         
         # 保存覆盖率报告
         if [ -f "coverage.xml" ]; then
@@ -175,6 +188,12 @@ jobs:
         fi
 
     - name: Run integration tests
+      env:
+        DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence
+        DATABASE_URL_SYNC: postgresql://postgres:postgres@localhost:5432/test_attendence
+        CI: true
+        GITHUB_ACTIONS: true
+        TESTING: true
       run: |
         cd backend
         echo "使用本地PostgreSQL数据库进行集成测试..."
@@ -190,6 +209,12 @@ jobs:
         echo "使用本地PostgreSQL数据库测试，环境独立可靠"
 
     - name: Run performance benchmarks
+      env:
+        DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence
+        DATABASE_URL_SYNC: postgresql://postgres:postgres@localhost:5432/test_attendence
+        CI: true
+        GITHUB_ACTIONS: true
+        TESTING: true
       run: |
         cd backend
         # 检查性能测试文件是否存在

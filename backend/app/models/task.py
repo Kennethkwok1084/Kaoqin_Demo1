@@ -143,55 +143,55 @@ class TaskTag(BaseModel):
     def create_rush_order_tag(cls) -> "TaskTag":
         """创建爆单标签"""
         tag = cls()
-        tag.name = "爆单任务"  # type: ignore[assignment]
-        tag.description = "爆单任务标记，独立计算工时15分钟"  # type: ignore[assignment]
-        tag.work_minutes_modifier = 15  # type: ignore[assignment]
+        tag.name = "爆单任务"
+        tag.description = "爆单任务标记，独立计算工时15分钟"
+        tag.work_minutes_modifier = 15
         tag.tag_type = TaskTagType.RUSH_ORDER
-        tag.is_active = True  # type: ignore[assignment]
+        tag.is_active = True
         return tag
 
     @classmethod
     def create_non_default_rating_tag(cls) -> "TaskTag":
         """创建非默认好评标签"""
         tag = cls()
-        tag.name = "非默认好评"  # type: ignore[assignment]
-        tag.description = "用户给出非默认好评，奖励30分钟"  # type: ignore[assignment]
-        tag.work_minutes_modifier = 30  # type: ignore[assignment]
+        tag.name = "非默认好评"
+        tag.description = "用户给出非默认好评，奖励30分钟"
+        tag.work_minutes_modifier = 30
         tag.tag_type = TaskTagType.NON_DEFAULT_RATING
-        tag.is_active = True  # type: ignore[assignment]
+        tag.is_active = True
         return tag
 
     @classmethod
     def create_timeout_response_tag(cls) -> "TaskTag":
         """创建超时响应标签"""
         tag = cls()
-        tag.name = "超时响应"  # type: ignore[assignment]
-        tag.description = "响应超过24小时，扣除30分钟"  # type: ignore[assignment]
-        tag.work_minutes_modifier = -30  # type: ignore[assignment]
+        tag.name = "超时响应"
+        tag.description = "响应超过24小时，扣除30分钟"
+        tag.work_minutes_modifier = -30
         tag.tag_type = TaskTagType.TIMEOUT_RESPONSE
-        tag.is_active = True  # type: ignore[assignment]
+        tag.is_active = True
         return tag
 
     @classmethod
     def create_timeout_processing_tag(cls) -> "TaskTag":
         """创建超时处理标签"""
         tag = cls()
-        tag.name = "超时处理"  # type: ignore[assignment]
-        tag.description = "处理超过48小时，扣除30分钟"  # type: ignore[assignment]
-        tag.work_minutes_modifier = -30  # type: ignore[assignment]
+        tag.name = "超时处理"
+        tag.description = "处理超过48小时，扣除30分钟"
+        tag.work_minutes_modifier = -30
         tag.tag_type = TaskTagType.TIMEOUT_PROCESSING
-        tag.is_active = True  # type: ignore[assignment]
+        tag.is_active = True
         return tag
 
     @classmethod
     def create_bad_rating_tag(cls) -> "TaskTag":
         """创建差评标签"""
         tag = cls()
-        tag.name = "差评"  # type: ignore[assignment]
-        tag.description = "用户差评（2星及以下），扣除60分钟"  # type: ignore[assignment]
-        tag.work_minutes_modifier = -60  # type: ignore[assignment]
+        tag.name = "差评"
+        tag.description = "用户差评（2星及以下），扣除60分钟"
+        tag.work_minutes_modifier = -60
         tag.tag_type = TaskTagType.BAD_RATING
-        tag.is_active = True  # type: ignore[assignment]
+        tag.is_active = True
         return tag
 
     @classmethod
@@ -475,7 +475,7 @@ class RepairTask(BaseModel):
         # Apply tag modifiers
         for tag in self.tags:
             if tag.is_active:
-                total_minutes += tag.work_minutes_modifier  # type: ignore[assignment]
+                total_minutes += tag.work_minutes_modifier
 
         # Apply time-based penalties
         if self.is_overdue_response:
@@ -498,8 +498,8 @@ class RepairTask(BaseModel):
 
     def update_work_minutes(self) -> None:
         """Update calculated work minutes."""
-        self.base_work_minutes = self.get_base_work_minutes()  # type: ignore[assignment]
-        self.work_minutes = self.calculate_work_minutes()  # type: ignore[assignment]
+        self.base_work_minutes = self.get_base_work_minutes()
+        self.work_minutes = self.calculate_work_minutes()
 
     def add_tag(self, tag: TaskTag) -> None:
         """Add a tag to the task."""
@@ -517,15 +517,15 @@ class RepairTask(BaseModel):
 
     def set_original_data(self, data: Dict[str, Any]) -> None:
         """设置A表原始数据"""
-        self.original_data = data  # type: ignore[assignment]
+        self.original_data = data
 
     def set_matched_member_data(self, member_data: Dict[str, Any]) -> None:
         """设置B表匹配的成员数据"""
-        self.matched_member_data = member_data  # type: ignore[assignment]
+        self.matched_member_data = member_data
 
     def mark_as_rush_order(self, is_rush: bool = True) -> None:
         """标记/取消爆单任务"""
-        self.is_rush_order = is_rush  # type: ignore[assignment]
+        self.is_rush_order = is_rush
         self.update_work_minutes()  # 重新计算工时
 
     def set_task_type_by_repair_form(self, repair_form: str) -> None:
@@ -533,7 +533,7 @@ class RepairTask(BaseModel):
         if not repair_form:
             return
 
-        self.repair_form = repair_form  # type: ignore[assignment]
+        self.repair_form = repair_form
         repair_form_lower = repair_form.lower()
 
         # 根据检修形式判断线上/线下
@@ -550,7 +550,7 @@ class RepairTask(BaseModel):
             self.task_type = TaskType.ONLINE
 
         # 更新基础工时
-        self.base_work_minutes = self.get_base_work_minutes()  # type: ignore[assignment]
+        self.base_work_minutes = self.get_base_work_minutes()
         self.update_work_minutes()
 
     def set_status_by_work_order_status(self, work_order_status: str) -> None:
@@ -558,7 +558,7 @@ class RepairTask(BaseModel):
         if not work_order_status:
             return
 
-        self.work_order_status = work_order_status  # type: ignore[assignment]
+        self.work_order_status = work_order_status
         status_lower = work_order_status.lower()
 
         # 状态映射规则
@@ -671,7 +671,7 @@ class MonitoringTask(BaseModel):
 
     def update_work_minutes(self) -> None:
         """Update work minutes based on duration."""
-        self.work_minutes = self.calculate_duration_minutes()  # type: ignore[assignment]
+        self.work_minutes = self.calculate_duration_minutes()
 
 
 class AssistanceTask(BaseModel):
@@ -745,4 +745,4 @@ class AssistanceTask(BaseModel):
 
     def update_work_minutes(self) -> None:
         """Update work minutes based on duration."""
-        self.work_minutes = self.calculate_duration_minutes()  # type: ignore[assignment]
+        self.work_minutes = self.calculate_duration_minutes()

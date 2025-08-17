@@ -3,9 +3,9 @@ Simple unit tests to improve code coverage.
 Tests basic functionality without complex mocking.
 """
 
-import pytest
-from unittest.mock import Mock, patch, AsyncMock
 from datetime import datetime, timedelta
+
+import pytest
 
 
 # Test basic utility functions and simple methods
@@ -81,8 +81,9 @@ class TestBasicCoverage:
 
     def test_member_safe_dict(self):
         """Test Member model safe dict conversion."""
-        from app.models.member import Member, UserRole
         from datetime import date
+
+        from app.models.member import Member, UserRole
 
         member = Member(
             id=1,
@@ -107,14 +108,15 @@ class TestBasicCoverage:
 
     def test_task_model_properties(self):
         """Test Task model properties."""
+        from datetime import datetime
+
         from app.models.task import (
             RepairTask,
-            TaskStatus,
-            TaskType,
             TaskCategory,
             TaskPriority,
+            TaskStatus,
+            TaskType,
         )
-        from datetime import datetime
 
         now = datetime.utcnow()
         task = RepairTask(
@@ -182,8 +184,9 @@ class TestBasicCoverage:
 
     def test_task_schemas_validation(self):
         """Test task schema validation."""
-        from app.schemas.task import RepairTaskCreate, RepairTaskResponse
         from datetime import datetime
+
+        from app.schemas.task import RepairTaskCreate, RepairTaskResponse
 
         # Test task creation schema
         task_data = RepairTaskCreate(
@@ -216,8 +219,9 @@ class TestBasicCoverage:
 
     def test_attendance_schemas_validation(self):
         """Test attendance schema validation."""
-        from app.schemas.attendance import AttendanceRecordCreate
         from datetime import date
+
+        from app.schemas.attendance import AttendanceRecordCreate
 
         # Test attendance record creation
         attendance_data = AttendanceRecordCreate(
@@ -233,11 +237,11 @@ class TestBasicCoverage:
     def test_exception_classes(self):
         """Test custom exception classes."""
         from app.core.exceptions import (
-            ValidationError,
             AuthenticationError,
             AuthorizationError,
             DatabaseError,
             ExternalServiceError,
+            ValidationError,
         )
 
         # Test exception instantiation
@@ -286,8 +290,9 @@ class TestBasicCoverage:
 
     def test_database_base_model(self):
         """Test base model functionality."""
-        from app.models.base import BaseModel
         from datetime import datetime
+
+        from app.models.base import BaseModel
 
         # Since BaseModel is abstract, we'll test via a concrete model
         from app.models.member import Member
@@ -301,7 +306,7 @@ class TestBasicCoverage:
 
     def test_task_enums(self):
         """Test task-related enums."""
-        from app.models.task import TaskStatus, TaskType, TaskCategory, TaskPriority
+        from app.models.task import TaskCategory, TaskPriority, TaskStatus, TaskType
 
         # Test TaskStatus enum
         assert TaskStatus.PENDING.value == "pending"
@@ -354,7 +359,7 @@ class TestBasicCoverage:
 
     def test_datetime_operations(self):
         """Test datetime utility operations."""
-        from datetime import datetime, timedelta, date
+        from datetime import date, datetime, timedelta
 
         now = datetime.utcnow()
         tomorrow = now + timedelta(days=1)
@@ -386,7 +391,7 @@ class TestBasicCoverage:
     def test_json_serialization(self):
         """Test JSON serialization of common data structures."""
         import json
-        from datetime import datetime, date
+        from datetime import date, datetime
 
         # Test serializing common data types
         data = {
