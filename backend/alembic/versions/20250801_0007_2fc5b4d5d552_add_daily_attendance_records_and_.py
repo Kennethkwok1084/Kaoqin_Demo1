@@ -287,13 +287,23 @@ def upgrade() -> None:
         ["member_id"],
         unique=False,
     )
-    op.drop_index(
-        op.f("ix_attendance_configurations_config_key"),
-        table_name="attendance_configurations",
-    )
-    op.drop_index(
-        op.f("ix_attendance_configurations_id"), table_name="attendance_configurations"
-    )
+    # 安全删除索引 - 先检查是否存在
+    try:
+        op.drop_index(
+            op.f("ix_attendance_configurations_config_key"),
+            table_name="attendance_configurations",
+        )
+    except Exception:
+        # 索引不存在，忽略错误
+        pass
+    
+    try:
+        op.drop_index(
+            op.f("ix_attendance_configurations_id"), table_name="attendance_configurations"
+        )
+    except Exception:
+        # 索引不存在，忽略错误
+        pass
     op.drop_table("attendance_configurations")
     op.alter_column(
         "assistance_tasks",
