@@ -3,7 +3,6 @@ Performance tests for data import functionality.
 Tests import speed for 1000 records and single work hour calculation.
 """
 
-import asyncio
 from datetime import datetime, timedelta
 from typing import Any, Dict, List
 

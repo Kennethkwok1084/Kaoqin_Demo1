@@ -18,6 +18,17 @@ from app.core.security import get_password_hash
 from app.main import app
 from app.models.member import Member, UserRole
 
+
+# Async test client fixture
+@pytest_asyncio.fixture
+async def async_client() -> AsyncGenerator[AsyncClient, None]:
+    """Create async test client."""
+    from httpx import ASGITransport
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        yield client
+
+
 # Export AsyncClient as AsyncTestClient for backward compatibility
 AsyncTestClient = AsyncClient
 

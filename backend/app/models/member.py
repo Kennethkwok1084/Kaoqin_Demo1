@@ -5,7 +5,7 @@
 
 import enum
 from datetime import date, datetime
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from sqlalchemy import (
     Boolean,
@@ -17,7 +17,7 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
-from sqlalchemy.orm import Mapped, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import BaseModel
 
@@ -49,7 +49,7 @@ class Member(BaseModel):
     __tablename__ = "members"
 
     # 基础信息
-    username = Column(
+    username: Mapped[str] = mapped_column(
         String(50),
         unique=True,
         nullable=False,
@@ -57,11 +57,11 @@ class Member(BaseModel):
         comment="登录用户名（不含特殊字符和中文，可修改）",
     )
 
-    name = Column(
+    name: Mapped[str] = mapped_column(
         String(50), nullable=False, index=True, comment="真实姓名（可含中文和·符号）"
     )
 
-    student_id = Column(
+    student_id: Mapped[Optional[str]] = mapped_column(
         String(20),
         unique=True,
         nullable=True,
@@ -70,38 +70,46 @@ class Member(BaseModel):
     )
 
     # 联系方式
-    phone = Column(String(11), nullable=True, comment="手机号（纯数字，可选）")
-    
-    email = Column(String(100), nullable=True, comment="邮箱地址（可选）")
+    phone: Mapped[Optional[str]] = mapped_column(
+        String(11), nullable=True, comment="手机号（纯数字，可选）"
+    )
+
+    email: Mapped[Optional[str]] = mapped_column(
+        String(100), nullable=True, comment="邮箱地址（可选）"
+    )
 
     # 组织信息
-    department = Column(
+    department: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
         default="信息化建设处",
         comment="部门（默认信息化建设处）",
     )
 
-    class_name = Column(String(50), nullable=False, comment="班级（必填）")
-    
-    group_id = Column(Integer, nullable=True, comment="小组ID（可选）")
+    class_name: Mapped[str] = mapped_column(
+        String(50), nullable=False, comment="班级（必填）"
+    )
+
+    group_id: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True, comment="小组ID（可选）"
+    )
 
     # 时间信息
-    join_date = Column(
+    join_date: Mapped[date] = mapped_column(
         Date, nullable=False, default=date.today, comment="入职日期（默认导入时间）"
     )
 
     # 账户信息
-    password_hash = Column(
+    password_hash: Mapped[str] = mapped_column(
         String(255), nullable=False, comment="密码哈希（初始密码123456）"
     )
 
     # 状态和权限
-    role: UserRole = Column(  # type: ignore[assignment]
+    role: Mapped[UserRole] = mapped_column(
         Enum(UserRole), default=UserRole.MEMBER, nullable=False, comment="用户角色"
     )
 
-    is_active = Column(
+    is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
         nullable=False,
@@ -109,19 +117,25 @@ class Member(BaseModel):
     )
 
     # 完善信息标识
-    profile_completed = Column(
+    profile_completed: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
         nullable=False,
         comment="是否已完善个人信息（首次登录需要完善）",
     )
 
-    is_verified = Column(Boolean, default=False, nullable=False, comment="邮箱验证状态")
+    is_verified: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False, comment="邮箱验证状态"
+    )
 
     # 登录追踪
-    last_login = Column(DateTime, nullable=True, comment="最后登录时间")
+    last_login: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True, comment="最后登录时间"
+    )
 
-    login_count = Column(Integer, default=0, nullable=False, comment="登录次数")
+    login_count: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False, comment="登录次数"
+    )
 
     # 关系定义（暂时保留，实际关系会在相关模块中定义）
     repair_tasks: Mapped[List["RepairTask"]] = relationship(
@@ -252,5 +266,5 @@ class Member(BaseModel):
 
     def update_login_info(self) -> None:
         """更新登录信息"""
-        self.last_login = datetime.utcnow()  # type: ignore[assignment]
-        self.login_count += 1  # type: ignore[assignment]
+        self.last_login = datetime.utcnow()
+        self.login_count += 1

@@ -5,7 +5,7 @@ Handles user login, logout, token refresh, and profile management.
 
 import logging
 from datetime import timedelta
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -43,7 +43,7 @@ security = HTTPBearer()
 @router.post("/login", response_model=Dict[str, Any])
 async def login(
     request: Request, login_data: LoginRequest, db: AsyncSession = Depends(get_db)
-):
+) -> Dict[str, Any]:
     """
     User login endpoint.
 
@@ -52,7 +52,7 @@ async def login(
 
     Rate limiting: 5 attempts per minute per IP.
     """
-    client_ip = request.client.host
+    client_ip = request.client.host if request.client else "unknown"
 
     # Rate limiting check
     if not rate_limiter.is_allowed(
@@ -95,6 +95,8 @@ async def login(
             )
 
         # Update login info
+        if user.login_count is None:
+            user.login_count = 0
         user.update_login_info()
         await db.commit()
 
@@ -136,7 +138,7 @@ async def login(
 @router.post("/refresh", response_model=Dict[str, Any])
 async def refresh_token(
     refresh_data: RefreshTokenRequest, db: AsyncSession = Depends(get_db)
-):
+) -> Dict[str, Any]:
     """
     Refresh access token using refresh token.
 
@@ -144,13 +146,21 @@ async def refresh_token(
     """
     try:
         # Verify refresh token
-        payload = verify_token(refresh_data.refresh_token, token_type="refresh")
+        payload: Optional[Dict[str, Any]] = verify_token(
+            refresh_data.refresh_token, token_type="refresh"
+        )
         if not payload:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
             )
 
-        user_id = int(payload.get("sub"))
+        user_id_str: Optional[Union[str, int]] = payload.get("sub")
+        if not user_id_str:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload"
+            )
+
+        user_id = int(user_id_str) if isinstance(user_id_str, str) else user_id_str
 
         # Get user from database
         result = await db.execute(select(Member).where(Member.id == user_id))
@@ -191,7 +201,7 @@ async def refresh_token(
 
 
 @router.post("/logout", response_model=Dict[str, Any])
-async def logout(current_user: Member = Depends(get_current_user)):
+async def logout(current_user: Member = Depends(get_current_user)) -> Dict[str, Any]:
     """
     User logout endpoint.
 
@@ -211,7 +221,9 @@ async def logout(current_user: Member = Depends(get_current_user)):
 
 
 @router.get("/me", response_model=Dict[str, Any])
-async def get_current_user_profile(current_user: Member = Depends(get_current_user)):
+async def get_current_user_profile(
+    current_user: Member = Depends(get_current_user),
+) -> Dict[str, Any]:
     """
     Get current user profile.
 
@@ -247,7 +259,7 @@ async def update_user_profile(
     profile_update: UserProfileUpdate,
     current_user: Member = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     Update current user profile.
 
@@ -314,7 +326,7 @@ async def change_password(
     password_data: ChangePasswordRequest,
     current_user: Member = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     Change user password.
 
@@ -334,7 +346,13 @@ async def change_password(
             )
 
         # Validate new password strength
-        is_strong, errors = validate_password_strength(password_data.new_password)
+        password_validation = validate_password_strength(password_data.new_password)
+        if isinstance(password_validation, tuple):
+            is_strong, errors = password_validation
+        else:
+            is_strong = password_validation
+            errors = []
+
         if not is_strong:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -376,7 +394,7 @@ async def change_password(
 async def verify_user_token(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     Verify token validity.
 
@@ -384,13 +402,19 @@ async def verify_user_token(
     """
     try:
         # Verify token
-        payload = verify_token(credentials.credentials)
+        payload: Optional[Dict[str, Any]] = verify_token(credentials.credentials)
         if not payload:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
             )
 
-        user_id = int(payload.get("sub"))
+        user_id_str: Optional[Union[str, int]] = payload.get("sub")
+        if not user_id_str:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload"
+            )
+
+        user_id = int(user_id_str) if isinstance(user_id_str, str) else user_id_str
 
         # Check if user still exists and is active
         result = await db.execute(select(Member).where(Member.id == user_id))
@@ -403,7 +427,7 @@ async def verify_user_token(
             )
 
         # Calculate token expiration time
-        exp_timestamp = payload.get("exp")
+        exp_timestamp: Optional[int] = payload.get("exp")
 
         return create_response(
             data={
@@ -427,7 +451,7 @@ async def verify_user_token(
 
 # Health check for auth service
 @router.get("/health", response_model=Dict[str, Any])
-async def auth_health_check():
+async def auth_health_check() -> Dict[str, Any]:
     """Authentication service health check."""
     return create_response(
         data={"service": "auth", "status": "healthy"},

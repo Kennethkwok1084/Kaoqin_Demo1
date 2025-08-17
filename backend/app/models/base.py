@@ -4,10 +4,11 @@ Provides common fields and functionality for all models.
 """
 
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from sqlalchemy import Column, DateTime, Integer
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
 
@@ -27,14 +28,14 @@ class Base:
 class TimestampMixin:
     """Mixin to add created_at and updated_at timestamps."""
 
-    created_at = Column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
         comment="Record creation timestamp",
     )
 
-    updated_at = Column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         onupdate=func.now(),
@@ -48,7 +49,7 @@ class BaseModel(Base, TimestampMixin):
 
     __abstract__ = True
 
-    id = Column(
+    id: Mapped[int] = mapped_column(
         Integer, primary_key=True, index=True, autoincrement=True, comment="Primary key"
     )
 
@@ -59,11 +60,12 @@ class BaseModel(Base, TimestampMixin):
     def to_dict(self) -> Dict[str, Any]:
         """Convert model to dictionary."""
         result: Dict[str, Any] = {}
-        for column in self.__table__.columns:  # type: ignore[attr-defined]
-            value = getattr(self, column.name)
-            if isinstance(value, datetime):
-                value = value.isoformat()
-            result[column.name] = value
+        if hasattr(self, "__table__"):
+            for column in self.__table__.columns:
+                value = getattr(self, column.name)
+                if isinstance(value, datetime):
+                    value = value.isoformat()
+                result[column.name] = value
         return result
 
     @classmethod

@@ -6,7 +6,7 @@ Handles all application settings using Pydantic Settings.
 import secrets
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import EmailStr, Field, validator
+from pydantic import EmailStr, Field, field_validator
 
 try:
     from pydantic_settings import BaseSettings
@@ -36,27 +36,20 @@ class Settings(BaseSettings):
         default="", description="Database URL for sync operations"
     )
 
-    @validator("DATABASE_URL", pre=True)
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
     def assemble_db_connection(cls, v: Optional[str]) -> str:
         if isinstance(v, str) and v:
             return v
         # Fallback to PostgreSQL if no environment variable is set
         return "postgresql+asyncpg://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev"
 
-    @validator("DATABASE_URL_SYNC", pre=True)
-    def assemble_db_connection_sync(
-        cls, v: Optional[str], values: Dict[str, Any]
-    ) -> str:
+    @field_validator("DATABASE_URL_SYNC", mode="before")
+    @classmethod
+    def assemble_db_connection_sync(cls, v: Optional[str]) -> str:
         if isinstance(v, str) and v:
             return v
-        # Fallback construction - convert async URL to sync or use default
-        async_url = values.get("DATABASE_URL")
-        if isinstance(async_url, str):
-            if "postgresql+asyncpg://" in async_url:
-                return async_url.replace("postgresql+asyncpg://", "postgresql://")
-            elif "sqlite+aiosqlite://" in async_url:
-                return async_url.replace("sqlite+aiosqlite://", "sqlite://")
-        # Default fallback
+        # Default fallback for sync database URL
         return "postgresql://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev"
 
     # Authentication Configuration
@@ -95,7 +88,8 @@ class Settings(BaseSettings):
     CORS_ALLOW_METHODS: List[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     CORS_ALLOW_HEADERS: List[str] = ["*"]
 
-    @validator("CORS_ORIGINS", pre=True)
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",")]

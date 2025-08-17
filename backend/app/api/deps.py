@@ -4,7 +4,10 @@ Provides common dependencies for database sessions, authentication,
 and pagination.
 """
 
-from typing import Any, AsyncGenerator, Dict, Generator, List, Optional
+import logging
+from typing import Any, AsyncGenerator, Dict, Generator, List, Optional, Union
+
+logger = logging.getLogger(__name__)
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -56,12 +59,21 @@ async def get_current_user(
 
     try:
         # Verify and decode token
-        payload = verify_token(credentials.credentials)
-        user_id_str = payload.get("sub") if payload else None
+        payload: Optional[Dict[str, Any]] = verify_token(credentials.credentials)
+        if not payload:
+            raise credentials_exception
+
+        user_id_str: Optional[Union[str, int]] = payload.get("sub")
         if user_id_str is None:
             raise credentials_exception
-        user_id = int(user_id_str)  # Convert string to integer
-    except Exception:
+
+        # Handle both string and int types
+        user_id = int(user_id_str) if isinstance(user_id_str, str) else user_id_str
+    except (ValueError, TypeError) as e:
+        logger.warning(f"Invalid token format: {e}")
+        raise credentials_exception
+    except Exception as e:
+        logger.error(f"Token verification error: {e}")
         raise credentials_exception
 
     # Get user from database
@@ -129,7 +141,7 @@ async def get_group_leader_or_admin(
     if not current_user.can_manage_group:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions. Group leader or admin role required."
+            detail="Not enough permissions. Group leader or admin role required.",
         )
     return current_user
 
@@ -154,8 +166,7 @@ async def get_current_active_admin(
 
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin privileges required"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required"
         )
     return current_user
 

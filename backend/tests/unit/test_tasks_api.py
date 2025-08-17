@@ -81,13 +81,13 @@ class TestTasksAPI:
         # Mock dependencies
         mock_db = AsyncMock()
         mock_user = Member(
-            id=1, 
-            username="test_user", 
+            id=1,
+            username="test_user",
             name="测试用户",
-            role=UserRole.MEMBER, 
+            role=UserRole.MEMBER,
             is_active=True,
             department="信息化建设处",
-            class_name="测试班级"
+            class_name="测试班级",
         )
 
         # Mock empty database result
@@ -146,13 +146,13 @@ class TestTasksAPI:
         # Mock dependencies
         mock_db = AsyncMock()
         mock_user = Member(
-            id=1, 
-            username="test_user", 
+            id=1,
+            username="test_user",
             name="测试用户",
-            role=UserRole.MEMBER, 
+            role=UserRole.MEMBER,
             is_active=True,
             department="信息化建设处",
-            class_name="测试班级"
+            class_name="测试班级",
         )
 
         # Mock empty result (placeholder implementation)
@@ -160,11 +160,11 @@ class TestTasksAPI:
         mock_scalars = Mock()
         mock_scalars.unique.return_value.all.return_value = []
         mock_result.scalars.return_value = mock_scalars
-        
+
         # Mock count result
         mock_count_result = Mock()
         mock_count_result.scalar.return_value = 0
-        
+
         # Configure db.execute to return different results for different calls
         mock_db.execute.side_effect = [mock_result, mock_count_result]
 
@@ -186,13 +186,13 @@ class TestTasksAPI:
         # Mock dependencies
         mock_db = AsyncMock()
         mock_user = Member(
-            id=1, 
-            username="test_user", 
+            id=1,
+            username="test_user",
             name="测试用户",
-            role=UserRole.MEMBER, 
+            role=UserRole.MEMBER,
             is_active=True,
             department="信息化建设处",
-            class_name="测试班级"
+            class_name="测试班级",
         )
 
         # Mock empty result (placeholder implementation)
@@ -200,11 +200,11 @@ class TestTasksAPI:
         mock_scalars = Mock()
         mock_scalars.unique.return_value.all.return_value = []
         mock_result.scalars.return_value = mock_scalars
-        
+
         # Mock count result
         mock_count_result = Mock()
         mock_count_result.scalar.return_value = 0
-        
+
         # Configure db.execute to return different results for different calls
         mock_db.execute.side_effect = [mock_result, mock_count_result]
 
