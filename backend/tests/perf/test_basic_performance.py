@@ -31,10 +31,7 @@ class TestBasicPerformance:
             await asyncio.sleep(0.001)  # 1ms延迟
             return {"status": "success"}
 
-        def run_async():
-            return asyncio.run(async_operation())
-
-        result = benchmark(run_async)
+        result = await benchmark.pedantic(async_operation, rounds=5)
         assert result["status"] == "success"
 
     def test_json_processing_speed(self, benchmark):

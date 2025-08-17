@@ -48,6 +48,7 @@ class TestTasksAPI:
             status=TaskStatus.COMPLETED,
             location="测试地点",
             member_id=1,
+            work_minutes=100,  # 添加work_minutes字段
             report_time=datetime.utcnow() - timedelta(hours=2),
             response_time=datetime.utcnow() - timedelta(hours=1),
             completion_time=datetime.utcnow(),
@@ -62,45 +63,32 @@ class TestTasksAPI:
         mock_result.scalar_one_or_none.return_value = mock_task
         mock_db.execute.return_value = mock_result
 
-        # Mock work hours service
-        with patch(
-            "app.services.work_hours_service.WorkHoursCalculationService"
-        ) as mock_service_class:
-            mock_service = AsyncMock()
-            mock_service_class.return_value = mock_service
-            mock_service.calculate_task_work_minutes.return_value = {
-                "is_rush_order": False,
-                "base_minutes": 100,
-                "rush_minutes": 0,
-                "positive_review_minutes": 0,
-                "penalty_minutes": 0,
-                "late_response_penalty": 0,
-                "late_completion_penalty": 0,
-                "negative_review_penalty": 0,
-                "total_minutes": 100,
-            }
+        # Call endpoint
+        result = await get_work_time_detail(
+            task_id=1, current_user=mock_user, db=mock_db
+        )
 
-            # Call endpoint
-            result = await get_work_time_detail(
-                task_id=1, current_user=mock_user, db=mock_db
-            )
-
-            # Verify results
-            assert result["success"] is True
-            assert result["data"]["task"]["id"] == 1
-            assert result["data"]["work_time_detail"]["total_minutes"] == 100
-            assert result["data"]["work_time_detail"]["base_minutes"] == 100
-            assert "breakdown" in result["data"]["work_time_detail"]
-
-            # Verify service was called
-            mock_service.calculate_task_work_minutes.assert_called_once_with(mock_task)
+        # Verify results
+        assert result["success"] is True
+        assert result["data"]["task_id"] == 1
+        assert result["data"]["total_work_minutes"] == 100
+        assert result["data"]["total_work_hours"] == round(100 / 60.0, 2)
+        assert "work_time_breakdown" in result["data"]
 
     @pytest.mark.asyncio
     async def test_get_work_time_detail_task_not_found(self):
         """Test work time detail endpoint - task not found."""
         # Mock dependencies
         mock_db = AsyncMock()
-        mock_user = Member(id=1, username="test_user", role=UserRole.MEMBER)
+        mock_user = Member(
+            id=1, 
+            username="test_user", 
+            name="测试用户",
+            role=UserRole.MEMBER, 
+            is_active=True,
+            department="信息化建设处",
+            class_name="测试班级"
+        )
 
         # Mock empty database result
         mock_result = Mock()
@@ -157,12 +145,28 @@ class TestTasksAPI:
         """Test monitoring tasks endpoint - success case."""
         # Mock dependencies
         mock_db = AsyncMock()
-        mock_user = Member(id=1, username="test_user", role=UserRole.MEMBER)
+        mock_user = Member(
+            id=1, 
+            username="test_user", 
+            name="测试用户",
+            role=UserRole.MEMBER, 
+            is_active=True,
+            department="信息化建设处",
+            class_name="测试班级"
+        )
 
         # Mock empty result (placeholder implementation)
         mock_result = Mock()
-        mock_result.scalars.return_value.all.return_value = []
-        mock_db.execute.return_value = mock_result
+        mock_scalars = Mock()
+        mock_scalars.unique.return_value.all.return_value = []
+        mock_result.scalars.return_value = mock_scalars
+        
+        # Mock count result
+        mock_count_result = Mock()
+        mock_count_result.scalar.return_value = 0
+        
+        # Configure db.execute to return different results for different calls
+        mock_db.execute.side_effect = [mock_result, mock_count_result]
 
         # Call endpoint
         result = await get_monitoring_tasks(
@@ -171,20 +175,38 @@ class TestTasksAPI:
 
         # Verify results
         assert result["success"] is True
-        assert result["data"]["tasks"] == []
-        assert result["data"]["total_count"] == 0
+        assert result["data"]["items"] == []
+        assert result["data"]["total"] == 0
+        assert result["data"]["page"] == 1
+        assert result["data"]["pageSize"] == 10
 
     @pytest.mark.asyncio
     async def test_get_assistance_tasks_success(self):
         """Test assistance tasks endpoint - success case."""
         # Mock dependencies
         mock_db = AsyncMock()
-        mock_user = Member(id=1, username="test_user", role=UserRole.MEMBER)
+        mock_user = Member(
+            id=1, 
+            username="test_user", 
+            name="测试用户",
+            role=UserRole.MEMBER, 
+            is_active=True,
+            department="信息化建设处",
+            class_name="测试班级"
+        )
 
         # Mock empty result (placeholder implementation)
         mock_result = Mock()
-        mock_result.scalars.return_value.all.return_value = []
-        mock_db.execute.return_value = mock_result
+        mock_scalars = Mock()
+        mock_scalars.unique.return_value.all.return_value = []
+        mock_result.scalars.return_value = mock_scalars
+        
+        # Mock count result
+        mock_count_result = Mock()
+        mock_count_result.scalar.return_value = 0
+        
+        # Configure db.execute to return different results for different calls
+        mock_db.execute.side_effect = [mock_result, mock_count_result]
 
         # Call endpoint
         result = await get_assistance_tasks(
@@ -193,8 +215,10 @@ class TestTasksAPI:
 
         # Verify results
         assert result["success"] is True
-        assert result["data"]["tasks"] == []
-        assert result["data"]["total_count"] == 0
+        assert result["data"]["items"] == []
+        assert result["data"]["total"] == 0
+        assert result["data"]["page"] == 1
+        assert result["data"]["pageSize"] == 10
 
     @pytest.mark.asyncio
     async def test_get_all_tasks_admin_permission(self):

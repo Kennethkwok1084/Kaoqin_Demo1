@@ -29,8 +29,12 @@ class Settings(BaseSettings):
     RELOAD: bool = False
 
     # Database Configuration
-    DATABASE_URL: str = Field(default="", description="Database URL for async operations")
-    DATABASE_URL_SYNC: str = Field(default="", description="Database URL for sync operations")
+    DATABASE_URL: str = Field(
+        default="", description="Database URL for async operations"
+    )
+    DATABASE_URL_SYNC: str = Field(
+        default="", description="Database URL for sync operations"
+    )
 
     @validator("DATABASE_URL", pre=True)
     def assemble_db_connection(cls, v: Optional[str]) -> str:
@@ -40,7 +44,9 @@ class Settings(BaseSettings):
         return "postgresql+asyncpg://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev"
 
     @validator("DATABASE_URL_SYNC", pre=True)
-    def assemble_db_connection_sync(cls, v: Optional[str], values: Dict[str, Any]) -> str:
+    def assemble_db_connection_sync(
+        cls, v: Optional[str], values: Dict[str, Any]
+    ) -> str:
         if isinstance(v, str) and v:
             return v
         # Fallback construction - convert async URL to sync or use default

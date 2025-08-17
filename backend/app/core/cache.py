@@ -7,7 +7,7 @@ import hashlib
 import json
 import logging
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional
 
 import redis.asyncio as redis
 

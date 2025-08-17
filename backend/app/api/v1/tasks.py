@@ -322,7 +322,7 @@ async def get_all_tasks(
             conditions.append(
                 or_(
                     RepairTask.title.ilike(search_term),
-                    RepairTask.task_number.ilike(search_term),
+                    RepairTask.task_id.ilike(search_term),
                     RepairTask.location.ilike(search_term),
                 )
             )

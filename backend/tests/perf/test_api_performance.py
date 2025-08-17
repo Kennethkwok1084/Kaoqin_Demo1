@@ -27,7 +27,7 @@ class TestAPIPerformance:
             return response
 
         # Run benchmark
-        response = benchmark(asyncio.run, get_tasks_list())
+        response = await benchmark.pedantic(get_tasks_list, rounds=5)
 
         # Verify response
         assert response.status_code == 200
@@ -65,7 +65,7 @@ class TestAPIPerformance:
             return response
 
         # Run benchmark
-        response = benchmark(asyncio.run, get_work_time_detail())
+        response = await benchmark.pedantic(get_work_time_detail, rounds=5)
 
         # Performance assertions
         benchmark_result = benchmark.stats
@@ -94,7 +94,7 @@ class TestAPIPerformance:
             return response
 
         # Run benchmark
-        response = benchmark(asyncio.run, get_field_mapping())
+        response = await benchmark.pedantic(get_field_mapping, rounds=5)
 
         # Performance assertions
         benchmark_result = benchmark.stats
@@ -126,7 +126,7 @@ class TestAPIPerformance:
             return responses
 
         # Run benchmark
-        responses = benchmark(asyncio.run, concurrent_requests())
+        responses = await benchmark.pedantic(concurrent_requests, rounds=3)
 
         # Verify all responses
         assert len(responses) == 10

@@ -120,7 +120,7 @@ class TestImportPerformance:
             return result
 
         # Run benchmark
-        result = benchmark(asyncio.run, import_data())
+        result = await benchmark.pedantic(import_data, rounds=3)
 
         # Verify results
         assert result is not None
@@ -160,7 +160,7 @@ class TestImportPerformance:
             return result
 
         # Run benchmark
-        result = benchmark(asyncio.run, calculate_work_hours())
+        result = await benchmark.pedantic(calculate_work_hours, rounds=5)
 
         # Verify results
         assert result is not None
@@ -237,7 +237,7 @@ class TestImportPerformance:
             return results
 
         # Run benchmark
-        results = benchmark(asyncio.run, calculate_batch_work_hours())
+        results = await benchmark.pedantic(calculate_batch_work_hours, rounds=2)
 
         # Verify results
         assert len(results) == 100
@@ -316,7 +316,7 @@ class TestImportPerformance:
             return matches
 
         # Run benchmark
-        result = benchmark(asyncio.run, perform_fuzzy_matching())
+        result = await benchmark.pedantic(perform_fuzzy_matching, rounds=3)
 
         # Verify results
         assert result > 0

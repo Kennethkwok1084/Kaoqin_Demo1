@@ -71,6 +71,8 @@ class Member(BaseModel):
 
     # 联系方式
     phone = Column(String(11), nullable=True, comment="手机号（纯数字，可选）")
+    
+    email = Column(String(100), nullable=True, comment="邮箱地址（可选）")
 
     # 组织信息
     department = Column(

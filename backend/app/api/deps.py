@@ -1,6 +1,7 @@
 """
 Dependency injection module for FastAPI.
-Provides common dependencies for database sessions, authentication, and pagination.
+Provides common dependencies for database sessions, authentication,
+and pagination.
 """
 
 from typing import Any, AsyncGenerator, Dict, Generator, List, Optional
@@ -87,7 +88,9 @@ async def get_current_active_user(
     return current_user
 
 
-async def get_admin_user(current_user: Member = Depends(get_current_user)) -> Member:
+async def get_admin_user(
+    current_user: Member = Depends(get_current_user),
+) -> Member:
     """
     Get current user and verify admin role.
 
@@ -102,7 +105,8 @@ async def get_admin_user(current_user: Member = Depends(get_current_user)) -> Me
     """
     if not current_user.is_admin:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions",
         )
     return current_user
 
@@ -125,7 +129,7 @@ async def get_group_leader_or_admin(
     if not current_user.can_manage_group:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions. Group leader or admin role required.",
+            detail="Not enough permissions. Group leader or admin role required."
         )
     return current_user
 
@@ -150,7 +154,8 @@ async def get_current_active_admin(
 
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required"
         )
     return current_user
 
