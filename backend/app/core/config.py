@@ -3,6 +3,7 @@ Application configuration module.
 Handles all application settings using Pydantic Settings.
 """
 
+import os
 import secrets
 from typing import Any, Dict, List, Optional, Union
 
@@ -41,7 +42,10 @@ class Settings(BaseSettings):
     def assemble_db_connection(cls, v: Optional[str]) -> str:
         if isinstance(v, str) and v:
             return v
-        # Fallback to PostgreSQL if no environment variable is set
+        # Check if running in CI environment
+        if os.getenv("CI") or os.getenv("GITHUB_ACTIONS"):
+            return "postgresql+asyncpg://postgres:postgres@localhost:5432/test_db"
+        # Fallback to development PostgreSQL if no environment variable is set
         return "postgresql+asyncpg://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev"
 
     @field_validator("DATABASE_URL_SYNC", mode="before")
@@ -49,6 +53,9 @@ class Settings(BaseSettings):
     def assemble_db_connection_sync(cls, v: Optional[str]) -> str:
         if isinstance(v, str) and v:
             return v
+        # Check if running in CI environment
+        if os.getenv("CI") or os.getenv("GITHUB_ACTIONS"):
+            return "postgresql://postgres:postgres@localhost:5432/test_db"
         # Default fallback for sync database URL
         return "postgresql://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev"
 

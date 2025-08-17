@@ -12,7 +12,21 @@ jobs:
     timeout-minutes: 30
     
     services:
-      # 使用外部PostgreSQL数据库，无需本地服务
+      # 使用本地PostgreSQL数据库服务
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: test_attendence
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
       redis:
         image: redis:7
         options: >-
@@ -45,9 +59,9 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y postgresql-client
         
-        # 测试数据库连接
-        echo "测试数据库连接..."
-        pg_isready -h 8.138.233.54 -p 5432 -U kwok -d attendence_dev || echo "数据库连接测试完成"
+        # 测试本地数据库连接
+        echo "测试本地PostgreSQL数据库连接..."
+        pg_isready -h localhost -p 5432 -U postgres -d test_attendence || echo "数据库连接测试完成"
 
     - name: Install Python dependencies
       run: |
@@ -75,9 +89,9 @@ jobs:
         echo "ENVIRONMENT=test" >> $GITHUB_ENV
         echo "TESTING=true" >> $GITHUB_ENV
         echo "DEBUG=false" >> $GITHUB_ENV
-        # 使用指定的外部PostgreSQL数据库
-        echo "DATABASE_URL=postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev" >> $GITHUB_ENV
-        echo "DATABASE_URL_SYNC=postgresql://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev" >> $GITHUB_ENV
+        # 使用本地PostgreSQL数据库服务
+        echo "DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence" >> $GITHUB_ENV
+        echo "DATABASE_URL_SYNC=postgresql://postgres:postgres@localhost:5432/test_attendence" >> $GITHUB_ENV
         echo "REDIS_URL=redis://localhost:6379/0" >> $GITHUB_ENV
         # JWT密钥
         echo "SECRET_KEY=test_secret_key_for_ci_cd_environment_only" >> $GITHUB_ENV
@@ -129,16 +143,24 @@ jobs:
           echo "✅ 所有代码质量检查通过"
         fi
 
-    - name: Database connection test
+    - name: Database setup and migration
       run: |
         cd backend
         # 连接PostgreSQL数据库
-        echo "连接PostgreSQL数据库..."
+        echo "连接本地PostgreSQL数据库..."
         python simple_db_test.py || {
           echo "PostgreSQL数据库连接失败，停止构建"
           exit 1
         }
         echo "PostgreSQL数据库连接成功"
+        
+        # 运行数据库迁移
+        echo "运行数据库迁移..."
+        alembic upgrade head || {
+          echo "数据库迁移失败，停止构建"
+          exit 1
+        }
+        echo "数据库迁移完成"
 
     - name: Run unit tests
       run: |
@@ -155,7 +177,7 @@ jobs:
     - name: Run integration tests
       run: |
         cd backend
-        echo "使用PostgreSQL数据库进行集成测试..."
+        echo "使用本地PostgreSQL数据库进行集成测试..."
         
         # 运行集成测试
         if [ -f "run_integration_tests.py" ]; then
@@ -165,7 +187,7 @@ jobs:
           python -m pytest tests/integration/ -v --tb=short || echo "集成测试失败，但继续构建"
         fi
         
-        echo "使用真实PostgreSQL数据库测试，结果可靠"
+        echo "使用本地PostgreSQL数据库测试，环境独立可靠"
 
     - name: Run performance benchmarks
       run: |

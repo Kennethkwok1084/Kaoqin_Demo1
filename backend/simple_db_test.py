@@ -5,13 +5,15 @@
 import os
 import sys
 
-# 设置环境变量
-os.environ["DATABASE_URL"] = (
-    "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev"
-)
-os.environ["DATABASE_URL_SYNC"] = (
-    "postgresql://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev"
-)
+# 设置默认环境变量（如果未设置）
+if "DATABASE_URL" not in os.environ:
+    os.environ["DATABASE_URL"] = (
+        "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev"
+    )
+if "DATABASE_URL_SYNC" not in os.environ:
+    os.environ["DATABASE_URL_SYNC"] = (
+        "postgresql://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev"
+    )
 os.environ["TESTING"] = "true"
 
 
@@ -19,15 +21,25 @@ def test_psycopg2_connection():
     """测试psycopg2连接"""
     try:
         import psycopg2
+        from urllib.parse import urlparse
 
         print("尝试使用psycopg2连接数据库...")
+        
+        # 从环境变量解析数据库连接信息
+        db_url = os.environ.get("DATABASE_URL_SYNC")
+        if not db_url:
+            raise ValueError("DATABASE_URL_SYNC环境变量未设置")
+            
+        parsed = urlparse(db_url)
+        
+        print(f"连接到数据库: {parsed.hostname}:{parsed.port}/{parsed.path[1:]}")
 
         conn = psycopg2.connect(
-            host="8.138.233.54",
-            port=5432,
-            user="kwok",
-            password="Onjuju1084",
-            database="attendence_dev",
+            host=parsed.hostname,
+            port=parsed.port or 5432,
+            user=parsed.username,
+            password=parsed.password,
+            database=parsed.path[1:],  # 移除开头的 '/'
             connect_timeout=10,
         )
 
