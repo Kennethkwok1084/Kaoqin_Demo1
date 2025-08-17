@@ -287,23 +287,8 @@ def upgrade() -> None:
         ["member_id"],
         unique=False,
     )
-    # 安全删除索引 - 先检查是否存在
-    try:
-        op.drop_index(
-            op.f("ix_attendance_configurations_config_key"),
-            table_name="attendance_configurations",
-        )
-    except Exception:
-        # 索引不存在，忽略错误
-        pass
-    
-    try:
-        op.drop_index(
-            op.f("ix_attendance_configurations_id"), table_name="attendance_configurations"
-        )
-    except Exception:
-        # 索引不存在，忽略错误
-        pass
+    # 直接删除表，PostgreSQL会自动处理索引
+    # 删除表时会自动删除所有相关的索引和约束
     op.drop_table("attendance_configurations")
     op.alter_column(
         "assistance_tasks",
