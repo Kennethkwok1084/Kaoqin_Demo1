@@ -5,16 +5,12 @@ Simple tests focused on improving coverage of key modules.
 
 from unittest.mock import Mock
 
-import pytest
-
 
 class TestCoverageBoost:
     """Simple tests to boost coverage of critical modules."""
 
     def test_core_security_functions(self):
         """Test core security functions."""
-        from datetime import timedelta
-
         from app.core.security import create_access_token, create_refresh_token
 
         # Test token creation with basic data

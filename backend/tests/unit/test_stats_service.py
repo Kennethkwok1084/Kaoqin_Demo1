@@ -4,13 +4,13 @@ Tests statistical analysis, performance metrics, and caching functionality.
 """
 
 from datetime import date, datetime, timedelta
-from typing import Any, Dict, List
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
+from app.core.cache import cache
 from app.models.member import Member, UserRole
-from app.models.task import RepairTask, TaskCategory, TaskPriority, TaskStatus, TaskType
+from app.models.task import RepairTask, TaskStatus, TaskType
 from app.services.stats_service import StatisticsService
 
 
@@ -153,7 +153,6 @@ class TestStatisticsService:
                 "efficiency_score": 0,
             },
         ):
-
             result = await stats_service.get_system_overview()
 
             assert result["total_tasks"] == 0
@@ -308,7 +307,6 @@ class TestStatisticsService:
             with patch.object(
                 stats_service, "_generate_cache_key", return_value=cache_key
             ):
-
                 # This should return cached data without hitting database
                 result = await stats_service._get_cached_or_compute(
                     cache_key, lambda: {"computed": "data"}

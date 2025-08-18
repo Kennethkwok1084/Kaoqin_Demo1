@@ -127,9 +127,7 @@ class IntegrationTestRunner:
                 if result.returncode == 0:
                     self.log(f"PASS {test_file} 通过")
                 else:
-                    self.log(
-                        f"FAIL {test_file} 失败 (退出码: {result.returncode})", "ERROR"
-                    )
+                    self.log(f"FAIL {test_file} 失败 (退出码: {result.returncode})", "ERROR")
 
             except subprocess.TimeoutExpired:
                 self.log(f"TIMEOUT {test_file} 超时", "WARNING")
@@ -193,9 +191,7 @@ class IntegrationTestRunner:
 
         # 添加详细结果
         for test_name, test_result in self.results["tests"].items():
-            status = (
-                "PASS 通过" if test_result.get("return_code", 1) == 0 else "FAIL 失败"
-            )
+            status = "PASS 通过" if test_result.get("return_code", 1) == 0 else "FAIL 失败"
             report_lines.extend(
                 [
                     f"{test_name}: {status}",

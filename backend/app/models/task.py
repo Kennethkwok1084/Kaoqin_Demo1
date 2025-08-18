@@ -349,19 +349,15 @@ class RepairTask(BaseModel):
         Boolean, default=False, nullable=False, comment="爆单标记，独立计算工时"
     )
 
-    work_order_status = Column(
-        String(50), nullable=True, comment="A表工单状态（用于状态映射）"
-    )
+    work_order_status = Column(String(50), nullable=True, comment="A表工单状态（用于状态映射）")
 
-    repair_form = Column(
-        String(50), nullable=True, comment="B表检修形式（用于线上/线下判断）"
-    )
+    repair_form = Column(String(50), nullable=True, comment="B表检修形式（用于线上/线下判断）")
 
     # Relationships
     member: Mapped["Member"] = relationship("Member", back_populates="repair_tasks")
 
     tags: Mapped[List["TaskTag"]] = relationship(
-        TaskTag, secondary=task_tag_association, back_populates="tasks", lazy="dynamic"
+        TaskTag, secondary=task_tag_association, back_populates="tasks"
     )
 
     # Constraints and indexes

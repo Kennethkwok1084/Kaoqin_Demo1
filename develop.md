@@ -497,7 +497,7 @@ erDiagram
     Member ||--|| AttendanceRecord : has
     RepairTask ||--o{ TaskTag : tagged_with
     TaskTag ||--o{ RepairTask : applies_to
-    
+
     Member {
         int id PK
         string name
@@ -512,7 +512,7 @@ erDiagram
         datetime created_at
         datetime updated_at
     }
-    
+
     RepairTask {
         int id PK
         string task_id UK
@@ -532,7 +532,7 @@ erDiagram
         datetime created_at
         datetime updated_at
     }
-    
+
     TaskTag {
         int id PK
         string name UK
@@ -542,7 +542,7 @@ erDiagram
         datetime created_at
         datetime updated_at
     }
-    
+
     AttendanceRecord {
         int id PK
         int member_id FK
@@ -571,7 +571,7 @@ erDiagram
 - **时间管理**: 报修时间、响应时间、完成时间
 - **评价系统**: 用户反馈、评分（1-5星）
 - **工时计算**: 基于标签和规则自动计算工时
-- **业务逻辑**: 
+- **业务逻辑**:
   - 超时判断：响应>24h，完成>48h
   - 多标签支持：一个任务可有多个标签
   - 状态流转：待处理→处理中→已完成
@@ -1141,7 +1141,7 @@ erDiagram
 ### 里程碑检查点
 
 - **Week 1 End**: 后端API基础完成，可通过Swagger测试
-- **Week 2 End**: 前端基础框架完成，认证系统可用  
+- **Week 2 End**: 前端基础框架完成，认证系统可用
 - **Week 3 End**: 任务管理核心功能完成
 - **Week 4 End**: 统计分析功能完成，系统基本可用
 - **Week 5 End**: 测试覆盖完成，部署就绪

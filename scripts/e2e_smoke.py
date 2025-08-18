@@ -182,8 +182,8 @@ class DatabaseSmokeTest:
             # 检查关键表是否存在
             tables = await conn.fetch(
                 """
-                SELECT tablename FROM pg_tables 
-                WHERE schemaname = 'public' 
+                SELECT tablename FROM pg_tables
+                WHERE schemaname = 'public'
                 AND tablename IN ('members', 'repair_tasks', 'attendance_records')
             """
             )

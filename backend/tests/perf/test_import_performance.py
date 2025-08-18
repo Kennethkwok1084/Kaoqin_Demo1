@@ -27,8 +27,8 @@ def sample_import_data_1000() -> List[Dict[str, Any]]:
 
         data.append(
             {
-                "title": f"网络故障维修任务 {i+1:04d}",
-                "description": f"测试数据 - 办公区域网络连接问题，需要现场检查网络设备和线路连接情况 {i+1}",
+                "title": f"网络故障维修任务 {i + 1:04d}",
+                "description": f"测试数据 - 办公区域网络连接问题，需要现场检查网络设备和线路连接情况 {i + 1}",
                 "reporter_name": f"测试用户{(i % 50) + 1:02d}",
                 "reporter_contact": f"138{(i % 10):04d}{(i % 10000):04d}",
                 "location": f"办公楼{chr(65 + (i % 5))}座{(i % 10) + 1:02d}01室",
@@ -38,7 +38,7 @@ def sample_import_data_1000() -> List[Dict[str, Any]]:
                 "status": ["已完成", "处理中", "待处理"][i % 3],
                 "repair_form": ["远程处理", "现场维修"][i % 2],
                 "rating": (i % 5) + 1,
-                "feedback": f"工作完成及时，服务态度良好 {i+1}",
+                "feedback": f"工作完成及时，服务态度良好 {i + 1}",
                 "assignee": f"技术员{(i % 20) + 1:02d}",
                 "department": "信息化建设处",
                 "repair_type": ["网络维修", "硬件故障", "软件问题"][i % 3],
@@ -173,9 +173,9 @@ class TestImportPerformance:
         ), f"Calculation took {benchmark_result['mean']:.4f}s, should be < 0.1s"
 
         print("\n📊 Work Hour Calculation Performance Results:")
-        print(f"   Mean time: {benchmark_result['mean']*1000:.2f}ms")
-        print(f"   Min time:  {benchmark_result['min']*1000:.2f}ms")
-        print(f"   Max time:  {benchmark_result['max']*1000:.2f}ms")
+        print(f"   Mean time: {benchmark_result['mean'] * 1000:.2f}ms")
+        print(f"   Min time:  {benchmark_result['min'] * 1000:.2f}ms")
+        print(f"   Max time:  {benchmark_result['max'] * 1000:.2f}ms")
         print(f"   Calculations/second: {1 / benchmark_result['mean']:.0f}")
 
     @pytest.mark.asyncio
@@ -303,9 +303,7 @@ class TestImportPerformance:
                     r"[\(\)（）\[\]{}〈〉].*?[\(\)（）\[\]{}〈〉]", "", clean_name
                 )
                 clean_name = re.sub(r"[\(\)（）\[\]{}〈〉].*", "", clean_name)
-                clean_name = re.sub(
-                    r"(工程师|技术员|主管|经理|组长|部长|处长|科长)$", "", clean_name
-                )
+                clean_name = re.sub(r"(工程师|技术员|主管|经理|组长|部长|处长|科长)$", "", clean_name)
                 clean_name = clean_name.strip()
 
                 # Simulate database query (without actual DB hit for performance)

@@ -7,16 +7,7 @@ import enum
 from datetime import date, datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    Date,
-    DateTime,
-    Enum,
-    Integer,
-    String,
-    UniqueConstraint,
-)
+from sqlalchemy import Boolean, Date, DateTime, Enum, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import BaseModel

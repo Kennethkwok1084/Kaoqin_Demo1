@@ -33,24 +33,24 @@ def run_command(cmd, cwd=None):
 def test_alembic_migration():
     """测试Alembic迁移"""
     print("🔄 测试数据库迁移...")
-    
+
     # 设置CI环境变量
     env = os.environ.copy()
     env['CI'] = 'true'
     env['GITHUB_ACTIONS'] = 'true'
-    
+
     backend_dir = Path(__file__).parent / "backend"
-    
+
     # 检查迁移文件语法
     success, stdout, stderr = run_command("python -m alembic check", backend_dir)
-    
+
     # alembic check 如果没有错误，即使有INFO输出也算成功
     # 检查stderr中是否有真正的错误信息
     has_error = False
     if stderr:
         error_keywords = ['ERROR', 'FAILED', 'Exception', 'Traceback']
         has_error = any(keyword in stderr for keyword in error_keywords)
-    
+
     if success or not has_error:
         print("✅ 迁移文件语法检查通过")
         if stdout and 'INFO' in stdout:
@@ -64,15 +64,15 @@ def test_alembic_migration():
 def test_python_imports():
     """测试Python导入"""
     print("🔄 测试Python导入...")
-    
+
     backend_dir = Path(__file__).parent / "backend"
-    
+
     # 测试基本导入
     success, stdout, stderr = run_command(
         'python -c "import sys; sys.path.insert(0, \'.\'); import app; print(\'导入成功\')"',
         backend_dir
     )
-    
+
     if success:
         print("✅ Python导入测试通过")
         return True
@@ -84,9 +84,9 @@ def test_python_imports():
 def test_config_loading():
     """测试配置加载"""
     print("🔄 测试配置加载...")
-    
+
     backend_dir = Path(__file__).parent / "backend"
-    
+
     # 设置CI环境变量并测试配置
     test_script = '''
 import os
@@ -101,12 +101,12 @@ print(f"数据库URL: {settings.DATABASE_URL}")
 print(f"CI环境: {os.getenv('CI')}")
 print("配置加载成功")
 '''
-    
+
     success, stdout, stderr = run_command(
         f'python -c "{test_script}"',
         backend_dir
     )
-    
+
     if success:
         print("✅ 配置加载测试通过")
         print(f"输出: {stdout.strip()}")
@@ -119,16 +119,16 @@ print("配置加载成功")
 def main():
     """主函数"""
     print("🚀 快速CI/CD测试开始\n")
-    
+
     tests = [
         ("Python导入测试", test_python_imports),
         ("配置加载测试", test_config_loading),
         ("数据库迁移测试", test_alembic_migration),
     ]
-    
+
     passed = 0
     failed = 0
-    
+
     for test_name, test_func in tests:
         try:
             if test_func():
@@ -139,11 +139,11 @@ def main():
             print(f"❌ {test_name} 执行异常: {str(e)}")
             failed += 1
         print()
-    
+
     print("📊 测试总结:")
     print(f"✅ 通过: {passed}")
     print(f"❌ 失败: {failed}")
-    
+
     if failed == 0:
         print("\n🎉 所有测试通过！CI/CD应该能够成功运行")
         return True

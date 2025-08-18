@@ -27,7 +27,7 @@ jobs:
     name: Run E2E Smoke Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -78,14 +78,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: smoke-test
     if: always()
-    
+
     steps:
     - name: Notify on success
       if: needs.smoke-test.result == 'success'
       run: |
         echo "✅ E2E smoke tests passed for ${{ inputs.environment }}"
         # 这里可以添加成功通知逻辑，如Slack、Teams等
-    
+
     - name: Notify on failure
       if: needs.smoke-test.result == 'failure'
       run: |

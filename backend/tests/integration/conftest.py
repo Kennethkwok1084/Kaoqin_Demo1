@@ -297,14 +297,14 @@ class TestDataHelper:
         for i in range(count):
             unique_suffix = str(uuid.uuid4())[:8]
             task = RepairTask(
-                title=f"测试任务 {i+1}",
-                description=f"这是第{i+1}个测试任务",
-                task_id=f"T{unique_suffix}{i+1:04d}",
+                title=f"测试任务 {i + 1}",
+                description=f"这是第{i + 1}个测试任务",
+                task_id=f"T{unique_suffix}{i + 1:04d}",
                 status=TaskStatus.PENDING if i % 2 == 0 else TaskStatus.COMPLETED,
                 priority=TaskPriority.MEDIUM,
-                location=f"测试地点{i+1}",
+                location=f"测试地点{i + 1}",
                 member_id=member_id,
-                reporter_name=f"报告人{i+1}",
+                reporter_name=f"报告人{i + 1}",
                 reporter_contact=f"1381234567{i}",
                 report_time=datetime.utcnow() - timedelta(days=i + 1),
             )
@@ -339,7 +339,7 @@ class TestDataHelper:
                 work_hours=8.5,
                 status="正常",
                 location="办公室",
-                notes=f"第{i+1}天考勤",
+                notes=f"第{i + 1}天考勤",
                 is_late_checkin=(i % 4 == 0),
                 late_checkin_minutes=10 if i % 4 == 0 else 0,
                 is_early_checkout=False,

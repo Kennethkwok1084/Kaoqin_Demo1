@@ -119,11 +119,15 @@ class WorkHoursCalculationService:
                 for tag in task.tags:
                     if tag.is_active and tag.is_penalty_tag():
                         if tag.tag_type == TaskTagType.TIMEOUT_RESPONSE:
-                            late_response_penalty = abs(tag.work_minutes_modifier)
+                            late_response_penalty = abs(tag.work_minutes_modifier or 0)
                         elif tag.tag_type == TaskTagType.TIMEOUT_PROCESSING:
-                            late_completion_penalty = abs(tag.work_minutes_modifier)
+                            late_completion_penalty = abs(
+                                tag.work_minutes_modifier or 0
+                            )
                         elif tag.tag_type == TaskTagType.BAD_RATING:
-                            negative_review_penalty = abs(tag.work_minutes_modifier)
+                            negative_review_penalty = abs(
+                                tag.work_minutes_modifier or 0
+                            )
 
                 # 检查实时异常情况
                 if self._is_response_overdue(task):
@@ -340,7 +344,7 @@ class WorkHoursCalculationService:
 
             # 计算监控任务工时
             monitoring_hours = (
-                sum(task.work_minutes for task in monitoring_tasks) / 60.0
+                sum((task.work_minutes or 0) for task in monitoring_tasks) / 60.0
             )
 
             # 查询协助任务
@@ -357,7 +361,7 @@ class WorkHoursCalculationService:
 
             # 计算协助任务工时
             assistance_hours = (
-                sum(task.work_minutes for task in assistance_tasks) / 60.0
+                sum((task.work_minutes or 0) for task in assistance_tasks) / 60.0
             )
 
             # 查询上月结转时长
@@ -374,11 +378,13 @@ class WorkHoursCalculationService:
             prev_result = await self.db.execute(prev_summary_query)
             prev_summary = prev_result.scalar_one_or_none()
 
-            carried_hours = prev_summary.remaining_hours if prev_summary else 0.0
+            carried_hours = (
+                (prev_summary.remaining_hours or 0.0) if prev_summary else 0.0
+            )
 
             # 计算总工时
             total_hours = (
-                repair_stats["total_hours"]
+                (repair_stats["total_hours"] or 0.0)
                 + monitoring_hours
                 + assistance_hours
                 + carried_hours
@@ -477,18 +483,15 @@ class WorkHoursCalculationService:
                 for key, value in work_hours_data.items():
                     if hasattr(summary, key) and not key.endswith("_count"):
                         setattr(summary, key, value)
-                summary.updated_at = datetime.utcnow()  # type: ignore[assignment]
+                summary.updated_at = datetime.utcnow()
             else:
                 # 创建新记录
+                # 创建新记录
+                summary_data = {
+                    k: v for k, v in work_hours_data.items() if not k.endswith("_count")
+                }
                 summary = MonthlyAttendanceSummary(
-                    member_id=member_id,
-                    year=year,
-                    month=month,
-                    **{
-                        k: v
-                        for k, v in work_hours_data.items()
-                        if not k.endswith("_count")
-                    },
+                    member_id=member_id, year=year, month=month, **summary_data
                 )
                 self.db.add(summary)
 
@@ -635,6 +638,8 @@ class WorkHoursCalculationService:
                 _ = await self._get_or_create_penalty_tag(penalty_type)
 
                 # 为该成员的当月汇总添加惩罚时长
+                if task.report_time is None:
+                    continue
                 task_month = task.report_time.month
                 task_year = task.report_time.year
 
@@ -651,7 +656,7 @@ class WorkHoursCalculationService:
             logger.info(
                 f"Applied {penalty_type} penalty to {len(affected_member_ids)} members"
             )
-            return affected_member_ids  # type: ignore[return-value]
+            return affected_member_ids
 
         except ValueError:
             # Re-raise validation errors as-is
@@ -708,7 +713,11 @@ class WorkHoursCalculationService:
 
     def _is_response_overdue(self, task: RepairTask) -> bool:
         """检查是否超时响应"""
-        if task.response_time or task.status != TaskStatus.PENDING:
+        if (
+            task.response_time
+            or task.status != TaskStatus.PENDING
+            or task.report_time is None
+        ):
             return False
 
         hours_since_report = (
@@ -718,7 +727,7 @@ class WorkHoursCalculationService:
 
     def _is_completion_overdue(self, task: RepairTask) -> bool:
         """检查是否超时处理"""
-        if task.completion_time or not task.response_time:
+        if task.completion_time or not task.response_time or task.response_time is None:
             return False
 
         hours_since_response = (
@@ -763,8 +772,11 @@ class WorkHoursCalculationService:
 
         if not tag:
             # 使用TaskTag的工厂方法创建标签
-            factory_method_name = config["factory_method"]
-            tag = getattr(TaskTag, factory_method_name)()
+            factory_method_name: str = config["factory_method"]
+            factory_method = getattr(TaskTag, factory_method_name, None)
+            if factory_method is None:
+                raise ValueError(f"Unknown factory method: {factory_method_name}")
+            tag = factory_method()
             self.db.add(tag)
             await self.db.commit()
             await self.db.refresh(tag)
@@ -787,7 +799,7 @@ class WorkHoursCalculationService:
         month: int,
         penalty_type: str,
         penalty_minutes: int,
-    ):
+    ) -> None:
         """为成员应用惩罚时长"""
         # 获取或创建月度汇总
         summary_query = select(MonthlyAttendanceSummary).where(
@@ -808,23 +820,29 @@ class WorkHoursCalculationService:
 
         # 添加惩罚时长
         penalty_hours = penalty_minutes / 60.0
-        summary.penalty_hours += penalty_hours
+        summary.penalty_hours = (summary.penalty_hours or 0.0) + penalty_hours
 
         if penalty_type == "late_response":
-            summary.late_response_penalty_hours += penalty_hours
+            summary.late_response_penalty_hours = (
+                summary.late_response_penalty_hours or 0.0
+            ) + penalty_hours
         elif penalty_type == "late_completion":
-            summary.late_completion_penalty_hours += penalty_hours
+            summary.late_completion_penalty_hours = (
+                summary.late_completion_penalty_hours or 0.0
+            ) + penalty_hours
         elif penalty_type == "negative_review":
-            summary.negative_review_penalty_hours += penalty_hours
+            summary.negative_review_penalty_hours = (
+                summary.negative_review_penalty_hours or 0.0
+            ) + penalty_hours
 
         # 重新计算总工时
         summary.total_hours = max(
             0.0,
-            summary.repair_task_hours
-            + summary.monitoring_hours
-            + summary.assistance_hours
-            + summary.carried_hours
-            - summary.penalty_hours,
+            (summary.repair_task_hours or 0.0)
+            + (summary.monitoring_hours or 0.0)
+            + (summary.assistance_hours or 0.0)
+            + (summary.carried_hours or 0.0)
+            - (summary.penalty_hours or 0.0),
         )
 
         await self.db.commit()
@@ -925,7 +943,7 @@ class RushTaskMarkingService:
 
                 if not already_marked:
                     # 标记为爆单任务
-                    task.is_rush_order = True  # type: ignore[assignment]
+                    task.is_rush_order = True
 
                     # 添加爆单标签（如果还没有）
                     if rush_tag not in task.tags:

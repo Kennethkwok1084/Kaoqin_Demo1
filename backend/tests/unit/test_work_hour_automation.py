@@ -4,7 +4,6 @@ Tests automated task detection, penalty application, and scheduling functionalit
 """
 
 from datetime import datetime, timedelta
-from typing import Any, Dict, List
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -96,7 +95,6 @@ class TestWorkHourAutomationService:
                 automation_service, "_detect_long_overdue_tasks", return_value=2
             ),
         ):
-
             result = await automation_service.schedule_overdue_detection()
 
             assert result["success"] is True
@@ -117,7 +115,6 @@ class TestWorkHourAutomationService:
 
         # Mock tag application
         with patch.object(automation_service, "_apply_penalty_tag", return_value=True):
-
             count = await automation_service._detect_late_response_tasks()
 
             assert count == 1
@@ -138,7 +135,6 @@ class TestWorkHourAutomationService:
 
         # Mock tag application
         with patch.object(automation_service, "_apply_penalty_tag", return_value=True):
-
             count = await automation_service._detect_late_completion_tasks()
 
             assert count == 1
@@ -162,7 +158,6 @@ class TestWorkHourAutomationService:
         mock_db.execute.return_value = mock_result
 
         with patch.object(automation_service, "_apply_penalty_tag", return_value=True):
-
             count = await automation_service._detect_long_overdue_tasks()
 
             assert count == 1
@@ -173,9 +168,7 @@ class TestWorkHourAutomationService:
     ):
         """Test successful penalty tag application."""
         # Mock tag creation and association
-        mock_tag = TaskTag(
-            id=1, name="延迟响应", tag_type="penalty", penalty_minutes=30
-        )
+        mock_tag = TaskTag(id=1, name="延迟响应", tag_type="penalty", penalty_minutes=30)
 
         # Mock existing tag query
         mock_tag_result = Mock()
@@ -203,9 +196,7 @@ class TestWorkHourAutomationService:
         self, automation_service, mock_db, overdue_task
     ):
         """Test penalty tag application when tag already exists on task."""
-        mock_tag = TaskTag(
-            id=1, name="延迟响应", tag_type="penalty", penalty_minutes=30
-        )
+        mock_tag = TaskTag(id=1, name="延迟响应", tag_type="penalty", penalty_minutes=30)
 
         # Mock existing tag
         mock_tag_result = Mock()
@@ -255,7 +246,6 @@ class TestWorkHourAutomationService:
     ):
         """Test automated evaluation response processing."""
         # Mock database query for tasks needing evaluation processing
-        now = datetime.utcnow()
         task_with_rating = RepairTask(
             id=4,
             task_id="REPAIR_004",
@@ -271,7 +261,6 @@ class TestWorkHourAutomationService:
         with patch.object(
             automation_service, "_process_evaluation_response", return_value=True
         ):
-
             result = await automation_service.schedule_evaluation_response_automation()
 
             assert result["success"] is True
@@ -292,7 +281,6 @@ class TestWorkHourAutomationService:
         )
 
         with patch.object(automation_service, "_apply_bonus_tag", return_value=True):
-
             result = await automation_service._process_evaluation_response(
                 excellent_task
             )
@@ -314,7 +302,6 @@ class TestWorkHourAutomationService:
         )
 
         with patch.object(automation_service, "_apply_penalty_tag", return_value=True):
-
             result = await automation_service._process_evaluation_response(poor_task)
 
             assert result is True
@@ -327,9 +314,7 @@ class TestWorkHourAutomationService:
         )
 
         # Mock bonus tag
-        mock_bonus_tag = TaskTag(
-            id=2, name="优质服务", tag_type="bonus", bonus_minutes=30
-        )
+        mock_bonus_tag = TaskTag(id=2, name="优质服务", tag_type="bonus", bonus_minutes=30)
 
         mock_tag_result = Mock()
         mock_tag_result.scalar_one_or_none.return_value = mock_bonus_tag
@@ -369,7 +354,6 @@ class TestWorkHourAutomationService:
             "recalculate_task_work_hours",
             return_value=True,
         ):
-
             result = await automation_service.batch_recalculate_work_hours(
                 start_date=datetime.now().date() - timedelta(days=30),
                 end_date=datetime.now().date(),
@@ -407,7 +391,6 @@ class TestWorkHourAutomationService:
             "_detect_late_response_tasks",
             side_effect=Exception("Detection error"),
         ):
-
             result = await automation_service.schedule_overdue_detection()
 
             assert result["success"] is False
@@ -469,7 +452,6 @@ class TestWorkHourAutomationService:
         with patch.object(
             automation_service, "_acquire_processing_lock", return_value=True
         ):
-
             result = await automation_service.schedule_overdue_detection()
 
             # Should succeed when lock is acquired
@@ -478,7 +460,6 @@ class TestWorkHourAutomationService:
         with patch.object(
             automation_service, "_acquire_processing_lock", return_value=False
         ):
-
             # Should handle concurrent processing gracefully
             result = await automation_service.schedule_overdue_detection()
 

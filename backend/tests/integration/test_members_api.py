@@ -64,9 +64,7 @@ class TestMembersCRUD:
 
         assert response.status_code == 403
         data = response.json()
-        assert (
-            "权限不足" in data["detail"] or "Not enough permissions" in data["detail"]
-        )
+        assert "权限不足" in data["detail"] or "Not enough permissions" in data["detail"]
 
     def test_create_member_duplicate_student_id(self, client, auth_headers_admin):
         """测试创建重复学号成员"""
@@ -381,9 +379,7 @@ class TestMembersCRUD:
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
-        assert (
-            "删除成功" in data["message"] or "deleted successfully" in data["message"]
-        )
+        assert "删除成功" in data["message"] or "deleted successfully" in data["message"]
 
         # 验证成员确实被删除
         get_response = client.get(
@@ -413,8 +409,8 @@ class TestMembersBulkOperations:
         members = []
         for i in range(5):
             member = Member(
-                name=f"批量测试成员{i+1}",
-                student_id=f"BULK00{i+1}",
+                name=f"批量测试成员{i + 1}",
+                student_id=f"BULK00{i + 1}",
                 password_hash=get_password_hash("password123"),
                 role=UserRole.MEMBER,
                 group_id=1,

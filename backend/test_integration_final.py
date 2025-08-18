@@ -10,12 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 # 设置环境变量使用远程数据库
 os.environ["ENVIRONMENT"] = "production"
-os.environ["DATABASE_URL"] = (
-    "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev"
-)
-os.environ["DATABASE_URL_SYNC"] = (
-    "postgresql://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev"
-)
+os.environ[
+    "DATABASE_URL"
+] = "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev"
+os.environ[
+    "DATABASE_URL_SYNC"
+] = "postgresql://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev"
 os.environ["SECRET_KEY"] = "test_secret_key_for_remote_testing"
 os.environ["ALGORITHM"] = "HS256"
 

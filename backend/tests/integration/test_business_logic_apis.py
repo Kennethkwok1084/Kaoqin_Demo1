@@ -87,9 +87,7 @@ class TestWorkHoursManagementAPI:
         assert "new_minutes" in result["data"]
         assert "breakdown" in result["data"]
 
-        print(
-            f"✅ 单任务工时重算测试通过: 任务 {task_id} 工时更新为 {result['data']['new_minutes']} 分钟"
-        )
+        print(f"✅ 单任务工时重算测试通过: 任务 {task_id} 工时更新为 {result['data']['new_minutes']} 分钟")
 
     async def test_pending_work_hours_review(
         self, client: AsyncClient, admin_headers: Dict[str, str]
@@ -114,9 +112,7 @@ class TestWorkHoursManagementAPI:
             assert "breakdown" in item
             assert "work_minutes" in item
 
-        print(
-            f"✅ 待审核工时列表测试通过: 找到 {result['data']['total']} 个需要审核的任务"
-        )
+        print(f"✅ 待审核工时列表测试通过: 找到 {result['data']['total']} 个需要审核的任务")
 
     async def test_adjust_task_work_hours(
         self, client: AsyncClient, admin_headers: Dict[str, str]
@@ -364,9 +360,7 @@ class TestStatisticsAPI:
                 assert result["data"]["export_type"] == export_type
                 assert result["data"]["format"] == format_type
 
-        print(
-            f"✅ 统计数据导出测试通过: 测试了 {len(export_types) * len(formats)} 种导出组合"
-        )
+        print(f"✅ 统计数据导出测试通过: 测试了 {len(export_types) * len(formats)} 种导出组合")
 
 
 class TestIntegratedBusinessFlow:
@@ -506,9 +500,7 @@ class TestIntegratedBusinessFlow:
         # 注意：由于时间范围可能不完全一致，这里主要检查数据结构一致性
         print(f"📊 任务统计 - 总任务数: {task_stats.get('total_tasks', 0)}")
         print(f"📊 概览统计 - 总任务数: {overview_stats['tasks'].get('total', 0)}")
-        print(
-            f"📊 工时统计 - 总任务数: {work_hours_stats['summary'].get('total_tasks', 0)}"
-        )
+        print(f"📊 工时统计 - 总任务数: {work_hours_stats['summary'].get('total_tasks', 0)}")
 
         # 检查数据结构完整性
         assert isinstance(task_stats.get("total_tasks", 0), int)

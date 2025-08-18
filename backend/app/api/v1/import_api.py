@@ -206,9 +206,7 @@ async def get_import_field_mapping(
         raise
     except Exception as e:
         logger.error(f"Get field mapping error: {str(e)}")
-        return create_error_response(
-            message="获取字段映射失败", details={"error": str(e)}
-        )
+        return create_error_response(message="获取字段映射失败", details={"error": str(e)})
 
 
 def _get_field_display_name(field_key: str) -> str:
@@ -379,14 +377,10 @@ async def get_import_template(
                 detail=f"未找到模板类型: {template_type}",
             )
 
-        return create_response(
-            data=template, message=f"成功获取{template_type}导入模板"
-        )
+        return create_response(data=template, message=f"成功获取{template_type}导入模板")
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Get import template error: {str(e)}")
-        return create_error_response(
-            message="获取导入模板失败", details={"error": str(e)}
-        )
+        return create_error_response(message="获取导入模板失败", details={"error": str(e)})

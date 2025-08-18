@@ -7,22 +7,9 @@ from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    Date,
-    DateTime,
-)
+from sqlalchemy import Boolean, Column, Date, DateTime
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy import (
-    Float,
-    ForeignKey,
-    Index,
-    Integer,
-    String,
-    Text,
-    UniqueConstraint,
-)
+from sqlalchemy import Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, relationship
 
 from app.models.base import BaseModel
@@ -227,17 +214,11 @@ class MonthlyAttendanceSummary(BaseModel):
     month = Column(Integer, nullable=False, comment="Month (1-12)")
 
     # Core work hour categories (按agents_updated.md六、工时字段定义)
-    repair_task_hours = Column(
-        Float, default=0.0, comment="本月报修任务累计时长（小时）"
-    )
+    repair_task_hours = Column(Float, default=0.0, comment="本月报修任务累计时长（小时）")
 
-    monitoring_hours = Column(
-        Float, default=0.0, comment="本月监控任务累计时长（小时）"
-    )
+    monitoring_hours = Column(Float, default=0.0, comment="本月监控任务累计时长（小时）")
 
-    assistance_hours = Column(
-        Float, default=0.0, comment="本月协助任务累计时长（小时）"
-    )
+    assistance_hours = Column(Float, default=0.0, comment="本月协助任务累计时长（小时）")
 
     carried_hours = Column(Float, default=0.0, comment="上月结转的剩余时长（小时）")
 
@@ -246,36 +227,22 @@ class MonthlyAttendanceSummary(BaseModel):
     remaining_hours = Column(Float, default=0.0, comment="扣除后可结转至下月的剩余工时")
 
     # 详细分类统计（用于分析和展示）
-    online_repair_hours = Column(
-        Float, default=0.0, comment="线上报修任务时长（40分钟/单）"
-    )
+    online_repair_hours = Column(Float, default=0.0, comment="线上报修任务时长（40分钟/单）")
 
-    offline_repair_hours = Column(
-        Float, default=0.0, comment="线下报修任务时长（100分钟/单）"
-    )
+    offline_repair_hours = Column(Float, default=0.0, comment="线下报修任务时长（100分钟/单）")
 
-    rush_task_hours = Column(
-        Float, default=0.0, comment="爆单任务额外时长（15分钟/单）"
-    )
+    rush_task_hours = Column(Float, default=0.0, comment="爆单任务额外时长（15分钟/单）")
 
-    positive_review_hours = Column(
-        Float, default=0.0, comment="非默认好评额外时长（30分钟/单）"
-    )
+    positive_review_hours = Column(Float, default=0.0, comment="非默认好评额外时长（30分钟/单）")
 
     # 惩罚扣时统计
     penalty_hours = Column(Float, default=0.0, comment="异常扣时总计（小时）")
 
-    late_response_penalty_hours = Column(
-        Float, default=0.0, comment="超时响应扣时（30分钟/单/人）"
-    )
+    late_response_penalty_hours = Column(Float, default=0.0, comment="超时响应扣时（30分钟/单/人）")
 
-    late_completion_penalty_hours = Column(
-        Float, default=0.0, comment="超时处理扣时（30分钟/人）"
-    )
+    late_completion_penalty_hours = Column(Float, default=0.0, comment="超时处理扣时（30分钟/人）")
 
-    negative_review_penalty_hours = Column(
-        Float, default=0.0, comment="差评扣时（60分钟/单/人）"
-    )
+    negative_review_penalty_hours = Column(Float, default=0.0, comment="差评扣时（60分钟/单/人）")
 
     # Attendance statistics
     total_work_days = Column(Integer, default=0, comment="Total work days in the month")

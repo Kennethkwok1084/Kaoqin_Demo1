@@ -10,23 +10,23 @@ import sys
 if os.getenv("CI") or os.getenv("GITHUB_ACTIONS"):
     # CI环境：使用本地PostgreSQL服务
     if "DATABASE_URL" not in os.environ:
-        os.environ["DATABASE_URL"] = (
-            "postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence"
-        )
+        os.environ[
+            "DATABASE_URL"
+        ] = "postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence"
     if "DATABASE_URL_SYNC" not in os.environ:
-        os.environ["DATABASE_URL_SYNC"] = (
-            "postgresql://postgres:postgres@localhost:5432/test_attendence"
-        )
+        os.environ[
+            "DATABASE_URL_SYNC"
+        ] = "postgresql://postgres:postgres@localhost:5432/test_attendence"
 else:
     # 本地开发环境：使用外部数据库
     if "DATABASE_URL" not in os.environ:
-        os.environ["DATABASE_URL"] = (
-            "postgresql+asyncpg://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev"
-        )
+        os.environ[
+            "DATABASE_URL"
+        ] = "postgresql+asyncpg://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev"
     if "DATABASE_URL_SYNC" not in os.environ:
-        os.environ["DATABASE_URL_SYNC"] = (
-            "postgresql://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev"
-        )
+        os.environ[
+            "DATABASE_URL_SYNC"
+        ] = "postgresql://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev"
 
 os.environ["TESTING"] = "true"
 

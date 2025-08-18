@@ -4,12 +4,12 @@
 
 ### GitHub Actions版本升级
 - ✅ `actions/upload-artifact` v3 → v4 (修复弃用警告)
-- ✅ `actions/setup-python` v4 → v5 
+- ✅ `actions/setup-python` v4 → v5
 - ✅ `actions/cache` v3 → v4
 - ✅ `codecov/codecov-action` v3 → v4 (添加token支持)
 - ✅ `docker/build-push-action` v5 → v6
 
-### 前端测试改进  
+### 前端测试改进
 - ✅ 移除pnpm依赖，使用npm (更标准)
 - ✅ 添加Playwright依赖安装
 - ✅ 改进Node.js缓存配置
@@ -39,7 +39,7 @@
 ### 2. 前端测试 (frontend-test)
 - Node.js 18
 - ESLint & TypeScript检查
-- 单元测试 & 组件测试  
+- 单元测试 & 组件测试
 - Playwright E2E测试
 - 构建验证
 
@@ -78,7 +78,7 @@
 
 ### Secrets
 - `DOCKER_USERNAME`: Docker Hub用户名
-- `DOCKER_PASSWORD`: Docker Hub密码  
+- `DOCKER_PASSWORD`: Docker Hub密码
 - `CODECOV_TOKEN`: Codecov上传token
 
 ### 环境变量
@@ -93,7 +93,7 @@
    ```bash
    # 后端
    cd backend && pytest
-   
+
    # 前端
    cd frontend && npm test
    ```

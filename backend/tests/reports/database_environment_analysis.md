@@ -20,13 +20,13 @@
 ```python
 # 项目中使用的ENUM字段
 - UserRole (ADMIN, GROUP_LEADER, MEMBER, GUEST)
-- TaskStatus (PENDING, IN_PROGRESS, COMPLETED, CANCELLED)  
+- TaskStatus (PENDING, IN_PROGRESS, COMPLETED, CANCELLED)
 - TaskPriority (LOW, MEDIUM, HIGH, URGENT)
 - AttendanceExceptionStatus (PENDING, APPROVED, REJECTED)
 ```
 **风险**: SQLite将ENUM作为文本处理，无法验证枚举值的有效性
 
-#### 2. **并发事务测试失效** 🔴  
+#### 2. **并发事务测试失效** 🔴
 ```python
 # 无法有效测试的并发场景
 - 多用户同时修改同一任务
@@ -39,7 +39,7 @@
 ```sql
 -- PostgreSQL支持但SQLite简化的约束
 - CHECK约束的复杂逻辑
-- 外键约束的级联操作  
+- 外键约束的级联操作
 - UNIQUE约束的NULL处理差异
 - 触发器和存储过程
 ```
@@ -55,7 +55,7 @@ member = Member(role="INVALID_ROLE")  # 应该抛出错误但SQLite不会
 #### 📍 **场景2：并发数据竞争**
 ```python
 # 两个用户同时修改任务状态，SQLite无法测试真实的并发冲突
-task1.status = "COMPLETED"  
+task1.status = "COMPLETED"
 task2.status = "IN_PROGRESS" # 可能产生数据不一致
 ```
 
@@ -91,14 +91,14 @@ services:
 
 ### 3. **分层测试策略** ⭐⭐
 - **单元测试**: 使用SQLite (快速)
-- **集成测试**: 使用PostgreSQL (真实)  
+- **集成测试**: 使用PostgreSQL (真实)
 - **E2E测试**: 使用PostgreSQL (完整)
 
 ## 📈 **测试覆盖率评估**
 
 ### 当前测试无法覆盖的关键功能：
 1. ❌ **数据库约束验证**
-2. ❌ **并发事务处理** 
+2. ❌ **并发事务处理**
 3. ❌ **复杂查询性能**
 4. ❌ **ENUM值有效性**
 5. ❌ **时区相关计算**
@@ -106,7 +106,7 @@ services:
 
 ### 建议优先级：
 1. 🔴 **立即修复**: 恢复PostgreSQL测试环境
-2. 🟡 **短期优化**: 增加并发测试用例  
+2. 🟡 **短期优化**: 增加并发测试用例
 3. 🟢 **长期改进**: 完善性能测试
 
 ## ⚠️ **结论**

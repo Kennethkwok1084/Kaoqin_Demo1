@@ -8,11 +8,7 @@ from typing import Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import (
-    create_response,
-    get_current_active_admin,
-    get_db,
-)
+from app.api.deps import create_response, get_current_active_admin, get_db
 from app.core.security import get_password_hash
 from app.models.member import Member, UserRole
 from app.schemas.member import MemberImportRequest

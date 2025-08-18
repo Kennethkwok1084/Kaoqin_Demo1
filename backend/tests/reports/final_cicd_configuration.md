@@ -33,7 +33,7 @@ DATABASE_URL_SYNC=postgresql://kwok:Onjuju1084@8.138.233.54:38223/attendence_dev
 
 ### ✅ **已解决的问题**
 1. **编码错误** - 移除所有emoji字符，支持Windows环境
-2. **测试发现** - 修复AsyncTestClient导入问题 
+2. **测试发现** - 修复AsyncTestClient导入问题
 3. **数据模型** - 修复测试数据与实际模型不匹配
 4. **配置管理** - 支持环境变量动态切换
 
@@ -140,7 +140,7 @@ export DATABASE_URL="postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:38223/att
 python -m pytest tests/integration/
 
 # 使用本地SQLite (安全)
-export DATABASE_URL="sqlite+aiosqlite:///:memory:"  
+export DATABASE_URL="sqlite+aiosqlite:///:memory:"
 python -m pytest tests/integration/
 ```
 
@@ -153,7 +153,7 @@ python -m pytest tests/integration/
 ## ⚠️ **重要注意事项**
 
 1. **数据安全**: 生产数据库测试有数据污染风险
-2. **网络依赖**: CI/CD成功率依赖生产数据库可用性  
+2. **网络依赖**: CI/CD成功率依赖生产数据库可用性
 3. **成本考虑**: 频繁访问生产数据库可能产生费用
 4. **性能影响**: 测试负载可能影响生产数据库性能
 

@@ -61,7 +61,6 @@ class TestImportAPISimple:
     @pytest.mark.asyncio
     async def test_get_field_mapping_invalid_table_type(self):
         """Test field mapping endpoint - invalid table type raises HTTPException."""
-        from fastapi import HTTPException
 
         # Mock dependencies
         mock_db = AsyncMock()

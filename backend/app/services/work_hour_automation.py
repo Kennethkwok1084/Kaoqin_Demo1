@@ -12,12 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
 from app.core.config import settings
-from app.models.task import (
-    RepairTask,
-    TaskStatus,
-    TaskTag,
-    task_tag_association,
-)
+from app.models.task import RepairTask, TaskStatus, TaskTag, task_tag_association
 from app.services.task_service import TaskService
 
 logger = logging.getLogger(__name__)
@@ -425,7 +420,6 @@ class WorkHourAutomationService:
             and task.report_time
             and not any(tag.name == "延迟响应" for tag in task.tags)
         ):
-
             response_hours = (
                 task.response_time - task.report_time
             ).total_seconds() / 3600
@@ -440,7 +434,6 @@ class WorkHourAutomationService:
             and task.response_time
             and not any(tag.name == "延迟完成" for tag in task.tags)
         ):
-
             completion_hours = (
                 task.completion_time - task.response_time
             ).total_seconds() / 3600

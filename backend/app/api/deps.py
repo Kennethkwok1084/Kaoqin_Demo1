@@ -7,8 +7,6 @@ and pagination.
 import logging
 from typing import Any, AsyncGenerator, Dict, Generator, List, Optional, Union
 
-logger = logging.getLogger(__name__)
-
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,6 +16,8 @@ from app.core.config import settings
 from app.core.database import get_async_session, get_sync_session
 from app.core.security import verify_token
 from app.models.member import Member
+
+logger = logging.getLogger(__name__)
 
 # Security scheme
 security = HTTPBearer()

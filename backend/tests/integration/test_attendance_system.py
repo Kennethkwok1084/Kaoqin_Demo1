@@ -7,9 +7,7 @@ from datetime import date, datetime, timedelta
 
 import pytest
 
-from app.models.attendance import (
-    AttendanceExceptionStatus,
-)
+from app.models.attendance import AttendanceExceptionStatus
 
 
 class TestAttendanceCheckinCheckout:
@@ -34,10 +32,7 @@ class TestAttendanceCheckinCheckout:
 
         # 验证签到响应
         assert data["success"] is True
-        assert (
-            "签到成功" in data["message"]
-            or "checked in successfully" in data["message"]
-        )
+        assert "签到成功" in data["message"] or "checked in successfully" in data["message"]
         assert "record_id" in data
         assert "checkin_time" in data
         assert data["location"] == "办公室"
@@ -92,9 +87,7 @@ class TestAttendanceCheckinCheckout:
 
         if response2.status_code == 400:
             data = response2.json()
-            assert (
-                "已签到" in data["message"] or "already checked in" in data["message"]
-            )
+            assert "已签到" in data["message"] or "already checked in" in data["message"]
 
     def test_checkout_success(self, client, auth_headers_member):
         """测试成功签退"""
@@ -125,8 +118,7 @@ class TestAttendanceCheckinCheckout:
         # 验证签退响应
         assert data["success"] is True
         assert (
-            "签退成功" in data["message"]
-            or "checked out successfully" in data["message"]
+            "签退成功" in data["message"] or "checked out successfully" in data["message"]
         )
         assert "checkout_time" in data
         assert "work_hours" in data
@@ -436,9 +428,9 @@ class TestAttendanceExceptions:
         for i in range(3):
             exception = AttendanceException(
                 member_id=test_member_user.id,
-                exception_type=f"异常类型{i+1}",
+                exception_type=f"异常类型{i + 1}",
                 exception_date=date.today() - timedelta(days=i),
-                reason=f"异常原因{i+1}",
+                reason=f"异常原因{i + 1}",
                 status=AttendanceExceptionStatus.PENDING,
                 applied_at=datetime.utcnow(),
             )

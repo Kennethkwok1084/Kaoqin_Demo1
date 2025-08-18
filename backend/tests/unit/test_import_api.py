@@ -188,9 +188,7 @@ class TestImportAPI:
         online_offline = mapping_rules["在线/线下判断"]
         assert "处理方式" in online_offline["logic"]
         assert ["远程处理", "在线处理"] == online_offline["online_keywords"]
-        assert ["现场处理", "现场维修", "上门服务"] == online_offline[
-            "offline_keywords"
-        ]
+        assert ["现场处理", "现场维修", "上门服务"] == online_offline["offline_keywords"]
 
     @pytest.mark.asyncio
     async def test_get_field_mapping_import_examples(self):

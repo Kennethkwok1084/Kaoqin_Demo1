@@ -26,7 +26,7 @@ authApi.login({
 // 后端期望
 POST /api/v1/auth/login
 {
-  "username": "string",              // 后端字段  
+  "username": "string",              // 后端字段
   "password": "string"
 }
 ```
@@ -41,7 +41,7 @@ POST /api/v1/auth/login
   reporter_phone: '13800138001'      // 前端字段
 }
 
-// 后端期望  
+// 后端期望
 {
   task_type: 'REPAIR',               // 大小写不匹配
   priority: 'HIGH',                 // 大小写不匹配
@@ -54,7 +54,7 @@ POST /api/v1/auth/login
 // 前端期望的统一响应格式
 interface ApiResponse<T> {
   code: number
-  message: string  
+  message: string
   data: T
 }
 
@@ -71,7 +71,7 @@ interface ApiResponse<T> {
 // 前端定义
 enum TaskStatus {
   PENDING = 'pending',
-  IN_PROGRESS = 'in_progress', 
+  IN_PROGRESS = 'in_progress',
   COMPLETED = 'completed'
 }
 
@@ -106,7 +106,7 @@ class TaskStatus(enum.Enum):
 // 后端某些API期望
 {
   offset: 0,
-  limit: 20  
+  limit: 20
 }
 ```
 
@@ -161,7 +161,7 @@ interface Member {
   role: string
 }
 
-// 后端 models/member.py  
+// 后端 models/member.py
 class Member:
     username: str          # 后端有，前端没有
     name: str
@@ -192,11 +192,11 @@ interface ApiStandard {
   task_type: string
 }
 
-// 2. 统一枚举值格式  
+// 2. 统一枚举值格式
 enum TaskStatus {
   PENDING = 'PENDING'      // 与后端保持一致
   IN_PROGRESS = 'IN_PROGRESS'
-  COMPLETED = 'COMPLETED'  
+  COMPLETED = 'COMPLETED'
 }
 
 // 3. 统一响应格式
@@ -233,7 +233,7 @@ describe('API Contract Tests', () => {
   test('登录API字段匹配', () => {
     // 验证前后端字段一致性
   })
-  
+
   test('响应格式统一性', () => {
     // 验证所有API返回格式一致
   })
@@ -244,7 +244,7 @@ describe('E2E Business Flows', () => {
   test('完整任务管理流程', () => {
     // 创建→分配→执行→完成→统计
   })
-  
+
   test('多角色权限验证', () => {
     // 管理员→组长→成员权限验证
   })

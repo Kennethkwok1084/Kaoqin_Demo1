@@ -14,7 +14,7 @@
 # 部署到开发环境
 ./scripts/deploy.sh development
 
-# 部署到生产环境  
+# 部署到生产环境
 ./scripts/deploy.sh production latest
 
 # 查看帮助
@@ -106,7 +106,7 @@ jobs:
 ### 开发环境
 确保以下服务正在运行：
 - PostgreSQL (端口 5432)
-- Redis (端口 6379) 
+- Redis (端口 6379)
 - 后端API (端口 8000)
 - 前端 (端口 80)
 
@@ -136,7 +136,7 @@ jobs:
 ## 常见问题
 
 ### Q: 测试失败如何排查？
-A: 
+A:
 1. 检查服务是否正常启动: `docker-compose ps`
 2. 查看服务日志: `docker-compose logs [service_name]`
 3. 检查网络连接: `curl http://localhost:8000/health`

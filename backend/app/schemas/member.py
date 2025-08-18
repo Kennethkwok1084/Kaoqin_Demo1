@@ -5,7 +5,7 @@
 
 import re
 from datetime import date, datetime
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -23,9 +23,7 @@ class MemberBase(BaseModel):
     phone: Optional[str] = Field(None, max_length=11, description="手机号")
     department: str = Field(default="信息化建设处", max_length=100, description="部门")
     class_name: str = Field(..., min_length=1, max_length=50, description="班级")
-    join_date: Optional[date] = Field(
-        default_factory=date.today, description="入职日期"
-    )
+    join_date: Optional[date] = Field(default_factory=date.today, description="入职日期")
     role: UserRole = Field(default=UserRole.MEMBER, description="用户角色")
     is_active: bool = Field(default=True, description="在职状态")
     profile_completed: bool = Field(default=False, description="是否已完善个人信息")
@@ -94,9 +92,7 @@ class MemberUpdate(BaseModel):
     username: Optional[str] = Field(
         None, min_length=3, max_length=50, description="登录用户名"
     )
-    name: Optional[str] = Field(
-        None, min_length=1, max_length=50, description="真实姓名"
-    )
+    name: Optional[str] = Field(None, min_length=1, max_length=50, description="真实姓名")
     phone: Optional[str] = Field(None, max_length=11, description="手机号")
     department: Optional[str] = Field(None, max_length=100, description="部门")
     class_name: Optional[str] = Field(
@@ -232,9 +228,7 @@ class MemberListResponse(BaseModel):
 class MemberImportItem(BaseModel):
     """批量导入单个成员Schema"""
 
-    username: Optional[str] = Field(
-        default=None, description="用户名（可选，自动生成）"
-    )
+    username: Optional[str] = Field(default=None, description="用户名（可选，自动生成）")
     name: str = Field(..., description="真实姓名")
     student_id: Optional[str] = Field(default=None, description="学号/员工号（可选）")
     phone: Optional[str] = Field(default=None, description="手机号")
@@ -244,7 +238,7 @@ class MemberImportItem(BaseModel):
 
     @field_validator("student_id", mode="before")
     @classmethod
-    def validate_student_id(cls, v) -> Optional[str]:
+    def validate_student_id(cls, v: Any) -> Optional[str]:
         """验证学号格式"""
         if v is None or v == "" or v == "null" or v == "undefined":
             return None
@@ -254,7 +248,7 @@ class MemberImportItem(BaseModel):
 
     @field_validator("phone", mode="before")
     @classmethod
-    def validate_phone(cls, v) -> Optional[str]:
+    def validate_phone(cls, v: Any) -> Optional[str]:
         """验证手机号格式"""
         if v is None or v == "" or v == "null" or v == "undefined":
             return None
@@ -265,7 +259,7 @@ class MemberImportItem(BaseModel):
 
     @field_validator("name", mode="before")
     @classmethod
-    def validate_name(cls, v) -> str:
+    def validate_name(cls, v: Any) -> str:
         """验证姓名格式"""
         if not v or not str(v).strip():
             raise ValueError("姓名不能为空")
@@ -276,7 +270,7 @@ class MemberImportItem(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def clean_empty_fields(cls, values):
+    def clean_empty_fields(cls, values: Any) -> Any:
         """清理空字段"""
         cleaned = {}
         for key, value in values.items():

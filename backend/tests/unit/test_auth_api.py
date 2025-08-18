@@ -65,7 +65,6 @@ class TestAuthAPI:
             ),
             patch("app.api.v1.auth.rate_limiter") as mock_rate_limiter,
         ):
-
             mock_rate_limiter.check_rate_limit = AsyncMock()
 
             login_data = LoginRequest(student_id="TEST001", password="test_password")
@@ -131,7 +130,6 @@ class TestAuthAPI:
             patch("app.api.v1.auth.verify_password", return_value=False),
             patch("app.api.v1.auth.rate_limiter") as mock_rate_limiter,
         ):
-
             mock_rate_limiter.check_rate_limit = AsyncMock()
 
             login_data = LoginRequest(student_id="TEST001", password="wrong_password")
@@ -166,7 +164,6 @@ class TestAuthAPI:
             patch("app.api.v1.auth.verify_password", return_value=True),
             patch("app.api.v1.auth.rate_limiter") as mock_rate_limiter,
         ):
-
             mock_rate_limiter.check_rate_limit = AsyncMock()
 
             login_data = LoginRequest(student_id="TEST001", password="test_password")
@@ -200,7 +197,6 @@ class TestAuthAPI:
                 "app.api.v1.auth.create_refresh_token", return_value="new_refresh_token"
             ),
         ):
-
             refresh_data = RefreshTokenRequest(refresh_token="valid_refresh_token")
 
             result = await refresh_token(refresh_data=refresh_data, db=mock_db)
@@ -221,7 +217,6 @@ class TestAuthAPI:
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
             ),
         ):
-
             refresh_data = RefreshTokenRequest(refresh_token="invalid_token")
 
             with pytest.raises(HTTPException) as exc_info:
@@ -247,7 +242,6 @@ class TestAuthAPI:
             patch("app.api.v1.auth.validate_password_strength", return_value=True),
             patch("app.api.v1.auth.get_password_hash", return_value="$2b$12$new_hash"),
         ):
-
             password_data = ChangePasswordRequest(
                 current_password="old_password", new_password="new_strong_password"
             )
@@ -273,7 +267,6 @@ class TestAuthAPI:
         )
 
         with patch("app.api.v1.auth.verify_password", return_value=False):
-
             password_data = ChangePasswordRequest(
                 current_password="wrong_password", new_password="new_strong_password"
             )

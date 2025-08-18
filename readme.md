@@ -500,7 +500,6 @@ pg_dump -h localhost -U kwok -d attendence > "$BACKUP_DIR/attendence_$DATE.sql"
 
 ---
 
-**最后更新**：2025-01-21  
-**版本**：v2.0.0  
+**最后更新**：2025-01-21
+**版本**：v2.0.0
 **文档版本**：v2.0.0
-

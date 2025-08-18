@@ -25,9 +25,7 @@ router = APIRouter()
 
 @router.get("/records", response_model=List[Dict[str, Any]], summary="获取工时记录")
 async def get_work_hours_records(
-    member_id: Optional[int] = Query(
-        None, description="成员ID（管理员可查看其他人记录）"
-    ),
+    member_id: Optional[int] = Query(None, description="成员ID（管理员可查看其他人记录）"),
     date_from: Optional[date] = Query(None, description="开始日期"),
     date_to: Optional[date] = Query(None, description="结束日期"),
     page: int = Query(1, ge=1, description="页码"),
@@ -43,7 +41,7 @@ async def get_work_hours_records(
     - 管理员可查看所有人的记录
     """
     try:
-        from sqlalchemy import and_, select
+        from sqlalchemy import select
 
         from app.models.member import Member
         from app.models.task import RepairTask
@@ -126,14 +124,10 @@ async def get_work_hours_records(
         )
 
 
-@router.get(
-    "/summary/{month}", response_model=Dict[str, Any], summary="获取月度工时汇总"
-)
+@router.get("/summary/{month}", response_model=Dict[str, Any], summary="获取月度工时汇总")
 async def get_monthly_work_hours_summary(
     month: str = Path(..., description="月份，格式：YYYY-MM"),
-    member_id: Optional[int] = Query(
-        None, description="成员ID（管理员可查看其他人汇总）"
-    ),
+    member_id: Optional[int] = Query(None, description="成员ID（管理员可查看其他人汇总）"),
     current_user: Member = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
@@ -181,9 +175,7 @@ async def get_monthly_work_hours_summary(
         member = member_result.scalar_one_or_none()
 
         if not member:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在")
 
         # 统计维修任务工时
         repair_query = select(
@@ -302,12 +294,8 @@ async def get_monthly_work_hours_summary(
         )
 
 
-@router.get(
-    "/today-summary", response_model=Dict[str, Any], summary="获取今日工时统计概览"
-)
-@router.get(
-    "/today", response_model=Dict[str, Any], summary="获取今日工时统计概览（别名）"
-)
+@router.get("/today-summary", response_model=Dict[str, Any], summary="获取今日工时统计概览")
+@router.get("/today", response_model=Dict[str, Any], summary="获取今日工时统计概览（别名）")
 async def get_today_work_hours_summary(
     current_user: Member = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ) -> Dict[str, Any]:
@@ -431,7 +419,7 @@ async def export_work_hours_data(
         from datetime import datetime as dt
 
         import pandas as pd
-        from sqlalchemy import and_, select
+        from sqlalchemy import select
 
         from app.models.member import Member
         from app.models.task import RepairTask
@@ -613,9 +601,7 @@ async def get_work_hours_stats(
         member = member_result.scalar_one_or_none()
 
         if not member:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在")
 
         # 统计数据已在上面处理完成
 
@@ -667,7 +653,7 @@ async def get_work_hours_chart_data(
     try:
         pass
 
-        from sqlalchemy import String, func, select, text
+        from sqlalchemy import String, func, select
 
         from app.models.task import RepairTask
 

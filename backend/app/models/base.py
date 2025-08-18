@@ -4,9 +4,9 @@ Provides common fields and functionality for all models.
 """
 
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from sqlalchemy import Column, DateTime, Integer
+from sqlalchemy import DateTime, Integer
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func

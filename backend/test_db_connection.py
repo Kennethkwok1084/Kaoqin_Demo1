@@ -111,9 +111,9 @@ async def test_table_creation():
             # 检查表是否存在
             result = await conn.execute(
                 """
-                SELECT table_name 
-                FROM information_schema.tables 
-                WHERE table_schema = 'public' 
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_schema = 'public'
                 AND table_type = 'BASE TABLE'
             """
             )

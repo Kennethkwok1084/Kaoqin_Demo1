@@ -211,9 +211,9 @@ class StatisticsService:
         # 查询数据库
         member_query = select(
             func.count(Member.id).label("total_count"),
-            func.count(case((Member.is_active == True, 1))).label("active_count"),  # type: ignore[arg-type]
-            func.count(case((Member.role == UserRole.ADMIN, 1))).label("admin_count"),  # type: ignore[arg-type]
-            func.count(case((Member.role == UserRole.MEMBER, 1))).label("member_count"),  # type: ignore[arg-type]
+            func.count(case((Member.is_active.is_(True), 1))).label("active_count"),
+            func.count(case((Member.role == UserRole.ADMIN, 1))).label("admin_count"),
+            func.count(case((Member.role == UserRole.MEMBER, 1))).label("member_count"),
         )
 
         result = await self.db.execute(member_query)
@@ -254,21 +254,21 @@ class StatisticsService:
         # 查询维修任务统计
         repair_query = select(
             func.count(RepairTask.id).label("total_count"),
-            func.count(case((RepairTask.status == TaskStatus.COMPLETED, 1))).label(  # type: ignore[arg-type]
+            func.count(case((RepairTask.status == TaskStatus.COMPLETED, 1))).label(
                 "completed_count"
             ),
-            func.count(case((RepairTask.status == TaskStatus.PENDING, 1))).label(  # type: ignore[arg-type]
+            func.count(case((RepairTask.status == TaskStatus.PENDING, 1))).label(
                 "pending_count"
             ),
-            func.count(case((RepairTask.status == TaskStatus.IN_PROGRESS, 1))).label(  # type: ignore[arg-type]
-                "in_progress_count"
-            ),
-            func.count(case((RepairTask.task_type == TaskType.ONLINE, 1))).label(  # type: ignore[arg-type]
-                "online_count"
-            ),
-            func.count(case((RepairTask.task_type == TaskType.OFFLINE, 1))).label(  # type: ignore[arg-type]
-                "offline_count"
-            ),
+            func.count(
+                case((RepairTask.status == TaskStatus.IN_PROGRESS, 1), else_=None)
+            ).label("in_progress_count"),
+            func.count(
+                case((RepairTask.task_type == TaskType.ONLINE, 1), else_=None)
+            ).label("online_count"),
+            func.count(
+                case((RepairTask.task_type == TaskType.OFFLINE, 1), else_=None)
+            ).label("offline_count"),
             func.sum(RepairTask.work_minutes).label("total_minutes"),
             func.avg(RepairTask.rating).label("avg_rating"),
         ).where(
@@ -380,8 +380,8 @@ class StatisticsService:
                 func.count(RepairTask.id).label("repair_count"),
             )
             .select_from(
-                RepairTask.__table__.outerjoin(MonitoringTask.__table__).outerjoin(  # type: ignore[attr-defined]
-                    AssistanceTask.__table__  # type: ignore[attr-defined]
+                RepairTask.__table__.outerjoin(MonitoringTask.__table__).outerjoin(
+                    AssistanceTask.__table__
                 )
             )
             .where(
@@ -455,9 +455,15 @@ class StatisticsService:
         # 查询绩效统计
         performance_query = select(
             func.avg(RepairTask.rating).label("overall_rating"),
-            func.count(case((RepairTask.rating >= 4, 1))).label("good_rating_count"),  # type: ignore[arg-type]
-            func.count(case((RepairTask.rating <= 2, 1))).label("poor_rating_count"),  # type: ignore[arg-type]
-            func.count(case((RepairTask.rating.isnot(None), 1))).label("rated_count"),  # type: ignore[arg-type]
+            func.count(case((RepairTask.rating >= 4, 1), else_=None)).label(
+                "good_rating_count"
+            ),
+            func.count(case((RepairTask.rating <= 2, 1), else_=None)).label(
+                "poor_rating_count"
+            ),
+            func.count(case((RepairTask.rating.isnot(None), 1), else_=None)).label(
+                "rated_count"
+            ),
             func.count(RepairTask.id).label("total_tasks"),
         ).where(
             and_(RepairTask.report_time >= date_from, RepairTask.report_time <= date_to)
@@ -514,18 +520,18 @@ class StatisticsService:
             # 查询考勤统计
             attendance_query = select(
                 func.count(AttendanceRecord.id).label("total_records"),
-                func.count(case((AttendanceRecord.checkin_time.isnot(None), 1))).label(  # type: ignore[arg-type]
-                    "checkin_count"
-                ),
-                func.count(case((AttendanceRecord.checkout_time.isnot(None), 1))).label(  # type: ignore[arg-type]
-                    "checkout_count"
-                ),
-                func.count(case((AttendanceRecord.is_late_checkin == True, 1))).label(  # type: ignore[arg-type]
-                    "late_count"
-                ),
-                func.count(case((AttendanceRecord.is_early_checkout == True, 1))).label(  # type: ignore[arg-type]
-                    "early_count"
-                ),
+                func.count(
+                    case((AttendanceRecord.checkin_time.isnot(None), 1), else_=None)
+                ).label("checkin_count"),
+                func.count(
+                    case((AttendanceRecord.checkout_time.isnot(None), 1), else_=None)
+                ).label("checkout_count"),
+                func.count(
+                    case((AttendanceRecord.is_late_checkin.is_(True), 1), else_=None)
+                ).label("late_count"),
+                func.count(
+                    case((AttendanceRecord.is_early_checkout.is_(True), 1), else_=None)
+                ).label("early_count"),
                 func.avg(AttendanceRecord.work_hours).label("avg_work_hours"),
                 func.sum(AttendanceRecord.work_hours).label("total_work_hours"),
             ).where(

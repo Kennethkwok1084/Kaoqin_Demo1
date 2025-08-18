@@ -91,7 +91,7 @@ op.execute("""
    # 在本地测试迁移
    cd backend
    alembic upgrade head
-   
+
    # 测试降级
    alembic downgrade -1
    alembic upgrade head
@@ -139,6 +139,6 @@ op.execute("""
 
 ---
 
-**报告生成时间：** 2025-01-18  
-**修复状态：** 已实施并推送  
+**报告生成时间：** 2025-01-18
+**修复状态：** 已实施并推送
 **验证状态：** 等待 CI/CD 执行结果

@@ -45,7 +45,7 @@ class TestAPIPerformance:
         ), f"API took {benchmark_result['mean']:.3f}s, should be < 0.5s"
 
         print("\n📊 Tasks List API Performance:")
-        print(f"   Mean time: {benchmark_result['mean']*1000:.1f}ms")
+        print(f"   Mean time: {benchmark_result['mean'] * 1000:.1f}ms")
         print(f"   Status: {response.status_code}")
 
     @pytest.mark.asyncio
@@ -78,7 +78,7 @@ class TestAPIPerformance:
         ), f"API took {benchmark_result['mean']:.3f}s, should be < 0.2s"
 
         print("\n📊 Work Time Detail API Performance:")
-        print(f"   Mean time: {benchmark_result['mean']*1000:.1f}ms")
+        print(f"   Mean time: {benchmark_result['mean'] * 1000:.1f}ms")
         print(f"   Status: {response.status_code}")
 
     @pytest.mark.asyncio
@@ -107,7 +107,7 @@ class TestAPIPerformance:
         ), f"API took {benchmark_result['mean']:.3f}s, should be < 0.1s"
 
         print("\n📊 Field Mapping API Performance:")
-        print(f"   Mean time: {benchmark_result['mean']*1000:.1f}ms")
+        print(f"   Mean time: {benchmark_result['mean'] * 1000:.1f}ms")
         print(f"   Status: {response.status_code}")
 
     @pytest.mark.asyncio

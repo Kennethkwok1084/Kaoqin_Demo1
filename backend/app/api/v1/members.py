@@ -6,7 +6,7 @@
 import logging
 import time
 from datetime import date
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
@@ -134,9 +134,7 @@ async def get_member(
         member = result.scalar_one_or_none()
 
         if not member:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在")
 
         # 权限检查：管理员和组长可查看所有，普通用户只能查看自己
         if not current_user.can_manage_group and current_user.id != member_id:
@@ -238,9 +236,7 @@ async def update_member(
         member = result.scalar_one_or_none()
 
         if not member:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在")
 
         # 权限检查
         can_update_all = current_user.can_manage_group
@@ -308,9 +304,7 @@ async def delete_member(
         member = result.scalar_one_or_none()
 
         if not member:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在")
 
         # 不能删除自己
         if member.id == current_user.id:
@@ -365,7 +359,7 @@ async def import_members(
             # 生成用户名（如果没有提供）
             username = member_item.username
             if not username:
-                username = f"user_{timestamp}_{index+1:03d}"
+                username = f"user_{timestamp}_{index + 1:03d}"
 
             # 检查重复（只有在有值的情况下才检查）
             duplicate_conditions = []
@@ -393,7 +387,7 @@ async def import_members(
                         "用户名" if existing_member.username == username else "学号"
                     )
                     errors.append(
-                        f"第{index+1}行: {duplicate_field}已存在 - {member_item.name}"
+                        f"第{index + 1}行: {duplicate_field}已存在 - {member_item.name}"
                     )
                     continue
 
@@ -428,7 +422,7 @@ async def import_members(
                 )
             except Exception as create_error:
                 failed_imports += 1
-                errors.append(f"第{index+1}行: 数据创建失败 - {str(create_error)}")
+                errors.append(f"第{index + 1}行: 数据创建失败 - {str(create_error)}")
                 logger.error(f"创建成员对象失败: {str(create_error)}")
                 continue
 
@@ -440,9 +434,9 @@ async def import_members(
 
         except Exception as e:
             failed_imports += 1
-            error_msg = f"第{index+1}行: {str(e)}"
+            error_msg = f"第{index + 1}行: {str(e)}"
             errors.append(error_msg)
-            logger.error(f"导入第{index+1}行失败: {str(e)}")
+            logger.error(f"导入第{index + 1}行失败: {str(e)}")
 
     # 提交事务
     if successful_imports > 0:
@@ -491,9 +485,7 @@ async def change_password(
         member = result.scalar_one_or_none()
 
         if not member:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在")
 
         # 权限检查
         if current_user.id != member_id and not current_user.is_admin:
@@ -514,9 +506,7 @@ async def change_password(
 
         logger.info(f"密码修改成功: {member.username} by {current_user.username}")
 
-        return create_response(
-            data={"updated_member_id": member_id}, message="密码修改成功"
-        )
+        return create_response(data={"updated_member_id": member_id}, message="密码修改成功")
 
     except HTTPException:
         raise

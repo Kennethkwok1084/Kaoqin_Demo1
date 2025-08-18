@@ -27,7 +27,7 @@
 username = Column(String(50), unique=True, nullable=False)
 student_id = Column(String(20), unique=True, nullable=True)
 
-# 修复后  
+# 修复后
 username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
 student_id: Mapped[Optional[str]] = mapped_column(String(20), unique=True, nullable=True)
 ```

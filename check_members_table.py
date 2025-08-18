@@ -45,7 +45,7 @@ async def check_table_structure():
                     text(
                         """
                     SELECT column_name, data_type, is_nullable, column_default
-                    FROM information_schema.columns 
+                    FROM information_schema.columns
                     WHERE table_name = 'members'
                     ORDER BY ordinal_position
                 """
@@ -68,8 +68,8 @@ async def check_table_structure():
                 result = await conn.execute(
                     text(
                         """
-                    SELECT indexname, indexdef 
-                    FROM pg_indexes 
+                    SELECT indexname, indexdef
+                    FROM pg_indexes
                     WHERE tablename = 'members'
                 """
                     )

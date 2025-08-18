@@ -306,13 +306,13 @@ pytest tests/integration/ --pdb
 ```python
 class TestFeatureName:
     """测试功能名称"""
-    
+
     def test_action_success(self):
         """测试成功的操作"""
-        
+
     def test_action_with_invalid_data(self):
         """测试无效数据的操作"""
-        
+
     def test_action_permission_denied(self):
         """测试权限拒绝的操作"""
 ```

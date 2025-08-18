@@ -6,7 +6,7 @@
 import logging
 from calendar import monthrange
 from datetime import date, datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, case, desc, func, or_, select
@@ -20,15 +20,9 @@ from app.api.deps import (
     get_current_user,
     get_db,
 )
-from app.models.attendance import (
-    AttendanceRecord,
-)
+from app.models.attendance import AttendanceRecord
 from app.models.member import Member, UserRole
-from app.models.task import (
-    RepairTask,
-    TaskStatus,
-    TaskType,
-)
+from app.models.task import RepairTask, TaskStatus, TaskType
 from app.services.attendance_service import AttendanceService
 
 logger = logging.getLogger(__name__)
@@ -36,26 +30,31 @@ router = APIRouter()
 
 
 def _calculate_efficiency_score(
-    avg_work_minutes: float,
-    avg_completion_hours: float,
-    avg_rating: float,
+    avg_work_minutes: Optional[float],
+    avg_completion_hours: Optional[float],
+    avg_rating: Optional[float],
     total_tasks: int,
 ) -> float:
     """计算效率分数"""
     if total_tasks == 0:
         return 0.0
 
-    # 基础分数
-    base_score = min(avg_rating * 20, 100)  # 5星满分对应100分
+    # 基础分数 - 安全处理None值
+    rating_value = avg_rating if avg_rating is not None else 0.0
+    base_score = min(rating_value * 20, 100)  # 5星满分对应100分
 
-    # 工时效率调整 (工时越短越好)
-    if avg_work_minutes > 0:
-        work_efficiency = max(0, 100 - (avg_work_minutes - 60) / 10)  # 60分钟为基准
+    # 工时效率调整 (工时越短越好) - 安全处理None值
+    work_minutes_value = avg_work_minutes if avg_work_minutes is not None else 0.0
+    if work_minutes_value > 0:
+        work_efficiency = max(0, 100 - (work_minutes_value - 60) / 10)  # 60分钟为基准
         base_score = (base_score + work_efficiency) / 2
 
-    # 完成速度调整 (完成时间越短越好)
-    if avg_completion_hours > 0:
-        time_efficiency = max(0, 100 - (avg_completion_hours - 24) / 2)  # 24小时为基准
+    # 完成速度调整 (完成时间越短越好) - 安全处理None值
+    completion_hours_value = (
+        avg_completion_hours if avg_completion_hours is not None else 0.0
+    )
+    if completion_hours_value > 0:
+        time_efficiency = max(0, 100 - (completion_hours_value - 24) / 2)  # 24小时为基准
         base_score = (base_score + time_efficiency) / 2
 
     return round(min(100, max(0, base_score)), 2)
@@ -200,7 +199,9 @@ async def get_statistics_overview(
                 "category": row.category.value if row.category else "未分类",
                 "count": row.count,
                 "avg_work_hours": (
-                    round(row.avg_work_minutes / 60.0, 2) if row.avg_work_minutes else 0
+                    round(float(row.avg_work_minutes) / 60.0, 2)
+                    if row.avg_work_minutes is not None
+                    else 0
                 ),
             }
             for row in category_result.fetchall()
@@ -216,14 +217,23 @@ async def get_statistics_overview(
                 "pending": task_stats.pending_tasks or 0,
                 "completion_rate": round(
                     (task_stats.completed_tasks or 0)
-                    / max(task_stats.total_tasks or 1, 1)
+                    / max(
+                        (
+                            (task_stats.total_tasks or 0)
+                            if (task_stats.total_tasks or 0) > 0
+                            else 1
+                        ),
+                        1,
+                    )
                     * 100,
                     2,
                 ),
                 "total_work_hours": round(
-                    (task_stats.total_work_minutes or 0) / 60.0, 2
+                    float(task_stats.total_work_minutes or 0) / 60.0, 2
                 ),
-                "avg_work_hours": round((task_stats.avg_work_minutes or 0) / 60.0, 2),
+                "avg_work_hours": round(
+                    float(task_stats.avg_work_minutes or 0) / 60.0, 2
+                ),
                 "online_tasks": task_stats.online_tasks or 0,
                 "offline_tasks": task_stats.offline_tasks or 0,
             },
@@ -238,11 +248,20 @@ async def get_statistics_overview(
                 "total_records": attendance_stats.total_attendance or 0,
                 "late_checkins": attendance_stats.late_checkins or 0,
                 "early_checkouts": attendance_stats.early_checkouts or 0,
-                "avg_work_hours": round(attendance_stats.avg_work_hours or 0, 2),
-                "total_work_hours": round(attendance_stats.total_work_hours or 0, 2),
+                "avg_work_hours": round(float(attendance_stats.avg_work_hours or 0), 2),
+                "total_work_hours": round(
+                    float(attendance_stats.total_work_hours or 0), 2
+                ),
                 "late_rate": round(
                     (attendance_stats.late_checkins or 0)
-                    / max(attendance_stats.total_attendance or 1, 1)
+                    / max(
+                        (
+                            (attendance_stats.total_attendance or 0)
+                            if (attendance_stats.total_attendance or 0) > 0
+                            else 1
+                        ),
+                        1,
+                    )
                     * 100,
                     2,
                 ),
@@ -335,7 +354,9 @@ async def get_efficiency_analysis(
 
                 # 计算各项效率指标
                 total_tasks = len(member_tasks)
-                total_work_minutes = sum(task.work_minutes for task in member_tasks)
+                total_work_minutes = sum(
+                    task.work_minutes or 0 for task in member_tasks
+                )
                 avg_work_minutes = (
                     total_work_minutes / total_tasks if total_tasks > 0 else 0
                 )
@@ -359,7 +380,7 @@ async def get_efficiency_analysis(
                 ratings = [
                     task.rating for task in member_tasks if task.rating is not None
                 ]
-                avg_rating = sum(ratings) / len(ratings) if ratings else 0
+                avg_rating = sum(ratings) / len(ratings) if ratings else 0.0
 
                 # 任务类型分布
                 online_count = sum(
@@ -372,8 +393,8 @@ async def get_efficiency_analysis(
                         "member_id": member_key,
                         "member_name": group_data["member_name"],
                         "total_tasks": total_tasks,
-                        "total_work_hours": round(total_work_minutes / 60.0, 2),
-                        "avg_work_hours": round(avg_work_minutes / 60.0, 2),
+                        "total_work_hours": round(float(total_work_minutes) / 60.0, 2),
+                        "avg_work_hours": round(float(avg_work_minutes) / 60.0, 2),
                         "avg_completion_hours": round(avg_completion_hours, 2),
                         "avg_rating": round(avg_rating, 2),
                         "online_tasks": online_count,
@@ -413,7 +434,9 @@ async def get_efficiency_analysis(
             for time_key in sorted(time_groups.keys()):
                 period_tasks = time_groups[time_key]
                 total_tasks = len(period_tasks)
-                total_work_minutes = sum(task.work_minutes for task in period_tasks)
+                total_work_minutes = sum(
+                    task.work_minutes or 0 for task in period_tasks
+                )
                 avg_work_minutes = (
                     total_work_minutes / total_tasks if total_tasks > 0 else 0
                 )
@@ -437,8 +460,8 @@ async def get_efficiency_analysis(
                     {
                         "period": time_key,
                         "task_count": total_tasks,
-                        "total_work_hours": round(total_work_minutes / 60.0, 2),
-                        "avg_work_hours": round(avg_work_minutes / 60.0, 2),
+                        "total_work_hours": round(float(total_work_minutes) / 60.0, 2),
+                        "avg_work_hours": round(float(avg_work_minutes) / 60.0, 2),
                         "avg_completion_hours": round(avg_completion_hours, 2),
                     }
                 )
@@ -447,7 +470,7 @@ async def get_efficiency_analysis(
 
         # 总体效率指标
         total_tasks = len(tasks)
-        total_work_minutes = sum(task.work_minutes for task in tasks)
+        total_work_minutes = sum(task.work_minutes or 0 for task in tasks)
         avg_work_minutes = total_work_minutes / total_tasks if total_tasks > 0 else 0
 
         # 完成时间统计
@@ -461,8 +484,8 @@ async def get_efficiency_analysis(
 
         overall_stats = {
             "total_tasks": total_tasks,
-            "total_work_hours": round(total_work_minutes / 60.0, 2),
-            "avg_work_hours": round(avg_work_minutes / 60.0, 2),
+            "total_work_hours": round(float(total_work_minutes) / 60.0, 2),
+            "avg_work_hours": round(float(avg_work_minutes) / 60.0, 2),
             "avg_completion_hours": (
                 round(sum(completion_times) / len(completion_times), 2)
                 if completion_times
@@ -505,9 +528,7 @@ async def get_efficiency_analysis(
 async def get_monthly_report(
     year: int = Query(..., description="年份"),
     month: int = Query(..., ge=1, le=12, description="月份"),
-    member_id: Optional[int] = Query(
-        None, description="指定成员（不指定则生成团队报表）"
-    ),
+    member_id: Optional[int] = Query(None, description="指定成员（不指定则生成团队报表）"),
     current_user: Member = Depends(get_current_active_group_leader),
     db: AsyncSession = Depends(get_db),
 ):
@@ -576,7 +597,7 @@ async def get_monthly_report(
             completed_tasks = [
                 task for task in tasks if task.status == TaskStatus.COMPLETED
             ]
-            total_work_minutes = sum(task.work_minutes for task in completed_tasks)
+            total_work_minutes = sum(task.work_minutes or 0 for task in completed_tasks)
 
             task_stats = {
                 "total_tasks": len(tasks),
@@ -587,9 +608,9 @@ async def get_monthly_report(
                 "in_progress_tasks": len(
                     [task for task in tasks if task.status == TaskStatus.IN_PROGRESS]
                 ),
-                "total_work_hours": round(total_work_minutes / 60.0, 2),
+                "total_work_hours": round(float(total_work_minutes) / 60.0, 2),
                 "avg_work_hours": (
-                    round(total_work_minutes / len(completed_tasks) / 60.0, 2)
+                    round(float(total_work_minutes) / len(completed_tasks) / 60.0, 2)
                     if completed_tasks
                     else 0
                 ),
@@ -642,7 +663,7 @@ async def get_monthly_report(
             team_tasks = team_task_result.scalars().all()
 
             # 按成员分组统计
-            member_stats = {}
+            member_stats: Dict[Any, Dict[str, Any]] = {}
             for task in team_tasks:
                 member_key = task.member_id
                 if member_key not in member_stats:
@@ -653,13 +674,15 @@ async def get_monthly_report(
                 member_stats[member_key]["tasks"].append(task)
 
             # 生成成员明细
-            member_details = []
+            member_details: List[Dict[str, Any]] = []
             for member_key, stats in member_stats.items():
                 member_tasks = stats["tasks"]
                 completed_tasks = [
                     task for task in member_tasks if task.status == TaskStatus.COMPLETED
                 ]
-                total_work_minutes = sum(task.work_minutes for task in completed_tasks)
+                total_work_minutes = sum(
+                    task.work_minutes or 0 for task in completed_tasks
+                )
 
                 # 获取该成员的考勤汇总
                 attendance_summary = None
@@ -679,7 +702,9 @@ async def get_monthly_report(
                         "tasks": {
                             "total": len(member_tasks),
                             "completed": len(completed_tasks),
-                            "total_work_hours": round(total_work_minutes / 60.0, 2),
+                            "total_work_hours": round(
+                                float(total_work_minutes) / 60.0, 2
+                            ),
                         },
                         "attendance": (
                             attendance_summary.dict()
@@ -695,7 +720,7 @@ async def get_monthly_report(
             completed_tasks = [
                 task for task in team_tasks if task.status == TaskStatus.COMPLETED
             ]
-            total_work_minutes = sum(task.work_minutes for task in completed_tasks)
+            total_work_minutes = sum(task.work_minutes or 0 for task in completed_tasks)
 
             team_stats = {
                 "total_tasks": total_tasks,
@@ -703,9 +728,9 @@ async def get_monthly_report(
                 "completion_rate": round(
                     len(completed_tasks) / max(total_tasks, 1) * 100, 2
                 ),
-                "total_work_hours": round(total_work_minutes / 60.0, 2),
+                "total_work_hours": round(float(total_work_minutes) / 60.0, 2),
                 "avg_work_hours": (
-                    round(total_work_minutes / len(completed_tasks) / 60.0, 2)
+                    round(float(total_work_minutes) / len(completed_tasks) / 60.0, 2)
                     if completed_tasks
                     else 0
                 ),
@@ -724,9 +749,7 @@ async def get_monthly_report(
             f"Monthly report generated by {current_user.student_id} for {year}-{month}"
         )
 
-        return create_response(
-            data=report_data, message=f"{year}年{month}月报表生成成功"
-        )
+        return create_response(data=report_data, message=f"{year}年{month}月报表生成成功")
 
     except HTTPException:
         raise
@@ -751,7 +774,7 @@ async def export_statistics_data(
     member_id: Optional[int] = Query(None, description="成员筛选"),
     current_user: Member = Depends(get_current_active_group_leader),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     导出统计数据
 
@@ -800,7 +823,9 @@ async def export_statistics_data(
             "export_type": export_type,
             "format": format,
             "data_summary": {
-                "total_records": len(str(export_data)),  # 简化的记录数统计
+                "total_records": (
+                    len(str(export_data)) if export_data else 0
+                ),  # 简化的记录数统计
                 "export_time": datetime.now().isoformat(),
             },
             "expires_at": (datetime.now() + timedelta(hours=24)).isoformat(),
@@ -811,9 +836,7 @@ async def export_statistics_data(
             f"{export_type} in {format} format"
         )
 
-        return create_response(
-            data=export_result, message=f"{export_type}统计数据导出成功"
-        )
+        return create_response(data=export_result, message=f"{export_type}统计数据导出成功")
 
     except HTTPException:
         raise
@@ -831,7 +854,7 @@ async def get_chart_data(
     metric: str = Query(..., description="指标类型"),
     current_user: Member = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """获取图表数据"""
     try:
         # 模拟图表数据
@@ -864,7 +887,7 @@ async def get_rankings(
     limit: int = Query(10, description="返回数量"),
     current_user: Member = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """获取排行榜数据"""
     try:
         # 模拟排行榜数据
@@ -890,7 +913,7 @@ async def get_attendance_statistics(
     end_date: str = Query(..., description="结束日期"),
     current_user: Member = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """获取考勤统计数据（基于工时）"""
     try:
         from sqlalchemy import func, select
@@ -914,18 +937,28 @@ async def get_attendance_statistics(
         repair_result = await db.execute(repair_query)
         repair_stats = repair_result.fetchone()
 
-        attendance_stats = {
+        total_minutes = (
+            repair_stats.total_minutes
+            if repair_stats and repair_stats.total_minutes
+            else 0
+        )
+        active_members = (
+            repair_stats.active_members
+            if repair_stats and repair_stats.active_members
+            else 0
+        )
+
+        attendance_stats: Dict[str, Any] = {
             "total_members": 10,  # 可以从成员表查询
-            "active_members": repair_stats.active_members or 0,
-            "total_work_hours": round((repair_stats.total_minutes or 0) / 60, 2),
-            "average_work_hours": 0,
+            "active_members": active_members,
+            "total_work_hours": round(float(total_minutes) / 60, 2),
+            "average_work_hours": 0.0,
             "departments": [],  # 暂时为空，因为我们弱化部门概念
         }
 
-        if attendance_stats["active_members"] > 0:
+        if active_members > 0:
             attendance_stats["average_work_hours"] = round(
-                attendance_stats["total_work_hours"]
-                / attendance_stats["active_members"],
+                attendance_stats["total_work_hours"] / active_members,
                 2,
             )
 
@@ -952,12 +985,10 @@ async def get_attendance_statistics(
 async def get_work_hours_overview(
     year: int = Query(..., description="年份"),
     month: int = Query(..., ge=1, le=12, description="月份"),
-    member_id: Optional[int] = Query(
-        None, description="指定成员（为空则查看团队概览）"
-    ),
+    member_id: Optional[int] = Query(None, description="指定成员（为空则查看团队概览）"),
     current_user: Member = Depends(get_current_active_group_leader),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     获取工时统计概览（基于新的工时计算逻辑）
 
@@ -1040,30 +1071,42 @@ async def get_work_hours_overview(
                         member.id, year, month
                     )
 
-                    team_summary["total_hours"] += member_data["total_hours"]
-                    team_summary["total_repair_hours"] += member_data[
-                        "repair_task_hours"
-                    ]
-                    team_summary["total_monitoring_hours"] += member_data[
-                        "monitoring_hours"
-                    ]
-                    team_summary["total_assistance_hours"] += member_data[
-                        "assistance_hours"
-                    ]
+                    team_summary["total_hours"] = float(
+                        team_summary.get("total_hours", 0.0)
+                    ) + float(member_data.get("total_hours", 0) or 0.0)
+                    team_summary["total_repair_hours"] = float(
+                        team_summary.get("total_repair_hours", 0.0)
+                    ) + float(member_data.get("repair_task_hours", 0) or 0.0)
+                    team_summary["total_monitoring_hours"] = float(
+                        team_summary.get("total_monitoring_hours", 0.0)
+                    ) + float(member_data.get("monitoring_hours", 0) or 0.0)
+                    team_summary["total_assistance_hours"] = float(
+                        team_summary.get("total_assistance_hours", 0.0)
+                    ) + float(member_data.get("assistance_hours", 0) or 0.0)
 
-                    if member_data["is_full_attendance"]:
-                        team_summary["full_attendance_count"] += 1
+                    if member_data.get("is_full_attendance", False):
+                        team_summary["full_attendance_count"] = (
+                            int(team_summary.get("full_attendance_count", 0)) + 1
+                        )
 
+                    if "member_details" not in team_summary:
+                        team_summary["member_details"] = []
                     team_summary["member_details"].append(
                         {
                             "member_id": member.id,
                             "member_name": member.name,
-                            "total_hours": member_data["total_hours"],
-                            "is_full_attendance": member_data["is_full_attendance"],
+                            "total_hours": member_data.get("total_hours", 0),
+                            "is_full_attendance": member_data.get(
+                                "is_full_attendance", False
+                            ),
                             "task_counts": {
-                                "repair": member_data["repair_task_count"],
-                                "monitoring": member_data["monitoring_task_count"],
-                                "assistance": member_data["assistance_task_count"],
+                                "repair": member_data.get("repair_task_count", 0),
+                                "monitoring": member_data.get(
+                                    "monitoring_task_count", 0
+                                ),
+                                "assistance": member_data.get(
+                                    "assistance_task_count", 0
+                                ),
                             },
                         }
                     )
@@ -1073,9 +1116,12 @@ async def get_work_hours_overview(
                     )
 
             # 排序（按总工时降序）
-            team_summary["member_details"].sort(
-                key=lambda x: x["total_hours"], reverse=True
-            )
+            if "member_details" in team_summary and isinstance(
+                team_summary["member_details"], list
+            ):
+                team_summary["member_details"].sort(
+                    key=lambda x: float(x.get("total_hours", 0)), reverse=True
+                )
 
             overview_data = {
                 "type": "team",
@@ -1108,7 +1154,7 @@ async def get_work_hours_analysis(
     ),
     current_user: Member = Depends(get_current_active_group_leader),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     获取工时详细分析
 
@@ -1145,7 +1191,7 @@ async def get_work_hours_analysis(
 
         if analysis_type == "breakdown":
             # 工时构成分析
-            breakdown_data = {
+            breakdown_data: Dict[str, Any] = {
                 "total_repair_hours": 0.0,
                 "total_monitoring_hours": 0.0,
                 "total_assistance_hours": 0.0,
@@ -1155,27 +1201,41 @@ async def get_work_hours_analysis(
             }
 
             for summary in summaries:
-                breakdown_data["total_repair_hours"] += summary.repair_task_hours
-                breakdown_data["total_monitoring_hours"] += summary.monitoring_hours
-                breakdown_data["total_assistance_hours"] += summary.assistance_hours
-                breakdown_data["total_penalty_hours"] += summary.penalty_hours
+                breakdown_data["total_repair_hours"] = float(
+                    breakdown_data.get("total_repair_hours", 0.0)
+                ) + float(summary.repair_task_hours or 0.0)
+                breakdown_data["total_monitoring_hours"] = float(
+                    breakdown_data.get("total_monitoring_hours", 0.0)
+                ) + float(summary.monitoring_hours or 0.0)
+                breakdown_data["total_assistance_hours"] = float(
+                    breakdown_data.get("total_assistance_hours", 0.0)
+                ) + float(summary.assistance_hours or 0.0)
+                breakdown_data["total_penalty_hours"] = float(
+                    breakdown_data.get("total_penalty_hours", 0.0)
+                ) + abs(float(summary.penalty_hours or 0.0))
 
                 # 计算奖励工时（爆单+好评）
-                bonus_hours = summary.rush_task_hours + summary.positive_review_hours
-                breakdown_data["total_bonus_hours"] += bonus_hours
+                rush_hours = float(summary.rush_task_hours or 0.0)
+                review_hours = float(summary.positive_review_hours or 0.0)
+                bonus_hours = rush_hours + review_hours
+                breakdown_data["total_bonus_hours"] = (
+                    float(breakdown_data.get("total_bonus_hours", 0.0)) + bonus_hours
+                )
 
+                if "member_breakdown" not in breakdown_data:
+                    breakdown_data["member_breakdown"] = []
                 breakdown_data["member_breakdown"].append(
                     {
                         "member_id": summary.member_id,
                         "member_name": (
                             summary.member.name if summary.member else "未知"
                         ),
-                        "repair_hours": summary.repair_task_hours,
-                        "monitoring_hours": summary.monitoring_hours,
-                        "assistance_hours": summary.assistance_hours,
-                        "penalty_hours": summary.penalty_hours,
+                        "repair_hours": float(summary.repair_task_hours or 0.0),
+                        "monitoring_hours": float(summary.monitoring_hours or 0.0),
+                        "assistance_hours": float(summary.assistance_hours or 0.0),
+                        "penalty_hours": abs(float(summary.penalty_hours or 0.0)),
                         "bonus_hours": bonus_hours,
-                        "total_hours": summary.total_hours,
+                        "total_hours": summary.total_hours or 0.0,
                     }
                 )
 
@@ -1183,7 +1243,7 @@ async def get_work_hours_analysis(
 
         elif analysis_type == "penalty":
             # 惩罚分析
-            penalty_data = {
+            penalty_data: Dict[str, Any] = {
                 "total_penalty_hours": 0.0,
                 "late_response_penalty": 0.0,
                 "late_completion_penalty": 0.0,
@@ -1192,74 +1252,98 @@ async def get_work_hours_analysis(
             }
 
             for summary in summaries:
-                penalty_data["total_penalty_hours"] += summary.penalty_hours
-                penalty_data[
-                    "late_response_penalty"
-                ] += summary.late_response_penalty_hours
-                penalty_data[
-                    "late_completion_penalty"
-                ] += summary.late_completion_penalty_hours
-                penalty_data[
-                    "negative_review_penalty"
-                ] += summary.negative_review_penalty_hours
+                penalty_data["total_penalty_hours"] = float(
+                    penalty_data.get("total_penalty_hours", 0.0)
+                ) + abs(float(summary.penalty_hours or 0.0))
+                penalty_data["late_response_penalty"] = float(
+                    penalty_data.get("late_response_penalty", 0.0)
+                ) + abs(float(summary.late_response_penalty_hours or 0.0))
+                penalty_data["late_completion_penalty"] = float(
+                    penalty_data.get("late_completion_penalty", 0.0)
+                ) + abs(float(summary.late_completion_penalty_hours or 0.0))
+                penalty_data["negative_review_penalty"] = float(
+                    penalty_data.get("negative_review_penalty", 0.0)
+                ) + abs(float(summary.negative_review_penalty_hours or 0.0))
 
-                if summary.penalty_hours > 0:
+                if abs(float(summary.penalty_hours or 0.0)) > 0:
+                    if "penalty_details" not in penalty_data:
+                        penalty_data["penalty_details"] = []
                     penalty_data["penalty_details"].append(
                         {
                             "member_id": summary.member_id,
                             "member_name": (
                                 summary.member.name if summary.member else "未知"
                             ),
-                            "total_penalty": summary.penalty_hours,
-                            "late_response": summary.late_response_penalty_hours,
-                            "late_completion": summary.late_completion_penalty_hours,
-                            "negative_review": summary.negative_review_penalty_hours,
+                            "total_penalty": abs(float(summary.penalty_hours or 0.0)),
+                            "late_response": abs(
+                                float(summary.late_response_penalty_hours or 0.0)
+                            ),
+                            "late_completion": abs(
+                                float(summary.late_completion_penalty_hours or 0.0)
+                            ),
+                            "negative_review": abs(
+                                float(summary.negative_review_penalty_hours or 0.0)
+                            ),
                         }
                     )
 
             # 按惩罚时间排序
-            penalty_data["penalty_details"].sort(
-                key=lambda x: x["total_penalty"], reverse=True
-            )
+            if "penalty_details" in penalty_data and isinstance(
+                penalty_data["penalty_details"], list
+            ):
+                penalty_data["penalty_details"].sort(
+                    key=lambda x: float(x.get("total_penalty", 0)), reverse=True
+                )
             analysis_data["penalties"] = penalty_data
 
         elif analysis_type == "bonus":
             # 奖励分析
-            bonus_data = {
+            bonus_data: Dict[str, Any] = {
                 "total_rush_hours": 0.0,
                 "total_positive_review_hours": 0.0,
                 "bonus_details": [],
             }
 
             for summary in summaries:
-                bonus_data["total_rush_hours"] += summary.rush_task_hours
-                bonus_data[
-                    "total_positive_review_hours"
-                ] += summary.positive_review_hours
+                bonus_data["total_rush_hours"] = float(
+                    bonus_data.get("total_rush_hours", 0.0)
+                ) + float(summary.rush_task_hours or 0.0)
+                bonus_data["total_positive_review_hours"] = float(
+                    bonus_data.get("total_positive_review_hours", 0.0)
+                ) + float(summary.positive_review_hours or 0.0)
 
-                total_bonus = summary.rush_task_hours + summary.positive_review_hours
+                rush_hours = float(summary.rush_task_hours or 0.0)
+                review_hours = float(summary.positive_review_hours or 0.0)
+                total_bonus = rush_hours + review_hours
                 if total_bonus > 0:
+                    if "bonus_details" not in bonus_data:
+                        bonus_data["bonus_details"] = []
                     bonus_data["bonus_details"].append(
                         {
                             "member_id": summary.member_id,
                             "member_name": (
                                 summary.member.name if summary.member else "未知"
                             ),
-                            "rush_hours": summary.rush_task_hours,
-                            "positive_review_hours": summary.positive_review_hours,
+                            "rush_hours": float(summary.rush_task_hours or 0.0),
+                            "positive_review_hours": float(
+                                summary.positive_review_hours or 0.0
+                            ),
                             "total_bonus": total_bonus,
                         }
                     )
 
             # 按奖励时间排序
-            bonus_data["bonus_details"].sort(
-                key=lambda x: x["total_bonus"], reverse=True
-            )
+            if "bonus_details" in bonus_data and isinstance(
+                bonus_data["bonus_details"], list
+            ):
+                bonus_data["bonus_details"].sort(
+                    key=lambda x: float(x.get("total_bonus", 0)), reverse=True
+                )
             analysis_data["bonuses"] = bonus_data
 
         elif analysis_type == "comparison":
             # 成员对比分析
-            comparison_data = {
+            comparison_data: Dict[str, Any] = {
                 "member_comparison": [],
                 "averages": {
                     "avg_total_hours": 0.0,
@@ -1271,10 +1355,16 @@ async def get_work_hours_analysis(
 
             if summaries:
                 total_members = len(summaries)
-                sum_total_hours = sum(s.total_hours for s in summaries)
-                sum_repair_hours = sum(s.repair_task_hours for s in summaries)
-                sum_monitoring_hours = sum(s.monitoring_hours for s in summaries)
-                sum_assistance_hours = sum(s.assistance_hours for s in summaries)
+                sum_total_hours = sum(float(s.total_hours or 0.0) for s in summaries)
+                sum_repair_hours = sum(
+                    float(s.repair_task_hours or 0.0) for s in summaries
+                )
+                sum_monitoring_hours = sum(
+                    float(s.monitoring_hours or 0.0) for s in summaries
+                )
+                sum_assistance_hours = sum(
+                    float(s.assistance_hours or 0.0) for s in summaries
+                )
 
                 comparison_data["averages"] = {
                     "avg_total_hours": round(sum_total_hours / total_members, 2),
@@ -1288,35 +1378,42 @@ async def get_work_hours_analysis(
                 }
 
                 for summary in summaries:
+                    if "member_comparison" not in comparison_data:
+                        comparison_data["member_comparison"] = []
                     comparison_data["member_comparison"].append(
                         {
                             "member_id": summary.member_id,
                             "member_name": (
                                 summary.member.name if summary.member else "未知"
                             ),
-                            "total_hours": summary.total_hours,
+                            "total_hours": float(summary.total_hours or 0.0),
                             "vs_avg_total": round(
-                                summary.total_hours
+                                float(summary.total_hours or 0.0)
                                 - comparison_data["averages"]["avg_total_hours"],
                                 2,
                             ),
-                            "repair_hours": summary.repair_task_hours,
+                            "repair_hours": float(summary.repair_task_hours or 0.0),
                             "vs_avg_repair": round(
-                                summary.repair_task_hours
+                                float(summary.repair_task_hours or 0.0)
                                 - comparison_data["averages"]["avg_repair_hours"],
                                 2,
                             ),
-                            "is_full_attendance": summary.total_hours >= 30.0,
+                            "is_full_attendance": float(summary.total_hours or 0.0)
+                            >= 30.0,
                             "efficiency_rank": 0,  # 稍后计算排名
                         }
                     )
 
                 # 计算效率排名
-                comparison_data["member_comparison"].sort(
-                    key=lambda x: x["total_hours"], reverse=True
-                )
-                for i, member in enumerate(comparison_data["member_comparison"]):
-                    member["efficiency_rank"] = i + 1
+                if "member_comparison" in comparison_data and isinstance(
+                    comparison_data["member_comparison"], list
+                ):
+                    comparison_data["member_comparison"].sort(
+                        key=lambda x: float(x.get("total_hours", 0)), reverse=True
+                    )
+                    for i, member in enumerate(comparison_data["member_comparison"]):
+                        if isinstance(member, dict):
+                            member["efficiency_rank"] = i + 1
 
             analysis_data["comparison"] = comparison_data
 
@@ -1324,9 +1421,7 @@ async def get_work_hours_analysis(
             f"Work hours analysis ({analysis_type}) retrieved by {current_user.student_id}"
         )
 
-        return create_response(
-            data=analysis_data, message=f"工时{analysis_type}分析获取成功"
-        )
+        return create_response(data=analysis_data, message=f"工时{analysis_type}分析获取成功")
 
     except Exception as e:
         logger.error(f"Get work hours analysis error: {str(e)}")
@@ -1339,12 +1434,10 @@ async def get_work_hours_analysis(
 async def batch_update_work_hours_summaries(
     year: int = Query(..., description="年份"),
     month: int = Query(..., ge=1, le=12, description="月份"),
-    member_ids: Optional[List[int]] = Query(
-        None, description="指定成员ID列表（为空则更新所有成员）"
-    ),
+    member_ids: Optional[List[int]] = Query(None, description="指定成员ID列表（为空则更新所有成员）"),
     current_user: Member = Depends(get_current_active_admin),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     批量更新工时汇总数据
 
@@ -1380,13 +1473,11 @@ async def batch_update_work_hours_summaries(
 
 @router.get("/work-hours/trend", response_model=Dict[str, Any])
 async def get_work_hours_trend(
-    member_id: Optional[int] = Query(
-        None, description="指定成员（为空则查看团队趋势）"
-    ),
+    member_id: Optional[int] = Query(None, description="指定成员（为空则查看团队趋势）"),
     months: int = Query(6, ge=1, le=12, description="查看最近几个月的趋势"),
     current_user: Member = Depends(get_current_active_group_leader),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     获取工时趋势分析
 
@@ -1438,7 +1529,7 @@ async def get_work_hours_trend(
                 )
 
             # 构建个人趋势数据
-            trend_data = {
+            trend_data: Dict[str, Any] = {
                 "type": "personal",
                 "member": {
                     "id": member.id,
@@ -1454,7 +1545,7 @@ async def get_work_hours_trend(
                 joinedload(MonthlyAttendanceSummary.member)
             )
 
-            trend_data = {"type": "team", "trend_series": []}
+            trend_data: Dict[str, Any] = {"type": "team", "trend_series": []}
 
         # 添加月份筛选条件
         month_conditions = []
@@ -1473,7 +1564,7 @@ async def get_work_hours_trend(
         summaries = result.scalars().all()
 
         # 按月份组织数据
-        monthly_data = {}
+        monthly_data: Dict[str, List[Any]] = {}
         for summary in summaries:
             month_key = f"{summary.year}-{summary.month:02d}"
             if month_key not in monthly_data:
@@ -1494,12 +1585,23 @@ async def get_work_hours_trend(
                     trend_data["trend_series"].append(
                         {
                             "period": month_key,
-                            "total_hours": personal_summary.total_hours,
-                            "repair_hours": personal_summary.repair_task_hours,
-                            "monitoring_hours": personal_summary.monitoring_hours,
-                            "assistance_hours": personal_summary.assistance_hours,
-                            "penalty_hours": personal_summary.penalty_hours,
-                            "is_full_attendance": personal_summary.total_hours >= 30.0,
+                            "total_hours": float(personal_summary.total_hours or 0.0),
+                            "repair_hours": float(
+                                personal_summary.repair_task_hours or 0.0
+                            ),
+                            "monitoring_hours": float(
+                                personal_summary.monitoring_hours or 0.0
+                            ),
+                            "assistance_hours": float(
+                                personal_summary.assistance_hours or 0.0
+                            ),
+                            "penalty_hours": float(
+                                personal_summary.penalty_hours or 0.0
+                            ),
+                            "is_full_attendance": float(
+                                personal_summary.total_hours or 0.0
+                            )
+                            >= 30.0,
                         }
                     )
                 else:
@@ -1517,13 +1619,21 @@ async def get_work_hours_trend(
                     )
             else:
                 # 团队趋势数据点
-                team_total = sum(s.total_hours for s in month_summaries)
-                team_repair = sum(s.repair_task_hours for s in month_summaries)
-                team_monitoring = sum(s.monitoring_hours for s in month_summaries)
-                team_assistance = sum(s.assistance_hours for s in month_summaries)
-                team_penalty = sum(s.penalty_hours for s in month_summaries)
+                team_total = sum(float(s.total_hours or 0.0) for s in month_summaries)
+                team_repair = sum(
+                    float(s.repair_task_hours or 0.0) for s in month_summaries
+                )
+                team_monitoring = sum(
+                    float(s.monitoring_hours or 0.0) for s in month_summaries
+                )
+                team_assistance = sum(
+                    float(s.assistance_hours or 0.0) for s in month_summaries
+                )
+                team_penalty = sum(
+                    abs(float(s.penalty_hours or 0.0)) for s in month_summaries
+                )
                 full_attendance_count = sum(
-                    1 for s in month_summaries if s.total_hours >= 30.0
+                    1 for s in month_summaries if float(s.total_hours or 0.0) >= 30.0
                 )
 
                 trend_data["trend_series"].append(
@@ -1537,7 +1647,7 @@ async def get_work_hours_trend(
                         "active_members": len(month_summaries),
                         "full_attendance_count": full_attendance_count,
                         "avg_hours_per_member": (
-                            round(team_total / len(month_summaries), 2)
+                            round(float(team_total) / len(month_summaries), 2)
                             if month_summaries
                             else 0
                         ),

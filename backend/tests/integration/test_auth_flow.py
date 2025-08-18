@@ -91,9 +91,7 @@ class TestAuthenticationFlow:
         assert response.status_code == 403
         data = response.json()
         assert data["success"] is False
-        assert (
-            "账户已被禁用" in data["message"] or "Account disabled" in data["message"]
-        )
+        assert "账户已被禁用" in data["message"] or "Account disabled" in data["message"]
 
     def test_protected_endpoint_without_token(self, client):
         """测试无令牌访问受保护端点"""
@@ -296,9 +294,7 @@ class TestRoleBasedAccess:
         # 应该被拒绝
         assert response.status_code == 403
         data = response.json()
-        assert (
-            "权限不足" in data["detail"] or "Not enough permissions" in data["detail"]
-        )
+        assert "权限不足" in data["detail"] or "Not enough permissions" in data["detail"]
 
     def test_group_leader_endpoint_with_leader(self, client, auth_headers_leader):
         """测试组长访问组长端点"""

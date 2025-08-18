@@ -23,7 +23,7 @@ Vue 3 Web + Capacitor App + Flutter Mobile
 ### Key Components
 
 - **Backend**: FastAPI-based REST API with JWT authentication, AES-256-GCM encryption
-- **Frontend**: Vue 3 with Composition API, Capacitor for mobile deployment  
+- **Frontend**: Vue 3 with Composition API, Capacitor for mobile deployment
 - **Database**: PostgreSQL with SQLAlchemy 2.0 ORM
 - **Authentication**: JWT dual-token system (Access + Refresh tokens)
 
@@ -69,7 +69,7 @@ CREATE DATABASE attendence_dev OWNER kwok;
 CREATE USER kwok WITH PASSWORD 'Onjuju1084';
 GRANT ALL PRIVILEGES ON DATABASE attendence_dev TO kwok;
 
--- Production database  
+-- Production database
 CREATE DATABASE attendence OWNER kwok;
 GRANT ALL PRIVILEGES ON DATABASE attendence TO kwok;
 ```
@@ -83,7 +83,7 @@ pytest tests/test_auth.py  # Run specific test file
 pytest --cov=app tests/    # Generate coverage report
 ```
 
-### Frontend Testing  
+### Frontend Testing
 ```bash
 npm run test:unit          # Unit tests
 npm run test:e2e          # End-to-end tests
@@ -116,7 +116,7 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ### Work Hours Rules
 - **Online Tasks**: 40 minutes per task
-- **Offline Tasks**: 100 minutes per task  
+- **Offline Tasks**: 100 minutes per task
 - **Rush Period Bonus**: +15 minutes (admin marked)
 - **Non-default Positive Review**: +30 minutes
 - **Penalties**: Late response (-30min), Late completion (-30min), Negative review (-60min)
@@ -134,16 +134,16 @@ When backend is running, access API documentation at:
 
 ### Key API Endpoints
 - `POST /api/auth/login` - User authentication
-- `GET /api/tasks/repair` - Get repair tasks  
+- `GET /api/tasks/repair` - Get repair tasks
 - `POST /api/tasks/repair/import` - Bulk import repair data
 - `GET /api/statistics/overview` - Get overview statistics
 - `GET /api/statistics/export` - Export statistical reports
 
 ## Project Status & Todo List
 
-**Current Implementation Status (Updated: 2025-01-30)**: 
+**Current Implementation Status (Updated: 2025-01-30)**:
 - ✅ **Database Schema**: Complete with migrations ready
-- ✅ **Models & Structure**: Backend models and project structure implemented  
+- ✅ **Models & Structure**: Backend models and project structure implemented
 - ✅ **Documentation**: Comprehensive technical documentation complete
 - ✅ **Authentication System**: Complete JWT authentication with security features implemented
 - ✅ **Testing Infrastructure**: Comprehensive test suite with 30+ test cases for authentication
@@ -191,13 +191,13 @@ When backend is running, access API documentation at:
 4. 导入失败错误处理详细信息：
    ```
    (匿名)    @    client.ts:49
-   Promise.then        
+   Promise.then
    importMembers    @    members.ts:184
    handleImport    @    ImportMemberDialog.vue:536
    handleClick    @    use-button.ts:72
-   
-   ImportMemberDialog.vue:545 
-    导入失败: 
+
+   ImportMemberDialog.vue:545
+    导入失败:
    AxiosError {message: 'Request failed with status code 500', name: 'AxiosError', code: 'ERR_BAD_RESPONSE', config: {…}, request: XMLHttpRequest, …}
    ```
 
@@ -245,13 +245,13 @@ axios.interceptors.response.use(
     error => {
         const errorMessage = error.response?.data?.message || '未知错误';
         const errorStatus = error.response?.status || 'N/A';
-        
+
         // 详细的错误日志
         console.error(`[API Error] Status: ${errorStatus}, Message: ${errorMessage}`);
-        
+
         // 全局错误处理
         ElMessage.error(`请求失败：${errorMessage}`);
-        
+
         return Promise.reject(error);
     }
 )
@@ -263,7 +263,7 @@ axios.interceptors.response.use(
 
 #### 1.1 自动化工时计算机制 ✅ COMPLETED
 - ✅ **延迟检测自动化**: 已实现定时任务自动检测超时并添加惩罚标签
-- ✅ **评价自动处理**: 已实现评价提交后自动计算奖励/惩罚的触发机制  
+- ✅ **评价自动处理**: 已实现评价提交后自动计算奖励/惩罚的触发机制
 - ✅ **批量工时重算**: 已实现批量重新计算历史任务工时的功能 (POST /api/v1/tasks/work-hours/recalculate)
 
 ## Database Connection Details

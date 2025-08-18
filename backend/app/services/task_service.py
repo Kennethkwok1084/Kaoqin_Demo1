@@ -277,9 +277,7 @@ class TaskService:
 
             # 验证状态转换
             if not self._is_valid_status_transition(old_status, new_status):
-                raise ValueError(
-                    f"不能从 {old_status.value} 状态转换到 {new_status.value} 状态"
-                )
+                raise ValueError(f"不能从 {old_status.value} 状态转换到 {new_status.value} 状态")
 
             # 更新状态
             task.status = new_status
@@ -857,7 +855,7 @@ class TaskService:
 
         return f"R{today}{str(count + 1).zfill(4)}"
 
-    async def _add_tags_to_task(self, task: RepairTask, tag_ids: List[int]):
+    async def _add_tags_to_task(self, task: RepairTask, tag_ids: List[int]) -> None:
         """为任务添加标签"""
         if not tag_ids:
             return
@@ -870,11 +868,11 @@ class TaskService:
             if tag.is_active:
                 task.tags.append(tag)
 
-    async def _add_rush_tag(self, task: RepairTask):
+    async def _add_rush_tag(self, task: RepairTask) -> None:
         """添加紧急任务标签"""
         await self._add_bonus_tag(task, "紧急任务", 15)
 
-    async def _add_bonus_tag(self, task: RepairTask, tag_name: str, bonus: int):
+    async def _add_bonus_tag(self, task: RepairTask, tag_name: str, bonus: int) -> None:
         """添加奖励标签"""
         tag = await self._get_or_create_tag(tag_name, bonus, "bonus")
         if tag not in task.tags:
@@ -1339,9 +1337,7 @@ class AssistanceTaskService:
                         created_count += 1
 
                 except Exception as e:
-                    error_msg = (
-                        f"导入工单 {data.get('work_order_id', 'N/A')} 失败: {str(e)}"
-                    )
+                    error_msg = f"导入工单 {data.get('work_order_id', 'N/A')} 失败: {str(e)}"
                     errors.append(error_msg)
                     failed_count += 1
                     logger.warning(error_msg)
