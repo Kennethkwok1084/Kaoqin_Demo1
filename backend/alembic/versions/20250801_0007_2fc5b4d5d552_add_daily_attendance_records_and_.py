@@ -287,9 +287,11 @@ def upgrade() -> None:
         ["member_id"],
         unique=False,
     )
-    # 直接删除表，PostgreSQL会自动处理索引
+    # 安全删除表，如果表存在的话
     # 删除表时会自动删除所有相关的索引和约束
-    op.drop_table("attendance_configurations")
+    op.execute("""
+        DROP TABLE IF EXISTS attendance_configurations;
+    """)
     op.alter_column(
         "assistance_tasks",
         "status",
