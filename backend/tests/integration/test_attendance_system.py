@@ -32,7 +32,10 @@ class TestAttendanceCheckinCheckout:
 
         # 验证签到响应
         assert data["success"] is True
-        assert "签到成功" in data["message"] or "checked in successfully" in data["message"]
+        assert (
+            "签到成功" in data["message"]
+            or "checked in successfully" in data["message"]
+        )
         assert "record_id" in data
         assert "checkin_time" in data
         assert data["location"] == "办公室"
@@ -87,7 +90,9 @@ class TestAttendanceCheckinCheckout:
 
         if response2.status_code == 400:
             data = response2.json()
-            assert "已签到" in data["message"] or "already checked in" in data["message"]
+            assert (
+                "已签到" in data["message"] or "already checked in" in data["message"]
+            )
 
     def test_checkout_success(self, client, auth_headers_member):
         """测试成功签退"""
@@ -118,7 +123,8 @@ class TestAttendanceCheckinCheckout:
         # 验证签退响应
         assert data["success"] is True
         assert (
-            "签退成功" in data["message"] or "checked out successfully" in data["message"]
+            "签退成功" in data["message"]
+            or "checked out successfully" in data["message"]
         )
         assert "checkout_time" in data
         assert "work_hours" in data

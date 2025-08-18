@@ -277,7 +277,9 @@ class TaskService:
 
             # 验证状态转换
             if not self._is_valid_status_transition(old_status, new_status):
-                raise ValueError(f"不能从 {old_status.value} 状态转换到 {new_status.value} 状态")
+                raise ValueError(
+                    f"不能从 {old_status.value} 状态转换到 {new_status.value} 状态"
+                )
 
             # 更新状态
             task.status = new_status
@@ -1337,7 +1339,9 @@ class AssistanceTaskService:
                         created_count += 1
 
                 except Exception as e:
-                    error_msg = f"导入工单 {data.get('work_order_id', 'N/A')} 失败: {str(e)}"
+                    error_msg = (
+                        f"导入工单 {data.get('work_order_id', 'N/A')} 失败: {str(e)}"
+                    )
                     errors.append(error_msg)
                     failed_count += 1
                     logger.warning(error_msg)

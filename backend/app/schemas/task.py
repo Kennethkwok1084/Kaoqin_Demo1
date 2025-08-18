@@ -15,7 +15,9 @@ class TaskTagBase(BaseModel):
     """任务标签基础模型"""
 
     name: str = Field(..., min_length=1, max_length=50, description="标签名称")
-    color: str = Field(..., pattern=r"^#[0-9A-Fa-f]{6}$", description="标签颜色（16进制）")
+    color: str = Field(
+        ..., pattern=r"^#[0-9A-Fa-f]{6}$", description="标签颜色（16进制）"
+    )
     work_minutes: int = Field(..., ge=0, le=999, description="标准工时（分钟）")
     is_online: bool = Field(..., description="是否为线上任务")
 
@@ -73,9 +75,13 @@ class TaskBase(BaseModel):
     """任务基础信息模型"""
 
     title: str = Field(..., min_length=1, max_length=200, description="任务标题")
-    description: Optional[str] = Field(None, max_length=2000, description="任务详细描述")
+    description: Optional[str] = Field(
+        None, max_length=2000, description="任务详细描述"
+    )
     task_type: TaskType = Field(..., description="任务类型")
-    priority: TaskPriority = Field(default=TaskPriority.MEDIUM, description="任务优先级")
+    priority: TaskPriority = Field(
+        default=TaskPriority.MEDIUM, description="任务优先级"
+    )
     location: Optional[str] = Field(None, max_length=100, description="任务地点")
 
     @field_validator("title")
@@ -92,10 +98,14 @@ class TaskCreate(TaskBase):
 
     assigned_to: Optional[int] = Field(None, description="分配给的成员ID")
     tag_ids: List[int] = Field(default=[], description="关联的标签ID列表")
-    estimated_minutes: Optional[int] = Field(None, ge=1, le=999, description="预估工时（分钟）")
+    estimated_minutes: Optional[int] = Field(
+        None, ge=1, le=999, description="预估工时（分钟）"
+    )
     deadline: Optional[datetime] = Field(None, description="截止时间")
     reporter_name: Optional[str] = Field(None, max_length=50, description="报告人姓名")
-    reporter_contact: Optional[str] = Field(None, max_length=50, description="报告人联系方式")
+    reporter_contact: Optional[str] = Field(
+        None, max_length=50, description="报告人联系方式"
+    )
     is_rush: bool = Field(default=False, description="是否为紧急任务")
 
     @field_validator("deadline")
@@ -129,14 +139,22 @@ class TaskCreate(TaskBase):
 class TaskUpdate(BaseModel):
     """更新任务的请求模型"""
 
-    title: Optional[str] = Field(None, min_length=1, max_length=200, description="任务标题")
-    description: Optional[str] = Field(None, max_length=2000, description="任务详细描述")
+    title: Optional[str] = Field(
+        None, min_length=1, max_length=200, description="任务标题"
+    )
+    description: Optional[str] = Field(
+        None, max_length=2000, description="任务详细描述"
+    )
     status: Optional[TaskStatus] = Field(None, description="任务状态")
     priority: Optional[TaskPriority] = Field(None, description="任务优先级")
     assigned_to: Optional[int] = Field(None, description="分配给的成员ID")
     tag_ids: Optional[List[int]] = Field(None, description="关联的标签ID列表")
-    estimated_minutes: Optional[int] = Field(None, ge=1, le=999, description="预估工时（分钟）")
-    actual_minutes: Optional[int] = Field(None, ge=0, le=999, description="实际工时（分钟）")
+    estimated_minutes: Optional[int] = Field(
+        None, ge=1, le=999, description="预估工时（分钟）"
+    )
+    actual_minutes: Optional[int] = Field(
+        None, ge=0, le=999, description="实际工时（分钟）"
+    )
     completion_note: Optional[str] = Field(None, max_length=500, description="完成备注")
     deadline: Optional[datetime] = Field(None, description="截止时间")
     is_rush: Optional[bool] = Field(None, description="是否为紧急任务")
@@ -345,7 +363,9 @@ class TaskStatusUpdate(BaseModel):
     """任务状态更新模型"""
 
     status: TaskStatus = Field(..., description="新状态")
-    completion_note: Optional[str] = Field(None, max_length=500, description="状态变更备注")
+    completion_note: Optional[str] = Field(
+        None, max_length=500, description="状态变更备注"
+    )
     actual_minutes: Optional[int] = Field(
         None, ge=0, le=999, description="实际工时（仅完成时需要）"
     )
@@ -490,7 +510,9 @@ class WorkHourCalculation(BaseModel):
 
     task_id: int = Field(..., description="任务ID")
     actual_minutes: int = Field(..., ge=1, le=999, description="实际工时（分钟）")
-    review_rating: Optional[int] = Field(None, ge=1, le=5, description="评价等级（1-5分）")
+    review_rating: Optional[int] = Field(
+        None, ge=1, le=5, description="评价等级（1-5分）"
+    )
     is_late_response: bool = Field(default=False, description="是否延迟响应")
     is_late_completion: bool = Field(default=False, description="是否延迟完成")
 

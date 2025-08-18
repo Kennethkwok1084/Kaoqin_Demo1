@@ -77,7 +77,9 @@ class AttendanceRecordResponse(AttendanceRecordBase):
 class AttendanceCheckInRequest(BaseModel):
     """签到请求模型"""
 
-    checkin_time: Optional[datetime] = Field(None, description="签到时间，为空则使用当前时间")
+    checkin_time: Optional[datetime] = Field(
+        None, description="签到时间，为空则使用当前时间"
+    )
     location: Optional[str] = Field(None, max_length=200, description="签到地点")
     notes: Optional[str] = Field(None, description="签到备注")
 
@@ -85,7 +87,9 @@ class AttendanceCheckInRequest(BaseModel):
 class AttendanceCheckOutRequest(BaseModel):
     """签退请求模型"""
 
-    checkout_time: Optional[datetime] = Field(None, description="签退时间，为空则使用当前时间")
+    checkout_time: Optional[datetime] = Field(
+        None, description="签退时间，为空则使用当前时间"
+    )
     location: Optional[str] = Field(None, max_length=200, description="签退地点")
     notes: Optional[str] = Field(None, description="签退备注")
 
@@ -113,7 +117,9 @@ class AttendanceExceptionBase(BaseModel):
     """考勤异常基础模型"""
 
     member_id: int = Field(..., description="成员ID")
-    exception_type: str = Field(..., max_length=50, description="异常类型（迟到/早退/忘记打卡/请假等）")
+    exception_type: str = Field(
+        ..., max_length=50, description="异常类型（迟到/早退/忘记打卡/请假等）"
+    )
     exception_date: date = Field(..., description="异常日期")
     reason: str = Field(..., description="申请理由")
 

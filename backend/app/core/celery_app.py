@@ -6,8 +6,8 @@ Celery配置和任务定义
 import logging
 from typing import Any, Dict
 
-from celery import Celery
-from celery.schedules import crontab
+from celery import Celery  # type: ignore[import-not-found]
+from celery.schedules import crontab  # type: ignore[import-not-found]
 
 from app.core.config import settings
 
@@ -89,7 +89,7 @@ celery_app.conf.update(
 
 
 # 健康检查任务
-@celery_app.task(bind=True)
+@celery_app.task(bind=True)  # type: ignore[misc]
 def health_check(self: Any) -> Dict[str, Any]:
     """Celery健康检查任务"""
     try:
@@ -106,7 +106,7 @@ def get_celery_app() -> Celery:
 
 
 # Celery信号处理
-@celery_app.on_after_configure.connect
+@celery_app.on_after_configure.connect  # type: ignore[misc]
 def setup_periodic_tasks(sender: Any, **kwargs: Any) -> None:
     """设置周期性任务"""
     logger.info("Setting up periodic tasks...")
@@ -114,7 +114,7 @@ def setup_periodic_tasks(sender: Any, **kwargs: Any) -> None:
     # 可以在这里添加动态的周期性任务
 
 
-@celery_app.on_after_finalize.connect
+@celery_app.on_after_finalize.connect  # type: ignore[misc]
 def setup_queues(sender: Any, **kwargs: Any) -> None:
     """设置队列"""
     logger.info("Setting up task queues...")

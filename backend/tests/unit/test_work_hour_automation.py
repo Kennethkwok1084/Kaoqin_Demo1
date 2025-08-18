@@ -168,7 +168,9 @@ class TestWorkHourAutomationService:
     ):
         """Test successful penalty tag application."""
         # Mock tag creation and association
-        mock_tag = TaskTag(id=1, name="延迟响应", tag_type="penalty", penalty_minutes=30)
+        mock_tag = TaskTag(
+            id=1, name="延迟响应", tag_type="penalty", penalty_minutes=30
+        )
 
         # Mock existing tag query
         mock_tag_result = Mock()
@@ -196,7 +198,9 @@ class TestWorkHourAutomationService:
         self, automation_service, mock_db, overdue_task
     ):
         """Test penalty tag application when tag already exists on task."""
-        mock_tag = TaskTag(id=1, name="延迟响应", tag_type="penalty", penalty_minutes=30)
+        mock_tag = TaskTag(
+            id=1, name="延迟响应", tag_type="penalty", penalty_minutes=30
+        )
 
         # Mock existing tag
         mock_tag_result = Mock()
@@ -314,7 +318,9 @@ class TestWorkHourAutomationService:
         )
 
         # Mock bonus tag
-        mock_bonus_tag = TaskTag(id=2, name="优质服务", tag_type="bonus", bonus_minutes=30)
+        mock_bonus_tag = TaskTag(
+            id=2, name="优质服务", tag_type="bonus", bonus_minutes=30
+        )
 
         mock_tag_result = Mock()
         mock_tag_result.scalar_one_or_none.return_value = mock_bonus_tag

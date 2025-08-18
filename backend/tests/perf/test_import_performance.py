@@ -303,7 +303,9 @@ class TestImportPerformance:
                     r"[\(\)（）\[\]{}〈〉].*?[\(\)（）\[\]{}〈〉]", "", clean_name
                 )
                 clean_name = re.sub(r"[\(\)（）\[\]{}〈〉].*", "", clean_name)
-                clean_name = re.sub(r"(工程师|技术员|主管|经理|组长|部长|处长|科长)$", "", clean_name)
+                clean_name = re.sub(
+                    r"(工程师|技术员|主管|经理|组长|部长|处长|科长)$", "", clean_name
+                )
                 clean_name = clean_name.strip()
 
                 # Simulate database query (without actual DB hit for performance)

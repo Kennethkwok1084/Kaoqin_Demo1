@@ -54,7 +54,9 @@ def _calculate_efficiency_score(
         avg_completion_hours if avg_completion_hours is not None else 0.0
     )
     if completion_hours_value > 0:
-        time_efficiency = max(0, 100 - (completion_hours_value - 24) / 2)  # 24小时为基准
+        time_efficiency = max(
+            0, 100 - (completion_hours_value - 24) / 2
+        )  # 24小时为基准
         base_score = (base_score + time_efficiency) / 2
 
     return round(min(100, max(0, base_score)), 2)
@@ -69,7 +71,7 @@ async def get_statistics_overview(
     date_to: Optional[datetime] = Query(None, description="统计结束时间"),
     current_user: Member = Depends(get_current_active_group_leader),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     获取系统概览统计
 
@@ -110,7 +112,11 @@ async def get_statistics_overview(
         ).where(time_filter)
 
         task_result = await db.execute(task_query)
-        task_stats = task_result.first()
+        task_stats = task_result.first() or type('DefaultRow', (), {
+            'total_tasks': 0, 'completed_tasks': 0, 'in_progress_tasks': 0, 
+            'pending_tasks': 0, 'total_work_minutes': 0, 'avg_work_minutes': 0,
+            'online_tasks': 0, 'offline_tasks': 0
+        })()
 
         # 成员统计
         member_query = select(
@@ -124,7 +130,10 @@ async def get_statistics_overview(
         )
 
         member_result = await db.execute(member_query)
-        member_stats = member_result.first()
+        member_stats = member_result.first() or type('DefaultRow', (), {
+            'total_members': 0, 'active_members': 0, 'admin_count': 0,
+            'leader_count': 0, 'member_count': 0
+        })()
 
         # 考勤统计（当月）
         current_month_start = datetime.now().replace(
@@ -156,7 +165,10 @@ async def get_statistics_overview(
         )
 
         attendance_result = await db.execute(attendance_query)
-        attendance_stats = attendance_result.first()
+        attendance_stats = attendance_result.first() or type('DefaultRow', (), {
+            'total_attendance': 0, 'late_checkins': 0, 'early_checkouts': 0,
+            'avg_work_hours': 0.0, 'total_work_hours': 0.0
+        })()
 
         # 近期趋势（最近7天每天的任务创建数）
         seven_days_ago = date_to - timedelta(days=7)
@@ -295,7 +307,7 @@ async def get_efficiency_analysis(
     ),
     current_user: Member = Depends(get_current_active_group_leader),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     获取工作效率分析
 
@@ -338,19 +350,20 @@ async def get_efficiency_analysis(
 
         if group_by == "member":
             # 按成员分组分析
-            member_groups = {}
+            member_groups: Dict[int, Dict[str, Any]] = {}
             for task in tasks:
                 member_key = task.member_id
-                if member_key not in member_groups:
+                if member_key is not None and member_key not in member_groups:
                     member_groups[member_key] = {
                         "member_name": task.member.name if task.member else "未知",
                         "tasks": [],
                     }
-                member_groups[member_key]["tasks"].append(task)
+                if member_key is not None:
+                    member_groups[member_key]["tasks"].append(task)
 
-            member_analysis = []
+            member_analysis: List[Dict[str, Any]] = []
             for member_key, group_data in member_groups.items():
-                member_tasks = group_data["tasks"]
+                member_tasks: List[RepairTask] = group_data["tasks"]
 
                 # 计算各项效率指标
                 total_tasks = len(member_tasks)
@@ -364,7 +377,7 @@ async def get_efficiency_analysis(
                 # 计算完成速度（从创建到完成的平均时间）
                 completion_times = []
                 for task in member_tasks:
-                    if task.completed_at:
+                    if hasattr(task, 'completed_at') and task.completed_at:
                         completion_time = (
                             task.completed_at - task.created_at
                         ).total_seconds() / 3600  # 小时
@@ -409,12 +422,12 @@ async def get_efficiency_analysis(
                 )
 
             # 按效率分数排序
-            member_analysis.sort(key=lambda x: x["efficiency_score"], reverse=True)
+            member_analysis.sort(key=lambda x: float(x.get("efficiency_score", 0)), reverse=True)
             analysis_data["members"] = member_analysis
 
         elif group_by in ["day", "week", "month"]:
             # 按时间分组分析
-            time_groups = {}
+            time_groups: Dict[str, List[RepairTask]] = {}
             for task in tasks:
                 if group_by == "day":
                     time_key = task.created_at.strftime("%Y-%m-%d")
@@ -444,7 +457,7 @@ async def get_efficiency_analysis(
                 # 完成时间分析
                 completion_times = []
                 for task in period_tasks:
-                    if task.completed_at:
+                    if hasattr(task, 'completed_at') and task.completed_at:
                         completion_time = (
                             task.completed_at - task.created_at
                         ).total_seconds() / 3600
@@ -476,7 +489,7 @@ async def get_efficiency_analysis(
         # 完成时间统计
         completion_times = []
         for task in tasks:
-            if task.completed_at:
+            if hasattr(task, 'completed_at') and task.completed_at:
                 completion_time = (
                     task.completed_at - task.created_at
                 ).total_seconds() / 3600
@@ -528,10 +541,12 @@ async def get_efficiency_analysis(
 async def get_monthly_report(
     year: int = Query(..., description="年份"),
     month: int = Query(..., ge=1, le=12, description="月份"),
-    member_id: Optional[int] = Query(None, description="指定成员（不指定则生成团队报表）"),
+    member_id: Optional[int] = Query(
+        None, description="指定成员（不指定则生成团队报表）"
+    ),
     current_user: Member = Depends(get_current_active_group_leader),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     生成月度综合报表
 
@@ -635,7 +650,7 @@ async def get_monthly_report(
                     "attendance": (
                         attendance_summary.dict()
                         if hasattr(attendance_summary, "dict")
-                        else attendance_summary
+                        else dict(attendance_summary) if attendance_summary else {}
                     ),
                 }
             )
@@ -708,9 +723,8 @@ async def get_monthly_report(
                         },
                         "attendance": (
                             attendance_summary.dict()
-                            if attendance_summary
-                            and hasattr(attendance_summary, "dict")
-                            else None
+                            if attendance_summary and hasattr(attendance_summary, "dict")
+                            else dict(attendance_summary) if attendance_summary else None
                         ),
                     }
                 )
@@ -749,7 +763,9 @@ async def get_monthly_report(
             f"Monthly report generated by {current_user.student_id} for {year}-{month}"
         )
 
-        return create_response(data=report_data, message=f"{year}年{month}月报表生成成功")
+        return create_response(
+            data=report_data, message=f"{year}年{month}月报表生成成功"
+        )
 
     except HTTPException:
         raise
@@ -836,7 +852,9 @@ async def export_statistics_data(
             f"{export_type} in {format} format"
         )
 
-        return create_response(data=export_result, message=f"{export_type}统计数据导出成功")
+        return create_response(
+            data=export_result, message=f"{export_type}统计数据导出成功"
+        )
 
     except HTTPException:
         raise
@@ -985,7 +1003,9 @@ async def get_attendance_statistics(
 async def get_work_hours_overview(
     year: int = Query(..., description="年份"),
     month: int = Query(..., ge=1, le=12, description="月份"),
-    member_id: Optional[int] = Query(None, description="指定成员（为空则查看团队概览）"),
+    member_id: Optional[int] = Query(
+        None, description="指定成员（为空则查看团队概览）"
+    ),
     current_user: Member = Depends(get_current_active_group_leader),
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
@@ -1073,16 +1093,16 @@ async def get_work_hours_overview(
 
                     team_summary["total_hours"] = float(
                         team_summary.get("total_hours", 0.0)
-                    ) + float(member_data.get("total_hours", 0) or 0.0)
+                    ) + float(member_data.get("total_hours", 0.0))
                     team_summary["total_repair_hours"] = float(
                         team_summary.get("total_repair_hours", 0.0)
-                    ) + float(member_data.get("repair_task_hours", 0) or 0.0)
+                    ) + float(member_data.get("repair_task_hours", 0.0))
                     team_summary["total_monitoring_hours"] = float(
                         team_summary.get("total_monitoring_hours", 0.0)
-                    ) + float(member_data.get("monitoring_hours", 0) or 0.0)
+                    ) + float(member_data.get("monitoring_hours", 0.0))
                     team_summary["total_assistance_hours"] = float(
                         team_summary.get("total_assistance_hours", 0.0)
-                    ) + float(member_data.get("assistance_hours", 0) or 0.0)
+                    ) + float(member_data.get("assistance_hours", 0.0))
 
                     if member_data.get("is_full_attendance", False):
                         team_summary["full_attendance_count"] = (
@@ -1091,7 +1111,8 @@ async def get_work_hours_overview(
 
                     if "member_details" not in team_summary:
                         team_summary["member_details"] = []
-                    team_summary["member_details"].append(
+                    if isinstance(team_summary.get("member_details"), list):
+                        team_summary["member_details"].append(
                         {
                             "member_id": member.id,
                             "member_name": member.name,
@@ -1421,7 +1442,9 @@ async def get_work_hours_analysis(
             f"Work hours analysis ({analysis_type}) retrieved by {current_user.student_id}"
         )
 
-        return create_response(data=analysis_data, message=f"工时{analysis_type}分析获取成功")
+        return create_response(
+            data=analysis_data, message=f"工时{analysis_type}分析获取成功"
+        )
 
     except Exception as e:
         logger.error(f"Get work hours analysis error: {str(e)}")
@@ -1434,7 +1457,9 @@ async def get_work_hours_analysis(
 async def batch_update_work_hours_summaries(
     year: int = Query(..., description="年份"),
     month: int = Query(..., ge=1, le=12, description="月份"),
-    member_ids: Optional[List[int]] = Query(None, description="指定成员ID列表（为空则更新所有成员）"),
+    member_ids: Optional[List[int]] = Query(
+        None, description="指定成员ID列表（为空则更新所有成员）"
+    ),
     current_user: Member = Depends(get_current_active_admin),
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
@@ -1473,7 +1498,9 @@ async def batch_update_work_hours_summaries(
 
 @router.get("/work-hours/trend", response_model=Dict[str, Any])
 async def get_work_hours_trend(
-    member_id: Optional[int] = Query(None, description="指定成员（为空则查看团队趋势）"),
+    member_id: Optional[int] = Query(
+        None, description="指定成员（为空则查看团队趋势）"
+    ),
     months: int = Query(6, ge=1, le=12, description="查看最近几个月的趋势"),
     current_user: Member = Depends(get_current_active_group_leader),
     db: AsyncSession = Depends(get_db),
@@ -1545,7 +1572,8 @@ async def get_work_hours_trend(
                 joinedload(MonthlyAttendanceSummary.member)
             )
 
-            trend_data: Dict[str, Any] = {"type": "team", "trend_series": []}
+            team_trend_data: Dict[str, Any] = {"type": "team", "trend_series": []}
+            trend_data = team_trend_data
 
         # 添加月份筛选条件
         month_conditions = []
@@ -1573,7 +1601,7 @@ async def get_work_hours_trend(
 
         # 构建趋势序列
         for month_info in trend_months:
-            month_key = month_info["month_key"]
+            month_key: str = month_info["month_key"]
             month_summaries = monthly_data.get(month_key, [])
 
             if member_id:

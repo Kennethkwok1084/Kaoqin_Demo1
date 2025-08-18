@@ -63,7 +63,9 @@ class ImportResult:
             "warnings": self.warnings,
             "matched_count": len(self.matched_data),
             "unmatched_count": len(self.unmatched_data),
-            "unmatched_data": self.unmatched_data[:10],  # 只返回前10条未匹配数据作为示例
+            "unmatched_data": self.unmatched_data[
+                :10
+            ],  # 只返回前10条未匹配数据作为示例
         }
 
 
@@ -313,7 +315,9 @@ class DataImportService:
 
             # 验证文件类型
             if not self._validate_file_type(file.filename):
-                result.errors.append("不支持的文件类型，请上传 .xlsx, .xls 或 .csv 文件")
+                result.errors.append(
+                    "不支持的文件类型，请上传 .xlsx, .xls 或 .csv 文件"
+                )
                 return result
 
             # 保存临时文件
@@ -644,7 +648,9 @@ class DataImportService:
 
             # 如果匹配率低于预期，记录警告
             if match_stats["match_rate"] < 0.8:
-                logger.warning(f"低匹配率警告: {match_stats['match_rate']:.2%}，可能需要检查数据质量")
+                logger.warning(
+                    f"低匹配率警告: {match_stats['match_rate']:.2%}，可能需要检查数据质量"
+                )
 
             return {
                 "matched": matched_data,
@@ -689,7 +695,9 @@ class DataImportService:
                     )
 
                     if not name or not contact:
-                        unmatched_data.append({**row, "_match_reason": "缺少姓名或联系方式"})
+                        unmatched_data.append(
+                            {**row, "_match_reason": "缺少姓名或联系方式"}
+                        )
                         continue
 
                     # 创建匹配键
@@ -720,7 +728,9 @@ class DataImportService:
 
                 except Exception as e:
                     logger.warning(f"Error in fallback matching row: {str(e)}")
-                    unmatched_data.append({**row, "_match_reason": f"匹配过程出错: {str(e)}"})
+                    unmatched_data.append(
+                        {**row, "_match_reason": f"匹配过程出错: {str(e)}"}
+                    )
 
             logger.info(
                 f"Fallback matching completed: {len(matched_data)} matched, "

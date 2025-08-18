@@ -127,7 +127,9 @@ async def get_monitoring_tasks(
 
     except Exception as e:
         logger.error(f"Get monitoring tasks error: {str(e)}")
-        return create_error_response(message="获取监控任务列表失败", details={"error": str(e)})
+        return create_error_response(
+            message="获取监控任务列表失败", details={"error": str(e)}
+        )
 
 
 @router.get("/fixes", response_model=Dict[str, Any])
@@ -210,7 +212,9 @@ async def get_fix_tasks(
 
     except Exception as e:
         logger.error(f"Get fix tasks error: {str(e)}")
-        return create_error_response(message="获取修复任务列表失败", details={"error": str(e)})
+        return create_error_response(
+            message="获取修复任务列表失败", details={"error": str(e)}
+        )
 
 
 @router.get("/assistance", response_model=Dict[str, Any])
@@ -286,7 +290,9 @@ async def get_assistance_tasks(
 
     except Exception as e:
         logger.error(f"Get assistance tasks error: {str(e)}")
-        return create_error_response(message="获取协助任务列表失败", details={"error": str(e)})
+        return create_error_response(
+            message="获取协助任务列表失败", details={"error": str(e)}
+        )
 
 
 @router.get("/", response_model=Dict[str, Any])
@@ -405,7 +411,9 @@ async def get_all_tasks(
 
     except Exception as e:
         logger.error(f"获取任务列表失败: {str(e)}")
-        return create_error_response(message="获取任务列表失败", details={"error": str(e)})
+        return create_error_response(
+            message="获取任务列表失败", details={"error": str(e)}
+        )
 
 
 @router.get("/work-time-detail/{task_id}", response_model=Dict[str, Any])
@@ -465,7 +473,9 @@ async def get_work_time_detail(
         raise
     except Exception as e:
         logger.error(f"Get work time detail for task {task_id} error: {str(e)}")
-        return create_error_response(message="获取工时详情失败", details={"error": str(e)})
+        return create_error_response(
+            message="获取工时详情失败", details={"error": str(e)}
+        )
 
 
 @router.get("/stats", response_model=Dict[str, Any])
@@ -565,7 +575,9 @@ async def get_tasks_stats(
 
     except Exception as e:
         logger.error(f"获取任务统计失败: {str(e)}")
-        return create_error_response(message="获取任务统计失败", details={"error": str(e)})
+        return create_error_response(
+            message="获取任务统计失败", details={"error": str(e)}
+        )
 
 
 # ============= 维修任务管理 =============
@@ -920,7 +932,9 @@ async def delete_repair_task(
             f"Repair task deleted: {task_id_str} by {current_user.student_id}"
         )
 
-        return create_response(message=f"成功删除维修任务：{task_title} ({task_id_str})")
+        return create_response(
+            message=f"成功删除维修任务：{task_title} ({task_id_str})"
+        )
 
     except HTTPException:
         raise
@@ -2588,7 +2602,9 @@ async def import_maintenance_orders(
                 if existing_task:
                     # 已存在相同任务，跳过
                     failed_count += 1
-                    errors.append(f"任务已存在，跳过重复导入: {data.get('title', '维修任务')}")
+                    errors.append(
+                        f"任务已存在，跳过重复导入: {data.get('title', '维修任务')}"
+                    )
                     continue
 
                 # 查找处理人（支持模糊匹配）
@@ -2630,7 +2646,9 @@ async def import_maintenance_orders(
                                 or_(
                                     Member.name == clean_name,  # 精确匹配
                                     Member.name.ilike(f"%{clean_name}%"),  # 包含匹配
-                                    Member.username.ilike(f"%{clean_name}%"),  # 用户名匹配
+                                    Member.username.ilike(
+                                        f"%{clean_name}%"
+                                    ),  # 用户名匹配
                                     Member.name.ilike(f"{clean_name}%"),  # 前缀匹配
                                     Member.name.ilike(f"%{clean_name}"),  # 后缀匹配
                                 )
@@ -2972,7 +2990,9 @@ async def get_maintenance_order_template(
 
 @router.post("/work-hours/recalculate", response_model=Dict[str, Any])
 async def batch_recalculate_work_hours(
-    task_ids: Optional[List[int]] = Query(None, description="任务ID列表，为空则重算所有任务"),
+    task_ids: Optional[List[int]] = Query(
+        None, description="任务ID列表，为空则重算所有任务"
+    ),
     member_id: Optional[int] = Query(None, description="重算指定成员的所有任务"),
     date_from: Optional[datetime] = Query(None, description="重算指定时间范围的任务"),
     date_to: Optional[datetime] = Query(None, description="重算指定时间范围的任务"),
@@ -3123,7 +3143,11 @@ async def recalculate_single_task_hours(
         return create_response(
             data=result_data,
             message="任务工时重新计算完成"
-            + (f"：{old_minutes}分钟 -> {task.work_minutes}分钟" if changed else "（无变化）"),
+            + (
+                f"：{old_minutes}分钟 -> {task.work_minutes}分钟"
+                if changed
+                else "（无变化）"
+            ),
         )
 
     except HTTPException:
@@ -3168,7 +3192,8 @@ async def get_pending_work_hours_review(
                     or_(
                         RepairTask.work_minutes > threshold_minutes,  # 工时过高
                         RepairTask.work_minutes < 10,  # 工时过低（小于10分钟）
-                        RepairTask.rating is not None and RepairTask.rating <= 2,  # 有差评
+                        RepairTask.rating is not None
+                        and RepairTask.rating <= 2,  # 有差评
                     ),
                 )
             )
@@ -3241,7 +3266,9 @@ async def get_pending_work_hours_review(
             f"Pending work hours review retrieved by {current_user.student_id}, total: {total}"
         )
 
-        return create_response(data=response_data, message=f"获取待审核工时任务成功，共 {total} 条记录")
+        return create_response(
+            data=response_data, message=f"获取待审核工时任务成功，共 {total} 条记录"
+        )
 
     except Exception as e:
         logger.error(f"Get pending work hours review error: {str(e)}")

@@ -165,7 +165,9 @@ class TestTasksCRUD:
 
     def test_get_tasks_with_search(self, client, auth_headers_admin):
         """测试搜索任务"""
-        response = client.get("/api/tasks/repair?search=网络", headers=auth_headers_admin)
+        response = client.get(
+            "/api/tasks/repair?search=网络", headers=auth_headers_admin
+        )
 
         assert response.status_code == 200
         data = response.json()

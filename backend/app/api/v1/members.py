@@ -134,7 +134,9 @@ async def get_member(
         member = result.scalar_one_or_none()
 
         if not member:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在"
+            )
 
         # 权限检查：管理员和组长可查看所有，普通用户只能查看自己
         if not current_user.can_manage_group and current_user.id != member_id:
@@ -236,7 +238,9 @@ async def update_member(
         member = result.scalar_one_or_none()
 
         if not member:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在"
+            )
 
         # 权限检查
         can_update_all = current_user.can_manage_group
@@ -304,7 +308,9 @@ async def delete_member(
         member = result.scalar_one_or_none()
 
         if not member:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在"
+            )
 
         # 不能删除自己
         if member.id == current_user.id:
@@ -485,7 +491,9 @@ async def change_password(
         member = result.scalar_one_or_none()
 
         if not member:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在"
+            )
 
         # 权限检查
         if current_user.id != member_id and not current_user.is_admin:
@@ -506,7 +514,9 @@ async def change_password(
 
         logger.info(f"密码修改成功: {member.username} by {current_user.username}")
 
-        return create_response(data={"updated_member_id": member_id}, message="密码修改成功")
+        return create_response(
+            data={"updated_member_id": member_id}, message="密码修改成功"
+        )
 
     except HTTPException:
         raise

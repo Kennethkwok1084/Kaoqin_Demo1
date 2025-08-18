@@ -184,7 +184,7 @@ class WorkHoursCalculationService:
             for tag in task.tags:
                 if tag.is_active:
                     if tag.tag_type == TaskTagType.NON_DEFAULT_RATING:
-                        positive_review_minutes += tag.work_minutes_modifier or 0
+                        positive_review_minutes += (tag.work_minutes_modifier or 0)
                     elif tag.is_penalty_tag():
                         if tag.tag_type == TaskTagType.TIMEOUT_RESPONSE:
                             late_response_penalty += abs(tag.work_minutes_modifier or 0)
@@ -383,12 +383,8 @@ class WorkHoursCalculationService:
             )
 
             # 计算总工时
-            total_hours = (
-                (repair_stats["total_hours"] or 0.0)
-                + monitoring_hours
-                + assistance_hours
-                + carried_hours
-            )
+            repair_hours = float(repair_stats.get("total_hours", 0) or 0.0)
+            total_hours = float(repair_hours) + float(monitoring_hours) + float(assistance_hours) + float(carried_hours)
 
             # 计算可结转工时（满勤30小时/月，超出部分可结转）
             monthly_requirement = 30.0
@@ -396,10 +392,10 @@ class WorkHoursCalculationService:
 
             return {
                 # 核心工时字段
-                "repair_task_hours": repair_stats["total_hours"],
+                "repair_task_hours": float(repair_stats.get("total_hours", 0) or 0.0),
                 "monitoring_hours": monitoring_hours,
                 "assistance_hours": assistance_hours,
-                "carried_hours": carried_hours,
+                "carried_hours": float(carried_hours),
                 "total_hours": total_hours,
                 "remaining_hours": remaining_hours,
                 # 详细分类统计
@@ -485,14 +481,20 @@ class WorkHoursCalculationService:
                         setattr(summary, key, value)
                 summary.updated_at = datetime.utcnow()
             else:
-                # 创建新记录
-                # 创建新记录
+                # 创建新记录 - 只传递兼容的字段
                 summary_data = {
-                    k: v for k, v in work_hours_data.items() if not k.endswith("_count")
+                    k: v for k, v in work_hours_data.items() 
+                    if not k.endswith("_count") and k != "monthly_requirement" and k != "is_full_attendance"
                 }
                 summary = MonthlyAttendanceSummary(
-                    member_id=member_id, year=year, month=month, **summary_data
+                    member_id=member_id, 
+                    year=year, 
+                    month=month
                 )
+                # 设置属性
+                for key, value in summary_data.items():
+                    if hasattr(summary, key):
+                        setattr(summary, key, value)
                 self.db.add(summary)
 
             await self.db.commit()
@@ -772,10 +774,10 @@ class WorkHoursCalculationService:
 
         if not tag:
             # 使用TaskTag的工厂方法创建标签
-            factory_method_name: str = config["factory_method"]
-            factory_method = getattr(TaskTag, factory_method_name, None)
-            if factory_method is None:
+            factory_method_name = config["factory_method"]
+            if not isinstance(factory_method_name, str) or not hasattr(TaskTag, factory_method_name):
                 raise ValueError(f"Unknown factory method: {factory_method_name}")
+            factory_method = getattr(TaskTag, factory_method_name)
             tag = factory_method()
             self.db.add(tag)
             await self.db.commit()
@@ -820,30 +822,30 @@ class WorkHoursCalculationService:
 
         # 添加惩罚时长
         penalty_hours = penalty_minutes / 60.0
-        summary.penalty_hours = (summary.penalty_hours or 0.0) + penalty_hours
+        current_penalty = float(getattr(summary, 'penalty_hours', 0) or 0.0)
+        setattr(summary, 'penalty_hours', current_penalty + penalty_hours)
 
         if penalty_type == "late_response":
-            summary.late_response_penalty_hours = (
-                summary.late_response_penalty_hours or 0.0
-            ) + penalty_hours
+            current_late_response = float(getattr(summary, 'late_response_penalty_hours', 0) or 0.0)
+            setattr(summary, 'late_response_penalty_hours', current_late_response + penalty_hours)
         elif penalty_type == "late_completion":
-            summary.late_completion_penalty_hours = (
-                summary.late_completion_penalty_hours or 0.0
-            ) + penalty_hours
+            current_late_completion = float(getattr(summary, 'late_completion_penalty_hours', 0) or 0.0)
+            setattr(summary, 'late_completion_penalty_hours', current_late_completion + penalty_hours)
         elif penalty_type == "negative_review":
-            summary.negative_review_penalty_hours = (
-                summary.negative_review_penalty_hours or 0.0
-            ) + penalty_hours
+            current_negative_review = float(getattr(summary, 'negative_review_penalty_hours', 0) or 0.0)
+            setattr(summary, 'negative_review_penalty_hours', current_negative_review + penalty_hours)
 
         # 重新计算总工时
-        summary.total_hours = max(
+        repair_hours = float(summary.repair_task_hours or 0.0)
+        monitoring_hours = float(summary.monitoring_hours or 0.0)
+        assistance_hours = float(summary.assistance_hours or 0.0)
+        carried_hours = float(summary.carried_hours or 0.0)
+        total_penalty = float(summary.penalty_hours or 0.0)
+        
+        setattr(summary, 'total_hours', max(
             0.0,
-            (summary.repair_task_hours or 0.0)
-            + (summary.monitoring_hours or 0.0)
-            + (summary.assistance_hours or 0.0)
-            + (summary.carried_hours or 0.0)
-            - (summary.penalty_hours or 0.0),
-        )
+            repair_hours + monitoring_hours + assistance_hours + carried_hours - total_penalty
+        ))
 
         await self.db.commit()
 
@@ -859,7 +861,7 @@ class RushTaskMarkingService:
         date_from: date,
         date_to: date,
         task_ids: Optional[List[int]] = None,
-        marked_by: int = None,
+        marked_by: Optional[int] = None,
     ) -> Dict[str, int]:
         """
         按日期批量标记爆单任务（重构版）
@@ -1079,9 +1081,11 @@ class RushTaskMarkingService:
             await self.db.commit()
 
             # 更新相关成员的月度汇总
-            affected_members = set(task.member_id for task in tasks)
+            affected_members = set(task.member_id for task in tasks if task.member_id is not None)
             affected_months = set(
-                (task.report_time.year, task.report_time.month) for task in tasks
+                (task.report_time.year, task.report_time.month) 
+                for task in tasks 
+                if task.report_time is not None
             )
 
             updated_summaries = 0

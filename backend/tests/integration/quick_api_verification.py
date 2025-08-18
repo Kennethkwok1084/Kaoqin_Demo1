@@ -154,9 +154,7 @@ def test_new_api_endpoints():
             else:
                 test_results["failed_tests"] += 1
                 status = "FAIL 失败"
-                details = (
-                    f"期望状态码: {endpoint['expected_status']}, 实际: {response.status_code}"
-                )
+                details = f"期望状态码: {endpoint['expected_status']}, 实际: {response.status_code}"
 
                 # 尝试获取错误详情
                 try:

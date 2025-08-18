@@ -11,9 +11,9 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 # 设置环境变量
 os.environ["ENVIRONMENT"] = "production"
-os.environ[
-    "DATABASE_URL"
-] = "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev"
+os.environ["DATABASE_URL"] = (
+    "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev"
+)
 
 
 async def test_basic_connection():

@@ -3,7 +3,7 @@
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, List, Union
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,39 +22,50 @@ async def import_members_debug(
     import_data: MemberImportRequest,
     current_user: Member = Depends(get_current_active_admin),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     调试版本的批量导入 - 完全禁用重复检查
+    
+    Args:
+        import_data: 批量导入请求数据
+        current_user: 当前认证的管理员用户
+        db: 数据库会话
+        
+    Returns:
+        Dict[str, Any]: 标准化API响应，包含导入结果统计
+        
+    Raises:
+        HTTPException: 当导入过程发生错误时抛出
     """
     try:
-        current_user_id = current_user.id
+        current_user_id: int = current_user.id
 
         logger.info(f"Debug import started by user {current_user_id}")
         logger.info(f"Members count: {len(import_data.members)}")
 
-        successful_imports = 0
-        failed_imports = 0
-        errors = []
-        imported_members = []
+        successful_imports: int = 0
+        failed_imports: int = 0
+        errors: List[Dict[str, Union[int, str]]] = []
+        imported_members: List[int] = []
 
         for index, member_data in enumerate(import_data.members):
             try:
                 # 安全提取字段
-                student_id_safe = getattr(member_data, "student_id", f"debug{index}")
-                name_safe = getattr(member_data, "name", f"Debug User {index}")
-                password_safe = getattr(member_data, "password", "default123")
-                email_safe = getattr(member_data, "email", None)
+                student_id_safe: str = getattr(member_data, "student_id", f"debug{index}")
+                name_safe: str = getattr(member_data, "name", f"Debug User {index}")
+                password_safe: str = getattr(member_data, "password", "default123")
+                email_safe: Union[str, None] = getattr(member_data, "email", None)
 
                 # 处理角色转换
-                role_value = getattr(member_data, "role", "member")
+                role_value: Union[str, UserRole] = getattr(member_data, "role", "member")
                 if isinstance(role_value, str):
-                    role_mapping = {
+                    role_mapping: Dict[str, UserRole] = {
                         "admin": UserRole.ADMIN,
                         "group_leader": UserRole.GROUP_LEADER,
                         "member": UserRole.MEMBER,
                         "guest": UserRole.GUEST,
                     }
-                    role_safe = role_mapping.get(role_value, UserRole.MEMBER)
+                    role_safe: UserRole = role_mapping.get(role_value, UserRole.MEMBER)
                 else:
                     role_safe = role_value if role_value else UserRole.MEMBER
 
@@ -63,7 +74,7 @@ async def import_members_debug(
                 )
 
                 # 跳过所有重复检查，直接创建
-                new_member = Member(
+                new_member: Member = Member(
                     name=str(name_safe),
                     student_id=str(student_id_safe),
                     password_hash=get_password_hash(str(password_safe)),
@@ -95,15 +106,17 @@ async def import_members_debug(
             await db.rollback()
             logger.info("No members imported, rolling back")
 
+        response_data: Dict[str, Any] = {
+            "total_processed": len(import_data.members),
+            "successful_imports": successful_imports,
+            "failed_imports": failed_imports,
+            "skipped_duplicates": 0,
+            "errors": errors,
+            "imported_members": imported_members[:10],  # 限制返回数量
+        }
+
         return create_response(
-            data={
-                "total_processed": len(import_data.members),
-                "successful_imports": successful_imports,
-                "failed_imports": failed_imports,
-                "skipped_duplicates": 0,
-                "errors": errors,
-                "imported_members": imported_members[:10],  # 限制返回数量
-            },
+            data=response_data,
             message=f"调试导入完成：成功 {successful_imports} 条，失败 {failed_imports} 条",
         )
 

@@ -23,7 +23,9 @@ class MemberBase(BaseModel):
     phone: Optional[str] = Field(None, max_length=11, description="手机号")
     department: str = Field(default="信息化建设处", max_length=100, description="部门")
     class_name: str = Field(..., min_length=1, max_length=50, description="班级")
-    join_date: Optional[date] = Field(default_factory=date.today, description="入职日期")
+    join_date: Optional[date] = Field(
+        default_factory=date.today, description="入职日期"
+    )
     role: UserRole = Field(default=UserRole.MEMBER, description="用户角色")
     is_active: bool = Field(default=True, description="在职状态")
     profile_completed: bool = Field(default=False, description="是否已完善个人信息")
@@ -92,7 +94,9 @@ class MemberUpdate(BaseModel):
     username: Optional[str] = Field(
         None, min_length=3, max_length=50, description="登录用户名"
     )
-    name: Optional[str] = Field(None, min_length=1, max_length=50, description="真实姓名")
+    name: Optional[str] = Field(
+        None, min_length=1, max_length=50, description="真实姓名"
+    )
     phone: Optional[str] = Field(None, max_length=11, description="手机号")
     department: Optional[str] = Field(None, max_length=100, description="部门")
     class_name: Optional[str] = Field(
@@ -228,7 +232,9 @@ class MemberListResponse(BaseModel):
 class MemberImportItem(BaseModel):
     """批量导入单个成员Schema"""
 
-    username: Optional[str] = Field(default=None, description="用户名（可选，自动生成）")
+    username: Optional[str] = Field(
+        default=None, description="用户名（可选，自动生成）"
+    )
     name: str = Field(..., description="真实姓名")
     student_id: Optional[str] = Field(default=None, description="学号/员工号（可选）")
     phone: Optional[str] = Field(default=None, description="手机号")

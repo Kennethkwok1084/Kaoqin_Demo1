@@ -295,14 +295,16 @@ def upgrade() -> None:
     """
     )
     # 安全修改 assistance_tasks 表状态字段默认值，仅在表存在时执行
-    op.execute("""
+    op.execute(
+        """
         DO $$
         BEGIN
             IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'assistance_tasks') THEN
                 ALTER TABLE assistance_tasks ALTER COLUMN status DROP DEFAULT;
             END IF;
         END $$;
-    """)
+    """
+    )
     op.add_column(
         "attendance_records",
         sa.Column(
@@ -907,14 +909,16 @@ def downgrade() -> None:
     op.drop_column("attendance_records", "checkin_time")
     op.drop_column("attendance_records", "attendance_date")
     # 安全恢复 assistance_tasks 表状态字段默认值，仅在表存在时执行
-    op.execute("""
+    op.execute(
+        """
         DO $$
         BEGIN
             IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'assistance_tasks') THEN
                 ALTER TABLE assistance_tasks ALTER COLUMN status SET DEFAULT 'COMPLETED'::taskstatus;
             END IF;
         END $$;
-    """)
+    """
+    )
     op.create_table(
         "attendance_configurations",
         sa.Column(

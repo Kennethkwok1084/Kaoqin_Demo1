@@ -335,19 +335,27 @@ class IntegrationTestRunner:
 
         # 基于失败率的建议
         if stats["failed"] > 0:
-            recommendations.append(f"发现 {stats['failed']} 个失败的测试用例，建议优先修复")
+            recommendations.append(
+                f"发现 {stats['failed']} 个失败的测试用例，建议优先修复"
+            )
 
         # 基于跳过测试的建议
         if stats["skipped"] > 0:
-            recommendations.append(f"有 {stats['skipped']} 个测试被跳过，建议检查跳过的原因")
+            recommendations.append(
+                f"有 {stats['skipped']} 个测试被跳过，建议检查跳过的原因"
+            )
 
         # 基于错误的建议
         if stats["errors"] > 0:
-            recommendations.append(f"有 {stats['errors']} 个测试出现错误，建议检查测试环境配置")
+            recommendations.append(
+                f"有 {stats['errors']} 个测试出现错误，建议检查测试环境配置"
+            )
 
         # 基于警告的建议
         if len(test_results["warnings"]) > 0:
-            recommendations.append(f"有 {len(test_results['warnings'])} 个警告，建议检查代码质量")
+            recommendations.append(
+                f"有 {len(test_results['warnings'])} 个警告，建议检查代码质量"
+            )
 
         # 基于成功率的建议
         success_rate = (
@@ -446,7 +454,9 @@ class IntegrationTestRunner:
             f.write(f"- **开始时间**: {run_info['start_time']}\n")
             f.write(f"- **结束时间**: {run_info['end_time']}\n")
             f.write(f"- **运行时长**: {run_info['duration_formatted']}\n")
-            f.write(f"- **运行状态**: {'✅ 成功' if run_info['success'] else '❌ 失败'}\n\n")
+            f.write(
+                f"- **运行状态**: {'✅ 成功' if run_info['success'] else '❌ 失败'}\n\n"
+            )
 
             # 测试统计
             f.write("## 测试统计\n\n")
