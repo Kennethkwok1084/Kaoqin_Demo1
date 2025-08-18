@@ -180,16 +180,16 @@ class WorkHoursCalculationService:
             for tag in task.tags:
                 if tag.is_active:
                     if tag.tag_type == TaskTagType.NON_DEFAULT_RATING:
-                        positive_review_minutes += tag.work_minutes_modifier  # type: ignore[assignment]
+                        positive_review_minutes += tag.work_minutes_modifier or 0
                     elif tag.is_penalty_tag():
                         if tag.tag_type == TaskTagType.TIMEOUT_RESPONSE:
-                            late_response_penalty += abs(tag.work_minutes_modifier)
+                            late_response_penalty += abs(tag.work_minutes_modifier or 0)
                         elif tag.tag_type == TaskTagType.TIMEOUT_PROCESSING:
-                            late_completion_penalty += abs(tag.work_minutes_modifier)
+                            late_completion_penalty += abs(tag.work_minutes_modifier or 0)
                         elif tag.tag_type == TaskTagType.BAD_RATING:
-                            negative_review_penalty += abs(tag.work_minutes_modifier)
+                            negative_review_penalty += abs(tag.work_minutes_modifier or 0)
                         elif tag.tag_type == TaskTagType.PENALTY:
-                            penalty_minutes += abs(tag.work_minutes_modifier)
+                            penalty_minutes += abs(tag.work_minutes_modifier or 0)
 
             # 检查实时异常情况
             if self._is_response_overdue(task):

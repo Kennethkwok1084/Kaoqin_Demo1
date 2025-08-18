@@ -79,7 +79,7 @@ async def get_work_hours_records(
                 RepairTask.rating,
                 RepairTask.member_id,
                 Member.name.label("member_name"),
-            )  # type: ignore[call-overload]
+            )
             .join(Member)
             .where(
                 RepairTask.member_id == target_member_id,
@@ -194,7 +194,7 @@ async def get_monthly_work_hours_summary(
             RepairTask.member_id == target_member_id,
             RepairTask.completion_time >= month_start,
             RepairTask.completion_time <= month_end,
-            RepairTask.status == TaskStatus.COMPLETED,  # type: ignore[arg-type]
+            RepairTask.status == TaskStatus.COMPLETED,
         )
         repair_result = await db.execute(repair_query)
         repair_stats = repair_result.fetchone()
@@ -217,7 +217,7 @@ async def get_monthly_work_hours_summary(
             MonitoringTask.member_id == target_member_id,
             MonitoringTask.end_time >= month_start,
             MonitoringTask.end_time <= month_end,
-            MonitoringTask.status == TaskStatus.COMPLETED,  # type: ignore[arg-type]
+            MonitoringTask.status == TaskStatus.COMPLETED,
         )
         monitoring_result = await db.execute(monitoring_query)
         monitoring_stats = monitoring_result.fetchone()
@@ -238,7 +238,7 @@ async def get_monthly_work_hours_summary(
             AssistanceTask.member_id == target_member_id,
             AssistanceTask.end_time >= month_start,
             AssistanceTask.end_time <= month_end,
-            AssistanceTask.status == TaskStatus.COMPLETED,  # type: ignore[arg-type]
+            AssistanceTask.status == TaskStatus.COMPLETED,
         )
         assistance_result = await db.execute(assistance_query)
         assistance_stats = assistance_result.fetchone()
@@ -326,7 +326,7 @@ async def get_today_work_hours_summary(
         repair_hours_query = select(func.sum(RepairTask.work_minutes)).where(
             RepairTask.completion_time >= today_start,
             RepairTask.completion_time <= today_end,
-            RepairTask.status == TaskStatus.COMPLETED,  # type: ignore[arg-type]
+            RepairTask.status == TaskStatus.COMPLETED,
         )
         repair_result = await db.execute(repair_hours_query)
         repair_minutes = repair_result.scalar() or 0
@@ -335,7 +335,7 @@ async def get_today_work_hours_summary(
         monitoring_hours_query = select(func.sum(MonitoringTask.work_minutes)).where(
             MonitoringTask.end_time >= today_start,
             MonitoringTask.end_time <= today_end,
-            MonitoringTask.status == TaskStatus.COMPLETED,  # type: ignore[arg-type]
+            MonitoringTask.status == TaskStatus.COMPLETED,
         )
         monitoring_result = await db.execute(monitoring_hours_query)
         monitoring_minutes = monitoring_result.scalar() or 0
@@ -344,7 +344,7 @@ async def get_today_work_hours_summary(
         assistance_hours_query = select(func.sum(AssistanceTask.work_minutes)).where(
             AssistanceTask.end_time >= today_start,
             AssistanceTask.end_time <= today_end,
-            AssistanceTask.status == TaskStatus.COMPLETED,  # type: ignore[arg-type]
+            AssistanceTask.status == TaskStatus.COMPLETED,
         )
         assistance_result = await db.execute(assistance_hours_query)
         assistance_minutes = assistance_result.scalar() or 0
@@ -361,7 +361,7 @@ async def get_today_work_hours_summary(
         ).where(
             RepairTask.completion_time >= today_start,
             RepairTask.completion_time <= today_end,
-            RepairTask.status == TaskStatus.COMPLETED,  # type: ignore[arg-type]
+            RepairTask.status == TaskStatus.COMPLETED,
         )
         active_result = await db.execute(active_members_query)
         active_members = active_result.scalar() or 0
@@ -430,7 +430,7 @@ async def export_work_hours_data(
         import tempfile
         from datetime import datetime as dt
 
-        import pandas as pd  # type: ignore[import-untyped]
+        import pandas as pd
         from sqlalchemy import and_, select
 
         from app.models.member import Member
@@ -457,7 +457,7 @@ async def export_work_hours_data(
                 RepairTask.rating,
                 RepairTask.member_id,
                 Member.name.label("member_name"),
-            )  # type: ignore[call-overload]
+            )
             .join(Member)
             .where(
                 RepairTask.completion_time >= date_from_dt,
@@ -587,7 +587,7 @@ async def get_work_hours_stats(
             RepairTask.member_id == target_member_id,
             RepairTask.completion_time >= start_datetime,
             RepairTask.completion_time <= end_datetime,
-            RepairTask.status == TaskStatus.COMPLETED,  # type: ignore[arg-type]
+            RepairTask.status == TaskStatus.COMPLETED,
         )
 
         repair_result = await db.execute(repair_query)
@@ -667,7 +667,7 @@ async def get_work_hours_chart_data(
     try:
         pass
 
-        from sqlalchemy import func, select, text
+        from sqlalchemy import func, select, text, String
 
         from app.models.task import RepairTask
 
@@ -721,7 +721,7 @@ async def get_work_hours_chart_data(
                 .where(
                     RepairTask.completion_time >= start_datetime,
                     RepairTask.completion_time <= end_datetime,
-                    RepairTask.status == TaskStatus.COMPLETED,  # type: ignore[arg-type]
+                    RepairTask.status == TaskStatus.COMPLETED,
                     *([RepairTask.member_id == memberId] if memberId else []),
                 )
                 .group_by(func.date(RepairTask.completion_time))
@@ -737,7 +737,7 @@ async def get_work_hours_chart_data(
                         "-W",
                         func.lpad(
                             func.extract("week", RepairTask.completion_time).cast(
-                                "varchar"  # type: ignore[arg-type]
+                                String
                             ),
                             2,
                             "0",
@@ -749,7 +749,7 @@ async def get_work_hours_chart_data(
                 .where(
                     RepairTask.completion_time >= start_datetime,
                     RepairTask.completion_time <= end_datetime,
-                    RepairTask.status == TaskStatus.COMPLETED,  # type: ignore[arg-type]
+                    RepairTask.status == TaskStatus.COMPLETED,
                     *([RepairTask.member_id == memberId] if memberId else []),
                 )
                 .group_by(
@@ -771,7 +771,7 @@ async def get_work_hours_chart_data(
                         "-",
                         func.lpad(
                             func.extract("month", RepairTask.completion_time).cast(
-                                "varchar"  # type: ignore[arg-type]
+                                String
                             ),
                             2,
                             "0",
@@ -783,7 +783,7 @@ async def get_work_hours_chart_data(
                 .where(
                     RepairTask.completion_time >= start_datetime,
                     RepairTask.completion_time <= end_datetime,
-                    RepairTask.status == TaskStatus.COMPLETED,  # type: ignore[arg-type]
+                    RepairTask.status == TaskStatus.COMPLETED,
                     *([RepairTask.member_id == memberId] if memberId else []),
                 )
                 .group_by(

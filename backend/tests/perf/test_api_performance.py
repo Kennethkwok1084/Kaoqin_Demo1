@@ -152,6 +152,7 @@ class TestAPIPerformance:
 async def async_client() -> AsyncGenerator[AsyncClient, None]:
     """Create async test client for performance testing."""
     from httpx import ASGITransport
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
         yield client

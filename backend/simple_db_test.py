@@ -39,19 +39,19 @@ def test_psycopg2_connection():
         import psycopg2
 
         print("尝试使用psycopg2连接数据库...")
-        
+
         # 检查环境信息
         print(f"CI环境变量: {os.getenv('CI')}")
         print(f"GITHUB_ACTIONS环境变量: {os.getenv('GITHUB_ACTIONS')}")
-        
+
         # 从环境变量解析数据库连接信息
         db_url = os.environ.get("DATABASE_URL_SYNC")
         if not db_url:
             raise ValueError("DATABASE_URL_SYNC环境变量未设置")
-            
+
         print(f"使用数据库URL: {db_url}")
         parsed = urlparse(db_url)
-        
+
         print(f"连接到数据库: {parsed.hostname}:{parsed.port}/{parsed.path[1:]}")
         print(f"用户名: {parsed.username}")
 
@@ -83,6 +83,7 @@ def test_psycopg2_connection():
         print(f"[FAIL] psycopg2连接失败: {e}")
         print(f"错误类型: {type(e).__name__}")
         import traceback
+
         traceback.print_exc()
         return False
 

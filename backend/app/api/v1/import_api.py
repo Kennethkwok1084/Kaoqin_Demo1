@@ -30,7 +30,7 @@ async def get_import_field_mapping(
     ),
     current_user: Member = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     获取导入字段映射表
     返回支持的字段映射配置，用于前端显示和数据导入时的字段匹配
@@ -364,7 +364,7 @@ async def get_import_template(
     template_type: str = "repair_task",
     current_user: Member = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     获取导入模板
     返回指定类型的导入模板配置

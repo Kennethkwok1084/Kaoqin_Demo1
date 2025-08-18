@@ -6,7 +6,7 @@
 import logging
 import time
 from datetime import date
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
@@ -44,7 +44,7 @@ async def get_members(
     class_name: Optional[str] = Query(None, description="班级筛选"),
     current_user: Member = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     获取成员列表
     支持分页、搜索和多字段筛选
@@ -95,10 +95,11 @@ async def get_members(
         # 构建响应数据
         member_list = []
         for member in members:
-            member_dict = member.get_safe_dict()
-            member_list.append(member_dict)
+            if hasattr(member, 'get_safe_dict'):
+                member_dict = member.get_safe_dict()
+                member_list.append(member_dict)
 
-        total_pages = (total + page_size - 1) // page_size
+        total_pages = ((total or 0) + page_size - 1) // page_size
 
         return create_response(
             data={
@@ -123,7 +124,7 @@ async def get_member(
     member_id: int,
     current_user: Member = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     获取单个成员详情
     """
@@ -159,7 +160,7 @@ async def create_member(
     member_data: MemberCreate,
     current_user: Member = Depends(get_current_active_admin),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     创建新成员
     仅管理员可操作
@@ -226,7 +227,7 @@ async def update_member(
     member_data: MemberUpdate,
     current_user: Member = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     更新成员信息
     管理员可更新所有，普通用户只能更新自己的部分信息
@@ -296,7 +297,7 @@ async def delete_member(
     member_id: int,
     current_user: Member = Depends(get_current_active_admin),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     删除成员
     仅管理员可操作
@@ -344,7 +345,7 @@ async def import_members(
     import_data: MemberImportRequest,
     current_user: Member = Depends(get_current_active_admin),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     批量导入成员
     全新的Excel处理逻辑，避免greenlet问题
@@ -403,7 +404,7 @@ async def import_members(
                 "member": UserRole.MEMBER,
                 "guest": UserRole.GUEST,
             }
-            role = role_mapping.get(member_item.role, UserRole.MEMBER)
+            role = role_mapping.get(member_item.role or "member", UserRole.MEMBER)
 
             # 创建新成员，确保所有必填字段都有值
             try:
@@ -479,7 +480,7 @@ async def change_password(
     password_data: PasswordChangeRequest,
     current_user: Member = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     修改密码
     用户只能修改自己的密码，管理员可以重置任何人的密码
@@ -531,7 +532,7 @@ async def change_password(
 async def get_member_stats(
     current_user: Member = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """
     获取成员统计信息
     """
@@ -547,7 +548,7 @@ async def get_member_stats(
         active_members = result.scalar()
 
         # 离职成员数
-        inactive_members = total_members - active_members
+        inactive_members = (total_members or 0) - (active_members or 0)
 
         # 按角色统计
         role_stats = {}
@@ -632,7 +633,7 @@ async def complete_profile(
         logger.info(f"Profile completed for member {member_id}")
 
         # 返回更新后的成员信息
-        return create_response(
+        response_data = create_response(
             data={
                 "id": member.id,
                 "username": member.username,
@@ -640,6 +641,7 @@ async def complete_profile(
                 "message": "个人信息完善成功",
             }
         )
+        return JSONResponse(content=response_data)
 
     except HTTPException:
         raise

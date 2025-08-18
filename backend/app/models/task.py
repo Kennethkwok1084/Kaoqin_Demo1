@@ -82,7 +82,7 @@ class TaskTagType(enum.Enum):
 # Association table for task tags (many-to-many)
 task_tag_association = Table(
     "task_tag_associations",
-    Base.metadata,  # type: ignore[attr-defined]
+    Base.metadata,
     Column("task_id", Integer, ForeignKey("repair_tasks.id"), primary_key=True),
     Column("tag_id", Integer, ForeignKey("task_tags.id"), primary_key=True),
     comment="Association table for tasks and tags",
@@ -360,7 +360,7 @@ class RepairTask(BaseModel):
     # Relationships
     member: Mapped["Member"] = relationship("Member", back_populates="repair_tasks")
 
-    tags: Mapped[List[TaskTag]] = relationship(
+    tags: Mapped[List["TaskTag"]] = relationship(
         TaskTag, secondary=task_tag_association, back_populates="tasks", lazy="dynamic"
     )
 
@@ -384,7 +384,7 @@ class RepairTask(BaseModel):
             return False
 
         hours_since_report = (
-            datetime.utcnow() - self.report_time
+            datetime.utcnow() - (self.report_time or datetime.utcnow())
         ).total_seconds() / 3600
         return bool(hours_since_report > 24)
 
@@ -447,7 +447,7 @@ class RepairTask(BaseModel):
             for tag in self.tags:
                 if tag.is_active and tag.is_penalty_tag():
                     penalty_minutes += abs(
-                        tag.work_minutes_modifier
+                        tag.work_minutes_modifier or 0
                     )  # 扣时标签为负数，这里取绝对值
 
             # Apply time-based penalties
@@ -475,7 +475,7 @@ class RepairTask(BaseModel):
         # Apply tag modifiers
         for tag in self.tags:
             if tag.is_active:
-                total_minutes += tag.work_minutes_modifier
+                total_minutes += (tag.work_minutes_modifier or 0)
 
         # Apply time-based penalties
         if self.is_overdue_response:

@@ -188,6 +188,43 @@ class Member(BaseModel):
         {"comment": "成员信息表（重构版）"},
     )
 
+    def __init__(
+        self,
+        username: str,
+        name: str,
+        student_id: Optional[str] = None,
+        phone: Optional[str] = None,
+        email: Optional[str] = None,
+        department: str = "信息化建设处",
+        class_name: str = "",
+        group_id: Optional[int] = None,
+        join_date: Optional[date] = None,
+        password_hash: str = "",
+        role: UserRole = UserRole.MEMBER,
+        is_active: bool = True,
+        profile_completed: bool = False,
+        is_verified: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize Member instance."""
+        super().__init__(**kwargs)
+        self.username = username
+        self.name = name
+        self.student_id = student_id
+        self.phone = phone
+        self.email = email
+        self.department = department
+        self.class_name = class_name
+        self.group_id = group_id
+        self.join_date = join_date or date.today()
+        self.password_hash = password_hash
+        self.role = role
+        self.is_active = is_active
+        self.profile_completed = profile_completed
+        self.is_verified = is_verified
+        self.login_count = 0
+        self.last_login = None
+
     def __repr__(self) -> str:
         """字符串表示"""
         return (
