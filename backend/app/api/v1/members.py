@@ -95,7 +95,7 @@ async def get_members(
         # 构建响应数据
         member_list = []
         for member in members:
-            if hasattr(member, 'get_safe_dict'):
+            if hasattr(member, "get_safe_dict"):
                 member_dict = member.get_safe_dict()
                 member_list.append(member_dict)
 

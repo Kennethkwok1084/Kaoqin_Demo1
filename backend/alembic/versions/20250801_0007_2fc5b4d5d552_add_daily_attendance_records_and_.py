@@ -289,9 +289,11 @@ def upgrade() -> None:
     )
     # 安全删除表，如果表存在的话
     # 删除表时会自动删除所有相关的索引和约束
-    op.execute("""
+    op.execute(
+        """
         DROP TABLE IF EXISTS attendance_configurations;
-    """)
+    """
+    )
     op.alter_column(
         "assistance_tasks",
         "status",

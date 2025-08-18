@@ -185,9 +185,13 @@ class WorkHoursCalculationService:
                         if tag.tag_type == TaskTagType.TIMEOUT_RESPONSE:
                             late_response_penalty += abs(tag.work_minutes_modifier or 0)
                         elif tag.tag_type == TaskTagType.TIMEOUT_PROCESSING:
-                            late_completion_penalty += abs(tag.work_minutes_modifier or 0)
+                            late_completion_penalty += abs(
+                                tag.work_minutes_modifier or 0
+                            )
                         elif tag.tag_type == TaskTagType.BAD_RATING:
-                            negative_review_penalty += abs(tag.work_minutes_modifier or 0)
+                            negative_review_penalty += abs(
+                                tag.work_minutes_modifier or 0
+                            )
                         elif tag.tag_type == TaskTagType.PENALTY:
                             penalty_minutes += abs(tag.work_minutes_modifier or 0)
 

@@ -475,7 +475,7 @@ class RepairTask(BaseModel):
         # Apply tag modifiers
         for tag in self.tags:
             if tag.is_active:
-                total_minutes += (tag.work_minutes_modifier or 0)
+                total_minutes += tag.work_minutes_modifier or 0
 
         # Apply time-based penalties
         if self.is_overdue_response:

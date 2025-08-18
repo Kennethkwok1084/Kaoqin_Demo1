@@ -667,7 +667,7 @@ async def get_work_hours_chart_data(
     try:
         pass
 
-        from sqlalchemy import func, select, text, String
+        from sqlalchemy import String, func, select, text
 
         from app.models.task import RepairTask
 
