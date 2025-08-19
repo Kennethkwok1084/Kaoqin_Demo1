@@ -357,34 +357,42 @@ class AttendanceService:
                 expected_work_days=expected_work_days,
                 attendance_rate=round(attendance_rate, 2),
                 # 使用新的工时计算结果
-                total_work_hours=round(monthly_summary.total_hours, 2),
-                repair_task_hours=round(monthly_summary.repair_task_hours, 2),
-                monitoring_hours=round(monthly_summary.monitoring_hours, 2),
-                assistance_hours=round(monthly_summary.assistance_hours, 2),
-                carried_hours=round(monthly_summary.carried_hours, 2),
-                remaining_hours=round(monthly_summary.remaining_hours, 2),
+                total_work_hours=round(float(monthly_summary.total_hours or 0), 2),
+                repair_task_hours=round(
+                    float(monthly_summary.repair_task_hours or 0), 2
+                ),
+                monitoring_hours=round(float(monthly_summary.monitoring_hours or 0), 2),
+                assistance_hours=round(float(monthly_summary.assistance_hours or 0), 2),
+                carried_hours=round(float(monthly_summary.carried_hours or 0), 2),
+                remaining_hours=round(float(monthly_summary.remaining_hours or 0), 2),
                 # 详细工时分类
-                online_repair_hours=round(monthly_summary.online_repair_hours, 2),
-                offline_repair_hours=round(monthly_summary.offline_repair_hours, 2),
-                rush_task_hours=round(monthly_summary.rush_task_hours, 2),
-                positive_review_hours=round(monthly_summary.positive_review_hours, 2),
+                online_repair_hours=round(
+                    float(monthly_summary.online_repair_hours or 0), 2
+                ),
+                offline_repair_hours=round(
+                    float(monthly_summary.offline_repair_hours or 0), 2
+                ),
+                rush_task_hours=round(float(monthly_summary.rush_task_hours or 0), 2),
+                positive_review_hours=round(
+                    float(monthly_summary.positive_review_hours or 0), 2
+                ),
                 # 惩罚统计
-                penalty_hours=round(monthly_summary.penalty_hours, 2),
+                penalty_hours=round(float(monthly_summary.penalty_hours or 0), 2),
                 late_response_penalty_hours=round(
-                    monthly_summary.late_response_penalty_hours, 2
+                    float(monthly_summary.late_response_penalty_hours or 0), 2
                 ),
                 late_completion_penalty_hours=round(
-                    monthly_summary.late_completion_penalty_hours, 2
+                    float(monthly_summary.late_completion_penalty_hours or 0), 2
                 ),
                 negative_review_penalty_hours=round(
-                    monthly_summary.negative_review_penalty_hours, 2
+                    float(monthly_summary.negative_review_penalty_hours or 0), 2
                 ),
                 # 出勤统计
                 total_attendance_hours=round(total_attendance_hours, 2),
                 average_work_hours=(
-                    round(monthly_summary.total_hours / total_work_days, 2)
+                    round(float(monthly_summary.total_hours or 0) / total_work_days, 2)
                     if total_work_days > 0
-                    else 0
+                    else 0.0
                 ),
                 total_late_days=total_late_days,
                 total_early_days=total_early_days,

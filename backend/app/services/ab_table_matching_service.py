@@ -83,8 +83,8 @@ class ABTableMatchingService:
     async def match_ab_tables(
         self,
         a_table_data: List[Dict[str, Any]],
-        b_table_data: List[Dict[str, Any]] = None,
-        strategies: List[MatchingStrategy] = None,
+        b_table_data: Optional[List[Dict[str, Any]]] = None,
+        strategies: Optional[List[MatchingStrategy]] = None,
     ) -> List[MatchResult]:
         """
         执行A/B表智能匹配
@@ -243,11 +243,11 @@ class ABTableMatchingService:
         """获取所有活跃成员"""
         query = select(Member).where(Member.is_active)
         result = await self.db.execute(query)
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     def _build_member_index(self, members: List[Member]) -> Dict[str, Any]:
         """构建成员索引以提高匹配效率"""
-        index = {
+        index: Dict[str, Dict[str, Any]] = {
             "by_name": {},  # 按姓名索引
             "by_phone": {},  # 按电话索引
             "by_email": {},  # 按邮箱索引
@@ -270,22 +270,25 @@ class ABTableMatchingService:
             }
 
             # 姓名索引
-            if member_data["clean_name"]:
-                name_key = member_data["clean_name"]
+            clean_name = member_data["clean_name"]
+            if clean_name:
+                name_key = str(clean_name)
                 if name_key not in index["by_name"]:
                     index["by_name"][name_key] = []
                 index["by_name"][name_key].append(member_data)
 
             # 电话索引
-            if member_data["clean_phone"]:
-                phone_key = member_data["clean_phone"]
+            clean_phone = member_data["clean_phone"]
+            if clean_phone:
+                phone_key = str(clean_phone)
                 if phone_key not in index["by_phone"]:
                     index["by_phone"][phone_key] = []
                 index["by_phone"][phone_key].append(member_data)
 
             # 邮箱索引
-            if member_data["email"]:
-                email_key = member_data["email"]
+            email = member_data["email"]
+            if email:
+                email_key = str(email)
                 if email_key not in index["by_email"]:
                     index["by_email"][email_key] = []
                 index["by_email"][email_key].append(member_data)

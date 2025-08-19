@@ -58,9 +58,9 @@ class MemberBase(BaseModel):
     @classmethod
     def validate_name(cls, v: str) -> str:
         """验证姓名格式"""
-        # 允许中文、字母和·符号
-        if not re.match(r"^[\u4e00-\u9fa5a-zA-Z·]+$", v):
-            raise ValueError("姓名只能包含中文、字母和·符号")
+        # 允许中文、字母、空格和·符号
+        if not re.match(r"^[\u4e00-\u9fa5a-zA-Z·\s]+$", v):
+            raise ValueError("姓名只能包含中文、字母、空格和·符号")
         return v
 
 
@@ -126,8 +126,8 @@ class MemberUpdate(BaseModel):
     @classmethod
     def validate_name(cls, v: Optional[str]) -> Optional[str]:
         """验证姓名格式"""
-        if v is not None and not re.match(r"^[\u4e00-\u9fa5a-zA-Z·]+$", v):
-            raise ValueError("姓名只能包含中文、字母和·符号")
+        if v is not None and not re.match(r"^[\u4e00-\u9fa5a-zA-Z·\s]+$", v):
+            raise ValueError("姓名只能包含中文、字母、空格和·符号")
         return v
 
     class Config:

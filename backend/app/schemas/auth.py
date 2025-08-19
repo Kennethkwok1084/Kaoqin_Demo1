@@ -63,6 +63,7 @@ class UserProfileUpdate(BaseModel):
 
     name: Optional[str] = Field(None, max_length=50, description="User name")
     email: Optional[str] = Field(None, description="Email address")
+    phone: Optional[str] = Field(None, max_length=11, description="Phone number")
     class_name: Optional[str] = Field(None, max_length=50, description="Class name")
 
     model_config = ConfigDict(
@@ -70,6 +71,7 @@ class UserProfileUpdate(BaseModel):
             "example": {
                 "name": "张三丰",
                 "email": "zhangsan@newdomain.com",
+                "phone": "13800138000",
                 "class_name": "计算机科学与技术2102",
             }
         }

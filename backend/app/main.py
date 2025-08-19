@@ -71,7 +71,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="考勤管理系统 - Attendance Management System for University Network Maintenance Teams",
+    description=(
+        "考勤管理系统 - Attendance Management System for University Network "
+        "Maintenance Teams"
+    ),
     debug=settings.DEBUG,
     lifespan=lifespan,
     docs_url="/docs" if settings.DEBUG else None,

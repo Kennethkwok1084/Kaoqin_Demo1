@@ -25,15 +25,15 @@ async def import_members_debug(
 ) -> Dict[str, Any]:
     """
     调试版本的批量导入 - 完全禁用重复检查
-    
+
     Args:
         import_data: 批量导入请求数据
         current_user: 当前认证的管理员用户
         db: 数据库会话
-        
+
     Returns:
         Dict[str, Any]: 标准化API响应，包含导入结果统计
-        
+
     Raises:
         HTTPException: 当导入过程发生错误时抛出
     """
@@ -51,13 +51,17 @@ async def import_members_debug(
         for index, member_data in enumerate(import_data.members):
             try:
                 # 安全提取字段
-                student_id_safe: str = getattr(member_data, "student_id", f"debug{index}")
+                student_id_safe: str = getattr(
+                    member_data, "student_id", f"debug{index}"
+                )
                 name_safe: str = getattr(member_data, "name", f"Debug User {index}")
                 password_safe: str = getattr(member_data, "password", "default123")
                 email_safe: Union[str, None] = getattr(member_data, "email", None)
 
                 # 处理角色转换
-                role_value: Union[str, UserRole] = getattr(member_data, "role", "member")
+                role_value: Union[str, UserRole] = getattr(
+                    member_data, "role", "member"
+                )
                 if isinstance(role_value, str):
                     role_mapping: Dict[str, UserRole] = {
                         "admin": UserRole.ADMIN,

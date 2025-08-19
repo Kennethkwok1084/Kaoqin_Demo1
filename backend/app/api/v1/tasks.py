@@ -60,7 +60,7 @@ async def get_monitoring_tasks(
     pageSize: int = Query(20, ge=1, le=100, description="每页数量"),
     current_user: Member = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> Dict[str, Any]:
     """获取监控任务列表"""
     try:
         from app.models.task import MonitoringTask
@@ -1200,7 +1200,8 @@ async def assign_task(
             assignment_msg = f"任务从 {old_member_name} 重新分配给 {member.name}"
 
         logger.info(
-            f"Task {task_id} assigned to {assignment.assigned_to} by {current_user.student_id}"
+            f"Task {task_id} assigned to {assignment.assigned_to} by "
+            f"{current_user.student_id}"
         )
 
         return create_response(
@@ -1431,7 +1432,8 @@ async def cancel_task(
         await db.refresh(task)
 
         logger.warning(
-            f"Task {task.task_id} cancelled by {current_user.student_id}, reason: {reason}"
+            f"Task {task.task_id} cancelled by {current_user.student_id}, "
+            f"reason: {reason}"
         )
 
         return create_response(
@@ -1881,7 +1883,7 @@ def _is_valid_status_transition(old_status: TaskStatus, new_status: TaskStatus) 
 
 async def _add_penalty_tag(
     task: RepairTask, tag_name: str, modifier: int, db: AsyncSession
-):
+) -> Dict[str, Any]:
     """添加惩罚标签"""
     # 查找或创建标签
     tag_query = select(TaskTag).where(TaskTag.name == tag_name)

@@ -384,7 +384,8 @@ async def import_members(
                 if import_data.skip_duplicates:
                     skipped_duplicates += 1
                     logger.info(
-                        f"跳过重复成员: {member_item.name} ({member_item.student_id or username})"
+                        f"跳过重复成员: {member_item.name} "
+                        f"({member_item.student_id or username})"
                     )
                     continue
                 else:
@@ -607,7 +608,8 @@ async def complete_profile(
     # 检查权限：只能完善自己的信息或管理员可以完善任何人的信息
     if current_user.id != member_id and current_user.role != UserRole.ADMIN:
         logger.warning(
-            f"User {current_user.id} attempted to complete profile for member {member_id}"
+            f"User {current_user.id} attempted to complete profile "
+            f"for member {member_id}"
         )
         raise HTTPException(status_code=403, detail="无权限完善此用户信息")
 

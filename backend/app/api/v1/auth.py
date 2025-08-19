@@ -91,8 +91,6 @@ async def login(
             )
 
         # Update login info
-        if user.login_count is None:
-            user.login_count = 0
         user.update_login_info()
         await db.commit()
 
@@ -342,12 +340,7 @@ async def change_password(
             )
 
         # Validate new password strength
-        password_validation = validate_password_strength(password_data.new_password)
-        if isinstance(password_validation, tuple):
-            is_strong, errors = password_validation
-        else:
-            is_strong = password_validation
-            errors = []
+        is_strong, errors = validate_password_strength(password_data.new_password)
 
         if not is_strong:
             raise HTTPException(

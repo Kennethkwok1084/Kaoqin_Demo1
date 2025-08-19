@@ -34,7 +34,7 @@ class StatisticsService:
         self.db = db
         self.cache_enabled = True
 
-    def _generate_cache_key(self, method_name: str, **kwargs) -> str:
+    def _generate_cache_key(self, method_name: str, **kwargs: Any) -> str:
         """生成缓存键"""
         # 过滤None值并排序参数
         filtered_kwargs = {k: v for k, v in kwargs.items() if v is not None}
@@ -114,13 +114,7 @@ class StatisticsService:
             )
 
             # 等待所有任务完成
-            (
-                member_stats,
-                task_stats,
-                work_hour_stats,
-                performance_stats,
-                attendance_stats,
-            ) = await asyncio.gather(
+            results = await asyncio.gather(
                 member_stats_task,
                 task_stats_task,
                 work_hour_stats_task,
@@ -128,6 +122,14 @@ class StatisticsService:
                 attendance_stats_task,
                 return_exceptions=True,
             )
+
+            (
+                member_stats,
+                task_stats,
+                work_hour_stats,
+                performance_stats,
+                attendance_stats,
+            ) = results
 
             # 处理异常结果
             member_stats_data: Dict[str, Any]
@@ -856,19 +858,19 @@ class StatisticsService:
         # 总成员数
         total_query = select(func.count()).select_from(Member)
         total_result = await self.db.execute(total_query)
-        total_members = total_result.scalar()
+        total_members = total_result.scalar() or 0
 
         # 活跃成员数
         active_query = select(func.count()).where(Member.is_active)
         active_result = await self.db.execute(active_query)
-        active_members = active_result.scalar()
+        active_members = active_result.scalar() or 0
 
         # 角色分布
         role_stats = {}
         for role in UserRole:
             role_query = select(func.count()).where(Member.role == role)
             role_result = await self.db.execute(role_query)
-            role_stats[role.value] = role_result.scalar()
+            role_stats[role.value] = role_result.scalar() or 0
 
         return {
             "total_members": total_members,
@@ -1108,14 +1110,20 @@ class StatisticsService:
         rated_tasks = [t for t in tasks if t.rating is not None]
         avg_rating = 0.0
         if rated_tasks:
-            avg_rating = round(sum(t.rating for t in rated_tasks) / len(rated_tasks), 2)
+            avg_rating = round(
+                sum(t.rating for t in rated_tasks if t.rating is not None)
+                / len(rated_tasks),
+                2,
+            )
 
         # 延迟统计
-        overdue_response = len([t for t in tasks if t.is_overdue_response])
-        overdue_completion = len([t for t in tasks if t.is_overdue_completion])
+        overdue_response = len([t for t in tasks if t.is_overdue_response is True])
+        overdue_completion = len([t for t in tasks if t.is_overdue_completion is True])
 
         # 好评率
-        positive_reviews = len([t for t in rated_tasks if t.rating >= 4])
+        positive_reviews = len(
+            [t for t in rated_tasks if t.rating is not None and t.rating >= 4]
+        )
         positive_rate = (
             round((positive_reviews / len(rated_tasks) * 100), 2) if rated_tasks else 0
         )
@@ -1300,7 +1308,9 @@ class StatisticsService:
 
         total_tasks = len(tasks)
         completed_tasks = len([t for t in tasks if t.status == TaskStatus.COMPLETED])
-        total_work_minutes = sum(t.work_minutes for t in tasks)
+        total_work_minutes = sum(
+            t.work_minutes for t in tasks if t.work_minutes is not None
+        )
 
         return {
             "total_tasks": total_tasks,

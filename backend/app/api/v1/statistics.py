@@ -6,7 +6,7 @@
 import logging
 from calendar import monthrange
 from datetime import date, datetime, timedelta
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, case, desc, func, or_, select
@@ -112,11 +112,23 @@ async def get_statistics_overview(
         ).where(time_filter)
 
         task_result = await db.execute(task_query)
-        task_stats = task_result.first() or type('DefaultRow', (), {
-            'total_tasks': 0, 'completed_tasks': 0, 'in_progress_tasks': 0, 
-            'pending_tasks': 0, 'total_work_minutes': 0, 'avg_work_minutes': 0,
-            'online_tasks': 0, 'offline_tasks': 0
-        })()
+        task_stats = (
+            task_result.first()
+            or type(
+                "DefaultRow",
+                (),
+                {
+                    "total_tasks": 0,
+                    "completed_tasks": 0,
+                    "in_progress_tasks": 0,
+                    "pending_tasks": 0,
+                    "total_work_minutes": 0,
+                    "avg_work_minutes": 0,
+                    "online_tasks": 0,
+                    "offline_tasks": 0,
+                },
+            )()
+        )
 
         # 成员统计
         member_query = select(
@@ -130,10 +142,20 @@ async def get_statistics_overview(
         )
 
         member_result = await db.execute(member_query)
-        member_stats = member_result.first() or type('DefaultRow', (), {
-            'total_members': 0, 'active_members': 0, 'admin_count': 0,
-            'leader_count': 0, 'member_count': 0
-        })()
+        member_stats = (
+            member_result.first()
+            or type(
+                "DefaultRow",
+                (),
+                {
+                    "total_members": 0,
+                    "active_members": 0,
+                    "admin_count": 0,
+                    "leader_count": 0,
+                    "member_count": 0,
+                },
+            )()
+        )
 
         # 考勤统计（当月）
         current_month_start = datetime.now().replace(
@@ -165,10 +187,20 @@ async def get_statistics_overview(
         )
 
         attendance_result = await db.execute(attendance_query)
-        attendance_stats = attendance_result.first() or type('DefaultRow', (), {
-            'total_attendance': 0, 'late_checkins': 0, 'early_checkouts': 0,
-            'avg_work_hours': 0.0, 'total_work_hours': 0.0
-        })()
+        attendance_stats = (
+            attendance_result.first()
+            or type(
+                "DefaultRow",
+                (),
+                {
+                    "total_attendance": 0,
+                    "late_checkins": 0,
+                    "early_checkouts": 0,
+                    "avg_work_hours": 0.0,
+                    "total_work_hours": 0.0,
+                },
+            )()
+        )
 
         # 近期趋势（最近7天每天的任务创建数）
         seven_days_ago = date_to - timedelta(days=7)
@@ -377,7 +409,7 @@ async def get_efficiency_analysis(
                 # 计算完成速度（从创建到完成的平均时间）
                 completion_times = []
                 for task in member_tasks:
-                    if hasattr(task, 'completed_at') and task.completed_at:
+                    if hasattr(task, "completed_at") and task.completed_at:
                         completion_time = (
                             task.completed_at - task.created_at
                         ).total_seconds() / 3600  # 小时
@@ -422,7 +454,9 @@ async def get_efficiency_analysis(
                 )
 
             # 按效率分数排序
-            member_analysis.sort(key=lambda x: float(x.get("efficiency_score", 0)), reverse=True)
+            member_analysis.sort(
+                key=lambda x: float(x.get("efficiency_score", 0)), reverse=True
+            )
             analysis_data["members"] = member_analysis
 
         elif group_by in ["day", "week", "month"]:
@@ -457,7 +491,7 @@ async def get_efficiency_analysis(
                 # 完成时间分析
                 completion_times = []
                 for task in period_tasks:
-                    if hasattr(task, 'completed_at') and task.completed_at:
+                    if hasattr(task, "completed_at") and task.completed_at:
                         completion_time = (
                             task.completed_at - task.created_at
                         ).total_seconds() / 3600
@@ -489,7 +523,7 @@ async def get_efficiency_analysis(
         # 完成时间统计
         completion_times = []
         for task in tasks:
-            if hasattr(task, 'completed_at') and task.completed_at:
+            if hasattr(task, "completed_at") and task.completed_at:
                 completion_time = (
                     task.completed_at - task.created_at
                 ).total_seconds() / 3600
@@ -707,7 +741,8 @@ async def get_monthly_report(
                     )
                 except Exception as e:
                     logger.warning(
-                        f"Failed to get attendance summary for member {member_key}: {str(e)}"
+                        f"Failed to get attendance summary for member {member_key}: "
+                        f"{str(e)}"
                     )
 
                 member_details.append(
@@ -723,8 +758,11 @@ async def get_monthly_report(
                         },
                         "attendance": (
                             attendance_summary.dict()
-                            if attendance_summary and hasattr(attendance_summary, "dict")
-                            else dict(attendance_summary) if attendance_summary else None
+                            if attendance_summary
+                            and hasattr(attendance_summary, "dict")
+                            else (
+                                dict(attendance_summary) if attendance_summary else None
+                            )
                         ),
                     }
                 )
@@ -1113,24 +1151,24 @@ async def get_work_hours_overview(
                         team_summary["member_details"] = []
                     if isinstance(team_summary.get("member_details"), list):
                         team_summary["member_details"].append(
-                        {
-                            "member_id": member.id,
-                            "member_name": member.name,
-                            "total_hours": member_data.get("total_hours", 0),
-                            "is_full_attendance": member_data.get(
-                                "is_full_attendance", False
-                            ),
-                            "task_counts": {
-                                "repair": member_data.get("repair_task_count", 0),
-                                "monitoring": member_data.get(
-                                    "monitoring_task_count", 0
+                            {
+                                "member_id": member.id,
+                                "member_name": member.name,
+                                "total_hours": member_data.get("total_hours", 0),
+                                "is_full_attendance": member_data.get(
+                                    "is_full_attendance", False
                                 ),
-                                "assistance": member_data.get(
-                                    "assistance_task_count", 0
-                                ),
-                            },
-                        }
-                    )
+                                "task_counts": {
+                                    "repair": member_data.get("repair_task_count", 0),
+                                    "monitoring": member_data.get(
+                                        "monitoring_task_count", 0
+                                    ),
+                                    "assistance": member_data.get(
+                                        "assistance_task_count", 0
+                                    ),
+                                },
+                            }
+                        )
                 except Exception as e:
                     logger.warning(
                         f"Failed to get work hours for member {member.id}: {str(e)}"
@@ -1439,7 +1477,8 @@ async def get_work_hours_analysis(
             analysis_data["comparison"] = comparison_data
 
         logger.info(
-            f"Work hours analysis ({analysis_type}) retrieved by {current_user.student_id}"
+            f"Work hours analysis ({analysis_type}) retrieved by "
+            f"{current_user.student_id}"
         )
 
         return create_response(

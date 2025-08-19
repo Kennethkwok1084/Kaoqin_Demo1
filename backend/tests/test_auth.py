@@ -73,8 +73,10 @@ class TestAuthLogin:
         from app.models.member import UserRole
 
         inactive_user = Member(
+            username="inactive_user",
             name="停用用户",
             student_id="2021001999",
+            class_name="测试班级",
             password_hash=get_password_hash("TestPassword123!"),
             role=UserRole.MEMBER,
             is_active=False,  # Inactive user

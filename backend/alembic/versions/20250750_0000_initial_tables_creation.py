@@ -22,69 +22,83 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Create complete initial tables for attendance system."""
 
-    # Create all required enums first (PostgreSQL compatible syntax)
-    op.execute("""
-        DO $$
+    # Create all required enums first (PostgreSQL compatible syntax with proper exception handling)
+    op.execute(
+        """
+        DO $$ 
         BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'userrole') THEN
-                CREATE TYPE userrole AS ENUM ('admin', 'group_leader', 'member', 'guest');
-            END IF;
+            CREATE TYPE userrole AS ENUM ('admin', 'group_leader', 'member', 'guest');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
         END $$;
-    """)
-    
-    op.execute("""
-        DO $$
+    """
+    )
+
+    op.execute(
+        """
+        DO $$ 
         BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'taskstatus') THEN
-                CREATE TYPE taskstatus AS ENUM ('pending', 'in_progress', 'completed', 'cancelled', 'on_hold');
-            END IF;
+            CREATE TYPE taskstatus AS ENUM ('pending', 'in_progress', 'completed', 'cancelled', 'on_hold');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
         END $$;
-    """)
-    
-    op.execute("""
-        DO $$
+    """
+    )
+
+    op.execute(
+        """
+        DO $$ 
         BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'taskcategory') THEN
-                CREATE TYPE taskcategory AS ENUM ('network_repair', 'hardware_repair', 'software_support', 'monitoring', 'assistance', 'other');
-            END IF;
+            CREATE TYPE taskcategory AS ENUM ('network_repair', 'hardware_repair', 'software_support', 'monitoring', 'assistance', 'other');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
         END $$;
-    """)
-    
-    op.execute("""
-        DO $$
+    """
+    )
+
+    op.execute(
+        """
+        DO $$ 
         BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'taskpriority') THEN
-                CREATE TYPE taskpriority AS ENUM ('low', 'medium', 'high', 'urgent');
-            END IF;
+            CREATE TYPE taskpriority AS ENUM ('low', 'medium', 'high', 'urgent');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
         END $$;
-    """)
-    
-    op.execute("""
-        DO $$
+    """
+    )
+
+    op.execute(
+        """
+        DO $$ 
         BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tasktype') THEN
-                CREATE TYPE tasktype AS ENUM ('online', 'offline');
-            END IF;
+            CREATE TYPE tasktype AS ENUM ('online', 'offline');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
         END $$;
-    """)
-    
-    op.execute("""
-        DO $$
+    """
+    )
+
+    op.execute(
+        """
+        DO $$ 
         BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tasktagtype') THEN
-                CREATE TYPE tasktagtype AS ENUM ('rush_order', 'non_default_rating', 'timeout_response', 'timeout_processing', 'bad_rating', 'bonus', 'penalty', 'category');
-            END IF;
+            CREATE TYPE tasktagtype AS ENUM ('rush_order', 'non_default_rating', 'timeout_response', 'timeout_processing', 'bad_rating', 'bonus', 'penalty', 'category');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
         END $$;
-    """)
-    
-    op.execute("""
-        DO $$
+    """
+    )
+
+    op.execute(
+        """
+        DO $$ 
         BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'attendanceexceptionstatus') THEN
-                CREATE TYPE attendanceexceptionstatus AS ENUM ('pending', 'approved', 'rejected');
-            END IF;
+            CREATE TYPE attendanceexceptionstatus AS ENUM ('pending', 'approved', 'rejected');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
         END $$;
-    """)
+    """
+    )
 
     # Create members table first (referenced by other tables)
     op.create_table(

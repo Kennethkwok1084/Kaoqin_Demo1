@@ -184,7 +184,7 @@ class WorkHoursCalculationService:
             for tag in task.tags:
                 if tag.is_active:
                     if tag.tag_type == TaskTagType.NON_DEFAULT_RATING:
-                        positive_review_minutes += (tag.work_minutes_modifier or 0)
+                        positive_review_minutes += tag.work_minutes_modifier or 0
                     elif tag.is_penalty_tag():
                         if tag.tag_type == TaskTagType.TIMEOUT_RESPONSE:
                             late_response_penalty += abs(tag.work_minutes_modifier or 0)
@@ -384,7 +384,12 @@ class WorkHoursCalculationService:
 
             # 计算总工时
             repair_hours = float(repair_stats.get("total_hours", 0) or 0.0)
-            total_hours = float(repair_hours) + float(monitoring_hours) + float(assistance_hours) + float(carried_hours)
+            total_hours = (
+                float(repair_hours)
+                + float(monitoring_hours)
+                + float(assistance_hours)
+                + float(carried_hours)
+            )
 
             # 计算可结转工时（满勤30小时/月，超出部分可结转）
             monthly_requirement = 30.0
@@ -483,13 +488,14 @@ class WorkHoursCalculationService:
             else:
                 # 创建新记录 - 只传递兼容的字段
                 summary_data = {
-                    k: v for k, v in work_hours_data.items() 
-                    if not k.endswith("_count") and k != "monthly_requirement" and k != "is_full_attendance"
+                    k: v
+                    for k, v in work_hours_data.items()
+                    if not k.endswith("_count")
+                    and k != "monthly_requirement"
+                    and k != "is_full_attendance"
                 }
                 summary = MonthlyAttendanceSummary(
-                    member_id=member_id, 
-                    year=year, 
-                    month=month
+                    member_id=member_id, year=year, month=month
                 )
                 # 设置属性
                 for key, value in summary_data.items():
@@ -541,10 +547,6 @@ class WorkHoursCalculationService:
             raise ValueError("月份必须在1-12范围内")
 
         if member_ids is not None:
-            if not isinstance(member_ids, list):
-                logger.error(f"member_ids must be a list, got {type(member_ids)}")
-                raise ValueError("成员ID列表必须为列表类型")
-
             for member_id in member_ids:
                 if not isinstance(member_id, int) or member_id <= 0:
                     logger.error(f"Invalid member_id in list: {member_id}")
@@ -775,7 +777,9 @@ class WorkHoursCalculationService:
         if not tag:
             # 使用TaskTag的工厂方法创建标签
             factory_method_name = config["factory_method"]
-            if not isinstance(factory_method_name, str) or not hasattr(TaskTag, factory_method_name):
+            if not isinstance(factory_method_name, str) or not hasattr(
+                TaskTag, factory_method_name
+            ):
                 raise ValueError(f"Unknown factory method: {factory_method_name}")
             factory_method = getattr(TaskTag, factory_method_name)
             tag = factory_method()
@@ -822,18 +826,36 @@ class WorkHoursCalculationService:
 
         # 添加惩罚时长
         penalty_hours = penalty_minutes / 60.0
-        current_penalty = float(getattr(summary, 'penalty_hours', 0) or 0.0)
-        setattr(summary, 'penalty_hours', current_penalty + penalty_hours)
+        current_penalty = float(getattr(summary, "penalty_hours", 0) or 0.0)
+        setattr(summary, "penalty_hours", current_penalty + penalty_hours)
 
         if penalty_type == "late_response":
-            current_late_response = float(getattr(summary, 'late_response_penalty_hours', 0) or 0.0)
-            setattr(summary, 'late_response_penalty_hours', current_late_response + penalty_hours)
+            current_late_response = float(
+                getattr(summary, "late_response_penalty_hours", 0) or 0.0
+            )
+            setattr(
+                summary,
+                "late_response_penalty_hours",
+                current_late_response + penalty_hours,
+            )
         elif penalty_type == "late_completion":
-            current_late_completion = float(getattr(summary, 'late_completion_penalty_hours', 0) or 0.0)
-            setattr(summary, 'late_completion_penalty_hours', current_late_completion + penalty_hours)
+            current_late_completion = float(
+                getattr(summary, "late_completion_penalty_hours", 0) or 0.0
+            )
+            setattr(
+                summary,
+                "late_completion_penalty_hours",
+                current_late_completion + penalty_hours,
+            )
         elif penalty_type == "negative_review":
-            current_negative_review = float(getattr(summary, 'negative_review_penalty_hours', 0) or 0.0)
-            setattr(summary, 'negative_review_penalty_hours', current_negative_review + penalty_hours)
+            current_negative_review = float(
+                getattr(summary, "negative_review_penalty_hours", 0) or 0.0
+            )
+            setattr(
+                summary,
+                "negative_review_penalty_hours",
+                current_negative_review + penalty_hours,
+            )
 
         # 重新计算总工时
         repair_hours = float(summary.repair_task_hours or 0.0)
@@ -841,11 +863,19 @@ class WorkHoursCalculationService:
         assistance_hours = float(summary.assistance_hours or 0.0)
         carried_hours = float(summary.carried_hours or 0.0)
         total_penalty = float(summary.penalty_hours or 0.0)
-        
-        setattr(summary, 'total_hours', max(
-            0.0,
-            repair_hours + monitoring_hours + assistance_hours + carried_hours - total_penalty
-        ))
+
+        setattr(
+            summary,
+            "total_hours",
+            max(
+                0.0,
+                repair_hours
+                + monitoring_hours
+                + assistance_hours
+                + carried_hours
+                - total_penalty,
+            ),
+        )
 
         await self.db.commit()
 
@@ -881,22 +911,11 @@ class RushTaskMarkingService:
             RuntimeError: 标记过程出现错误
         """
         # 输入校验
-        if not isinstance(date_from, date):
-            logger.error(f"date_from must be date object, got {type(date_from)}")
-            raise ValueError("开始日期必须为date对象")
-
-        if not isinstance(date_to, date):
-            logger.error(f"date_to must be date object, got {type(date_to)}")
-            raise ValueError("结束日期必须为date对象")
-
         if date_from > date_to:
             logger.error(f"date_from {date_from} is after date_to {date_to}")
             raise ValueError("开始日期不能晚于结束日期")
 
         if task_ids is not None:
-            if not isinstance(task_ids, list):
-                logger.error(f"task_ids must be list, got {type(task_ids)}")
-                raise ValueError("任务ID列表必须为列表类型")
 
             for task_id in task_ids:
                 if not isinstance(task_id, int) or task_id <= 0:
@@ -1016,22 +1035,11 @@ class RushTaskMarkingService:
             RuntimeError: 重算过程出现错误
         """
         # 输入校验
-        if not isinstance(date_from, date):
-            logger.error(f"date_from must be date object, got {type(date_from)}")
-            raise ValueError("开始日期必须为date对象")
-
-        if not isinstance(date_to, date):
-            logger.error(f"date_to must be date object, got {type(date_to)}")
-            raise ValueError("结束日期必须为date对象")
-
         if date_from > date_to:
             logger.error(f"date_from {date_from} is after date_to {date_to}")
             raise ValueError("开始日期不能晚于结束日期")
 
         if member_ids is not None:
-            if not isinstance(member_ids, list):
-                logger.error(f"member_ids must be list, got {type(member_ids)}")
-                raise ValueError("成员ID列表必须为列表类型")
 
             for member_id in member_ids:
                 if not isinstance(member_id, int) or member_id <= 0:
@@ -1081,10 +1089,12 @@ class RushTaskMarkingService:
             await self.db.commit()
 
             # 更新相关成员的月度汇总
-            affected_members = set(task.member_id for task in tasks if task.member_id is not None)
+            affected_members = set(
+                task.member_id for task in tasks if task.member_id is not None
+            )
             affected_months = set(
-                (task.report_time.year, task.report_time.month) 
-                for task in tasks 
+                (task.report_time.year, task.report_time.month)
+                for task in tasks
                 if task.report_time is not None
             )
 

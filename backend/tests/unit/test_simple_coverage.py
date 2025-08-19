@@ -226,13 +226,13 @@ class TestBasicCoverage:
         # Test attendance record creation
         attendance_data = AttendanceRecordCreate(
             member_id=1,
-            date=date.today(),
-            check_in_time="09:00",
-            check_out_time="17:00",
+            attendance_date=date.today(),
+            checkin_time=datetime.now().replace(hour=9, minute=0),
+            checkout_time=datetime.now().replace(hour=17, minute=0),
         )
 
         assert attendance_data.member_id == 1
-        assert attendance_data.check_in_time == "09:00"
+        assert attendance_data.checkin_time.hour == 9
 
     def test_exception_classes(self):
         """Test custom exception classes."""

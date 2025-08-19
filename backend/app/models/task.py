@@ -132,6 +132,23 @@ class TaskTag(BaseModel):
         lazy="dynamic",
     )
 
+    def __init__(
+        self,
+        name: str,
+        description: str = None,
+        work_minutes_modifier: int = 0,
+        is_active: bool = True,
+        tag_type: TaskTagType = TaskTagType.CATEGORY,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize TaskTag instance."""
+        super().__init__(**kwargs)
+        self.name = name
+        self.description = description
+        self.work_minutes_modifier = work_minutes_modifier
+        self.is_active = is_active
+        self.tag_type = tag_type
+
     def __repr__(self) -> str:
         """String representation."""
         return (
@@ -361,7 +378,7 @@ class RepairTask(BaseModel):
     member: Mapped["Member"] = relationship("Member", back_populates="repair_tasks")
 
     tags: Mapped[List["TaskTag"]] = relationship(
-        TaskTag, secondary=task_tag_association, back_populates="tasks"
+        "TaskTag", secondary=task_tag_association, back_populates="tasks"
     )
 
     # Constraints and indexes
@@ -373,9 +390,71 @@ class RepairTask(BaseModel):
         {"comment": "Repair tasks table"},
     )
 
+    def __init__(
+        self,
+        task_id: str,
+        member_id: int,
+        title: str,
+        report_time: datetime,
+        description: str = None,
+        location: str = None,
+        category: TaskCategory = TaskCategory.NETWORK_REPAIR,
+        priority: TaskPriority = TaskPriority.MEDIUM,
+        status: TaskStatus = TaskStatus.PENDING,
+        task_type: TaskType = TaskType.ONLINE,
+        response_time: datetime = None,
+        completion_time: datetime = None,
+        due_date: datetime = None,
+        feedback: str = None,
+        rating: int = None,
+        reporter_name: str = None,
+        reporter_contact: str = None,
+        work_minutes: int = 0,
+        base_work_minutes: int = 0,
+        import_batch_id: str = None,
+        is_matched: bool = False,
+        original_data: Dict[str, Any] = None,
+        matched_member_data: Dict[str, Any] = None,
+        is_rush_order: bool = False,
+        work_order_status: str = None,
+        repair_form: str = None,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize RepairTask instance."""
+        super().__init__(**kwargs)
+        self.task_id = task_id
+        self.member_id = member_id
+        self.title = title
+        self.report_time = report_time
+        self.description = description
+        self.location = location
+        self.category = category
+        self.priority = priority
+        self.status = status
+        self.task_type = task_type
+        self.response_time = response_time
+        self.completion_time = completion_time
+        self.due_date = due_date
+        self.feedback = feedback
+        self.rating = rating
+        self.reporter_name = reporter_name
+        self.reporter_contact = reporter_contact
+        self.work_minutes = work_minutes
+        self.base_work_minutes = base_work_minutes
+        self.import_batch_id = import_batch_id
+        self.is_matched = is_matched
+        self.original_data = original_data
+        self.matched_member_data = matched_member_data
+        self.is_rush_order = is_rush_order
+        self.work_order_status = work_order_status
+        self.repair_form = repair_form
+
     def __repr__(self) -> str:
         """String representation."""
-        return f"<RepairTask(id={self.id}, task_id='{self.task_id}', status='{self.status.value}')>"
+        return (
+            f"<RepairTask(id={self.id}, task_id='{self.task_id}', "
+            f"status='{self.status.value}')>"
+        )
 
     @property
     def is_overdue_response(self) -> bool:
@@ -655,6 +734,31 @@ class MonitoringTask(BaseModel):
         {"comment": "Monitoring tasks table"},
     )
 
+    def __init__(
+        self,
+        member_id: int,
+        title: str,
+        start_time: datetime,
+        end_time: datetime,
+        work_minutes: int,
+        description: str = None,
+        location: str = None,
+        monitoring_type: str = "inspection",
+        status: TaskStatus = TaskStatus.COMPLETED,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize MonitoringTask instance."""
+        super().__init__(**kwargs)
+        self.member_id = member_id
+        self.title = title
+        self.start_time = start_time
+        self.end_time = end_time
+        self.work_minutes = work_minutes
+        self.description = description
+        self.location = location
+        self.monitoring_type = monitoring_type
+        self.status = status
+
     def __repr__(self) -> str:
         """String representation."""
         return (
@@ -728,6 +832,31 @@ class AssistanceTask(BaseModel):
         Index("idx_assistance_task_member_time", "member_id", "start_time"),
         {"comment": "Assistance tasks table"},
     )
+
+    def __init__(
+        self,
+        member_id: int,
+        title: str,
+        start_time: datetime,
+        end_time: datetime,
+        work_minutes: int,
+        description: str = None,
+        assisted_department: str = None,
+        assisted_person: str = None,
+        status: TaskStatus = TaskStatus.COMPLETED,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize AssistanceTask instance."""
+        super().__init__(**kwargs)
+        self.member_id = member_id
+        self.title = title
+        self.start_time = start_time
+        self.end_time = end_time
+        self.work_minutes = work_minutes
+        self.description = description
+        self.assisted_department = assisted_department
+        self.assisted_person = assisted_person
+        self.status = status
 
     def __repr__(self) -> str:
         """String representation."""

@@ -4,7 +4,6 @@
 Database initialization script to create default admin user for testing
 """
 import asyncio
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -13,7 +12,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.security import get_password_hash
@@ -67,7 +65,7 @@ async def create_default_admin():
             await session.commit()
             await session.refresh(admin_user)
 
-            print(f"[SUCCESS] Created admin user:")
+            print("[SUCCESS] Created admin user:")
             print(f"  Student ID: {admin_user.student_id}")
             print(f"  Name: {admin_user.name}")
             print(f"  Role: {admin_user.role.value}")
@@ -179,7 +177,8 @@ async def main():
 
         print("\n" + "=" * 50)
         print("Database initialization completed successfully!")
-        print(f"Created/verified {1 + len(test_users)} users")
+        users_count = (1 if admin_user else 0) + len(test_users)
+        print(f"Created/verified {users_count} users")
         print("=" * 50)
 
         # Display login credentials
