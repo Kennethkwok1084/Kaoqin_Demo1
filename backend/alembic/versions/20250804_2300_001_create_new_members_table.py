@@ -28,6 +28,18 @@ def upgrade() -> None:
     # Drop the old enum type if it exists
     op.execute("DROP TYPE IF EXISTS userrole CASCADE")
 
+    # Safely create userrole enum type
+    op.execute(
+        """
+        DO $$ 
+        BEGIN
+            CREATE TYPE userrole AS ENUM ('admin', 'group_leader', 'member', 'guest');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+        """
+    )
+
     # Create new members table with restructured fields
     op.create_table(
         "members",
@@ -82,7 +94,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "role",
-            sa.Enum("ADMIN", "GROUP_LEADER", "MEMBER", "GUEST", name="userrole"),
+            sa.Enum("admin", "group_leader", "member", "guest", name="userrole", create_type=False),
             nullable=False,
             comment="用户角色",
         ),
