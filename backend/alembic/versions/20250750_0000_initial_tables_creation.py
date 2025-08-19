@@ -22,83 +22,29 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Create complete initial tables for attendance system."""
 
-    # Create all required enums first (PostgreSQL compatible syntax with proper exception handling)
-    op.execute(
-        """
-        DO $$ 
-        BEGIN
-            CREATE TYPE userrole AS ENUM ('admin', 'group_leader', 'member', 'guest');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
-        END $$;
-    """
-    )
+    # Create all required enums first with defensive checks
+    enums = {
+        "userrole": "('admin', 'group_leader', 'member', 'guest')",
+        "taskstatus": "('pending', 'in_progress', 'completed', 'cancelled', 'on_hold')",
+        "taskcategory": "('network_repair', 'hardware_repair', 'software_support', 'monitoring', 'assistance', 'other')",
+        "taskpriority": "('low', 'medium', 'high', 'urgent')",
+        "tasktype": "('online', 'offline')",
+        "tasktagtype": "('rush_order', 'non_default_rating', 'timeout_response', 'timeout_processing', 'bad_rating', 'bonus', 'penalty', 'category')",
+        "attendanceexceptionstatus": "('pending', 'approved', 'rejected')",
+    }
 
-    op.execute(
-        """
-        DO $$ 
-        BEGIN
-            CREATE TYPE taskstatus AS ENUM ('pending', 'in_progress', 'completed', 'cancelled', 'on_hold');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
-        END $$;
-    """
-    )
-
-    op.execute(
-        """
-        DO $$ 
-        BEGIN
-            CREATE TYPE taskcategory AS ENUM ('network_repair', 'hardware_repair', 'software_support', 'monitoring', 'assistance', 'other');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
-        END $$;
-    """
-    )
-
-    op.execute(
-        """
-        DO $$ 
-        BEGIN
-            CREATE TYPE taskpriority AS ENUM ('low', 'medium', 'high', 'urgent');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
-        END $$;
-    """
-    )
-
-    op.execute(
-        """
-        DO $$ 
-        BEGIN
-            CREATE TYPE tasktype AS ENUM ('online', 'offline');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
-        END $$;
-    """
-    )
-
-    op.execute(
-        """
-        DO $$ 
-        BEGIN
-            CREATE TYPE tasktagtype AS ENUM ('rush_order', 'non_default_rating', 'timeout_response', 'timeout_processing', 'bad_rating', 'bonus', 'penalty', 'category');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
-        END $$;
-    """
-    )
-
-    op.execute(
-        """
-        DO $$ 
-        BEGIN
-            CREATE TYPE attendanceexceptionstatus AS ENUM ('pending', 'approved', 'rejected');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
-        END $$;
-    """
-    )
+    for name, values in enums.items():
+        op.execute(f"DROP TYPE IF EXISTS {name} CASCADE")
+        op.execute(
+            f"""
+            DO $$
+            BEGIN
+                CREATE TYPE {name} AS ENUM {values};
+            EXCEPTION
+                WHEN duplicate_object THEN null;
+            END $$;
+            """
+        )
 
     # Create members table first (referenced by other tables)
     op.create_table(
