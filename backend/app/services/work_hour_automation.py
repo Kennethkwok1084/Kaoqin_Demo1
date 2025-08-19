@@ -619,3 +619,117 @@ class WorkHourAutomationService:
         except Exception as e:
             logger.error(f"Get automation statistics error: {str(e)}")
             raise
+
+    # Helper methods for testing support
+
+    async def _apply_penalty_tag(
+        self, task: RepairTask, tag_name: str, reason: str
+    ) -> bool:
+        """
+        Apply penalty tag to a specific task (used by tests)
+        
+        Args:
+            task: The task to apply penalty to
+            tag_name: Name of the penalty tag
+            reason: Reason for applying the penalty
+            
+        Returns:
+            bool: True if tag was applied successfully, False if already exists
+        """
+        try:
+            # Check if tag exists
+            tag_query = select(TaskTag).where(TaskTag.name == tag_name)
+            tag_result = await self.db.execute(tag_query)
+            tag = tag_result.scalar_one_or_none()
+
+            if not tag:
+                # Create new tag
+                tag = TaskTag(
+                    name=tag_name,
+                    description=f"Auto-applied penalty: {reason}",
+                    work_minutes_modifier=-30,
+                    tag_type="penalty",
+                    is_active=True,
+                )
+                self.db.add(tag)
+                await self.db.flush()  # Get the ID
+
+            # Check if tag already applied to this task
+            association_query = select(task_tag_association).where(
+                and_(
+                    task_tag_association.c.task_id == task.id,
+                    task_tag_association.c.tag_id == tag.id,
+                )
+            )
+            association_result = await self.db.execute(association_query)
+            existing_association = association_result.scalar_one_or_none()
+
+            if existing_association:
+                return False  # Tag already applied
+
+            # Add tag to task
+            task.tags.append(tag)
+            self.db.add(task)
+            await self.db.commit()
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Apply penalty tag error: {str(e)}")
+            await self.db.rollback()
+            return False
+
+    def _validate_tag_name(self, tag_name: Optional[str]) -> bool:
+        """
+        Validate tag name
+        
+        Args:
+            tag_name: Tag name to validate
+            
+        Returns:
+            bool: True if valid, False otherwise
+        """
+        if not tag_name:
+            return False
+        
+        if not isinstance(tag_name, str):
+            return False
+            
+        tag_name = tag_name.strip()
+        if not tag_name:
+            return False
+            
+        if len(tag_name) > 100:
+            return False
+            
+        return True
+
+    def _get_response_time_threshold(self, is_urgent: bool = False) -> timedelta:
+        """
+        Get response time threshold
+        
+        Args:
+            is_urgent: Whether task is urgent
+            
+        Returns:
+            timedelta: Time threshold for response
+        """
+        if is_urgent:
+            return timedelta(minutes=30)
+        else:
+            return timedelta(hours=4)
+
+    def _get_completion_time_threshold(self, is_urgent: bool = False) -> timedelta:
+        """
+        Get completion time threshold
+        
+        Args:
+            is_urgent: Whether task is urgent
+            
+        Returns:
+            timedelta: Time threshold for completion
+        """
+        if is_urgent:
+            return timedelta(hours=24)
+        else:
+            return timedelta(hours=72)

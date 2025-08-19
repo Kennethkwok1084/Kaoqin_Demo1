@@ -6,8 +6,8 @@ Celery配置和任务定义
 import logging
 from typing import Any, Dict
 
-from celery import Celery  # type: ignore[import-not-found]
-from celery.schedules import crontab  # type: ignore[import-not-found]
+from celery import Celery  # type: ignore
+from celery.schedules import crontab  # type: ignore
 
 from app.core.config import settings
 

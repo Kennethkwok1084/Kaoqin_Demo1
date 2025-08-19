@@ -3932,3 +3932,24 @@ async def bulk_recalculate_work_hours_enhanced(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="批量工时重算失败",
         )
+
+
+@router.get("/health", response_model=Dict[str, Any])
+async def health_check() -> Dict[str, Any]:
+    """
+    任务服务健康检查
+    
+    Returns:
+        Dict: 健康状态信息
+    """
+    from datetime import datetime
+    
+    return create_response(
+        data={
+            "service": "tasks",
+            "status": "healthy",
+            "timestamp": datetime.utcnow().isoformat(),
+            "version": "1.0.0"
+        },
+        message="任务服务运行正常"
+    )

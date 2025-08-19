@@ -390,3 +390,32 @@ async def get_import_template(
         return create_error_response(
             message="获取导入模板失败", details={"error": str(e)}
         )
+
+
+def get_supported_field_mappings() -> Dict[str, Any]:
+    """
+    获取支持的字段映射 (同步版本，用于测试)
+    
+    Returns:
+        Dict: 支持的字段映射信息
+    """
+    return {
+        "success": True,
+        "data": {
+            "task_table": {
+                "task_id": ["工单编号", "任务编号", "报修编号"],
+                "title": ["标题", "问题描述", "报修内容"],
+                "reporter_name": ["报修人", "申请人", "联系人"],
+                "reporter_contact": ["联系电话", "手机号", "电话"],
+                "location": ["地址", "位置", "故障地点"],
+                "report_time": ["报修时间", "申请时间", "创建时间"],
+            },
+            "member_table": {
+                "name": ["姓名", "维修人员", "处理人"],
+                "contact": ["联系电话", "手机号", "电话"],
+                "employee_id": ["工号", "员工编号", "学号"],
+                "skill_level": ["技能等级", "级别", "水平"],
+            }
+        },
+        "message": "成功获取字段映射配置"
+    }

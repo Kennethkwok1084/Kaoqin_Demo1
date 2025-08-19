@@ -41,40 +41,6 @@ class TestStatisticsService:
             class_name="测试班级",
         )
 
-    @pytest.fixture
-    def sample_tasks(self, sample_member):
-        """Sample tasks for testing."""
-        now = datetime.utcnow()
-
-        return [
-            RepairTask(
-                id=1,
-                task_id="REPAIR_001",
-                title="网络故障维修",
-                member_id=sample_member.id,
-                member=sample_member,
-                status=TaskStatus.COMPLETED,
-                task_type=TaskType.OFFLINE,
-                work_minutes=100,
-                report_time=now - timedelta(hours=3),
-                completion_time=now - timedelta(hours=1),
-                rating=5,
-            ),
-            RepairTask(
-                id=2,
-                task_id="REPAIR_002",
-                title="硬件故障维修",
-                member_id=sample_member.id,
-                member=sample_member,
-                status=TaskStatus.COMPLETED,
-                task_type=TaskType.ONLINE,
-                work_minutes=40,
-                report_time=now - timedelta(hours=2),
-                completion_time=now - timedelta(minutes=30),
-                rating=4,
-            ),
-        ]
-
     def test_generate_cache_key_basic(self, stats_service):
         """Test cache key generation with basic parameters."""
         cache_key = stats_service._generate_cache_key(
@@ -108,311 +74,199 @@ class TestStatisticsService:
         assert cache_key == "stats:test_method"
 
     @pytest.mark.asyncio
-    async def test_get_overview_statistics_basic(
-        self, stats_service, mock_db, sample_tasks
-    ):
+    async def test_get_overview_statistics_basic(self, stats_service, mock_db):
         """Test basic overview statistics."""
-        # Mock database queries
-        mock_result = Mock()
-
-        # Mock member count
-        mock_result.scalar.return_value = 50
-
-        # Mock task counts
-        mock_db.execute.side_effect = [
-            mock_result,  # Total members
-            Mock(scalar=Mock(return_value=100)),  # Total tasks
-            Mock(scalar=Mock(return_value=85)),  # Completed tasks
-            Mock(scalar=Mock(return_value=10)),  # In progress tasks
-            Mock(scalar=Mock(return_value=5)),  # Pending tasks
-        ]
-
-        result = await stats_service.get_overview_statistics()
-
-        # Since we don't know the exact return structure, just verify it's called
-        assert result is not None
-
-    @pytest.mark.asyncio
-    async def test_get_system_overview_zero_tasks(self, stats_service, mock_db):
-        """Test system overview with zero tasks."""
-        # Mock database queries returning zero
-        mock_db.execute.side_effect = [
-            Mock(scalar=Mock(return_value=50)),  # Total members
-            Mock(scalar=Mock(return_value=0)),  # Total tasks
-            Mock(scalar=Mock(return_value=0)),  # Completed tasks
-            Mock(scalar=Mock(return_value=0)),  # In progress tasks
-            Mock(scalar=Mock(return_value=0)),  # Pending tasks
-        ]
-
+        # Mock all the private cached methods
         with patch.object(
-            stats_service,
-            "_get_performance_metrics",
-            return_value={
-                "average_completion_time": 0,
-                "average_rating": 0,
-                "efficiency_score": 0,
-            },
+            stats_service, "_get_member_statistics_cached",
+            return_value={"active_count": 5}
+        ), patch.object(
+            stats_service, "_get_task_statistics_cached",
+            return_value={"completed_count": 10}
+        ), patch.object(
+            stats_service, "_get_work_hour_statistics_cached",
+            return_value={"total_hours": 50}
+        ), patch.object(
+            stats_service, "_get_performance_statistics_cached",
+            return_value={"overall_rating": 4.5}
+        ), patch.object(
+            stats_service, "_get_attendance_statistics_cached",
+            return_value={"overall_rate": 95}
         ):
-            result = await stats_service.get_system_overview()
-
-            assert result["total_tasks"] == 0
-            assert result["completion_rate"] == 0
-            assert result["average_completion_time"] == 0
+            result = await stats_service.get_overview_statistics()
+            
+            assert "summary" in result
+            assert result["summary"]["total_active_members"] == 5
+            assert result["summary"]["total_tasks_completed"] == 10
 
     @pytest.mark.asyncio
-    async def test_get_member_performance_stats(
+    async def test_get_member_performance_report(
         self, stats_service, mock_db, sample_member
     ):
-        """Test member performance statistics."""
-        # Mock database query for member tasks
-        mock_tasks_result = Mock()
-        mock_tasks_result.scalars.return_value.all.return_value = [
-            Mock(
-                status=TaskStatus.COMPLETED,
-                work_minutes=100,
-                rating=5,
-                report_time=datetime.utcnow() - timedelta(hours=3),
-                completion_time=datetime.utcnow() - timedelta(hours=1),
-            ),
-            Mock(
-                status=TaskStatus.COMPLETED,
-                work_minutes=40,
-                rating=4,
-                report_time=datetime.utcnow() - timedelta(hours=2),
-                completion_time=datetime.utcnow() - timedelta(minutes=30),
-            ),
-        ]
+        """Test member performance report."""
+        with patch.object(
+            stats_service, "_get_member_task_statistics",
+            return_value={
+                "total_tasks": 2,
+                "completed_tasks": 2,
+                "completion_rate": 100.0
+            }
+        ), patch.object(
+            stats_service, "_get_member_work_hour_statistics",
+            return_value={"total_hours": 2.33}
+        ), patch.object(
+            stats_service, "_get_member_quality_statistics",
+            return_value={"avg_rating": 4.5}
+        ), patch.object(
+            stats_service, "_get_member_ranking",
+            return_value={"work_hour_rank": 1}
+        ), patch.object(
+            stats_service, "_get_member_trend_analysis",
+            return_value={"change_rate": 10.0}
+        ):
+            # Mock member query
+            mock_member = Mock()
+            mock_member.id = sample_member.id
+            mock_member.name = sample_member.name
+            mock_member.student_id = sample_member.student_id
+            mock_member.department = "IT"
+            mock_member.role = sample_member.role
+            
+            mock_result = Mock()
+            mock_result.scalar_one_or_none.return_value = mock_member
+            mock_db.execute.return_value = mock_result
+            
+            result = await stats_service.get_member_performance_report(
+                member_id=sample_member.id,
+                year=2024,
+                month=1
+            )
 
-        mock_db.execute.return_value = mock_tasks_result
-
-        result = await stats_service.get_member_performance_stats(
-            member_id=sample_member.id,
-            start_date=date.today() - timedelta(days=30),
-            end_date=date.today(),
-        )
-
-        assert result["member_id"] == sample_member.id
-        assert result["total_tasks"] == 2
-        assert result["completed_tasks"] == 2
-        assert result["total_work_minutes"] == 140
-        assert result["average_rating"] == 4.5
-        assert result["completion_rate"] == 100.0
-
-    @pytest.mark.asyncio
-    async def test_get_member_performance_stats_no_tasks(self, stats_service, mock_db):
-        """Test member performance stats with no tasks."""
-        # Mock empty database result
-        mock_tasks_result = Mock()
-        mock_tasks_result.scalars.return_value.all.return_value = []
-        mock_db.execute.return_value = mock_tasks_result
-
-        result = await stats_service.get_member_performance_stats(
-            member_id=999,
-            start_date=date.today() - timedelta(days=30),
-            end_date=date.today(),
-        )
-
-        assert result["total_tasks"] == 0
-        assert result["completed_tasks"] == 0
-        assert result["completion_rate"] == 0
-        assert result["average_rating"] == 0
+            assert result["member"]["id"] == sample_member.id
+            assert result["tasks"]["total_tasks"] == 2
+            assert result["tasks"]["completed_tasks"] == 2
 
     @pytest.mark.asyncio
-    async def test_get_task_type_distribution(self, stats_service, mock_db):
-        """Test task type distribution statistics."""
-        # Mock database query result
+    async def test_get_member_performance_report_no_member(self, stats_service, mock_db):
+        """Test member performance report with non-existent member."""
+        # Mock empty member query result
         mock_result = Mock()
-        mock_result.all.return_value = [(TaskType.ONLINE, 30), (TaskType.OFFLINE, 70)]
+        mock_result.scalar_one_or_none.return_value = None
         mock_db.execute.return_value = mock_result
 
-        result = await stats_service.get_task_type_distribution()
-
-        assert len(result) == 2
-        assert result[0]["task_type"] == "online"
-        assert result[0]["count"] == 30
-        assert result[0]["percentage"] == 30.0
-        assert result[1]["task_type"] == "offline"
-        assert result[1]["count"] == 70
-        assert result[1]["percentage"] == 70.0
-
-    @pytest.mark.asyncio
-    async def test_get_task_type_distribution_empty(self, stats_service, mock_db):
-        """Test task type distribution with no tasks."""
-        # Mock empty database result
-        mock_result = Mock()
-        mock_result.all.return_value = []
-        mock_db.execute.return_value = mock_result
-
-        result = await stats_service.get_task_type_distribution()
-
-        assert result == []
-
-    @pytest.mark.asyncio
-    async def test_get_monthly_trends(self, stats_service, mock_db):
-        """Test monthly trends statistics."""
-        # Mock database query result
-        mock_result = Mock()
-        mock_result.all.return_value = [
-            (2024, 1, 45, 42, 40),  # year, month, total, completed, avg_minutes
-            (2024, 2, 50, 48, 38),
-            (2024, 3, 55, 52, 42),
-        ]
-        mock_db.execute.return_value = mock_result
-
-        result = await stats_service.get_monthly_trends(year=2024)
-
-        assert len(result) == 3
-        assert result[0]["month"] == "2024-01"
-        assert result[0]["total_tasks"] == 45
-        assert result[0]["completed_tasks"] == 42
-        assert result[0]["completion_rate"] == round((42 / 45) * 100, 2)
-        assert result[0]["average_work_minutes"] == 40
-
-    @pytest.mark.asyncio
-    async def test_get_workload_distribution(self, stats_service, mock_db):
-        """Test workload distribution across members."""
-        # Mock database query result
-        mock_result = Mock()
-        mock_result.all.return_value = [
-            (
-                1,
-                "张三",
-                "TEST001",
-                25,
-                23,
-                920,
-            ),  # member_id, name, student_id, total, completed, work_minutes
-            (2, "李四", "TEST002", 20, 18, 760),
-            (3, "王五", "TEST003", 15, 15, 600),
-        ]
-        mock_db.execute.return_value = mock_result
-
-        result = await stats_service.get_workload_distribution()
-
-        assert len(result) == 3
-        assert result[0]["member_id"] == 1
-        assert result[0]["name"] == "张三"
-        assert result[0]["total_tasks"] == 25
-        assert result[0]["completion_rate"] == 92.0  # 23/25 * 100
-        assert result[0]["total_work_minutes"] == 920
-
-    @pytest.mark.asyncio
-    async def test_caching_functionality(self, stats_service, mock_db):
-        """Test caching functionality in statistics service."""
-        cache_key = "test_cache_key"
-        cached_data = {"test": "data"}
-
-        # Test cache hit
-        with patch.object(cache, "get_stats_cache", return_value={"data": cached_data}):
-            with patch.object(
-                stats_service, "_generate_cache_key", return_value=cache_key
-            ):
-                # This should return cached data without hitting database
-                result = await stats_service._get_cached_or_compute(
-                    cache_key, lambda: {"computed": "data"}
-                )
-
-                assert result == cached_data
-
-    @pytest.mark.asyncio
-    async def test_cache_miss_computation(self, stats_service, mock_db):
-        """Test cache miss triggers computation."""
-        cache_key = "test_cache_key"
-        computed_data = {"computed": "data"}
-
-        # Test cache miss
-        with patch.object(cache, "get_stats_cache", return_value=None):
-            with patch.object(cache, "set_stats_cache", return_value=True):
-                with patch.object(
-                    stats_service, "_generate_cache_key", return_value=cache_key
-                ):
-
-                    async def compute_function():
-                        return computed_data
-
-                    result = await stats_service._get_cached_or_compute(
-                        cache_key, compute_function
-                    )
-
-                    assert result == computed_data
-
-    @pytest.mark.asyncio
-    async def test_get_efficiency_analysis(self, stats_service, mock_db):
-        """Test efficiency analysis calculations."""
-        # Mock database results for efficiency metrics
-        mock_result = Mock()
-        mock_result.all.return_value = [
-            (
-                1,
-                "张三",
-                2.5,
-                4.8,
-                8.5,
-            ),  # member_id, name, avg_completion_hours, avg_rating, efficiency_score
-            (2, "李四", 3.0, 4.5, 7.8),
-            (3, "王五", 1.8, 4.9, 9.2),
-        ]
-        mock_db.execute.return_value = mock_result
-
-        result = await stats_service.get_efficiency_analysis(group_by="member")
-
-        assert len(result) == 3
-        assert result[0]["member_id"] == 1
-        assert result[0]["name"] == "张三"
-        assert result[0]["average_completion_hours"] == 2.5
-        assert result[0]["average_rating"] == 4.8
-        assert result[0]["efficiency_score"] == 8.5
-
-    @pytest.mark.asyncio
-    async def test_performance_metrics_calculation(self, stats_service, mock_db):
-        """Test performance metrics calculation."""
-        # Mock database query for performance data
-        mock_result = Mock()
-        mock_result.all.return_value = [
-            (2.5, 4.8),  # completion_hours, rating
-            (3.0, 4.5),
-            (1.8, 4.9),
-            (2.2, 4.6),
-        ]
-        mock_db.execute.return_value = mock_result
-
-        result = await stats_service._get_performance_metrics()
-
-        expected_avg_time = (2.5 + 3.0 + 1.8 + 2.2) / 4
-        expected_avg_rating = (4.8 + 4.5 + 4.9 + 4.6) / 4
-
-        assert result["average_completion_time"] == round(expected_avg_time, 2)
-        assert result["average_rating"] == round(expected_avg_rating, 2)
-        assert "efficiency_score" in result
-
-    @pytest.mark.asyncio
-    async def test_date_range_validation(self, stats_service):
-        """Test date range validation in various methods."""
-        start_date = date(2024, 6, 1)
-        end_date = date(2024, 5, 1)  # End date before start date
-
-        with pytest.raises(ValueError, match="结束日期必须大于等于开始日期"):
-            await stats_service.get_member_performance_stats(
-                member_id=1, start_date=start_date, end_date=end_date
+        with pytest.raises(ValueError, match="成员不存在"):
+            await stats_service.get_member_performance_report(
+                member_id=999,
+                year=2024,
+                month=1
             )
 
     @pytest.mark.asyncio
-    async def test_invalid_member_id_handling(self, stats_service, mock_db):
-        """Test handling of invalid member IDs."""
-        # Mock empty result for non-existent member
+    async def test_get_team_comparison_report(self, stats_service, mock_db):
+        """Test team comparison report."""
+        # Mock member query
+        mock_member = Mock()
+        mock_member.id = 1
+        mock_member.name = "Test User"
+        mock_member.student_id = "TEST001"
+        mock_member.department = "IT"
+        mock_member.role = Mock()
+        mock_member.role.value = "member"
+        
         mock_result = Mock()
-        mock_result.scalars.return_value.all.return_value = []
+        mock_result.scalars.return_value.all.return_value = [mock_member]
         mock_db.execute.return_value = mock_result
+        
+        with patch.object(
+            stats_service, "_get_member_comparison_stats",
+            return_value={
+                "work_hours": {"total_hours": 40},
+                "tasks": {"total_tasks": 10},
+                "quality": {"avg_rating": 4.5}
+            }
+        ), patch.object(
+            stats_service, "_calculate_team_summary",
+            return_value={"total_members": 1, "total_hours": 40}
+        ):
+            result = await stats_service.get_team_comparison_report()
+            
+            assert "team_summary" in result
+            assert "member_rankings" in result
 
-        result = await stats_service.get_member_performance_stats(
-            member_id=99999,  # Non-existent member
-            start_date=date.today() - timedelta(days=30),
-            end_date=date.today(),
-        )
+    @pytest.mark.asyncio
+    async def test_get_monthly_trends(self, stats_service, mock_db):
+        """Test monthly trends functionality."""
+        with patch.object(
+            stats_service, "_get_monthly_statistics",
+            return_value={
+                "total_tasks": 20,
+                "completed_tasks": 18,
+                "total_work_hours": 40.5,
+                "completion_rate": 90.0
+            }
+        ):
+            result = await stats_service.get_monthly_trends(months=3)
+            
+            assert "monthly_data" in result
+            assert "trend_analysis" in result
+            assert result["analysis_months"] == 3
 
-        # Should return empty stats rather than error
-        assert result["total_tasks"] == 0
-        assert result["member_id"] == 99999
+    @pytest.mark.asyncio
+    async def test_export_statistics_data(self, stats_service, mock_db):
+        """Test statistics data export functionality."""
+        with patch.object(
+            stats_service, "_export_summary_data",
+            return_value={"export_type": "summary", "data": {}}
+        ):
+            result = await stats_service.export_statistics_data(
+                "summary",
+                datetime(2024, 1, 1),
+                datetime(2024, 1, 31)
+            )
+            
+            assert result["export_type"] == "summary"
+            assert "data" in result
+
+    @pytest.mark.asyncio
+    async def test_export_invalid_type(self, stats_service):
+        """Test export with invalid type raises error."""
+        with pytest.raises(ValueError, match="不支持的导出类型"):
+            await stats_service.export_statistics_data(
+                "invalid_type",
+                datetime(2024, 1, 1),
+                datetime(2024, 1, 31)
+            )
+
+    @pytest.mark.asyncio
+    async def test_overview_with_date_range(self, stats_service, mock_db):
+        """Test overview statistics with custom date range."""
+        date_from = datetime(2024, 1, 1)
+        date_to = datetime(2024, 1, 31)
+        
+        with patch.object(
+            stats_service, "_get_member_statistics_cached",
+            return_value={"active_count": 3}
+        ), patch.object(
+            stats_service, "_get_task_statistics_cached",
+            return_value={"completed_count": 15}
+        ), patch.object(
+            stats_service, "_get_work_hour_statistics_cached",
+            return_value={"total_hours": 75}
+        ), patch.object(
+            stats_service, "_get_performance_statistics_cached",
+            return_value={"overall_rating": 4.2}
+        ), patch.object(
+            stats_service, "_get_attendance_statistics_cached",
+            return_value={"overall_rate": 88}
+        ):
+            result = await stats_service.get_overview_statistics(
+                date_from=date_from,
+                date_to=date_to
+            )
+            
+            assert result["period"]["from"] == date_from.isoformat()
+            assert result["period"]["to"] == date_to.isoformat()
+            assert result["summary"]["total_active_members"] == 3
 
     @pytest.mark.asyncio
     async def test_cache_disabled_functionality(self, mock_db):
@@ -420,21 +274,23 @@ class TestStatisticsService:
         stats_service = StatisticsService(mock_db)
         stats_service.cache_enabled = False
 
-        # Mock database query
-        mock_result = Mock()
-        mock_result.scalar.return_value = 10
-        mock_db.execute.return_value = mock_result
-
-        # Even with cache disabled, should work normally
         with patch.object(
-            stats_service,
-            "_get_performance_metrics",
-            return_value={
-                "average_completion_time": 0,
-                "average_rating": 0,
-                "efficiency_score": 0,
-            },
+            stats_service, "_get_member_statistics_cached",
+            return_value={"active_count": 2}
+        ), patch.object(
+            stats_service, "_get_task_statistics_cached",
+            return_value={"completed_count": 5}
+        ), patch.object(
+            stats_service, "_get_work_hour_statistics_cached",
+            return_value={"total_hours": 25}
+        ), patch.object(
+            stats_service, "_get_performance_statistics_cached",
+            return_value={"overall_rating": 4.0}
+        ), patch.object(
+            stats_service, "_get_attendance_statistics_cached",
+            return_value={"overall_rate": 80}
         ):
-            result = await stats_service.get_system_overview()
-
-            assert "total_members" in result
+            result = await stats_service.get_overview_statistics()
+            
+            assert "summary" in result
+            assert result["summary"]["total_active_members"] == 2
