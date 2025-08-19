@@ -3,9 +3,9 @@ Attendance models for daily attendance tracking and exception management.
 Includes attendance records, exceptions, and related enums.
 """
 
-from datetime import date, datetime
+from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import Boolean, Column, Date, DateTime
 from sqlalchemy import Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
@@ -94,37 +94,6 @@ class AttendanceRecord(BaseModel):
         ),
         Index("idx_attendance_date_member", "attendance_date", "member_id"),
     )
-
-    def __init__(
-        self,
-        member_id: int,
-        attendance_date: date,
-        checkin_time: datetime = None,
-        checkout_time: datetime = None,
-        work_hours: float = 0.0,
-        status: str = "未签到",
-        location: str = None,
-        notes: str = None,
-        is_late_checkin: bool = False,
-        late_checkin_minutes: int = None,
-        is_early_checkout: bool = False,
-        early_checkout_minutes: int = None,
-        **kwargs: Any,
-    ) -> None:
-        """Initialize AttendanceRecord instance."""
-        super().__init__(**kwargs)
-        self.member_id = member_id
-        self.attendance_date = attendance_date
-        self.checkin_time = checkin_time
-        self.checkout_time = checkout_time
-        self.work_hours = work_hours
-        self.status = status
-        self.location = location
-        self.notes = notes
-        self.is_late_checkin = is_late_checkin
-        self.late_checkin_minutes = late_checkin_minutes
-        self.is_early_checkout = is_early_checkout
-        self.early_checkout_minutes = early_checkout_minutes
 
     def __repr__(self) -> str:
         return (
@@ -219,33 +188,6 @@ class AttendanceException(BaseModel):
         Index("idx_exception_member_date", "member_id", "exception_date"),
         Index("idx_exception_status_date", "status", "applied_at"),
     )
-
-    def __init__(
-        self,
-        member_id: int,
-        exception_type: str,
-        exception_date: date,
-        reason: str,
-        supporting_documents: str = None,
-        status: AttendanceExceptionStatus = AttendanceExceptionStatus.PENDING,
-        applied_at: datetime = None,
-        reviewer_id: int = None,
-        reviewer_comments: str = None,
-        reviewed_at: datetime = None,
-        **kwargs: Any,
-    ) -> None:
-        """Initialize AttendanceException instance."""
-        super().__init__(**kwargs)
-        self.member_id = member_id
-        self.exception_type = exception_type
-        self.exception_date = exception_date
-        self.reason = reason
-        self.supporting_documents = supporting_documents
-        self.status = status
-        self.applied_at = applied_at or datetime.utcnow()
-        self.reviewer_id = reviewer_id
-        self.reviewer_comments = reviewer_comments
-        self.reviewed_at = reviewed_at
 
     def __repr__(self) -> str:
         return (
@@ -363,61 +305,6 @@ class MonthlyAttendanceSummary(BaseModel):
         Index("idx_summary_year_month", "year", "month"),
         Index("idx_summary_member_year", "member_id", "year"),
     )
-
-    def __init__(
-        self,
-        member_id: int,
-        year: int,
-        month: int,
-        repair_task_hours: float = 0.0,
-        monitoring_hours: float = 0.0,
-        assistance_hours: float = 0.0,
-        carried_hours: float = 0.0,
-        total_hours: float = 0.0,
-        remaining_hours: float = 0.0,
-        online_repair_hours: float = 0.0,
-        offline_repair_hours: float = 0.0,
-        rush_task_hours: float = 0.0,
-        positive_review_hours: float = 0.0,
-        penalty_hours: float = 0.0,
-        late_response_penalty_hours: float = 0.0,
-        late_completion_penalty_hours: float = 0.0,
-        negative_review_penalty_hours: float = 0.0,
-        total_work_days: int = 0,
-        attended_days: int = 0,
-        late_days: int = 0,
-        early_checkout_days: int = 0,
-        task_completion_count: int = 0,
-        average_task_rating: float = None,
-        summary_notes: str = None,
-        **kwargs: Any,
-    ) -> None:
-        """Initialize MonthlyAttendanceSummary instance."""
-        super().__init__(**kwargs)
-        self.member_id = member_id
-        self.year = year
-        self.month = month
-        self.repair_task_hours = repair_task_hours
-        self.monitoring_hours = monitoring_hours
-        self.assistance_hours = assistance_hours
-        self.carried_hours = carried_hours
-        self.total_hours = total_hours
-        self.remaining_hours = remaining_hours
-        self.online_repair_hours = online_repair_hours
-        self.offline_repair_hours = offline_repair_hours
-        self.rush_task_hours = rush_task_hours
-        self.positive_review_hours = positive_review_hours
-        self.penalty_hours = penalty_hours
-        self.late_response_penalty_hours = late_response_penalty_hours
-        self.late_completion_penalty_hours = late_completion_penalty_hours
-        self.negative_review_penalty_hours = negative_review_penalty_hours
-        self.total_work_days = total_work_days
-        self.attended_days = attended_days
-        self.late_days = late_days
-        self.early_checkout_days = early_checkout_days
-        self.task_completion_count = task_completion_count
-        self.average_task_rating = average_task_rating
-        self.summary_notes = summary_notes
 
     @property
     def month_string(self) -> str:

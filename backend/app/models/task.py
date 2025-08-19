@@ -132,23 +132,6 @@ class TaskTag(BaseModel):
         lazy="dynamic",
     )
 
-    def __init__(
-        self,
-        name: str,
-        description: str = None,
-        work_minutes_modifier: int = 0,
-        is_active: bool = True,
-        tag_type: TaskTagType = TaskTagType.CATEGORY,
-        **kwargs: Any,
-    ) -> None:
-        """Initialize TaskTag instance."""
-        super().__init__(**kwargs)
-        self.name = name
-        self.description = description
-        self.work_minutes_modifier = work_minutes_modifier
-        self.is_active = is_active
-        self.tag_type = tag_type
-
     def __repr__(self) -> str:
         """String representation."""
         return (
@@ -159,57 +142,57 @@ class TaskTag(BaseModel):
     @classmethod
     def create_rush_order_tag(cls) -> "TaskTag":
         """创建爆单标签"""
-        tag = cls()
-        tag.name = "爆单任务"
-        tag.description = "爆单任务标记，独立计算工时15分钟"
-        tag.work_minutes_modifier = 15
-        tag.tag_type = TaskTagType.RUSH_ORDER
-        tag.is_active = True
-        return tag
+        return cls(  # type: ignore[call-arg]
+            name="爆单任务",
+            description="爆单任务标记，独立计算工时15分钟",
+            work_minutes_modifier=15,
+            tag_type=TaskTagType.RUSH_ORDER,
+            is_active=True,
+        )
 
     @classmethod
     def create_non_default_rating_tag(cls) -> "TaskTag":
         """创建非默认好评标签"""
-        tag = cls()
-        tag.name = "非默认好评"
-        tag.description = "用户给出非默认好评，奖励30分钟"
-        tag.work_minutes_modifier = 30
-        tag.tag_type = TaskTagType.NON_DEFAULT_RATING
-        tag.is_active = True
-        return tag
+        return cls(  # type: ignore[call-arg]
+            name="非默认好评",
+            description="用户给出非默认好评，奖励30分钟",
+            work_minutes_modifier=30,
+            tag_type=TaskTagType.NON_DEFAULT_RATING,
+            is_active=True,
+        )
 
     @classmethod
     def create_timeout_response_tag(cls) -> "TaskTag":
         """创建超时响应标签"""
-        tag = cls()
-        tag.name = "超时响应"
-        tag.description = "响应超过24小时，扣除30分钟"
-        tag.work_minutes_modifier = -30
-        tag.tag_type = TaskTagType.TIMEOUT_RESPONSE
-        tag.is_active = True
-        return tag
+        return cls(  # type: ignore[call-arg]
+            name="超时响应",
+            description="响应超过24小时，扣除30分钟",
+            work_minutes_modifier=-30,
+            tag_type=TaskTagType.TIMEOUT_RESPONSE,
+            is_active=True,
+        )
 
     @classmethod
     def create_timeout_processing_tag(cls) -> "TaskTag":
         """创建超时处理标签"""
-        tag = cls()
-        tag.name = "超时处理"
-        tag.description = "处理超过48小时，扣除30分钟"
-        tag.work_minutes_modifier = -30
-        tag.tag_type = TaskTagType.TIMEOUT_PROCESSING
-        tag.is_active = True
-        return tag
+        return cls(  # type: ignore[call-arg]
+            name="超时处理",
+            description="处理超过48小时，扣除30分钟",
+            work_minutes_modifier=-30,
+            tag_type=TaskTagType.TIMEOUT_PROCESSING,
+            is_active=True,
+        )
 
     @classmethod
     def create_bad_rating_tag(cls) -> "TaskTag":
         """创建差评标签"""
-        tag = cls()
-        tag.name = "差评"
-        tag.description = "用户差评（2星及以下），扣除60分钟"
-        tag.work_minutes_modifier = -60
-        tag.tag_type = TaskTagType.BAD_RATING
-        tag.is_active = True
-        return tag
+        return cls(  # type: ignore[call-arg]
+            name="差评",
+            description="用户差评（2星及以下），扣除60分钟",
+            work_minutes_modifier=-60,
+            tag_type=TaskTagType.BAD_RATING,
+            is_active=True,
+        )
 
     @classmethod
     def get_standard_tags(cls) -> List["TaskTag"]:
@@ -389,65 +372,6 @@ class RepairTask(BaseModel):
         Index("idx_repair_task_import_batch", "import_batch_id"),
         {"comment": "Repair tasks table"},
     )
-
-    def __init__(
-        self,
-        task_id: str,
-        member_id: int,
-        title: str,
-        report_time: datetime,
-        description: str = None,
-        location: str = None,
-        category: TaskCategory = TaskCategory.NETWORK_REPAIR,
-        priority: TaskPriority = TaskPriority.MEDIUM,
-        status: TaskStatus = TaskStatus.PENDING,
-        task_type: TaskType = TaskType.ONLINE,
-        response_time: datetime = None,
-        completion_time: datetime = None,
-        due_date: datetime = None,
-        feedback: str = None,
-        rating: int = None,
-        reporter_name: str = None,
-        reporter_contact: str = None,
-        work_minutes: int = 0,
-        base_work_minutes: int = 0,
-        import_batch_id: str = None,
-        is_matched: bool = False,
-        original_data: Dict[str, Any] = None,
-        matched_member_data: Dict[str, Any] = None,
-        is_rush_order: bool = False,
-        work_order_status: str = None,
-        repair_form: str = None,
-        **kwargs: Any,
-    ) -> None:
-        """Initialize RepairTask instance."""
-        super().__init__(**kwargs)
-        self.task_id = task_id
-        self.member_id = member_id
-        self.title = title
-        self.report_time = report_time
-        self.description = description
-        self.location = location
-        self.category = category
-        self.priority = priority
-        self.status = status
-        self.task_type = task_type
-        self.response_time = response_time
-        self.completion_time = completion_time
-        self.due_date = due_date
-        self.feedback = feedback
-        self.rating = rating
-        self.reporter_name = reporter_name
-        self.reporter_contact = reporter_contact
-        self.work_minutes = work_minutes
-        self.base_work_minutes = base_work_minutes
-        self.import_batch_id = import_batch_id
-        self.is_matched = is_matched
-        self.original_data = original_data
-        self.matched_member_data = matched_member_data
-        self.is_rush_order = is_rush_order
-        self.work_order_status = work_order_status
-        self.repair_form = repair_form
 
     def __repr__(self) -> str:
         """String representation."""
@@ -734,31 +658,6 @@ class MonitoringTask(BaseModel):
         {"comment": "Monitoring tasks table"},
     )
 
-    def __init__(
-        self,
-        member_id: int,
-        title: str,
-        start_time: datetime,
-        end_time: datetime,
-        work_minutes: int,
-        description: str = None,
-        location: str = None,
-        monitoring_type: str = "inspection",
-        status: TaskStatus = TaskStatus.COMPLETED,
-        **kwargs: Any,
-    ) -> None:
-        """Initialize MonitoringTask instance."""
-        super().__init__(**kwargs)
-        self.member_id = member_id
-        self.title = title
-        self.start_time = start_time
-        self.end_time = end_time
-        self.work_minutes = work_minutes
-        self.description = description
-        self.location = location
-        self.monitoring_type = monitoring_type
-        self.status = status
-
     def __repr__(self) -> str:
         """String representation."""
         return (
@@ -832,31 +731,6 @@ class AssistanceTask(BaseModel):
         Index("idx_assistance_task_member_time", "member_id", "start_time"),
         {"comment": "Assistance tasks table"},
     )
-
-    def __init__(
-        self,
-        member_id: int,
-        title: str,
-        start_time: datetime,
-        end_time: datetime,
-        work_minutes: int,
-        description: str = None,
-        assisted_department: str = None,
-        assisted_person: str = None,
-        status: TaskStatus = TaskStatus.COMPLETED,
-        **kwargs: Any,
-    ) -> None:
-        """Initialize AssistanceTask instance."""
-        super().__init__(**kwargs)
-        self.member_id = member_id
-        self.title = title
-        self.start_time = start_time
-        self.end_time = end_time
-        self.work_minutes = work_minutes
-        self.description = description
-        self.assisted_department = assisted_department
-        self.assisted_person = assisted_person
-        self.status = status
 
     def __repr__(self) -> str:
         """String representation."""
