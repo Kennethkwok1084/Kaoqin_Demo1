@@ -22,30 +22,6 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Create complete initial tables for attendance system."""
 
-    # Create all required enums first with defensive checks
-    enums = {
-        "userrole": "('admin', 'group_leader', 'member', 'guest')",
-        "taskstatus": "('pending', 'in_progress', 'completed', 'cancelled', 'on_hold')",
-        "taskcategory": "('network_repair', 'hardware_repair', 'software_support', 'monitoring', 'assistance', 'other')",
-        "taskpriority": "('low', 'medium', 'high', 'urgent')",
-        "tasktype": "('online', 'offline')",
-        "tasktagtype": "('rush_order', 'non_default_rating', 'timeout_response', 'timeout_processing', 'bad_rating', 'bonus', 'penalty', 'category')",
-        "attendanceexceptionstatus": "('pending', 'approved', 'rejected')",
-    }
-
-    for name, values in enums.items():
-        op.execute(f"DROP TYPE IF EXISTS {name} CASCADE")
-        op.execute(
-            f"""
-            DO $$
-            BEGIN
-                CREATE TYPE {name} AS ENUM {values};
-            EXCEPTION
-                WHEN duplicate_object THEN null;
-            END $$;
-            """
-        )
-
     # Create members table first (referenced by other tables)
     op.create_table(
         "members",
@@ -105,13 +81,13 @@ def upgrade() -> None:
         ),
         sa.Column(
             "role",
-            postgresql.ENUM(
+            sa.Enum(
                 "admin",
                 "group_leader",
                 "member",
                 "guest",
                 name="userrole",
-                create_type=False,
+                create_type=True,
             ),
             nullable=False,
             server_default="member",
@@ -200,7 +176,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "tag_type",
-            postgresql.ENUM(
+            sa.Enum(
                 "rush_order",
                 "non_default_rating",
                 "timeout_response",
@@ -210,7 +186,7 @@ def upgrade() -> None:
                 "penalty",
                 "category",
                 name="tasktagtype",
-                create_type=False,
+                create_type=True,
             ),
             nullable=False,
             server_default="category",
@@ -265,7 +241,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "category",
-            postgresql.ENUM(
+            sa.Enum(
                 "network_repair",
                 "hardware_repair",
                 "software_support",
@@ -273,7 +249,7 @@ def upgrade() -> None:
                 "assistance",
                 "other",
                 name="taskcategory",
-                create_type=False,
+                create_type=True,
             ),
             nullable=False,
             server_default="network_repair",
@@ -281,13 +257,13 @@ def upgrade() -> None:
         ),
         sa.Column(
             "priority",
-            postgresql.ENUM(
+            sa.Enum(
                 "low",
                 "medium",
                 "high",
                 "urgent",
                 name="taskpriority",
-                create_type=False,
+                create_type=True,
             ),
             nullable=False,
             server_default="medium",
@@ -295,14 +271,14 @@ def upgrade() -> None:
         ),
         sa.Column(
             "status",
-            postgresql.ENUM(
+            sa.Enum(
                 "pending",
                 "in_progress",
                 "completed",
                 "cancelled",
                 "on_hold",
                 name="taskstatus",
-                create_type=False,
+                create_type=True,
             ),
             nullable=False,
             server_default="pending",
@@ -310,11 +286,11 @@ def upgrade() -> None:
         ),
         sa.Column(
             "task_type",
-            postgresql.ENUM(
+            sa.Enum(
                 "online",
                 "offline",
                 name="tasktype",
-                create_type=False,
+                create_type=True,
             ),
             nullable=False,
             server_default="online",
@@ -504,14 +480,14 @@ def upgrade() -> None:
         ),
         sa.Column(
             "status",
-            postgresql.ENUM(
+            sa.Enum(
                 "pending",
                 "in_progress",
                 "completed",
                 "cancelled",
                 "on_hold",
                 name="taskstatus",
-                create_type=False,
+                create_type=True,
             ),
             nullable=False,
             server_default="completed",
@@ -606,14 +582,14 @@ def upgrade() -> None:
         ),
         sa.Column(
             "status",
-            postgresql.ENUM(
+            sa.Enum(
                 "pending",
                 "in_progress",
                 "completed",
                 "cancelled",
                 "on_hold",
                 name="taskstatus",
-                create_type=False,
+                create_type=True,
             ),
             nullable=False,
             server_default="completed",
@@ -815,12 +791,12 @@ def upgrade() -> None:
         ),
         sa.Column(
             "status",
-            postgresql.ENUM(
+            sa.Enum(
                 "pending",
                 "approved",
                 "rejected",
                 name="attendanceexceptionstatus",
-                create_type=False,
+                create_type=True,
             ),
             nullable=False,
             server_default="pending",
