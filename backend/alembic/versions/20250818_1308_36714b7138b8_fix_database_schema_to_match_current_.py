@@ -310,7 +310,7 @@ def upgrade() -> None:
     op.alter_column(
         "task_tags",
         "tag_type",
-        existing_type=sa.Enum(
+        existing_type=postgresql.ENUM(
             "rush_order",
             "non_default_rating",
             "timeout_response",
@@ -320,6 +320,7 @@ def upgrade() -> None:
             "penalty",
             "category",
             name="tasktagtype",
+            create_type=False,
         ),
         nullable=False,
         comment="Tag type for categorization and work hour calculation",
@@ -334,7 +335,7 @@ def downgrade() -> None:
     op.alter_column(
         "task_tags",
         "tag_type",
-        existing_type=sa.Enum(
+        existing_type=postgresql.ENUM(
             "RUSH_ORDER",
             "NON_DEFAULT_RATING",
             "TIMEOUT_RESPONSE",
@@ -344,6 +345,7 @@ def downgrade() -> None:
             "PENALTY",
             "CATEGORY",
             name="tasktagtype",
+            create_type=False,
         ),
         type_=sa.VARCHAR(length=30),
         nullable=True,

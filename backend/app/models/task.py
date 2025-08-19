@@ -12,7 +12,6 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
-    Enum,
     ForeignKey,
     Index,
     Integer,
@@ -21,6 +20,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, BaseModel
@@ -118,7 +118,7 @@ class TaskTag(BaseModel):
 
     # Tag type for categorization
     tag_type: Mapped[TaskTagType] = mapped_column(
-        Enum(TaskTagType),
+        PgEnum(TaskTagType, name="tasktagtype", create_type=False),
         default=TaskTagType.CATEGORY,
         nullable=False,
         comment="Tag type for categorization and work hour calculation",
@@ -277,21 +277,21 @@ class RepairTask(BaseModel):
 
     # Task categorization
     category: Mapped[TaskCategory] = mapped_column(
-        Enum(TaskCategory),
+        PgEnum(TaskCategory, name="taskcategory", create_type=False),
         default=TaskCategory.NETWORK_REPAIR,
         nullable=False,
         comment="Task category",
     )
 
     priority: Mapped[TaskPriority] = mapped_column(
-        Enum(TaskPriority),
+        PgEnum(TaskPriority, name="taskpriority", create_type=False),
         default=TaskPriority.MEDIUM,
         nullable=False,
         comment="Task priority",
     )
 
     status: Mapped[TaskStatus] = mapped_column(
-        Enum(TaskStatus),
+        PgEnum(TaskStatus, name="taskstatus", create_type=False),
         default=TaskStatus.PENDING,
         nullable=False,
         index=True,
@@ -299,7 +299,7 @@ class RepairTask(BaseModel):
     )
 
     task_type: Mapped[TaskType] = mapped_column(
-        Enum(TaskType),
+        PgEnum(TaskType, name="tasktype", create_type=False),
         default=TaskType.ONLINE,
         nullable=False,
         comment="Task type (online/offline)",
@@ -719,7 +719,7 @@ class MonitoringTask(BaseModel):
 
     # Status
     status: Mapped[TaskStatus] = mapped_column(
-        Enum(TaskStatus),
+        PgEnum(TaskStatus, name="taskstatus", create_type=False),
         default=TaskStatus.COMPLETED,
         nullable=False,
         comment="Task status",
@@ -818,7 +818,7 @@ class AssistanceTask(BaseModel):
 
     # Status
     status: Mapped[TaskStatus] = mapped_column(
-        Enum(TaskStatus),
+        PgEnum(TaskStatus, name="taskstatus", create_type=False),
         default=TaskStatus.COMPLETED,
         nullable=False,
         comment="Task status",

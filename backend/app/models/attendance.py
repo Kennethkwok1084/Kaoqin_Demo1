@@ -8,8 +8,8 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, Optional
 
 from sqlalchemy import Boolean, Column, Date, DateTime
-from sqlalchemy import Enum as SQLEnum
 from sqlalchemy import Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 from sqlalchemy.orm import Mapped, relationship
 
 from app.models.base import BaseModel
@@ -171,7 +171,11 @@ class AttendanceException(BaseModel):
 
     # Request status and processing
     status: AttendanceExceptionStatus = Column(
-        SQLEnum(AttendanceExceptionStatus),
+        PgEnum(
+            AttendanceExceptionStatus,
+            name="attendanceexceptionstatus",
+            create_type=False,
+        ),
         default=AttendanceExceptionStatus.PENDING,
         nullable=False,
         index=True,
