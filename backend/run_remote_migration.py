@@ -7,7 +7,7 @@ import os
 
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from app.models import Base
+from app.models.base import Base
 
 # 设置环境变量
 os.environ["ENVIRONMENT"] = "production"
@@ -83,7 +83,7 @@ async def run_migration():
                     "class_name": "2021 Class",
                     "join_date": date(2024, 1, 1),
                     "password_hash": get_password_hash("test123"),
-                    "role": "MEMBER",
+                    "role": "member",
                     "is_active": True,
                     "profile_completed": True,
                     "is_verified": False,
@@ -108,7 +108,7 @@ async def run_migration():
                     "class_name": "Staff",
                     "join_date": date(2023, 1, 1),
                     "password_hash": get_password_hash("admin123"),
-                    "role": "ADMIN",
+                    "role": "admin",
                     "is_active": True,
                     "profile_completed": True,
                     "is_verified": True,

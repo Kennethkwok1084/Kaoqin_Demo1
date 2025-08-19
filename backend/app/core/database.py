@@ -134,15 +134,7 @@ async def init_database() -> None:
     Initialize database tables.
     Only use in development or testing.
     """
-    if settings.DEBUG or settings.TESTING:
-        async with async_engine.begin() as conn:
-            # Import all models to ensure they are registered
-            from app.models import attendance, member, task  # noqa
-
-            await conn.run_sync(Base.metadata.create_all)
-            logger.info("Database tables created successfully")
-    else:
-        logger.warning("Database initialization skipped in production mode")
+    logger.warning("init_database is deprecated; use Alembic migrations instead")
 
 
 # Database Cleanup

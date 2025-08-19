@@ -5,9 +5,7 @@
 import asyncio
 import os
 
-import asyncpg
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
+import asyncpg  # type: ignore[import-untyped]
 
 # 设置环境变量
 os.environ["ENVIRONMENT"] = "production"
@@ -127,7 +125,7 @@ async def create_members_table_minimal():
             "IT Department",
             "2021 Class",
             "$2b$12$7DKis8BX0BY8vqjtylV46./D2LlSwWdV0XADOPWeyWkZPIlewARyS",
-            "MEMBER",
+            "member",
             True,
             True,
         )
