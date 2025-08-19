@@ -159,7 +159,14 @@ def upgrade() -> None:
         ),
         sa.Column(
             "role",
-            sa.Enum("admin", "group_leader", "member", "guest", name="userrole", create_type=False),
+            sa.Enum(
+                "admin",
+                "group_leader",
+                "member",
+                "guest",
+                name="userrole",
+                create_type=False,
+            ),
             nullable=False,
             server_default="member",
             comment="用户角色",
@@ -326,7 +333,14 @@ def upgrade() -> None:
         ),
         sa.Column(
             "priority",
-            sa.Enum("low", "medium", "high", "urgent", name="taskpriority", create_type=False),
+            sa.Enum(
+                "low",
+                "medium",
+                "high",
+                "urgent",
+                name="taskpriority",
+                create_type=False,
+            ),
             nullable=False,
             server_default="medium",
             comment="Task priority",
