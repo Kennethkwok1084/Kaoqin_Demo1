@@ -94,7 +94,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "role",
-            sa.Enum(
+            postgresql.ENUM(
                 "admin",
                 "group_leader",
                 "member",
@@ -157,7 +157,7 @@ def upgrade() -> None:
             '管理员',
             CURRENT_DATE,
             '$2b$12$Ke3Lf5m5nKCTb8LUADjzJu3CqgGk8zvFfW3CQvn5f4eKdfgY5G4YS',  -- password: admin123
-            'ADMIN',
+            'admin',
             true,
             true,
             0

@@ -50,8 +50,12 @@ def upgrade() -> None:
         ),
         sa.Column(
             "status",
-            sa.Enum(
-                "PENDING", "APPROVED", "REJECTED", name="attendanceexceptionstatus"
+            postgresql.ENUM(
+                "PENDING",
+                "APPROVED",
+                "REJECTED",
+                name="attendanceexceptionstatus",
+                create_type=False,
             ),
             nullable=False,
             comment="Processing status",
@@ -423,7 +427,12 @@ def upgrade() -> None:
         "members",
         "role",
         existing_type=postgresql.ENUM(
-            "ADMIN", "GROUP_LEADER", "MEMBER", "GUEST", name="userrole"
+            "admin",
+            "group_leader",
+            "member",
+            "guest",
+            name="userrole",
+            create_type=False,
         ),
         server_default=None,
         existing_comment="User role",
@@ -475,6 +484,7 @@ def upgrade() -> None:
             "CANCELLED",
             "ON_HOLD",
             name="taskstatus",
+            create_type=False,
         ),
         server_default=None,
         existing_comment="Task status",
@@ -491,6 +501,7 @@ def upgrade() -> None:
             "ASSISTANCE",
             "OTHER",
             name="taskcategory",
+            create_type=False,
         ),
         server_default=None,
         existing_comment="Task category",
@@ -500,7 +511,12 @@ def upgrade() -> None:
         "repair_tasks",
         "priority",
         existing_type=postgresql.ENUM(
-            "LOW", "MEDIUM", "HIGH", "URGENT", name="taskpriority"
+            "LOW",
+            "MEDIUM",
+            "HIGH",
+            "URGENT",
+            name="taskpriority",
+            create_type=False,
         ),
         server_default=None,
         existing_comment="Task priority",
@@ -516,6 +532,7 @@ def upgrade() -> None:
             "CANCELLED",
             "ON_HOLD",
             name="taskstatus",
+            create_type=False,
         ),
         server_default=None,
         existing_comment="Task status",
@@ -524,7 +541,12 @@ def upgrade() -> None:
     op.alter_column(
         "repair_tasks",
         "task_type",
-        existing_type=postgresql.ENUM("ONLINE", "OFFLINE", name="tasktype"),
+        existing_type=postgresql.ENUM(
+            "ONLINE",
+            "OFFLINE",
+            name="tasktype",
+            create_type=False,
+        ),
         server_default=None,
         existing_comment="Task type (online/offline)",
         existing_nullable=False,
@@ -655,7 +677,12 @@ def downgrade() -> None:
     op.alter_column(
         "repair_tasks",
         "task_type",
-        existing_type=postgresql.ENUM("ONLINE", "OFFLINE", name="tasktype"),
+        existing_type=postgresql.ENUM(
+            "ONLINE",
+            "OFFLINE",
+            name="tasktype",
+            create_type=False,
+        ),
         server_default=sa.text("'ONLINE'::tasktype"),
         existing_comment="Task type (online/offline)",
         existing_nullable=False,
@@ -670,6 +697,7 @@ def downgrade() -> None:
             "CANCELLED",
             "ON_HOLD",
             name="taskstatus",
+            create_type=False,
         ),
         server_default=sa.text("'PENDING'::taskstatus"),
         existing_comment="Task status",
@@ -679,7 +707,12 @@ def downgrade() -> None:
         "repair_tasks",
         "priority",
         existing_type=postgresql.ENUM(
-            "LOW", "MEDIUM", "HIGH", "URGENT", name="taskpriority"
+            "LOW",
+            "MEDIUM",
+            "HIGH",
+            "URGENT",
+            name="taskpriority",
+            create_type=False,
         ),
         server_default=sa.text("'MEDIUM'::taskpriority"),
         existing_comment="Task priority",
@@ -696,6 +729,7 @@ def downgrade() -> None:
             "ASSISTANCE",
             "OTHER",
             name="taskcategory",
+            create_type=False,
         ),
         server_default=sa.text("'NETWORK_REPAIR'::taskcategory"),
         existing_comment="Task category",
@@ -711,6 +745,7 @@ def downgrade() -> None:
             "CANCELLED",
             "ON_HOLD",
             name="taskstatus",
+            create_type=False,
         ),
         server_default=sa.text("'COMPLETED'::taskstatus"),
         existing_comment="Task status",
@@ -756,9 +791,14 @@ def downgrade() -> None:
         "members",
         "role",
         existing_type=postgresql.ENUM(
-            "ADMIN", "GROUP_LEADER", "MEMBER", "GUEST", name="userrole"
+            "admin",
+            "group_leader",
+            "member",
+            "guest",
+            name="userrole",
+            create_type=False,
         ),
-        server_default=sa.text("'MEMBER'::userrole"),
+        server_default=sa.text("'member'::userrole"),
         existing_comment="User role",
         existing_nullable=False,
     )
