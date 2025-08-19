@@ -159,7 +159,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "role",
-            sa.Enum(
+            postgresql.ENUM(
                 "admin",
                 "group_leader",
                 "member",

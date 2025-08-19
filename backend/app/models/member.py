@@ -7,7 +7,8 @@ import enum
 from datetime import date, datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from sqlalchemy import Boolean, Date, DateTime, Enum, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, Integer, String, UniqueConstraint
+from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import BaseModel
@@ -97,7 +98,10 @@ class Member(BaseModel):
 
     # 状态和权限
     role: Mapped[UserRole] = mapped_column(
-        Enum(UserRole), default=UserRole.MEMBER, nullable=False, comment="用户角色"
+        ENUM(UserRole, name="userrole", create_type=False),
+        default=UserRole.MEMBER,
+        nullable=False,
+        comment="用户角色",
     )
 
     is_active: Mapped[bool] = mapped_column(
