@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
 from app.core.config import settings
-from app.models.task import RepairTask, TaskStatus, TaskTag, task_tag_association
+from app.models.task import RepairTask, TaskStatus, TaskTag, TaskTagType, task_tag_association
 from app.services.task_service import TaskService
 
 logger = logging.getLogger(__name__)
@@ -648,7 +648,7 @@ class WorkHourAutomationService:
                     name=tag_name,
                     description=f"Auto-applied penalty: {reason}",
                     work_minutes_modifier=-30,
-                    tag_type="penalty",
+                    tag_type=TaskTagType.PENALTY,
                     is_active=True,
                 )
                 self.db.add(tag)

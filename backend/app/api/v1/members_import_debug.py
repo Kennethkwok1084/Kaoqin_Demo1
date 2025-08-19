@@ -79,8 +79,10 @@ async def import_members_debug(
 
                 # 跳过所有重复检查，直接创建
                 new_member: Member = Member(
+                    username=str(student_id_safe) if student_id_safe else str(name_safe),  # 使用学号或姓名作为用户名
                     name=str(name_safe),
                     student_id=str(student_id_safe),
+                    class_name="导入用户",  # 添加必需的class_name字段
                     password_hash=get_password_hash(str(password_safe)),
                     email=str(email_safe) if email_safe else None,
                     role=role_safe,

@@ -48,6 +48,7 @@ async def create_default_admin():
 
             # Create new admin user
             admin_user = Member(
+                username=admin_data["student_id"],  # 添加username字段
                 name=admin_data["name"],
                 student_id=admin_data["student_id"],
                 group_id=admin_data["group_id"],
@@ -128,6 +129,7 @@ async def create_test_users():
 
                 # Create new test user
                 test_user = Member(
+                    username=user_data["student_id"],  # 添加username字段
                     name=user_data["name"],
                     student_id=user_data["student_id"],
                     group_id=user_data["group_id"],

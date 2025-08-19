@@ -108,6 +108,7 @@ async def client_with_db(
 async def test_user(async_session: AsyncSession) -> Member:
     """Create a test user."""
     user = Member(
+        username="test_user",  # 添加username字段
         name="测试用户",
         student_id="2021001001",
         group_id=1,
@@ -130,6 +131,7 @@ async def test_user(async_session: AsyncSession) -> Member:
 async def test_admin(async_session: AsyncSession) -> Member:
     """Create a test admin user."""
     admin = Member(
+        username="test_admin",  # 添加username字段
         name="管理员",
         student_id="2021000001",
         group_id=1,
@@ -152,6 +154,7 @@ async def test_admin(async_session: AsyncSession) -> Member:
 async def test_group_leader(async_session: AsyncSession) -> Member:
     """Create a test group leader."""
     leader = Member(
+        username="test_leader",  # 添加username字段
         name="组长",
         student_id="2021000002",
         group_id=1,

@@ -1894,7 +1894,7 @@ async def _add_penalty_tag(
         tag = TaskTag(
             name=tag_name,
             work_minutes_modifier=modifier,
-            tag_type="penalty",
+            tag_type=TaskTagType.PENALTY,
             is_active=True,
         )
         db.add(tag)

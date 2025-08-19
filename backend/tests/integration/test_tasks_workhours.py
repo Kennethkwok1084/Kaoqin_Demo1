@@ -186,12 +186,12 @@ class TestTasksCRUD:
         task = RepairTask(
             title="详情测试任务",
             description="用于测试任务详情的任务",
-            task_number="T202501290001",
+            task_id="T202501290001",
             status=TaskStatus.IN_PROGRESS,
             priority=TaskPriority.MEDIUM,
-            assigned_to=test_member_user.id,
-            estimated_minutes=90,
-            deadline=datetime.utcnow() + timedelta(days=1),
+            member_id=test_member_user.id,
+            work_minutes=90,
+            report_time=datetime.utcnow() + timedelta(days=1),
             reporter_name="测试报告人",
             reporter_contact="13812345678",
         )
@@ -238,11 +238,12 @@ class TestTasksCRUD:
         task = RepairTask(
             title="待更新任务",
             description="原始描述",
-            task_number="T202501290002",
+            task_id="T202501290002",
             status=TaskStatus.PENDING,
-            priority=TaskPriority.LOW,
-            assigned_to=test_member_user.id,
-            estimated_minutes=60,
+            priority=TaskPriority.MEDIUM,
+            member_id=test_member_user.id,
+            work_minutes=60,
+            report_time=datetime.utcnow(),
         )
 
         db_session.add(task)
@@ -281,10 +282,11 @@ class TestTasksCRUD:
 
         task = RepairTask(
             title="状态测试任务",
-            task_number="T202501290003",
+            task_id="T202501290003",
             status=TaskStatus.PENDING,
-            assigned_to=test_member_user.id,
-            estimated_minutes=90,
+            member_id=test_member_user.id,
+            work_minutes=90,
+            report_time=datetime.utcnow(),
         )
 
         db_session.add(task)
@@ -336,9 +338,10 @@ class TestTasksCRUD:
 
         task = RepairTask(
             title="待分配任务",
-            task_number="T202501290004",
+            task_id="T202501290004",
             status=TaskStatus.PENDING,
-            estimated_minutes=60,
+            work_minutes=60,
+            report_time=datetime.utcnow(),
         )
 
         db_session.add(task)
@@ -367,9 +370,10 @@ class TestTasksCRUD:
 
         task = RepairTask(
             title="待删除任务",
-            task_number="T202501290005",
+            task_id="T202501290005",
             status=TaskStatus.PENDING,
-            estimated_minutes=30,
+            work_minutes=30,
+            report_time=datetime.utcnow(),
         )
 
         db_session.add(task)
@@ -695,11 +699,12 @@ class TestTaskAutomation:
 
         overdue_task = RepairTask(
             title="过期任务",
-            task_number="T202501290006",
+            task_id="T202501290006",
             status=TaskStatus.PENDING,
-            assigned_to=test_member_user.id,
-            estimated_minutes=60,
-            deadline=datetime.utcnow() - timedelta(hours=2),  # 2小时前就过期了
+            member_id=test_member_user.id,
+            work_minutes=60,
+            due_date=datetime.utcnow() - timedelta(hours=2),  # 2小时前就过期了
+            report_time=datetime.utcnow() - timedelta(hours=3),
         )
 
         db_session.add(overdue_task)
@@ -726,13 +731,13 @@ class TestTaskAutomation:
 
         late_task = RepairTask(
             title="延迟任务",
-            task_number="T202501290007",
+            task_id="T202501290007",
             status=TaskStatus.COMPLETED,
-            assigned_to=test_member_user.id,
-            estimated_minutes=60,
-            actual_minutes=65,
-            deadline=datetime.utcnow() - timedelta(hours=1),  # 已过期
-            completed_at=datetime.utcnow(),  # 刚完成
+            member_id=test_member_user.id,
+            work_minutes=60,
+            due_date=datetime.utcnow() - timedelta(hours=1),  # 已过期
+            completion_time=datetime.utcnow(),  # 刚完成
+            report_time=datetime.utcnow() - timedelta(hours=2),
         )
 
         db_session.add(late_task)

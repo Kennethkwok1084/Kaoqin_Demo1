@@ -290,25 +290,27 @@ class TestDataMatching:
         task1 = RepairTask(
             title="网络故障",
             description="教学楼网络断线",
-            task_number="T202501290001",
+            task_id="T202501290001",
             status=TaskStatus.PENDING,
             priority=TaskPriority.HIGH,
-            assigned_to=test_member_user.id,
+            member_id=test_member_user.id,
             reporter_name="张老师",
             reporter_contact="13812345678",
             location="教学楼A101",
+            report_time=datetime.utcnow(),
         )
 
         task2 = RepairTask(
             title="投影仪故障",
             description="投影仪无法正常显示",
-            task_number="T202501290002",
+            task_id="T202501290002",
             status=TaskStatus.PENDING,
             priority=TaskPriority.MEDIUM,
-            assigned_to=test_member_user.id,
+            member_id=test_member_user.id,
             reporter_name="李老师",
             reporter_contact="13987654321",
             location="办公楼B203",
+            report_time=datetime.utcnow(),
         )
 
         db_session.add_all([task1, task2])
