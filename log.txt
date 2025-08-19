@@ -1,0 +1,394 @@
+连接本地PostgreSQL数据库...
+2025-08-19T08:22:06.9458048Z 使用数据库URL: ***localhost:5432/test_attendence
+2025-08-19T08:22:07.2106827Z === 简单数据库连接测试 ===
+2025-08-19T08:22:07.2108339Z 数据库URL: ***localhost:5432/test_attendence
+2025-08-19T08:22:07.2109009Z 测试模式: True
+2025-08-19T08:22:07.2109334Z [OK] 配置加载成功
+2025-08-19T08:22:07.2109665Z 尝试使用psycopg2连接数据库...
+2025-08-19T08:22:07.2110015Z CI环境变量: true
+2025-08-19T08:22:07.2110331Z GITHUB_ACTIONS环境变量: true
+2025-08-19T08:22:07.2111007Z 使用数据库URL: ***localhost:5432/test_attendence
+2025-08-19T08:22:07.2111486Z 连接到数据库: localhost:5432/test_attendence
+2025-08-19T08:22:07.2111895Z 用户名: postgres
+2025-08-19T08:22:07.2112775Z PostgreSQL版本: PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+2025-08-19T08:22:07.2114104Z 当前数据库: test_attendence
+2025-08-19T08:22:07.2114462Z [OK] psycopg2连接成功
+2025-08-19T08:22:07.2114653Z 
+2025-08-19T08:22:07.2114820Z [SUCCESS] 基础连接测试通过
+2025-08-19T08:22:07.2501857Z PostgreSQL数据库连接成功
+2025-08-19T08:22:07.2503296Z 运行数据库迁移...
+2025-08-19T08:22:07.8875784Z INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+2025-08-19T08:22:07.8877990Z INFO  [alembic.runtime.migration] Will assume transactional DDL.
+2025-08-19T08:22:07.9155169Z INFO  [alembic.runtime.migration] Running upgrade  -> 20250750_0000, Initial tables creation for complete attendance system
+2025-08-19T08:22:07.9349753Z Traceback (most recent call last):
+2025-08-19T08:22:07.9366465Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 545, in _prepare_and_execute
+2025-08-19T08:22:07.9367819Z     self._rows = deque(await prepared_stmt.fetch(*parameters))
+2025-08-19T08:22:07.9368904Z                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9370056Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/asyncpg/prepared_stmt.py", line 176, in fetch
+2025-08-19T08:22:07.9371097Z     data = await self.__bind_execute(args, 0, timeout)
+2025-08-19T08:22:07.9371604Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9372686Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/asyncpg/prepared_stmt.py", line 267, in __bind_execute
+2025-08-19T08:22:07.9379314Z     data, status, _ = await self.__do_execute(
+2025-08-19T08:22:07.9379797Z                       ^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9380295Z         lambda protocol: protocol.bind_execute(
+2025-08-19T08:22:07.9380755Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9381239Z             self._state, args, '', limit, True, timeout))
+2025-08-19T08:22:07.9381737Z             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9382831Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/asyncpg/prepared_stmt.py", line 256, in __do_execute
+2025-08-19T08:22:07.9384069Z     return await executor(protocol)
+2025-08-19T08:22:07.9384504Z            ^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9385157Z   File "asyncpg/protocol/protocol.pyx", line 206, in bind_execute
+2025-08-19T08:22:07.9386003Z asyncpg.exceptions.DuplicateObjectError: type "userrole" already exists
+2025-08-19T08:22:07.9386554Z 
+2025-08-19T08:22:07.9386870Z The above exception was the direct cause of the following exception:
+2025-08-19T08:22:07.9387347Z 
+2025-08-19T08:22:07.9387518Z Traceback (most recent call last):
+2025-08-19T08:22:07.9388673Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+2025-08-19T08:22:07.9389752Z     self.dialect.do_execute(
+2025-08-19T08:22:07.9390150Z     ~~~~~~~~~~~~~~~~~~~~~~~^
+2025-08-19T08:22:07.9390623Z         cursor, str_statement, effective_parameters, context
+2025-08-19T08:22:07.9391174Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9391601Z     )
+2025-08-19T08:22:07.9391874Z     ^
+2025-08-19T08:22:07.9392828Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+2025-08-19T08:22:07.9394064Z     cursor.execute(statement, parameters)
+2025-08-19T08:22:07.9394539Z     ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9395678Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 580, in execute
+2025-08-19T08:22:07.9396803Z     self._adapt_connection.await_(
+2025-08-19T08:22:07.9397230Z     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+2025-08-19T08:22:07.9397710Z         self._prepare_and_execute(operation, parameters)
+2025-08-19T08:22:07.9398293Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9398710Z     )
+2025-08-19T08:22:07.9399258Z     ^
+2025-08-19T08:22:07.9400235Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 132, in await_only
+2025-08-19T08:22:07.9401577Z     return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+2025-08-19T08:22:07.9402349Z            ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+2025-08-19T08:22:07.9403461Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 196, in greenlet_spawn
+2025-08-19T08:22:07.9404707Z     value = await result
+2025-08-19T08:22:07.9405065Z             ^^^^^^^^^^^^
+2025-08-19T08:22:07.9406177Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 558, in _prepare_and_execute
+2025-08-19T08:22:07.9407327Z     self._handle_exception(error)
+2025-08-19T08:22:07.9407715Z     ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+2025-08-19T08:22:07.9409120Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 508, in _handle_exception
+2025-08-19T08:22:07.9410369Z     self._adapt_connection._handle_exception(error)
+2025-08-19T08:22:07.9410865Z     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+2025-08-19T08:22:07.9412047Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 792, in _handle_exception
+2025-08-19T08:22:07.9413244Z     raise translated_error from error
+2025-08-19T08:22:07.9414795Z sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.ProgrammingError: <class 'asyncpg.exceptions.DuplicateObjectError'>: type "userrole" already exists
+2025-08-19T08:22:07.9415974Z 
+2025-08-19T08:22:07.9416288Z The above exception was the direct cause of the following exception:
+2025-08-19T08:22:07.9416754Z 
+2025-08-19T08:22:07.9416919Z Traceback (most recent call last):
+2025-08-19T08:22:07.9446461Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/bin/alembic", line 7, in <module>
+2025-08-19T08:22:07.9448746Z     sys.exit(main())
+2025-08-19T08:22:07.9449071Z              ~~~~^^
+2025-08-19T08:22:07.9449842Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/alembic/config.py", line 1016, in main
+2025-08-19T08:22:07.9450683Z     CommandLine(prog=prog).main(argv=argv)
+2025-08-19T08:22:07.9451101Z     ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+2025-08-19T08:22:07.9451915Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/alembic/config.py", line 1006, in main
+2025-08-19T08:22:07.9452696Z     self.run_cmd(cfg, options)
+2025-08-19T08:22:07.9453026Z     ~~~~~~~~~~~~^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9454013Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/alembic/config.py", line 940, in run_cmd
+2025-08-19T08:22:07.9454763Z     fn(
+2025-08-19T08:22:07.9454992Z     ~~^
+2025-08-19T08:22:07.9455227Z         config,
+2025-08-19T08:22:07.9455486Z         ^^^^^^^
+2025-08-19T08:22:07.9455839Z         *[getattr(options, k, None) for k in positional],
+2025-08-19T08:22:07.9456267Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9456681Z         **{k: getattr(options, k, None) for k in kwarg},
+2025-08-19T08:22:07.9457110Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9457457Z     )
+2025-08-19T08:22:07.9457690Z     ^
+2025-08-19T08:22:07.9458359Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/alembic/command.py", line 483, in upgrade
+2025-08-19T08:22:07.9459128Z     script.run_env()
+2025-08-19T08:22:07.9459420Z     ~~~~~~~~~~~~~~^^
+2025-08-19T08:22:07.9460165Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/alembic/script/base.py", line 549, in run_env
+2025-08-19T08:22:07.9461001Z     util.load_python_file(self.dir, "env.py")
+2025-08-19T08:22:07.9461401Z     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9462311Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/alembic/util/pyfiles.py", line 116, in load_python_file
+2025-08-19T08:22:07.9463801Z     module = load_module_py(module_id, path)
+2025-08-19T08:22:07.9464716Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/alembic/util/pyfiles.py", line 136, in load_module_py
+2025-08-19T08:22:07.9465602Z     spec.loader.exec_module(module)  # type: ignore
+2025-08-19T08:22:07.9466010Z     ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+2025-08-19T08:22:07.9466541Z   File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+2025-08-19T08:22:07.9467293Z   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+2025-08-19T08:22:07.9468158Z   File "/home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend/alembic/env.py", line 120, in <module>
+2025-08-19T08:22:07.9468811Z     run_migrations_online()
+2025-08-19T08:22:07.9469123Z     ~~~~~~~~~~~~~~~~~~~~~^^
+2025-08-19T08:22:07.9470049Z   File "/home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend/alembic/env.py", line 114, in run_migrations_online
+2025-08-19T08:22:07.9470814Z     asyncio.run(run_async_migrations())
+2025-08-19T08:22:07.9471186Z     ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9471846Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/asyncio/runners.py", line 195, in run
+2025-08-19T08:22:07.9472548Z     return runner.run(main)
+2025-08-19T08:22:07.9472865Z            ~~~~~~~~~~^^^^^^
+2025-08-19T08:22:07.9473476Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/asyncio/runners.py", line 118, in run
+2025-08-19T08:22:07.9474363Z     return self._loop.run_until_complete(task)
+2025-08-19T08:22:07.9474758Z            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+2025-08-19T08:22:07.9475566Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+2025-08-19T08:22:07.9476357Z     return future.result()
+2025-08-19T08:22:07.9476660Z            ~~~~~~~~~~~~~^^
+2025-08-19T08:22:07.9477384Z   File "/home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend/alembic/env.py", line 101, in run_async_migrations
+2025-08-19T08:22:07.9478170Z     await connection.run_sync(do_run_migrations)
+2025-08-19T08:22:07.9479126Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/ext/asyncio/engine.py", line 887, in run_sync
+2025-08-19T08:22:07.9479981Z     return await greenlet_spawn(
+2025-08-19T08:22:07.9480319Z            ^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9480716Z         fn, self._proxied, *arg, _require_await=False, **kw
+2025-08-19T08:22:07.9481147Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9481502Z     )
+2025-08-19T08:22:07.9481729Z     ^
+2025-08-19T08:22:07.9482560Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 203, in greenlet_spawn
+2025-08-19T08:22:07.9483505Z     result = context.switch(value)
+2025-08-19T08:22:07.9484401Z   File "/home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend/alembic/env.py", line 86, in do_run_migrations
+2025-08-19T08:22:07.9485125Z     context.run_migrations()
+2025-08-19T08:22:07.9485448Z     ~~~~~~~~~~~~~~~~~~~~~~^^
+2025-08-19T08:22:07.9485837Z   File "<string>", line 8, in run_migrations
+2025-08-19T08:22:07.9486783Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/alembic/runtime/environment.py", line 946, in run_migrations
+2025-08-19T08:22:07.9487697Z     self.get_context().run_migrations(**kw)
+2025-08-19T08:22:07.9488090Z     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+2025-08-19T08:22:07.9488972Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/alembic/runtime/migration.py", line 627, in run_migrations
+2025-08-19T08:22:07.9489864Z     step.migration_fn(**kw)
+2025-08-19T08:22:07.9490197Z     ~~~~~~~~~~~~~~~~~^^^^^^
+2025-08-19T08:22:07.9491061Z   File "/home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend/alembic/versions/20250750_0000_initial_tables_creation.py", line 104, in upgrade
+2025-08-19T08:22:07.9491986Z     op.create_table(
+2025-08-19T08:22:07.9492570Z     ~~~~~~~~~~~~~~~^
+2025-08-19T08:22:07.9492837Z         "members",
+2025-08-19T08:22:07.9493110Z         ^^^^^^^^^^
+2025-08-19T08:22:07.9493373Z     ...<114 lines>...
+2025-08-19T08:22:07.9494171Z         comment="成员信息表（重构版）",
+2025-08-19T08:22:07.9494496Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9494827Z     )
+2025-08-19T08:22:07.9495055Z     ^
+2025-08-19T08:22:07.9495388Z   File "<string>", line 8, in create_table
+2025-08-19T08:22:07.9495831Z   File "<string>", line 3, in create_table
+2025-08-19T08:22:07.9496739Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/alembic/operations/ops.py", line 1332, in create_table
+2025-08-19T08:22:07.9497605Z     return operations.invoke(op)
+2025-08-19T08:22:07.9498025Z            ~~~~~~~~~~~~~~~~~^^^^
+2025-08-19T08:22:07.9498828Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/alembic/operations/base.py", line 441, in invoke
+2025-08-19T08:22:07.9499861Z     return fn(self, operation)
+2025-08-19T08:22:07.9500724Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/alembic/operations/toimpl.py", line 135, in create_table
+2025-08-19T08:22:07.9501645Z     operations.impl.create_table(table, **kw)
+2025-08-19T08:22:07.9502070Z     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+2025-08-19T08:22:07.9502901Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/alembic/ddl/impl.py", line 420, in create_table
+2025-08-19T08:22:07.9503860Z     table.dispatch.before_create(
+2025-08-19T08:22:07.9504210Z     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+2025-08-19T08:22:07.9504642Z         table, self.connection, checkfirst=False, _ddl_runner=self
+2025-08-19T08:22:07.9505126Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9505476Z     )
+2025-08-19T08:22:07.9505704Z     ^
+2025-08-19T08:22:07.9506428Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/event/attr.py", line 497, in __call__
+2025-08-19T08:22:07.9507235Z     fn(*args, **kw)
+2025-08-19T08:22:07.9507504Z     ~~^^^^^^^^^^^^^
+2025-08-19T08:22:07.9508263Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py", line 937, in __call__
+2025-08-19T08:22:07.9509176Z     return getattr(self.target, self.name)(*arg, **kw)
+2025-08-19T08:22:07.9509636Z            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+2025-08-19T08:22:07.9510565Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/sql/sqltypes.py", line 1152, in _on_table_create
+2025-08-19T08:22:07.9511423Z     t._on_table_create(target, bind, **kw)
+2025-08-19T08:22:07.9511813Z     ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9512787Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/named_types.py", line 113, in _on_table_create
+2025-08-19T08:22:07.9513964Z     self.create(bind=bind, checkfirst=checkfirst)
+2025-08-19T08:22:07.9514385Z     ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9515312Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/named_types.py", line 369, in create
+2025-08-19T08:22:07.9516237Z     super().create(bind, checkfirst=checkfirst)
+2025-08-19T08:22:07.9516626Z     ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9517525Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/named_types.py", line 56, in create
+2025-08-19T08:22:07.9518531Z     bind._run_ddl_visitor(self.DDLGenerator, self, checkfirst=checkfirst)
+2025-08-19T08:22:07.9519067Z     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9519969Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 2459, in _run_ddl_visitor
+2025-08-19T08:22:07.9520800Z     ).traverse_single(element)
+2025-08-19T08:22:07.9521137Z       ~~~~~~~~~~~~~~~^^^^^^^^^
+2025-08-19T08:22:07.9522210Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/sql/visitors.py", line 661, in traverse_single
+2025-08-19T08:22:07.9523013Z     return meth(obj, **kw)
+2025-08-19T08:22:07.9524053Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/named_types.py", line 186, in visit_enum
+2025-08-19T08:22:07.9525015Z     self.connection.execute(CreateEnumType(enum))
+2025-08-19T08:22:07.9525426Z     ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9526233Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+2025-08-19T08:22:07.9526963Z     return meth(
+2025-08-19T08:22:07.9527216Z         self,
+2025-08-19T08:22:07.9527476Z         distilled_parameters,
+2025-08-19T08:22:07.9527822Z         execution_options or NO_OPTIONS,
+2025-08-19T08:22:07.9528176Z     )
+2025-08-19T08:22:07.9529123Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/sql/ddl.py", line 187, in _execute_on_connection
+2025-08-19T08:22:07.9529966Z     return connection._execute_ddl(
+2025-08-19T08:22:07.9530312Z            ~~~~~~~~~~~~~~~~~~~~~~~^
+2025-08-19T08:22:07.9530684Z         self, distilled_params, execution_options
+2025-08-19T08:22:07.9531083Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9531410Z     )
+2025-08-19T08:22:07.9531647Z     ^
+2025-08-19T08:22:07.9532357Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1530, in _execute_ddl
+2025-08-19T08:22:07.9533190Z     ret = self._execute_context(
+2025-08-19T08:22:07.9533513Z         dialect,
+2025-08-19T08:22:07.9533960Z     ...<4 lines>...
+2025-08-19T08:22:07.9534223Z         compiled,
+2025-08-19T08:22:07.9534472Z     )
+2025-08-19T08:22:07.9535230Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+2025-08-19T08:22:07.9536061Z     return self._exec_single_context(
+2025-08-19T08:22:07.9536410Z            ~~~~~~~~~~~~~~~~~~~~~~~~~^
+2025-08-19T08:22:07.9536778Z         dialect, context, statement, parameters
+2025-08-19T08:22:07.9537161Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9537499Z     )
+2025-08-19T08:22:07.9537724Z     ^
+2025-08-19T08:22:07.9538508Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+2025-08-19T08:22:07.9539356Z     self._handle_dbapi_exception(
+2025-08-19T08:22:07.9539693Z     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+2025-08-19T08:22:07.9540101Z         e, str_statement, effective_parameters, cursor, context
+2025-08-19T08:22:07.9540536Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9540880Z     )
+2025-08-19T08:22:07.9541101Z     ^
+2025-08-19T08:22:07.9541900Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+2025-08-19T08:22:07.9542943Z     raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+2025-08-19T08:22:07.9544116Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+2025-08-19T08:22:07.9544960Z     self.dialect.do_execute(
+2025-08-19T08:22:07.9545271Z     ~~~~~~~~~~~~~~~~~~~~~~~^
+2025-08-19T08:22:07.9545645Z         cursor, str_statement, effective_parameters, context
+2025-08-19T08:22:07.9546056Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9546412Z     )
+2025-08-19T08:22:07.9546675Z     ^
+2025-08-19T08:22:07.9547395Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+2025-08-19T08:22:07.9548234Z     cursor.execute(statement, parameters)
+2025-08-19T08:22:07.9548616Z     ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9549512Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 580, in execute
+2025-08-19T08:22:07.9550699Z     self._adapt_connection.await_(
+2025-08-19T08:22:07.9551042Z     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+2025-08-19T08:22:07.9551635Z         self._prepare_and_execute(operation, parameters)
+2025-08-19T08:22:07.9552050Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-08-19T08:22:07.9552400Z     )
+2025-08-19T08:22:07.9552633Z     ^
+2025-08-19T08:22:07.9553387Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 132, in await_only
+2025-08-19T08:22:07.9554649Z     return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+2025-08-19T08:22:07.9555280Z            ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+2025-08-19T08:22:07.9556391Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 196, in greenlet_spawn
+2025-08-19T08:22:07.9557262Z     value = await result
+2025-08-19T08:22:07.9557559Z             ^^^^^^^^^^^^
+2025-08-19T08:22:07.9558484Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 558, in _prepare_and_execute
+2025-08-19T08:22:07.9559428Z     self._handle_exception(error)
+2025-08-19T08:22:07.9559757Z     ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+2025-08-19T08:22:07.9560667Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 508, in _handle_exception
+2025-08-19T08:22:07.9561640Z     self._adapt_connection._handle_exception(error)
+2025-08-19T08:22:07.9562063Z     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+2025-08-19T08:22:07.9563018Z   File "/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 792, in _handle_exception
+2025-08-19T08:22:07.9564522Z     raise translated_error from error
+2025-08-19T08:22:07.9565634Z sqlalchemy.exc.ProgrammingError: (sqlalchemy.dialects.postgresql.asyncpg.ProgrammingError) <class 'asyncpg.exceptions.DuplicateObjectError'>: type "userrole" already exists
+2025-08-19T08:22:07.9566916Z [SQL: CREATE TYPE userrole AS ENUM ('admin', 'group_leader', 'member', 'guest')]
+2025-08-19T08:22:07.9567547Z (Background on this error at: https://sqlalche.me/e/20/f405)
+2025-08-19T08:22:08.0789813Z 数据库迁移失败，停止构建
+2025-08-19T08:22:08.0802931Z ##[error]Process completed with exit code 1.
+2025-08-19T08:22:08.1362480Z ##[group]Run actions/upload-artifact@v4
+2025-08-19T08:22:08.1362759Z with:
+2025-08-19T08:22:08.1362934Z   name: test-results
+2025-08-19T08:22:08.1363230Z   path: backend/tests/reports/
+backend/htmlcov/
+backend/coverage.json
+2025-08-19T08:22:08.1363920Z   retention-days: 30
+2025-08-19T08:22:08.1364200Z   if-no-files-found: warn
+2025-08-19T08:22:08.1364417Z   compression-level: 6
+2025-08-19T08:22:08.1364615Z   overwrite: false
+2025-08-19T08:22:08.1364811Z   include-hidden-files: false
+2025-08-19T08:22:08.1365044Z env:
+2025-08-19T08:22:08.1365270Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.6/x64
+2025-08-19T08:22:08.1365877Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.6/x64/lib/pkgconfig
+2025-08-19T08:22:08.1366255Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.6/x64
+2025-08-19T08:22:08.1366589Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.6/x64
+2025-08-19T08:22:08.1366930Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.6/x64
+2025-08-19T08:22:08.1367300Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.6/x64/lib
+2025-08-19T08:22:08.1367581Z   ENVIRONMENT: test
+2025-08-19T08:22:08.1367763Z   TESTING: true
+2025-08-19T08:22:08.1367930Z   DEBUG: false
+2025-08-19T08:22:08.1368437Z   DATABASE_URL: ***localhost:5432/test_attendence
+2025-08-19T08:22:08.1368879Z   DATABASE_URL_SYNC: ***localhost:5432/test_attendence
+2025-08-19T08:22:08.1369184Z   REDIS_URL: redis://localhost:6379/0
+2025-08-19T08:22:08.1369475Z   SECRET_KEY: test_secret_key_for_ci_cd_environment_only
+2025-08-19T08:22:08.1369964Z   ACCESS_TOKEN_EXPIRE_MINUTES: 30
+2025-08-19T08:22:08.1370183Z ##[endgroup]
+2025-08-19T08:22:08.3982039Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2025-08-19T08:22:08.3989522Z The least common ancestor is /home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend. This will be the root directory of the artifact
+2025-08-19T08:22:08.3990599Z With the provided path, there will be 13 files uploaded
+2025-08-19T08:22:08.3992240Z Artifact name is valid!
+2025-08-19T08:22:08.3992985Z Root directory input is valid!
+2025-08-19T08:22:08.5092185Z Beginning upload of artifact content to blob storage
+2025-08-19T08:22:08.6130414Z Uploaded bytes 24965
+2025-08-19T08:22:08.6325071Z Finished uploading artifact content to blob storage!
+2025-08-19T08:22:08.6328357Z SHA256 digest of uploaded artifact zip is dcb843c1a43b94b90f8b84e5f11ad2c666e5be97680583a46b2d2dbcab824181
+2025-08-19T08:22:08.6330549Z Finalizing artifact upload
+2025-08-19T08:22:08.7071264Z Artifact test-results.zip successfully finalized. Artifact ID 3796294046
+2025-08-19T08:22:08.7072371Z Artifact test-results has been successfully uploaded! Final size is 24965 bytes. Artifact ID is 3796294046
+2025-08-19T08:22:08.7094726Z Artifact download URL: https://github.com/KangJianLin/Kaoqin_Demo/actions/runs/17063816122/artifacts/3796294046
+2025-08-19T08:22:08.7260414Z Post job cleanup.
+2025-08-19T08:22:08.8271340Z [command]/usr/bin/git version
+2025-08-19T08:22:08.8314172Z git version 2.50.1
+2025-08-19T08:22:08.8363310Z Temporarily overriding HOME='/home/runner/work/_temp/07bdd70d-b63d-4b96-ba86-3b7bdcd91a3f' before making global git config changes
+2025-08-19T08:22:08.8366435Z Adding repository directory to the temporary git global config as a safe directory
+2025-08-19T08:22:08.8371870Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Kaoqin_Demo/Kaoqin_Demo
+2025-08-19T08:22:08.8418841Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-08-19T08:22:08.8456169Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-08-19T08:22:08.8716595Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-08-19T08:22:08.8764788Z http.https://github.com/.extraheader
+2025-08-19T08:22:08.8768928Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2025-08-19T08:22:08.8810986Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-08-19T08:22:08.9154198Z Print service container logs: 44b0f3ec2bde44e7ac998c8254373579_postgres15_92aecd
+2025-08-19T08:22:08.9158562Z ##[command]/usr/bin/docker logs --details e98e675380cf01ab4d49c97ad61f77dedaf430b98082b6867235c8fc19f07eca
+2025-08-19T08:22:08.9296058Z  The files belonging to this database system will be owned by user "postgres".
+2025-08-19T08:22:08.9298812Z  initdb: warning: enabling "trust" authentication for local connections
+2025-08-19T08:22:08.9299940Z  initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+2025-08-19T08:22:08.9301402Z  2025-08-19 08:20:24.207 UTC [1] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+2025-08-19T08:22:08.9302516Z  2025-08-19 08:20:24.208 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2025-08-19T08:22:08.9303295Z  2025-08-19 08:20:24.208 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+2025-08-19T08:22:08.9304300Z  2025-08-19 08:20:24.209 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2025-08-19T08:22:08.9305175Z  2025-08-19 08:20:24.215 UTC [63] LOG:  database system was shut down at 2025-08-19 08:20:24 UTC
+2025-08-19T08:22:08.9306364Z  2025-08-19 08:20:24.222 UTC [1] LOG:  database system is ready to accept connections
+2025-08-19T08:22:08.9307056Z  2025-08-19 08:20:32.798 UTC [74] FATAL:  role "root" does not exist
+2025-08-19T08:22:08.9307665Z  2025-08-19 08:20:42.886 UTC [81] FATAL:  role "root" does not exist
+2025-08-19T08:22:08.9308263Z  2025-08-19 08:20:52.956 UTC [89] FATAL:  role "root" does not exist
+2025-08-19T08:22:08.9308860Z  2025-08-19 08:21:03.063 UTC [99] FATAL:  role "root" does not exist
+2025-08-19T08:22:08.9309467Z  2025-08-19 08:21:13.159 UTC [106] FATAL:  role "root" does not exist
+2025-08-19T08:22:08.9310074Z  2025-08-19 08:21:23.267 UTC [114] FATAL:  role "root" does not exist
+2025-08-19T08:22:08.9310651Z  2025-08-19 08:21:33.406 UTC [123] FATAL:  role "root" does not exist
+2025-08-19T08:22:08.9311218Z  2025-08-19 08:21:43.520 UTC [131] FATAL:  role "root" does not exist
+2025-08-19T08:22:08.9311766Z  2025-08-19 08:21:53.635 UTC [138] FATAL:  role "root" does not exist
+2025-08-19T08:22:08.9312371Z  2025-08-19 08:22:03.729 UTC [148] FATAL:  role "root" does not exist
+2025-08-19T08:22:08.9312996Z  2025-08-19 08:22:07.924 UTC [150] ERROR:  type "userrole" already exists
+2025-08-19T08:22:08.9314109Z  2025-08-19 08:22:07.924 UTC [150] STATEMENT:  CREATE TYPE userrole AS ENUM ('admin', 'group_leader', 'member', 'guest')
+2025-08-19T08:22:08.9314916Z  This user must also own the server process.
+2025-08-19T08:22:08.9315333Z  
+2025-08-19T08:22:08.9315758Z  The database cluster will be initialized with locale "en_US.utf8".
+2025-08-19T08:22:08.9316479Z  The default database encoding has accordingly been set to "UTF8".
+2025-08-19T08:22:08.9317163Z  The default text search configuration will be set to "english".
+2025-08-19T08:22:08.9317700Z  
+2025-08-19T08:22:08.9318000Z  Data page checksums are disabled.
+2025-08-19T08:22:08.9318388Z  
+2025-08-19T08:22:08.9318850Z  fixing permissions on existing directory /var/lib/postgresql/data ... ok
+2025-08-19T08:22:08.9319906Z  creating subdirectories ... ok
+2025-08-19T08:22:08.9320460Z  selecting dynamic shared memory implementation ... posix
+2025-08-19T08:22:08.9321037Z  selecting default max_connections ... 100
+2025-08-19T08:22:08.9321519Z  selecting default shared_buffers ... 128MB
+2025-08-19T08:22:08.9321991Z  selecting default time zone ... Etc/UTC
+2025-08-19T08:22:08.9322449Z  creating configuration files ... ok
+2025-08-19T08:22:08.9322890Z  running bootstrap script ... ok
+2025-08-19T08:22:08.9323365Z  performing post-bootstrap initialization ... ok
+2025-08-19T08:22:08.9324075Z  syncing data to disk ... ok
+2025-08-19T08:22:08.9324432Z  
+2025-08-19T08:22:08.9324928Z  
+2025-08-19T08:22:08.9325439Z  Success. You can now start the database server using:
+2025-08-19T08:22:08.9325931Z  
+2025-08-19T08:22:08.9326598Z      pg_ctl -D /var/lib/postgresql/data -l logfile start
+2025-08-19T08:22:08.9327017Z  
+2025-08-19T08:22:08.9327586Z  waiting for server to start....2025-08-19 08:20:23.819 UTC [47] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+2025-08-19T08:22:08.9328355Z  2025-08-19 08:20:23.820 UTC [47] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2025-08-19T08:22:08.9328853Z  2025-08-19 08:20:23.825 UTC [50] LOG:  database system was shut down at 2025-08-19 08:20:23 UTC
+2025-08-19T08:22:08.9329300Z  2025-08-19 08:20:23.833 UTC [47] LOG:  database system is ready to accept connections
+2025-08-19T08:22:08.9329628Z   done
+2025-08-19T08:22:08.9329796Z  server started
+2025-08-19T08:22:08.9329985Z  CREATE DATABASE
+2025-08-19T08:22:08.9330166Z  
+2025-08-19T08:22:08.9330322Z  
+2025-08-19T08:22:08.9330628Z  /usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/*
+2025-08-19T08:22:08.9331003Z  
+2025-08-19T08:22:08.9331329Z  waiting for server to shut down....2025-08-19 08:20:24.075 UTC [47] LOG:  received fast shutdown request
+2025-08-19T08:22:08.9331806Z  2025-08-19 08:20:24.076 UTC [47] LOG:  aborting any active transactions
+2025-08-19T08:22:08.9332460Z  2025-08-19 08:20:24.078 UTC [47] LOG:  background worker "logical replication launcher" (PID 53) exited with exit code 1
+2025-08-19T08:22:08.9332974Z  2025-08-19 08:20:24.084 UTC [48] LOG:  shutting down
+2025-08-19T08:22:08.9333330Z  2025-08-19 08:20:24.085 UTC [48] LOG:  checkpoint starting: shutdown immediate
+2025-08-19T08:22:08.9334491Z  2025-08-19 08:20:24.117 UTC [48] LOG:  checkpoint complete: wrote 922 buffers (5.6%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.026 s, sync=0.003 s, total=0.033 s; sync files=301, longest=0.001 s, average=0.001 s; distance=4239 kB, estimate=4239 kB
+2025-08-19T08:22:08.9335319Z  2025-08-19 08:20:24.125 UTC [47] LOG:  database system is shut down
+2025-08-19T08:22:08.9335611Z   done
+2025-08-19T08:22:08.9335792Z  server stopped
+2025-08-19T08:22:08.9335975Z  
