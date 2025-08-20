@@ -187,7 +187,8 @@ class DatabaseIntegrityError(DatabaseError):
     """Raised when database integrity constraint is violated."""
 
     def __init__(self, message: str = "Database integrity constraint violation"):
-        super().__init__(message, status.HTTP_409_CONFLICT)
+        super().__init__(message)
+        self.status_code = status.HTTP_409_CONFLICT
 
 
 # Rate Limiting Exceptions

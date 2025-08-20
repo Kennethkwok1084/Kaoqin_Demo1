@@ -6,7 +6,7 @@
 from datetime import datetime, timedelta
 
 import pytest
-from sqlalchemy import select, text
+from sqlalchemy import and_, func, select, text
 from sqlalchemy.exc import IntegrityError
 
 from app.core.database_compatibility import SQLiteEnumValidator

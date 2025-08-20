@@ -10,13 +10,16 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
 
-from app.core.database import Base
+from app.models.base import Base
 from app.core.database_compatibility import (
     DatabaseCompatibilityChecker,
     DatabaseType,
     get_test_database_url,
     should_use_postgresql_tests,
 )
+
+# Import all models to ensure they are registered with Base metadata
+import app.models  # noqa: F401
 
 
 class DatabaseTestConfig:

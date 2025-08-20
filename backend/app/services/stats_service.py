@@ -1,5 +1,4 @@
-from typing import Any, Dict
-
+from typing import Dict, Any
 """
 统计分析服务
 处理考勤统计、工时分析、绩效评估等业务逻辑
@@ -92,7 +91,7 @@ class StatisticsService:
                 )
                 if cached_data:
                     logger.debug(f"Overview statistics cache hit: {cache_key}")
-                    return cached_data["data"]
+                    return dict(cached_data["data"])  # Explicit cast to dict
 
             logger.debug(f"Overview statistics cache miss, computing: {cache_key}")
 
@@ -133,12 +132,12 @@ class StatisticsService:
                 attendance_stats,
             ) = results
 
-            # 处理异常结果
-            member_stats_data: Dict[str, Any]
-            task_stats_data: Dict[str, Any]
-            work_hour_stats_data: Dict[str, Any]
-            performance_stats_data: Dict[str, Any]
-            attendance_stats_data: Dict[str, Any]
+            # 处理异常结果 - Initialize with empty dicts
+            member_stats_data: Dict[str, Any] = {}
+            task_stats_data: Dict[str, Any] = {}
+            work_hour_stats_data: Dict[str, Any] = {}
+            performance_stats_data: Dict[str, Any] = {}
+            attendance_stats_data: Dict[str, Any] = {}
 
             if isinstance(member_stats, Exception):
                 logger.error(f"Member stats error: {member_stats}")
@@ -210,7 +209,7 @@ class StatisticsService:
         # 尝试从缓存获取
         cached_data = await cache.get_stats_cache("member")
         if cached_data:
-            return cached_data["data"]
+            return dict(cached_data["data"])  # Explicit cast to dict
 
         # 查询数据库
         member_query = select(
@@ -253,7 +252,7 @@ class StatisticsService:
             "task", date_from=date_from.isoformat(), date_to=date_to.isoformat()
         )
         if cached_data:
-            return cached_data["data"]
+            return dict(cached_data["data"])  # Explicit cast to dict
 
         # 查询维修任务统计
         repair_query = select(
@@ -372,7 +371,7 @@ class StatisticsService:
             "work_hour", date_from=date_from.isoformat(), date_to=date_to.isoformat()
         )
         if cached_data:
-            return cached_data["data"]
+            return dict(cached_data["data"])  # Explicit cast to dict
 
         # 查询工时统计
         work_hour_query = (
@@ -454,7 +453,7 @@ class StatisticsService:
             "performance", date_from=date_from.isoformat(), date_to=date_to.isoformat()
         )
         if cached_data:
-            return cached_data["data"]
+            return dict(cached_data["data"])  # Explicit cast to dict
 
         # 查询绩效统计
         performance_query = select(
@@ -518,7 +517,7 @@ class StatisticsService:
             "attendance", date_from=date_from.isoformat(), date_to=date_to.isoformat()
         )
         if cached_data:
-            return cached_data["data"]
+            return dict(cached_data["data"])  # Explicit cast to dict
 
         try:
             # 查询考勤统计

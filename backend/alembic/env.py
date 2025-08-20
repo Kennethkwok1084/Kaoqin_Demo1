@@ -11,7 +11,7 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from app.core.config import get_database_url, get_database_url_sync
+from app.core.config import get_database_url
 
 # Import models to ensure they are registered with SQLAlchemy
 from app.models import Base

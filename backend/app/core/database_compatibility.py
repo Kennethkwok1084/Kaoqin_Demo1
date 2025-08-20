@@ -9,7 +9,7 @@ from enum import Enum
 from typing import Dict, List, Optional
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,15 @@ class DatabaseCompatibilityChecker:
 
     def _detect_database_type(self) -> DatabaseType:
         """检测数据库类型"""
-        engine_name = str(self.session.bind.name) if self.session.bind else ""
+        if self.session.bind:
+            # Handle both AsyncEngine and AsyncConnection
+            if hasattr(self.session.bind, 'name'):
+                engine_name = str(self.session.bind.name)
+            else:
+                # For AsyncConnection, get the engine name
+                engine_name = str(self.session.bind.engine.name)
+        else:
+            engine_name = ""
         if "sqlite" in engine_name.lower():
             return DatabaseType.SQLITE
         elif "postgres" in engine_name.lower():

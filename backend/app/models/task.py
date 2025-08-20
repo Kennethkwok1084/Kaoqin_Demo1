@@ -142,57 +142,62 @@ class TaskTag(BaseModel):
     @classmethod
     def create_rush_order_tag(cls) -> "TaskTag":
         """创建爆单标签"""
-        return cls(
+        tag = cls(
             name="爆单任务",
             description="爆单任务标记，独立计算工时15分钟",
             work_minutes_modifier=15,
-            tag_type=TaskTagType.RUSH_ORDER,
             is_active=True,
         )
+        tag.tag_type = TaskTagType.RUSH_ORDER
+        return tag
 
     @classmethod
     def create_non_default_rating_tag(cls) -> "TaskTag":
         """创建非默认好评标签"""
-        return cls(
+        tag = cls(
             name="非默认好评",
             description="用户给出非默认好评，奖励30分钟",
             work_minutes_modifier=30,
-            tag_type=TaskTagType.NON_DEFAULT_RATING,
             is_active=True,
         )
+        tag.tag_type = TaskTagType.NON_DEFAULT_RATING
+        return tag
 
     @classmethod
     def create_timeout_response_tag(cls) -> "TaskTag":
         """创建超时响应标签"""
-        return cls(
+        tag = cls(
             name="超时响应",
             description="响应超过24小时，扣除30分钟",
             work_minutes_modifier=-30,
-            tag_type=TaskTagType.TIMEOUT_RESPONSE,
             is_active=True,
         )
+        tag.tag_type = TaskTagType.TIMEOUT_RESPONSE
+        return tag
 
     @classmethod
     def create_timeout_processing_tag(cls) -> "TaskTag":
         """创建超时处理标签"""
-        return cls(
+        tag = cls(
             name="超时处理",
             description="处理超过48小时，扣除30分钟",
             work_minutes_modifier=-30,
-            tag_type=TaskTagType.TIMEOUT_PROCESSING,
             is_active=True,
         )
+        tag.tag_type = TaskTagType.TIMEOUT_PROCESSING
+        return tag
 
     @classmethod
     def create_bad_rating_tag(cls) -> "TaskTag":
         """创建差评标签"""
-        return cls(
+        tag = cls(
             name="差评",
             description="用户差评（2星及以下），扣除60分钟",
             work_minutes_modifier=-60,
-            tag_type=TaskTagType.BAD_RATING,
             is_active=True,
         )
+        tag.tag_type = TaskTagType.BAD_RATING
+        return tag
 
     @classmethod
     def get_standard_tags(cls) -> List["TaskTag"]:
@@ -398,7 +403,7 @@ class RepairTask(BaseModel):
             return False
 
         hours_since_response = (
-            datetime.utcnow() - self.response_time[operator]
+            datetime.utcnow() - self.response_time
         ).total_seconds() / 3600
         return bool(hours_since_response > 48)
 

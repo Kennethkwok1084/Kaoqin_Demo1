@@ -63,10 +63,6 @@ class TaskService:
                 task_id=task_id,
                 title=task_data["title"],
                 description=task_data.get("description"),
-                category=task_data.get("category", TaskCategory.NETWORK_REPAIR),
-                priority=task_data.get("priority", TaskPriority.MEDIUM),
-                task_type=task_data.get("task_type", TaskType.ONLINE),
-                status=task_data.get("status", TaskStatus.PENDING),
                 location=task_data.get("location"),
                 member_id=task_data.get("assigned_to"),
                 report_time=task_data.get("report_time", datetime.utcnow()),
@@ -81,6 +77,12 @@ class TaskService:
                 work_order_status=task_data.get("work_order_status"),
                 is_rush_order=task_data.get("is_rush_order", False),
             )
+            
+            # Set enum values after instantiation to avoid constructor issues
+            task.category = task_data.get("category", TaskCategory.NETWORK_REPAIR)
+            task.priority = task_data.get("priority", TaskPriority.MEDIUM)
+            task.task_type = task_data.get("task_type", TaskType.ONLINE)
+            task.status = task_data.get("status", TaskStatus.PENDING)
 
             # 设置基础工时
             task.base_work_minutes = task.get_base_work_minutes()
@@ -155,8 +157,10 @@ class TaskService:
                 start_time=start_time,
                 end_time=end_time,
                 work_minutes=work_minutes,
-                status=TaskStatus.COMPLETED,  # 监控任务创建时即为完成状态
             )
+            
+            # Set enum values after instantiation to avoid constructor issues
+            task.status = TaskStatus.COMPLETED  # 监控任务创建时即为完成状态
 
             self.db.add(task)
             await self.db.commit()
@@ -216,8 +220,10 @@ class TaskService:
                 start_time=start_time,
                 end_time=end_time,
                 work_minutes=work_minutes,
-                status=TaskStatus.COMPLETED,
             )
+            
+            # Set enum values after instantiation to avoid constructor issues
+            task.status = TaskStatus.COMPLETED
 
             self.db.add(task)
             await self.db.commit()
@@ -617,7 +623,7 @@ class TaskService:
             # 获取总数
             count_query = select(func.count()).select_from(query.subquery())
             count_result = await self.db.execute(count_query)
-            total = count_result.scalar()
+            total = count_result.scalar() or 0
 
             # 分页查询
             offset = (page - 1) * page_size
@@ -733,7 +739,7 @@ class TaskService:
                 if member_name not in member_stats:
                     member_stats[member_name] = {"task_count": 0, "work_minutes": 0}
                 member_stats[member_name]["task_count"] += 1
-                member_stats[member_name]["work_minutes"] += task.work_minutes
+                member_stats[member_name]["work_minutes"] += (task.work_minutes or 0)
 
             # 转换为列表格式
             member_list = [
@@ -856,7 +862,7 @@ class TaskService:
         # 查询今天已有的任务数量
         count_query = select(func.count()).where(RepairTask.task_id.like(f"R{today}%"))
         count_result = await self.db.execute(count_query)
-        count = count_result.scalar()
+        count = count_result.scalar() or 0
 
         return f"R{today}{str(count + 1).zfill(4)}"
 
@@ -1098,8 +1104,10 @@ class MonitoringTaskService:
                 monitoring_type=monitoring_type,
                 start_time=start_time,
                 end_time=end_time,
-                status=TaskStatus.COMPLETED,
             )
+            
+            # Set enum values after instantiation to avoid constructor issues
+            task.status = TaskStatus.COMPLETED
 
             # 计算工时
             task.update_work_minutes()
@@ -1221,8 +1229,10 @@ class AssistanceTaskService:
                 assisted_person=assisted_person,
                 start_time=start_time,
                 end_time=end_time,
-                status=TaskStatus.COMPLETED,
             )
+            
+            # Set enum values after instantiation to avoid constructor issues
+            task.status = TaskStatus.COMPLETED
 
             # 计算工时
             task.update_work_minutes()

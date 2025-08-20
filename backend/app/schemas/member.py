@@ -278,11 +278,11 @@ class MemberImportItem(BaseModel):
     @classmethod
     def clean_empty_fields(cls, values: Any) -> Any:
         """清理空字段"""
-        cleaned = {}
+        cleaned: Dict[str, Any] = {}
         for key, value in values.items():
             if value is None or value == "" or value == "null" or value == "undefined":
                 if key in ["student_id", "phone", "username"]:
-                    cleaned[key] = None
+                    cleaned[key] = ""  # Use empty string instead of None for string fields
                 elif key == "role":
                     cleaned[key] = "member"
                 elif key == "department":
@@ -310,7 +310,7 @@ class MemberImportItem(BaseModel):
 class MemberImportRequest(BaseModel):
     """批量导入请求Schema"""
 
-    members: List[MemberImportItem] = Field(..., min_items=1, description="成员列表")
+    members: List[MemberImportItem] = Field(description="成员列表", min_length=1)
     skip_duplicates: bool = Field(default=True, description="是否跳过重复数据")
 
     class Config:

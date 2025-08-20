@@ -14,7 +14,8 @@ from fastapi.testclient import TestClient
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.core.database import Base, get_async_session
+from app.core.database import get_async_session
+from app.models.base import Base
 from app.core.security import get_password_hash
 from app.main import app
 from app.models.member import Member, UserRole
@@ -234,8 +235,6 @@ def event_loop():
 @pytest.fixture(autouse=True)
 def setup_test_environment():
     """Setup test environment variables."""
-    import os
-
     os.environ["TESTING"] = "true"
     os.environ["DEBUG"] = "true"
     os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only"
