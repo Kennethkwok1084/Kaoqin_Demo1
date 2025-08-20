@@ -1,3 +1,4 @@
+from typing import Dict, Any
 """
 统计分析服务
 处理考勤统计、工时分析、绩效评估等业务逻辑
@@ -195,7 +196,7 @@ class StatisticsService:
                     date_to=date_to.isoformat(),
                 )
 
-            return result
+            return dict(result) if result else {}
 
         except Exception as e:
             logger.error(f"Get overview statistics error: {str(e)}")
@@ -240,7 +241,7 @@ class StatisticsService:
 
         # 存入缓存（5分钟过期）
         await cache.set_stats_cache("member", data, ttl=300)
-        return data
+        return dict(data) if data else {}
 
     async def _get_task_statistics_cached(
         self, date_from: datetime, date_to: datetime
@@ -359,7 +360,7 @@ class StatisticsService:
             date_from=date_from.isoformat(),
             date_to=date_to.isoformat(),
         )
-        return data
+        return dict(data) if data else {}
 
     async def _get_work_hour_statistics_cached(
         self, date_from: datetime, date_to: datetime
@@ -441,7 +442,7 @@ class StatisticsService:
             date_from=date_from.isoformat(),
             date_to=date_to.isoformat(),
         )
-        return data
+        return dict(data) if data else {}
 
     async def _get_performance_statistics_cached(
         self, date_from: datetime, date_to: datetime
@@ -505,7 +506,7 @@ class StatisticsService:
             date_from=date_from.isoformat(),
             date_to=date_to.isoformat(),
         )
-        return data
+        return dict(data) if data else {}
 
     async def _get_attendance_statistics_cached(
         self, date_from: datetime, date_to: datetime
@@ -602,7 +603,7 @@ class StatisticsService:
             date_from=date_from.isoformat(),
             date_to=date_to.isoformat(),
         )
-        return data
+        return dict(data) if data else {}
 
     async def get_member_performance_report(
         self, member_id: int, year: int, month: int

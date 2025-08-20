@@ -371,7 +371,7 @@ class TaskStatusUpdate(BaseModel):
     )
 
     @model_validator(mode="after")
-    def validate_completion_data(self) -> "TaskUpdate":
+    def validate_completion_data(self) -> "TaskStatusUpdate":
         """验证完成数据"""
         status = self.status
         actual_minutes = self.actual_minutes

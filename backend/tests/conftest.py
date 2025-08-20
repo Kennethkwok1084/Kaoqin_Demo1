@@ -1,6 +1,7 @@
 """
 Pytest configuration and fixtures for testing.
 Provides database setup, test client, and common fixtures.
+Updated to support dual database testing strategy (SQLite/PostgreSQL).
 """
 
 import asyncio
@@ -18,6 +19,15 @@ from app.core.security import get_password_hash
 from app.main import app
 from app.models.member import Member, UserRole
 
+# Import database testing configuration
+from tests.database_config import (
+    test_config,
+    postgresql_only,
+    sqlite_only,
+    database_agnostic,
+    DatabaseCompatibilityChecker
+)
+
 
 # Async test client fixture
 @pytest_asyncio.fixture
@@ -33,51 +43,33 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
 # Export AsyncClient as AsyncTestClient for backward compatibility
 AsyncTestClient = AsyncClient
 
-# Test database URL - use PostgreSQL for testing
+# Use new database testing configuration
+@pytest_asyncio.fixture(scope="session")
+async def test_engine():
+    """Create test database engine using new configuration."""
+    engine = await test_config.create_test_engine()
+    yield engine
+    await engine.dispose()
 
-TEST_DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev",
-)
 
-# Create test async engine
-test_async_engine = create_async_engine(
-    TEST_DATABASE_URL,
-    echo=False,
-    pool_size=1,  # Single connection for remote database
-    max_overflow=0,
-    pool_pre_ping=True,
-    connect_args={
-        "statement_cache_size": 0,  # Disable prepared statements
-        "prepared_statement_cache_size": 0,  # Additional safeguard
-        "server_settings": {"application_name": "kaoqin_pytest"},
-    },
-)
-
-# Test session factory
-TestAsyncSessionLocal = async_sessionmaker(
-    test_async_engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autocommit=False,
-    autoflush=False,
-)
+@pytest_asyncio.fixture(scope="session") 
+async def setup_database(test_engine):
+    """Setup test database using new configuration."""
+    await test_config.setup_test_database(test_engine)
+    yield
+    # Cleanup after all tests
+    async with test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
 
 @pytest_asyncio.fixture
-async def async_session() -> AsyncGenerator[AsyncSession, None]:
+async def async_session(test_engine, setup_database) -> AsyncGenerator[AsyncSession, None]:
     """Create async database session for testing."""
-    # Create tables
-    async with test_async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    # Create session
-    async with TestAsyncSessionLocal() as session:
-        yield session
-
-    # Drop tables after test
-    async with test_async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+    async with AsyncSession(test_engine) as session:
+        try:
+            yield session
+        finally:
+            await session.rollback()
 
 
 @pytest.fixture
