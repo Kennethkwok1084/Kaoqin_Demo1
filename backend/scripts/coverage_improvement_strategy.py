@@ -11,9 +11,15 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Any
 from dataclasses import asdict
 
-# Import the AI recommendation engine
+# Import the AI recommendation engine (optional)
 sys.path.append(str(Path(__file__).parent.parent))
-from ai_recommendation_engine import EnhancedRecommendationSystem, RecommendationContext
+try:
+    from ai_recommendation_engine import EnhancedRecommendationSystem, RecommendationContext
+    AI_AVAILABLE = True
+except ImportError:
+    AI_AVAILABLE = False
+    EnhancedRecommendationSystem = None
+    RecommendationContext = None
 
 
 class CoverageAnalyzer:
@@ -396,64 +402,68 @@ class Test{model_name.title()}Model:
 
 async def main():
     """Main coverage improvement execution"""
-    print("🚀 Starting Test Coverage Improvement Strategy")
+    print("Starting Test Coverage Improvement Strategy")
     print("=" * 60)
     
     # Initialize components
     analyzer = CoverageAnalyzer()
     test_generator = CoverageTestGenerator()
-    ai_system = EnhancedRecommendationSystem()
+    ai_system = EnhancedRecommendationSystem() if AI_AVAILABLE else None
     
     # Step 1: Analyze current coverage
-    print("\n📊 Analyzing current test coverage...")
+    print("\nAnalyzing current test coverage...")
     coverage_result = analyzer.run_coverage_analysis()
     
     if not coverage_result["success"]:
-        print(f"❌ Coverage analysis failed: {coverage_result['error']}")
+        print(f"Coverage analysis failed: {coverage_result['error']}")
         return
         
-    print(f"✅ Current coverage: {analyzer.current_coverage}%")
+    print(f"Current coverage: {analyzer.current_coverage}%")
     
     # Step 2: Identify coverage gaps
-    print("\n🔍 Identifying coverage gaps...")
+    print("\nIdentifying coverage gaps...")
     gap_analysis = analyzer.analyze_coverage_gaps(coverage_result["coverage_data"])
     
-    print(f"📈 Found {len(gap_analysis['improvement_opportunities'])} improvement opportunities")
-    print(f"🚨 {len(gap_analysis['zero_coverage_files'])} files with zero coverage")
-    print(f"⚠️  {len(gap_analysis['low_coverage_files'])} files with low coverage")
+    print(f"Found {len(gap_analysis['improvement_opportunities'])} improvement opportunities")
+    print(f"{len(gap_analysis['zero_coverage_files'])} files with zero coverage")
+    print(f"{len(gap_analysis['low_coverage_files'])} files with low coverage")
     
     # Step 3: Create improvement plan
-    print("\n📋 Creating coverage improvement plan...")
+    print("\nCreating coverage improvement plan...")
     improvement_plan = analyzer.create_coverage_improvement_plan(gap_analysis)
     
-    print("📅 Coverage improvement phases:")
+    print("Coverage improvement phases:")
     for phase in improvement_plan:
         print(f"  Phase {phase['phase']}: {phase['name']} -> {phase['target_coverage']}% ({phase['duration_days']} days)")
     
-    # Step 4: Get AI recommendations
-    print("\n🤖 Generating AI recommendations...")
-    test_results = {
-        "statistics": {
-            "total_coverage": analyzer.current_coverage,
-            "target_coverage": analyzer.target_coverage,
-            "gap": analyzer.target_coverage - analyzer.current_coverage
-        },
-        "coverage_analysis": gap_analysis,
-        "improvement_plan": improvement_plan
-    }
-    
-    ai_recommendations = await ai_system.analyze_and_recommend(test_results)
-    
-    print(f"✨ Generated {ai_recommendations['metadata']['total_recommendations']} AI recommendations")
+    # Step 4: Get AI recommendations (if available)
+    ai_recommendations = None
+    if AI_AVAILABLE and ai_system:
+        print("\nGenerating AI recommendations...")
+        test_results = {
+            "statistics": {
+                "total_coverage": analyzer.current_coverage,
+                "target_coverage": analyzer.target_coverage,
+                "gap": analyzer.target_coverage - analyzer.current_coverage
+            },
+            "coverage_analysis": gap_analysis,
+            "improvement_plan": improvement_plan
+        }
+        
+        ai_recommendations = await ai_system.analyze_and_recommend(test_results)
+        print(f"Generated {ai_recommendations['metadata']['total_recommendations']} AI recommendations")
+    else:
+        print("\nAI recommendations skipped (OpenAI dependency not available)")
+        ai_recommendations = {"metadata": {"total_recommendations": 0}}
     
     # Step 5: Generate initial test files
-    print("\n🏗️ Generating test files for Phase 1...")
+    print("\nGenerating test files for Phase 1...")
     created_files = test_generator.create_test_files([improvement_plan[0]])  # Start with Phase 1
     
-    print(f"📝 Created {len(created_files)} test files")
+    print(f"Created {len(created_files)} test files")
     
     # Step 6: Summary and next steps
-    print("\n📋 Coverage Improvement Summary")
+    print("\nCoverage Improvement Summary")
     print("=" * 40)
     print(f"Current Coverage: {analyzer.current_coverage}%")
     print(f"Target Coverage: {analyzer.target_coverage}%")
@@ -462,17 +472,17 @@ async def main():
     print(f"Test Files Created: {len(created_files)}")
     print(f"AI Recommendations: {ai_recommendations['metadata']['total_recommendations']}")
     
-    print("\n🎯 Next Steps:")
+    print("\nNext Steps:")
     print("1. Review and customize generated test files")
     print("2. Run tests to verify they work")
     print("3. Implement test cases for specific methods")
     print("4. Execute Phase 1 of improvement plan")
     print("5. Measure coverage improvement")
     
-    print("\n🔧 To run new tests:")
+    print("\nTo run new tests:")
     print("cd backend && python -m pytest tests/unit/ -v")
     
-    print("\n📊 To check updated coverage:")
+    print("\nTo check updated coverage:")
     print("cd backend && python -m pytest --cov=app --cov-report=term-missing tests/")
     
     return {

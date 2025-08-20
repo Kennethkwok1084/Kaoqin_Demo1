@@ -1,0 +1,562 @@
+"""
+Comprehensive tests for DataImportService
+Generated to improve test coverage to 90%+
+"""
+
+import pytest
+import tempfile
+from unittest.mock import Mock, patch, AsyncMock, mock_open
+from datetime import datetime
+from pathlib import Path
+
+import pandas as pd
+from fastapi import UploadFile
+
+from app.services.import_service import DataImportService, ImportResult
+from app.models.member import Member, UserRole
+from app.models.task import RepairTask, TaskType, TaskStatus, TaskCategory
+
+
+@pytest.mark.asyncio
+class TestDataImportService:
+    """Comprehensive DataImportService tests for improved coverage"""
+
+    async def test_service_initialization(self, async_session):
+        """Test DataImportService initialization"""
+        service = DataImportService(async_session)
+        assert service is not None
+        assert service.db == async_session
+        assert service.task_service is not None
+        assert service.ab_matching_service is not None
+        assert service.column_mappings is not None
+
+    async def test_import_result_initialization(self):
+        """Test ImportResult initialization"""
+        result = ImportResult()
+        assert result.success is False
+        assert result.total_rows == 0
+        assert result.processed_rows == 0
+        assert result.created_tasks == 0
+        assert result.updated_tasks == 0
+        assert result.skipped_rows == 0
+        assert result.errors == []
+        assert result.warnings == []
+        assert result.matched_data == []
+        assert result.unmatched_data == []
+
+    async def test_import_result_to_dict(self):
+        """Test ImportResult to_dict conversion"""
+        result = ImportResult()
+        result.success = True
+        result.total_rows = 100
+        result.processed_rows = 95
+        result.created_tasks = 80
+        result.updated_tasks = 15
+        result.skipped_rows = 5
+        result.errors = ["Error 1"]
+        result.warnings = ["Warning 1"]
+        result.matched_data = [{"id": 1}, {"id": 2}]
+        result.unmatched_data = [{"id": 3}]
+
+        result_dict = result.to_dict()
+        
+        assert result_dict["success"] is True
+        assert result_dict["summary"]["total_rows"] == 100
+        assert result_dict["summary"]["processed_rows"] == 95
+        assert result_dict["summary"]["created_tasks"] == 80
+        assert result_dict["errors"] == ["Error 1"]
+        assert result_dict["warnings"] == ["Warning 1"]
+        assert result_dict["matched_count"] == 2
+        assert result_dict["unmatched_count"] == 1
+
+    async def test_import_excel_file_successful(self, async_session):
+        """Test successful Excel file import"""
+        service = DataImportService(async_session)
+        
+        # Create mock Excel data
+        mock_excel_data = pd.DataFrame({
+            '任务编号': ['T001', 'T002'],
+            '标题': ['Network Issue', 'Hardware Problem'],
+            '报告人': ['John', 'Jane'],
+            '联系方式': ['123456', '789012'],
+            '问题描述': ['Network down', 'PC not working']
+        })
+        
+        mock_file = Mock(spec=UploadFile)
+        mock_file.filename = "test.xlsx"
+        mock_file.read = AsyncMock(return_value=b"fake excel content")
+
+        with patch('pandas.read_excel', return_value=mock_excel_data), \
+             patch.object(service, '_process_task_data', return_value=ImportResult()) as mock_process:
+            
+            result = await service.import_excel_file(
+                file=mock_file,
+                file_type="task_table"
+            )
+            
+            assert result is not None
+            mock_process.assert_called_once()
+
+    async def test_import_excel_file_invalid_format(self, async_session):
+        """Test Excel import with invalid file format"""
+        service = DataImportService(async_session)
+        
+        mock_file = Mock(spec=UploadFile)
+        mock_file.filename = "test.txt"  # Invalid extension
+        
+        result = await service.import_excel_file(
+            file=mock_file,
+            file_type="task_table"
+        )
+        
+        assert result.success is False
+        assert len(result.errors) > 0
+        assert "不支持的文件格式" in result.errors[0]
+
+    async def test_import_excel_file_pandas_error(self, async_session):
+        """Test Excel import with pandas reading error"""
+        service = DataImportService(async_session)
+        
+        mock_file = Mock(spec=UploadFile)
+        mock_file.filename = "test.xlsx"
+        mock_file.read = AsyncMock(return_value=b"invalid excel content")
+
+        with patch('pandas.read_excel', side_effect=Exception("Cannot read Excel")):
+            result = await service.import_excel_file(
+                file=mock_file,
+                file_type="task_table"
+            )
+            
+            assert result.success is False
+            assert len(result.errors) > 0
+
+    async def test_process_task_data_success(self, async_session):
+        """Test successful task data processing"""
+        service = DataImportService(async_session)
+        
+        # Mock data frame
+        mock_df = pd.DataFrame({
+            '任务编号': ['T001', 'T002'],
+            '标题': ['Network Issue', 'Hardware Problem'],
+            '报告人': ['John', 'Jane'],
+            '联系方式': ['123456', '789012']
+        })
+        
+        # Mock member lookup
+        mock_members = [
+            Member(id=1, name="John", student_id="001"),
+            Member(id=2, name="Jane", student_id="002")
+        ]
+        
+        with patch.object(service, '_get_all_members', return_value=mock_members), \
+             patch.object(service, '_match_member', side_effect=[mock_members[0], mock_members[1]]), \
+             patch.object(service, '_create_or_update_task', return_value=(True, False)) as mock_create:
+            
+            result = await service._process_task_data(mock_df, import_batch_id="batch001")
+            
+            assert result.success is True
+            assert result.total_rows == 2
+            assert result.processed_rows == 2
+            assert mock_create.call_count == 2
+
+    async def test_process_task_data_with_errors(self, async_session):
+        """Test task data processing with errors"""
+        service = DataImportService(async_session)
+        
+        # Mock data with missing required fields
+        mock_df = pd.DataFrame({
+            '任务编号': ['T001', ''],  # Second row missing task_id
+            '标题': ['Network Issue', ''],  # Second row missing title
+            '报告人': ['John', 'Jane']
+        })
+        
+        mock_members = [Member(id=1, name="John", student_id="001")]
+        
+        with patch.object(service, '_get_all_members', return_value=mock_members), \
+             patch.object(service, '_match_member', return_value=mock_members[0]), \
+             patch.object(service, '_create_or_update_task', return_value=(True, False)):
+            
+            result = await service._process_task_data(mock_df, import_batch_id="batch001")
+            
+            assert result.total_rows == 2
+            assert result.processed_rows == 1  # Only one valid row
+            assert result.skipped_rows == 1
+            assert len(result.errors) > 0
+
+    async def test_match_member_by_name_and_contact(self, async_session):
+        """Test member matching by name and contact"""
+        service = DataImportService(async_session)
+        
+        members = [
+            Member(id=1, name="John Doe", student_id="001", contact="123456"),
+            Member(id=2, name="Jane Smith", student_id="002", contact="789012")
+        ]
+        
+        # Test exact name match
+        matched = service._match_member(
+            reporter_name="John Doe",
+            reporter_contact="123456",
+            all_members=members
+        )
+        assert matched == members[0]
+
+        # Test contact-only match
+        matched = service._match_member(
+            reporter_name="Unknown",
+            reporter_contact="789012", 
+            all_members=members
+        )
+        assert matched == members[1]
+
+        # Test no match
+        matched = service._match_member(
+            reporter_name="Unknown Person",
+            reporter_contact="999999",
+            all_members=members
+        )
+        assert matched is None
+
+    async def test_create_or_update_task_new_task(self, async_session):
+        """Test creating a new task"""
+        service = DataImportService(async_session)
+        
+        task_data = {
+            "task_id": "T001",
+            "title": "Network Issue",
+            "description": "Network is down",
+            "reporter_name": "John",
+            "reporter_contact": "123456"
+        }
+        
+        member = Member(id=1, name="John", student_id="001")
+        
+        with patch.object(service, '_task_exists', return_value=False), \
+             patch.object(service.task_service, 'create_repair_task', return_value=RepairTask(id=1)) as mock_create:
+            
+            created, updated = await service._create_or_update_task(
+                task_data, member, import_batch_id="batch001"
+            )
+            
+            assert created is True
+            assert updated is False
+            mock_create.assert_called_once()
+
+    async def test_create_or_update_task_existing_task(self, async_session):
+        """Test updating an existing task"""
+        service = DataImportService(async_session)
+        
+        task_data = {
+            "task_id": "T001",
+            "title": "Updated Network Issue",
+            "description": "Network is still down"
+        }
+        
+        existing_task = RepairTask(
+            id=1, task_id="T001", title="Network Issue"
+        )
+        member = Member(id=1, name="John", student_id="001")
+        
+        with patch.object(service, '_task_exists', return_value=True), \
+             patch.object(service, '_get_task_by_task_id', return_value=existing_task), \
+             patch.object(service, '_update_existing_task', return_value=existing_task):
+            async_session.commit = AsyncMock()
+            
+            created, updated = await service._create_or_update_task(
+                task_data, member, import_batch_id="batch001"
+            )
+            
+            assert created is False
+            assert updated is True
+            await async_session.commit.assert_called_once()
+
+    async def test_normalize_column_names(self, async_session):
+        """Test column name normalization"""
+        service = DataImportService(async_session)
+        
+        mock_df = pd.DataFrame({
+            '任务编号': ['T001'],
+            '标题': ['Network Issue'],
+            '报告人': ['John'],
+            '联系方式': ['123456'],
+            '问题描述': ['Network down']
+        })
+        
+        normalized_df = service._normalize_column_names(mock_df, file_type="task_table")
+        
+        assert 'task_id' in normalized_df.columns
+        assert 'title' in normalized_df.columns
+        assert 'reporter_name' in normalized_df.columns
+        assert 'reporter_contact' in normalized_df.columns
+        assert 'description' in normalized_df.columns
+
+    async def test_validate_required_columns(self, async_session):
+        """Test required column validation"""
+        service = DataImportService(async_session)
+        
+        # Valid DataFrame with all required columns
+        valid_df = pd.DataFrame({
+            'task_id': ['T001'],
+            'title': ['Network Issue'],
+            'reporter_name': ['John']
+        })
+        
+        errors = service._validate_required_columns(valid_df, file_type="task_table")
+        assert len(errors) == 0
+
+        # Invalid DataFrame missing required columns
+        invalid_df = pd.DataFrame({
+            'task_id': ['T001']  # Missing title and reporter_name
+        })
+        
+        errors = service._validate_required_columns(invalid_df, file_type="task_table")
+        assert len(errors) > 0
+        assert any("必需列" in error for error in errors)
+
+    async def test_clean_row_data(self, async_session):
+        """Test row data cleaning"""
+        service = DataImportService(async_session)
+        
+        # Test with valid data
+        valid_row = pd.Series({
+            'task_id': 'T001',
+            'title': '  Network Issue  ',  # With whitespace
+            'reporter_name': 'John Doe',
+            'reporter_contact': '123-456-7890'
+        })
+        
+        cleaned_data, is_valid = service._clean_row_data(valid_row, row_index=1)
+        
+        assert is_valid is True
+        assert cleaned_data['title'] == 'Network Issue'  # Whitespace removed
+        assert cleaned_data['task_id'] == 'T001'
+
+        # Test with invalid data (missing required fields)
+        invalid_row = pd.Series({
+            'task_id': '',  # Empty required field
+            'title': '',    # Empty required field
+            'reporter_name': 'John'
+        })
+        
+        cleaned_data, is_valid = service._clean_row_data(invalid_row, row_index=2)
+        
+        assert is_valid is False
+
+    async def test_get_all_members(self, async_session):
+        """Test getting all members from database"""
+        service = DataImportService(async_session)
+        
+        mock_members = [
+            Member(id=1, name="John", student_id="001"),
+            Member(id=2, name="Jane", student_id="002")
+        ]
+        
+        mock_result = Mock()
+        mock_result.scalars.return_value.all.return_value = mock_members
+        
+        with patch.object(async_session, 'execute', return_value=mock_result):
+            members = await service._get_all_members()
+            
+            assert len(members) == 2
+            assert members[0].name == "John"
+            assert members[1].name == "Jane"
+
+    async def test_task_exists(self, async_session):
+        """Test checking if task exists"""
+        service = DataImportService(async_session)
+        
+        # Mock existing task
+        mock_result = Mock()
+        mock_result.scalar.return_value = 1  # Task count = 1
+        
+        with patch.object(async_session, 'execute', return_value=mock_result):
+            exists = await service._task_exists(task_id="T001")
+            assert exists is True
+
+        # Mock non-existing task
+        mock_result.scalar.return_value = 0  # Task count = 0
+        
+        with patch.object(async_session, 'execute', return_value=mock_result):
+            exists = await service._task_exists(task_id="T999")
+            assert exists is False
+
+    async def test_get_task_by_task_id(self, async_session):
+        """Test getting task by task_id"""
+        service = DataImportService(async_session)
+        
+        mock_task = RepairTask(id=1, task_id="T001", title="Test Task")
+        mock_result = Mock()
+        mock_result.scalar_one_or_none.return_value = mock_task
+        
+        with patch.object(async_session, 'execute', return_value=mock_result):
+            task = await service._get_task_by_task_id("T001")
+            
+            assert task is not None
+            assert task.task_id == "T001"
+            assert task.title == "Test Task"
+
+    async def test_update_existing_task(self, async_session):
+        """Test updating existing task with new data"""
+        service = DataImportService(async_session)
+        
+        existing_task = RepairTask(
+            id=1, task_id="T001", title="Old Title",
+            description="Old Description"
+        )
+        
+        update_data = {
+            "title": "New Title",
+            "description": "New Description",
+            "status": "completed"
+        }
+        
+        updated_task = service._update_existing_task(existing_task, update_data)
+        
+        assert updated_task.title == "New Title"
+        assert updated_task.description == "New Description"
+
+    async def test_bulk_import_tasks(self, async_session):
+        """Test bulk import of multiple tasks"""
+        service = DataImportService(async_session)
+        
+        tasks_data = [
+            {
+                "task_id": "T001",
+                "title": "Task 1",
+                "reporter_name": "John",
+                "reporter_contact": "123456"
+            },
+            {
+                "task_id": "T002", 
+                "title": "Task 2",
+                "reporter_name": "Jane",
+                "reporter_contact": "789012"
+            }
+        ]
+        
+        with patch.object(service, 'import_excel_file') as mock_import:
+            mock_result = ImportResult()
+            mock_result.success = True
+            mock_result.total_rows = 2
+            mock_result.processed_rows = 2
+            mock_result.created_tasks = 2
+            mock_import.return_value = mock_result
+            
+            # Create mock file from tasks data
+            mock_file = Mock(spec=UploadFile)
+            
+            result = await service.bulk_import_tasks(
+                file=mock_file,
+                import_batch_id="batch001"
+            )
+            
+            assert result.success is True
+            assert result.created_tasks == 2
+
+    async def test_import_with_ab_table_matching(self, async_session):
+        """Test import with A/B table matching"""
+        service = DataImportService(async_session)
+        
+        # Mock A table data
+        a_table_data = pd.DataFrame({
+            '任务编号': ['T001'],
+            '报告人': ['John'],
+            '联系方式': ['123456']
+        })
+        
+        # Mock B table data  
+        b_table_data = pd.DataFrame({
+            '姓名': ['John'],
+            '电话': ['123456'],
+            '检修形式': ['远程']
+        })
+        
+        mock_file_a = Mock(spec=UploadFile)
+        mock_file_a.filename = "a_table.xlsx"
+        
+        mock_file_b = Mock(spec=UploadFile)
+        mock_file_b.filename = "b_table.xlsx"
+        
+        with patch('pandas.read_excel', side_effect=[a_table_data, b_table_data]), \
+             patch.object(service.ab_matching_service, 'match_tables') as mock_match:
+            
+            mock_match.return_value = {
+                "matched_data": [{"task_id": "T001", "matched": True}],
+                "unmatched_data": []
+            }
+            
+            result = await service.import_with_ab_matching(
+                a_table_file=mock_file_a,
+                b_table_file=mock_file_b,
+                import_batch_id="batch001"
+            )
+            
+            mock_match.assert_called_once()
+
+    async def test_error_handling_database_error(self, async_session):
+        """Test error handling for database errors"""
+        service = DataImportService(async_session)
+        
+        mock_df = pd.DataFrame({
+            'task_id': ['T001'],
+            'title': ['Network Issue'],
+            'reporter_name': ['John']
+        })
+        
+        # Mock database error during member lookup
+        with patch.object(service, '_get_all_members', side_effect=Exception("Database connection error")):
+            result = await service._process_task_data(mock_df, import_batch_id="batch001")
+            
+            assert result.success is False
+            assert len(result.errors) > 0
+            assert "Database connection error" in str(result.errors)
+
+    @pytest.mark.parametrize("file_extension,expected_valid", [
+        (".xlsx", True),
+        (".xls", True), 
+        (".csv", False),
+        (".txt", False),
+        (".pdf", False)
+    ])
+    async def test_file_format_validation(
+        self, async_session, file_extension, expected_valid
+    ):
+        """Test file format validation for different extensions"""
+        service = DataImportService(async_session)
+        
+        mock_file = Mock(spec=UploadFile)
+        mock_file.filename = f"test{file_extension}"
+        
+        result = await service.import_excel_file(
+            file=mock_file,
+            file_type="task_table"
+        )
+        
+        if expected_valid:
+            # Should not fail due to format (might fail due to content)
+            assert not any("不支持的文件格式" in error for error in result.errors)
+        else:
+            # Should fail due to invalid format
+            assert any("不支持的文件格式" in error for error in result.errors)
+
+
+@pytest.fixture
+def sample_excel_data():
+    """Sample Excel data for testing"""
+    return pd.DataFrame({
+        '任务编号': ['T001', 'T002', 'T003'],
+        '标题': ['Network Issue', 'Hardware Problem', 'Software Bug'],
+        '报告人': ['John Doe', 'Jane Smith', 'Bob Johnson'],
+        '联系方式': ['123456789', '987654321', '555666777'],
+        '问题描述': ['Network down', 'PC not working', 'App crashes'],
+        '位置': ['Building A', 'Building B', 'Building C']
+    })
+
+
+@pytest.fixture
+def sample_members():
+    """Sample members for testing"""
+    return [
+        Member(id=1, name="John Doe", student_id="001", contact="123456789"),
+        Member(id=2, name="Jane Smith", student_id="002", contact="987654321"),
+        Member(id=3, name="Bob Johnson", student_id="003", contact="555666777")
+    ]
