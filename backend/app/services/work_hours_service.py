@@ -725,7 +725,7 @@ class WorkHoursCalculationService:
             return False
 
         hours_since_report = (
-            datetime.utcnow() - task.report_time
+            datetime.utcnow() - task.report_time  # type: ignore[operator]
         ).total_seconds() / 3600
         return hours_since_report > self.RESPONSE_TIMEOUT_HOURS
 
@@ -735,7 +735,7 @@ class WorkHoursCalculationService:
             return False
 
         hours_since_response = (
-            datetime.utcnow() - task.response_time
+            datetime.utcnow() - task.response_time  # type: ignore[operator]
         ).total_seconds() / 3600
         return hours_since_response > self.COMPLETION_TIMEOUT_HOURS
 

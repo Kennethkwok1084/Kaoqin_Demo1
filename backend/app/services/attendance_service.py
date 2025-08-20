@@ -404,7 +404,7 @@ class AttendanceService:
                 monthly_requirement=30.0,
                 records=[
                     {
-                        "date": r.attendance_date.isoformat(),
+                        "date": r.attendance_date.isoformat() if r.attendance_date else None,
                         "checkin_time": (
                             r.checkin_time.strftime("%H:%M:%S")
                             if r.checkin_time
@@ -577,7 +577,7 @@ class AttendanceService:
             )
 
             if department_id:
-                query = query.join(Member).where(Member.department_id == department_id)
+                query = query.join(Member).where(Member.department == department_id)
 
             result = await self.db.execute(query)
             records = result.scalars().all()
@@ -590,7 +590,7 @@ class AttendanceService:
             total_early_count = len([r for r in records if r.is_early_checkout])
 
             # 按部门统计
-            dept_stats = {}
+            dept_stats: Dict[str, Dict[str, Any]] = {}
             for record in records:
                 if record.member and record.member.department:
                     dept_name = record.member.department
@@ -652,7 +652,7 @@ class AttendanceService:
 
             if department_id:
                 exception_query = exception_query.join(Member).where(
-                    Member.department_id == department_id
+                    Member.department == department_id
                 )
 
             exception_result = await self.db.execute(exception_query)

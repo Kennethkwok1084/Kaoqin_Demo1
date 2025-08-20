@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import pandas as pd
+import pandas as pd  # type: ignore[import-untyped]
 from fastapi import UploadFile
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 class ImportResult:
     """导入结果类"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.success = False
         self.total_rows = 0
         self.processed_rows = 0
@@ -569,7 +569,7 @@ class DataImportService:
 
         try:
             # 尝试解析各种时间格式
-            from dateutil import parser
+            from dateutil import parser  # type: ignore[import-untyped]
 
             dt = parser.parse(datetime_str)
             return dt.strftime("%Y-%m-%d %H:%M:%S")
@@ -843,7 +843,7 @@ class DataImportService:
         report_time = datetime.utcnow()
         if report_time_str:
             try:
-                from dateutil import parser
+                from dateutil import parser  # type: ignore[import-untyped]
 
                 report_time = parser.parse(report_time_str)
             except Exception:
@@ -1293,11 +1293,11 @@ class DataImportService:
             if report_time and response_time:
                 # 检查响应超时
                 if isinstance(report_time, str):
-                    from dateutil import parser
+                    from dateutil import parser  # type: ignore[import-untyped]
 
                     report_time = parser.parse(report_time)
                 if isinstance(response_time, str):
-                    from dateutil import parser
+                    from dateutil import parser  # type: ignore[import-untyped]
 
                     response_time = parser.parse(response_time)
 
@@ -1310,11 +1310,11 @@ class DataImportService:
             if response_time and completion_time:
                 # 检查处理超时
                 if isinstance(response_time, str):
-                    from dateutil import parser
+                    from dateutil import parser  # type: ignore[import-untyped]
 
                     response_time = parser.parse(response_time)
                 if isinstance(completion_time, str):
-                    from dateutil import parser
+                    from dateutil import parser  # type: ignore[import-untyped]
 
                     completion_time = parser.parse(completion_time)
 

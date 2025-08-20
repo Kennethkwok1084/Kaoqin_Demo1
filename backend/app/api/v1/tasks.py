@@ -28,6 +28,7 @@ from app.models.task import (
     TaskPriority,
     TaskStatus,
     TaskTag,
+    TaskTagType,
     TaskType,
 )
 from app.schemas.task import (
@@ -3326,7 +3327,7 @@ async def adjust_task_work_hours(
         if adjustment != 0:
             adjustment_tag = TaskTag(
                 name=f"手动调整-{reason}",
-                tag_type="adjustment",
+                tag_type=TaskTagType.BONUS if adjustment > 0 else TaskTagType.PENALTY,
                 work_minutes_modifier=adjustment,
                 is_active=True,
                 created_by=current_user.id,

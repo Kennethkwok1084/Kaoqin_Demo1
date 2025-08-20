@@ -317,7 +317,7 @@ class TestAuthAPI:
         profile_data = UserProfileUpdate(name="更新用户", phone="13900139000")
 
         result = await update_user_profile(
-            profile_data=profile_data, current_user=mock_user, db=mock_db
+            profile_update=profile_data, current_user=mock_user, db=mock_db
         )
 
         assert result["success"] is True

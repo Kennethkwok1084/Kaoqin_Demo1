@@ -6,7 +6,7 @@ Celery异步任务定义
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from app.core.celery_app import celery_app
 from app.core.database import AsyncSessionLocal
@@ -16,7 +16,7 @@ from app.services.work_hour_automation import WorkHourAutomationService
 logger = logging.getLogger(__name__)
 
 
-def run_async_task(async_func, *args, **kwargs) -> Any:
+def run_async_task(async_func: Callable[..., Awaitable[Any]], *args: Any, **kwargs: Any) -> Any:
     """运行异步任务的辅助函数"""
     try:
         loop = asyncio.get_event_loop()
@@ -35,7 +35,7 @@ def run_async_task(async_func, *args, **kwargs) -> Any:
 
 
 @celery_app.task(bind=True, name="app.core.celery_tasks.schedule_overdue_detection")
-def schedule_overdue_detection(self) -> Dict[str, Any]:
+def schedule_overdue_detection(self: Any) -> Dict[str, Any]:
     """
     定时检测超时任务
     每小时执行一次，检测延迟响应和延迟完成的任务
@@ -43,7 +43,7 @@ def schedule_overdue_detection(self) -> Dict[str, Any]:
     try:
         logger.info(f"Starting overdue detection task (ID: {self.request.id})")
 
-        async def _detect_overdue():
+        async def _detect_overdue() -> Dict[str, Any]:
             async with AsyncSessionLocal() as db:
                 automation_service = WorkHourAutomationService(db)
                 result = await automation_service.schedule_overdue_detection()
@@ -61,7 +61,7 @@ def schedule_overdue_detection(self) -> Dict[str, Any]:
 
 
 @celery_app.task(bind=True, name="app.core.celery_tasks.process_review_bonuses")
-def process_review_bonuses(self) -> Dict[str, Any]:
+def process_review_bonuses(self: Any) -> Dict[str, Any]:
     """
     处理评价奖励
     每30分钟执行一次，处理最近的任务评价

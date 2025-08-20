@@ -435,7 +435,7 @@ class WorkHourAutomationService:
             and not any(tag.name == "延迟完成" for tag in task.tags)
         ):
             completion_hours = (
-                task.completion_time - task.response_time
+                task.completion_time - task.response_time  # type: ignore[operator]
             ).total_seconds() / 3600
             if completion_hours > settings.COMPLETION_TIMEOUT_HOURS:
                 await self.task_service._add_penalty_tag(task, "延迟完成", -30)
@@ -504,7 +504,7 @@ class WorkHourAutomationService:
 
         query = (
             select(RepairTask)
-            .options(joinedload(RepairTask.assigned_member))
+            .options(joinedload(RepairTask.member))
             .where(
                 and_(
                     RepairTask.status == TaskStatus.PENDING,
@@ -518,14 +518,14 @@ class WorkHourAutomationService:
         warning_tasks = result.scalars().all()
 
         for task in warning_tasks:
-            if task.assigned_member:
+            if task.member:
                 notification_tasks.append(
                     {
                         "task_id": task.id,
                         "task_title": task.title,
                         "member_id": task.member_id,
-                        "member_name": task.assigned_member.name,
-                        "member_email": task.assigned_member.email,
+                        "member_name": task.member.name,
+                        "member_email": task.member.email,
                         "notification_type": "response_warning",
                         "hours_remaining": 2,
                     }
@@ -533,7 +533,7 @@ class WorkHourAutomationService:
 
         return notification_tasks
 
-    async def _send_task_notification(self, task_info: Dict[str, Any]):
+    async def _send_task_notification(self, task_info: Dict[str, Any]) -> None:
         """发送任务通知"""
         # 这里可以实现具体的通知逻辑
         # 例如：邮件通知、WebSocket推送、短信通知等

@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 
 from app.models.member import Member, UserRole
-from app.models.task import RepairTask, TaskStatus, TaskTag, TaskType
+from app.models.task import RepairTask, TaskStatus, TaskTag, TaskTagType, TaskType
 from app.services.work_hour_automation import WorkHourAutomationService
 
 
@@ -169,7 +169,7 @@ class TestWorkHourAutomationService:
         """Test successful penalty tag application."""
         # Mock tag creation and association
         mock_tag = TaskTag(
-            id=1, name="延迟响应", tag_type="penalty", work_minutes_modifier=-30
+            id=1, name="延迟响应", tag_type=TaskTagType.PENALTY, work_minutes_modifier=-30
         )
 
         # Mock existing tag query
@@ -199,7 +199,7 @@ class TestWorkHourAutomationService:
     ):
         """Test penalty tag application when tag already exists on task."""
         mock_tag = TaskTag(
-            id=1, name="延迟响应", tag_type="penalty", work_minutes_modifier=-30
+            id=1, name="延迟响应", tag_type=TaskTagType.PENALTY, work_minutes_modifier=-30
         )
 
         # Mock existing tag
@@ -319,7 +319,7 @@ class TestWorkHourAutomationService:
 
         # Mock bonus tag
         mock_bonus_tag = TaskTag(
-            id=2, name="优质服务", tag_type="bonus", work_minutes_modifier=30
+            id=2, name="优质服务", tag_type=TaskTagType.BONUS, work_minutes_modifier=30
         )
 
         mock_tag_result = Mock()

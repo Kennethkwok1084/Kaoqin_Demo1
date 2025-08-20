@@ -430,7 +430,7 @@ async def export_work_hours_data(
         import tempfile
         from datetime import datetime as dt
 
-        import pandas as pd
+        import pandas as pd  # type: ignore[import-untyped]
         from sqlalchemy import select
 
         from app.models.member import Member

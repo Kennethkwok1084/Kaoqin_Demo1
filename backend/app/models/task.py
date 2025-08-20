@@ -398,7 +398,7 @@ class RepairTask(BaseModel):
             return False
 
         hours_since_response = (
-            datetime.utcnow() - self.response_time
+            datetime.utcnow() - self.response_time  # type: ignore[operator]
         ).total_seconds() / 3600
         return bool(hours_since_response > 48)
 

@@ -640,7 +640,7 @@ class TaskService:
                     "member": {"id": task.member.id, "name": task.member.name},
                     "task_type": task.task_type.value,
                     "status": task.status.value,
-                    "report_time": task.report_time.isoformat(),
+                    "report_time": task.report_time.isoformat() if task.report_time else None,
                     "work_minutes": task.work_minutes,
                     "is_rush_order": task.is_rush_order,
                     "rush_info": (
@@ -747,10 +747,11 @@ class TaskService:
             # 按月份统计
             month_stats = {}
             for task in rush_tasks:
-                month_key = task.report_time.strftime("%Y-%m")
-                if month_key not in month_stats:
-                    month_stats[month_key] = 0
-                month_stats[month_key] += 1
+                if task.report_time:
+                    month_key = task.report_time.strftime("%Y-%m")
+                    if month_key not in month_stats:
+                        month_stats[month_key] = 0
+                    month_stats[month_key] += 1
 
             return {
                 "period": {
@@ -880,7 +881,7 @@ class TaskService:
         if tag not in task.tags:
             task.tags.append(tag)
 
-    async def _add_penalty_tag(self, task: RepairTask, tag_name: str, penalty: int):
+    async def _add_penalty_tag(self, task: RepairTask, tag_name: str, penalty: int) -> None:
         """添加惩罚标签"""
         tag = await self._get_or_create_tag(tag_name, penalty, "penalty")
         if tag not in task.tags:
@@ -938,7 +939,7 @@ class TaskService:
             return False
 
         completion_hours = (
-            task.completion_time - task.response_time
+            task.completion_time - task.response_time  # type: ignore[operator]
         ).total_seconds() / 3600
         return completion_hours > 48  # 超过48小时为延迟完成
 
@@ -970,7 +971,7 @@ class TaskService:
             # 检查处理超时 (>48小时)
             if response_time and completion_time:
                 processing_hours = (
-                    completion_time - response_time
+                    completion_time - response_time  # type: ignore[operator]
                 ).total_seconds() / 3600
                 if processing_hours > 48:
                     await self._add_standard_tag(task, "超时处理")
@@ -1170,6 +1171,11 @@ class AssistanceTaskService:
 
     def __init__(self, db: AsyncSession):
         self.db = db
+        # Import needed services to avoid circular imports
+        from app.services.work_hours_service import WorkHoursCalculationService
+        self.work_hours_service = WorkHoursCalculationService(db)
+        # For rush_task_service, we'll use TaskService
+        self.rush_task_service = None  # Will be set when needed
 
     async def create_assistance_task(
         self,
@@ -1395,6 +1401,11 @@ class AssistanceTaskService:
             start_date = datetime.strptime(date_from, "%Y-%m-%d").date()
             end_date = datetime.strptime(date_to, "%Y-%m-%d").date()
 
+            # Use TaskService for rush task operations
+            if not self.rush_task_service:
+                self.rush_task_service = TaskService(self.db)
+            
+            assert self.rush_task_service is not None
             result = await self.rush_task_service.mark_rush_tasks_by_date(
                 start_date, end_date, task_ids, marked_by
             )
@@ -1552,7 +1563,7 @@ class AssistanceTaskService:
 
         # 创建任务
         task = RepairTask(
-            task_id=data.get("work_order_id", await self._generate_task_id()),
+            task_id=data.get("work_order_id", f"ASSIST_{int(datetime.utcnow().timestamp())}"),
             title=data.get("title", "维修任务"),
             description=data.get("description", ""),
             location=data.get("location", ""),
@@ -1609,7 +1620,7 @@ class AssistanceTaskService:
 
     async def _add_tags_for_maintenance_task(
         self, task: RepairTask, data: Dict[str, Any]
-    ):
+    ) -> None:
         """为维修任务添加标签"""
         tags_to_add = []
 
@@ -1659,7 +1670,7 @@ class AssistanceTaskService:
 
     async def _update_existing_maintenance_task(
         self, task: RepairTask, data: Dict[str, Any]
-    ):
+    ) -> None:
         """更新现有维修任务"""
         # 更新基本信息
         if data.get("description"):
@@ -1681,7 +1692,7 @@ class AssistanceTaskService:
 
     async def _update_monthly_summaries_for_import(
         self, maintenance_data: List[Dict[str, Any]]
-    ):
+    ) -> None:
         """为导入的数据更新月度工时汇总"""
         # 收集需要更新的成员和月份
         updates_needed = set()
@@ -1713,8 +1724,8 @@ class AssistanceTaskService:
                 )
 
     async def _recalculate_work_hours_for_marked_tasks(
-        self, start_date, end_date, task_ids: Optional[List[int]] = None
-    ):
+        self, start_date: datetime, end_date: datetime, task_ids: Optional[List[int]] = None
+    ) -> None:
         """重新计算被标记任务的工时"""
         # 查询被标记的任务
         query = select(RepairTask).where(
@@ -1734,9 +1745,10 @@ class AssistanceTaskService:
 
         for task in tasks:
             task.update_work_minutes()  # 重新计算工时
-            members_to_update.add(
-                (task.member_id, task.report_time.year, task.report_time.month)
-            )
+            if task.report_time:
+                members_to_update.add(
+                    (task.member_id, task.report_time.year, task.report_time.month)
+                )
 
         await self.db.commit()
 
