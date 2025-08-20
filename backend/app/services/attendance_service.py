@@ -404,7 +404,9 @@ class AttendanceService:
                 monthly_requirement=30.0,
                 records=[
                     {
-                        "date": r.attendance_date.isoformat() if r.attendance_date else None,
+                        "date": (
+                            r.attendance_date.isoformat() if r.attendance_date else None
+                        ),
                         "checkin_time": (
                             r.checkin_time.strftime("%H:%M:%S")
                             if r.checkin_time

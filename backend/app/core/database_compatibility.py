@@ -16,17 +16,18 @@ logger = logging.getLogger(__name__)
 
 class DatabaseType(Enum):
     """数据库类型枚举"""
+
     SQLITE = "sqlite"
     POSTGRESQL = "postgresql"
 
 
 class DatabaseCompatibilityChecker:
     """数据库兼容性检查器"""
-    
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.db_type = self._detect_database_type()
-        
+
     def _detect_database_type(self) -> DatabaseType:
         """检测数据库类型"""
         engine_name = str(self.session.bind.name) if self.session.bind else ""
@@ -37,7 +38,7 @@ class DatabaseCompatibilityChecker:
         else:
             # 默认假设为PostgreSQL
             return DatabaseType.POSTGRESQL
-            
+
     async def check_enum_support(self) -> bool:
         """检查ENUM支持"""
         try:
@@ -54,7 +55,7 @@ class DatabaseCompatibilityChecker:
         except Exception as e:
             logger.error(f"Failed to check ENUM support: {e}")
             return False
-            
+
     async def check_concurrent_transactions(self) -> bool:
         """检查并发事务支持"""
         try:
@@ -72,17 +73,19 @@ class DatabaseCompatibilityChecker:
         except Exception as e:
             logger.error(f"Failed to check concurrent transactions: {e}")
             return False
-            
+
     async def validate_constraints(self) -> bool:
         """验证约束系统"""
         try:
             if self.db_type == DatabaseType.POSTGRESQL:
                 # 检查约束系统
                 result = await self.session.execute(
-                    text("""
+                    text(
+                        """
                         SELECT COUNT(*) FROM information_schema.check_constraints 
                         WHERE constraint_schema = current_schema()
-                    """)
+                    """
+                    )
                 )
                 constraint_count = result.scalar()
                 return constraint_count is not None
@@ -93,7 +96,7 @@ class DatabaseCompatibilityChecker:
         except Exception as e:
             logger.error(f"Failed to validate constraints: {e}")
             return False
-            
+
     async def get_compatibility_report(self) -> Dict[str, bool]:
         """获取兼容性报告"""
         return {
@@ -106,52 +109,58 @@ class DatabaseCompatibilityChecker:
 
 class SQLiteEnumValidator:
     """SQLite ENUM约束模拟器"""
-    
+
     # 定义ENUM值映射
     TASK_STATUS_VALUES = ["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED", "ON_HOLD"]
     USER_ROLE_VALUES = ["ADMIN", "GROUP_LEADER", "MEMBER", "GUEST"]
     TASK_TYPE_VALUES = ["ONLINE", "OFFLINE"]
     TASK_PRIORITY_VALUES = ["LOW", "MEDIUM", "HIGH", "URGENT"]
     TASK_TAG_TYPE_VALUES = [
-        "rush_order", "non_default_rating", "timeout_response", 
-        "timeout_processing", "bad_rating", "bonus", "penalty", "category"
+        "rush_order",
+        "non_default_rating",
+        "timeout_response",
+        "timeout_processing",
+        "bad_rating",
+        "bonus",
+        "penalty",
+        "category",
     ]
-    
+
     @classmethod
     def validate_task_status(cls, value: Optional[str]) -> bool:
         """验证任务状态"""
         if value is None:
             return False
         return value.upper() in cls.TASK_STATUS_VALUES
-        
+
     @classmethod
     def validate_user_role(cls, value: Optional[str]) -> bool:
         """验证用户角色"""
         if value is None:
             return False
         return value.upper() in cls.USER_ROLE_VALUES
-        
+
     @classmethod
     def validate_task_type(cls, value: Optional[str]) -> bool:
         """验证任务类型"""
         if value is None:
             return False
         return value.upper() in cls.TASK_TYPE_VALUES
-        
+
     @classmethod
     def validate_task_priority(cls, value: Optional[str]) -> bool:
         """验证任务优先级"""
         if value is None:
             return False
         return value.upper() in cls.TASK_PRIORITY_VALUES
-        
+
     @classmethod
     def validate_task_tag_type(cls, value: Optional[str]) -> bool:
         """验证任务标签类型"""
         if value is None:
             return False
         return value.lower() in cls.TASK_TAG_TYPE_VALUES
-        
+
     @classmethod
     def get_all_validations(cls) -> Dict[str, List[str]]:
         """获取所有验证规则"""
@@ -182,4 +191,6 @@ def get_test_database_url() -> str:
 
 def should_use_postgresql_tests() -> bool:
     """判断是否应该使用PostgreSQL专属测试"""
-    return bool(os.getenv("CI") or os.getenv("INTEGRATION_TEST") or os.getenv("POSTGRES_TEST"))
+    return bool(
+        os.getenv("CI") or os.getenv("INTEGRATION_TEST") or os.getenv("POSTGRES_TEST")
+    )

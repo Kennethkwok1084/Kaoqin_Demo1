@@ -5,6 +5,7 @@
 
 import asyncio
 import os
+
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
@@ -12,19 +13,19 @@ from sqlalchemy.pool import StaticPool
 from app.core.database import Base
 from app.core.database_compatibility import (
     DatabaseCompatibilityChecker,
+    DatabaseType,
     get_test_database_url,
     should_use_postgresql_tests,
-    DatabaseType
 )
 
 
 class DatabaseTestConfig:
     """数据库测试配置管理器"""
-    
+
     def __init__(self):
         self.test_database_url = get_test_database_url()
         self.use_postgresql = should_use_postgresql_tests()
-        
+
     async def create_test_engine(self):
         """创建测试数据库引擎"""
         if self.use_postgresql:
@@ -46,7 +47,7 @@ class DatabaseTestConfig:
                 poolclass=StaticPool,
             )
         return engine
-        
+
     async def setup_test_database(self, engine):
         """设置测试数据库"""
         async with engine.begin() as conn:
@@ -54,11 +55,11 @@ class DatabaseTestConfig:
             await conn.run_sync(Base.metadata.drop_all)
             # 创建所有表
             await conn.run_sync(Base.metadata.create_all)
-            
+
             # 如果是PostgreSQL，创建ENUM类型
             if self.use_postgresql:
                 await self._create_postgresql_enums(conn)
-                
+
     async def _create_postgresql_enums(self, conn):
         """创建PostgreSQL ENUM类型"""
         enum_sqls = [
@@ -110,9 +111,9 @@ class DatabaseTestConfig:
             EXCEPTION
                 WHEN duplicate_object THEN null;
             END $$;
-            """
+            """,
         ]
-        
+
         for sql in enum_sqls:
             await conn.execute(sql)
 
@@ -140,7 +141,7 @@ async def test_engine():
     await engine.dispose()
 
 
-@pytest.fixture(scope="session") 
+@pytest.fixture(scope="session")
 async def setup_database(test_engine):
     """设置测试数据库fixture"""
     await test_config.setup_test_database(test_engine)
@@ -168,19 +169,15 @@ async def db_compatibility_checker(db_session):
 
 # PostgreSQL专属测试标记
 postgresql_only = pytest.mark.skipif(
-    not should_use_postgresql_tests(),
-    reason="PostgreSQL-specific test"
+    not should_use_postgresql_tests(), reason="PostgreSQL-specific test"
 )
 
-# SQLite专属测试标记  
+# SQLite专属测试标记
 sqlite_only = pytest.mark.skipif(
-    should_use_postgresql_tests(),
-    reason="SQLite-specific test"
+    should_use_postgresql_tests(), reason="SQLite-specific test"
 )
 
 # 数据库无关测试标记
 database_agnostic = pytest.mark.parametrize(
-    "db_type", 
-    [DatabaseType.SQLITE, DatabaseType.POSTGRESQL],
-    indirect=True
+    "db_type", [DatabaseType.SQLITE, DatabaseType.POSTGRESQL], indirect=True
 )

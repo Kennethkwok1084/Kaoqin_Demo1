@@ -169,7 +169,10 @@ class TestWorkHourAutomationService:
         """Test successful penalty tag application."""
         # Mock tag creation and association
         mock_tag = TaskTag(
-            id=1, name="延迟响应", tag_type=TaskTagType.PENALTY, work_minutes_modifier=-30
+            id=1,
+            name="延迟响应",
+            tag_type=TaskTagType.PENALTY,
+            work_minutes_modifier=-30,
         )
 
         # Mock existing tag query
@@ -199,7 +202,10 @@ class TestWorkHourAutomationService:
     ):
         """Test penalty tag application when tag already exists on task."""
         mock_tag = TaskTag(
-            id=1, name="延迟响应", tag_type=TaskTagType.PENALTY, work_minutes_modifier=-30
+            id=1,
+            name="延迟响应",
+            tag_type=TaskTagType.PENALTY,
+            work_minutes_modifier=-30,
         )
 
         # Mock existing tag

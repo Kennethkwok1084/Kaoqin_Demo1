@@ -16,7 +16,9 @@ from app.services.work_hour_automation import WorkHourAutomationService
 logger = logging.getLogger(__name__)
 
 
-def run_async_task(async_func: Callable[..., Awaitable[Any]], *args: Any, **kwargs: Any) -> Any:
+def run_async_task(
+    async_func: Callable[..., Awaitable[Any]], *args: Any, **kwargs: Any
+) -> Any:
     """运行异步任务的辅助函数"""
     try:
         loop = asyncio.get_event_loop()

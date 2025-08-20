@@ -21,11 +21,11 @@ from app.models.member import Member, UserRole
 
 # Import database testing configuration
 from tests.database_config import (
-    test_config,
+    DatabaseCompatibilityChecker,
+    database_agnostic,
     postgresql_only,
     sqlite_only,
-    database_agnostic,
-    DatabaseCompatibilityChecker
+    test_config,
 )
 
 
@@ -43,6 +43,7 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
 # Export AsyncClient as AsyncTestClient for backward compatibility
 AsyncTestClient = AsyncClient
 
+
 # Use new database testing configuration
 @pytest_asyncio.fixture(scope="session")
 async def test_engine():
@@ -52,7 +53,7 @@ async def test_engine():
     await engine.dispose()
 
 
-@pytest_asyncio.fixture(scope="session") 
+@pytest_asyncio.fixture(scope="session")
 async def setup_database(test_engine):
     """Setup test database using new configuration."""
     await test_config.setup_test_database(test_engine)
@@ -63,7 +64,9 @@ async def setup_database(test_engine):
 
 
 @pytest_asyncio.fixture
-async def async_session(test_engine, setup_database) -> AsyncGenerator[AsyncSession, None]:
+async def async_session(
+    test_engine, setup_database
+) -> AsyncGenerator[AsyncSession, None]:
     """Create async database session for testing."""
     async with AsyncSession(test_engine) as session:
         try:

@@ -3939,18 +3939,18 @@ async def bulk_recalculate_work_hours_enhanced(
 async def health_check() -> Dict[str, Any]:
     """
     任务服务健康检查
-    
+
     Returns:
         Dict: 健康状态信息
     """
     from datetime import datetime
-    
+
     return create_response(
         data={
             "service": "tasks",
             "status": "healthy",
             "timestamp": datetime.utcnow().isoformat(),
-            "version": "1.0.0"
+            "version": "1.0.0",
         },
-        message="任务服务运行正常"
+        message="任务服务运行正常",
     )

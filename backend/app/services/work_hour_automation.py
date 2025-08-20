@@ -12,7 +12,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
 from app.core.config import settings
-from app.models.task import RepairTask, TaskStatus, TaskTag, TaskTagType, task_tag_association
+from app.models.task import (
+    RepairTask,
+    TaskStatus,
+    TaskTag,
+    TaskTagType,
+    task_tag_association,
+)
 from app.services.task_service import TaskService
 
 logger = logging.getLogger(__name__)
@@ -627,12 +633,12 @@ class WorkHourAutomationService:
     ) -> bool:
         """
         Apply penalty tag to a specific task (used by tests)
-        
+
         Args:
             task: The task to apply penalty to
             tag_name: Name of the penalty tag
             reason: Reason for applying the penalty
-            
+
         Returns:
             bool: True if tag was applied successfully, False if already exists
         """
@@ -682,35 +688,35 @@ class WorkHourAutomationService:
     def _validate_tag_name(self, tag_name: Optional[str]) -> bool:
         """
         Validate tag name
-        
+
         Args:
             tag_name: Tag name to validate
-            
+
         Returns:
             bool: True if valid, False otherwise
         """
         if not tag_name:
             return False
-        
+
         if not isinstance(tag_name, str):
             return False
-            
+
         tag_name = tag_name.strip()
         if not tag_name:
             return False
-            
+
         if len(tag_name) > 100:
             return False
-            
+
         return True
 
     def _get_response_time_threshold(self, is_urgent: bool = False) -> timedelta:
         """
         Get response time threshold
-        
+
         Args:
             is_urgent: Whether task is urgent
-            
+
         Returns:
             timedelta: Time threshold for response
         """
@@ -722,10 +728,10 @@ class WorkHourAutomationService:
     def _get_completion_time_threshold(self, is_urgent: bool = False) -> timedelta:
         """
         Get completion time threshold
-        
+
         Args:
             is_urgent: Whether task is urgent
-            
+
         Returns:
             timedelta: Time threshold for completion
         """

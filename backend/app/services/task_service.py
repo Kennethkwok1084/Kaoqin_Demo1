@@ -640,7 +640,9 @@ class TaskService:
                     "member": {"id": task.member.id, "name": task.member.name},
                     "task_type": task.task_type.value,
                     "status": task.status.value,
-                    "report_time": task.report_time.isoformat() if task.report_time else None,
+                    "report_time": (
+                        task.report_time.isoformat() if task.report_time else None
+                    ),
                     "work_minutes": task.work_minutes,
                     "is_rush_order": task.is_rush_order,
                     "rush_info": (
@@ -881,7 +883,9 @@ class TaskService:
         if tag not in task.tags:
             task.tags.append(tag)
 
-    async def _add_penalty_tag(self, task: RepairTask, tag_name: str, penalty: int) -> None:
+    async def _add_penalty_tag(
+        self, task: RepairTask, tag_name: str, penalty: int
+    ) -> None:
         """添加惩罚标签"""
         tag = await self._get_or_create_tag(tag_name, penalty, "penalty")
         if tag not in task.tags:
@@ -1173,6 +1177,7 @@ class AssistanceTaskService:
         self.db = db
         # Import needed services to avoid circular imports
         from app.services.work_hours_service import WorkHoursCalculationService
+
         self.work_hours_service = WorkHoursCalculationService(db)
         # For rush_task_service, we'll use TaskService
         self.rush_task_service = None  # Will be set when needed
@@ -1404,7 +1409,7 @@ class AssistanceTaskService:
             # Use TaskService for rush task operations
             if not self.rush_task_service:
                 self.rush_task_service = TaskService(self.db)
-            
+
             assert self.rush_task_service is not None
             result = await self.rush_task_service.mark_rush_tasks_by_date(
                 start_date, end_date, task_ids, marked_by
@@ -1563,7 +1568,9 @@ class AssistanceTaskService:
 
         # 创建任务
         task = RepairTask(
-            task_id=data.get("work_order_id", f"ASSIST_{int(datetime.utcnow().timestamp())}"),
+            task_id=data.get(
+                "work_order_id", f"ASSIST_{int(datetime.utcnow().timestamp())}"
+            ),
             title=data.get("title", "维修任务"),
             description=data.get("description", ""),
             location=data.get("location", ""),
@@ -1724,7 +1731,10 @@ class AssistanceTaskService:
                 )
 
     async def _recalculate_work_hours_for_marked_tasks(
-        self, start_date: datetime, end_date: datetime, task_ids: Optional[List[int]] = None
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        task_ids: Optional[List[int]] = None,
     ) -> None:
         """重新计算被标记任务的工时"""
         # 查询被标记的任务

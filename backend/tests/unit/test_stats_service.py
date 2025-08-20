@@ -77,24 +77,35 @@ class TestStatisticsService:
     async def test_get_overview_statistics_basic(self, stats_service, mock_db):
         """Test basic overview statistics."""
         # Mock all the private cached methods
-        with patch.object(
-            stats_service, "_get_member_statistics_cached",
-            return_value={"active_count": 5}
-        ), patch.object(
-            stats_service, "_get_task_statistics_cached",
-            return_value={"completed_count": 10}
-        ), patch.object(
-            stats_service, "_get_work_hour_statistics_cached",
-            return_value={"total_hours": 50}
-        ), patch.object(
-            stats_service, "_get_performance_statistics_cached",
-            return_value={"overall_rating": 4.5}
-        ), patch.object(
-            stats_service, "_get_attendance_statistics_cached",
-            return_value={"overall_rate": 95}
+        with (
+            patch.object(
+                stats_service,
+                "_get_member_statistics_cached",
+                return_value={"active_count": 5},
+            ),
+            patch.object(
+                stats_service,
+                "_get_task_statistics_cached",
+                return_value={"completed_count": 10},
+            ),
+            patch.object(
+                stats_service,
+                "_get_work_hour_statistics_cached",
+                return_value={"total_hours": 50},
+            ),
+            patch.object(
+                stats_service,
+                "_get_performance_statistics_cached",
+                return_value={"overall_rating": 4.5},
+            ),
+            patch.object(
+                stats_service,
+                "_get_attendance_statistics_cached",
+                return_value={"overall_rate": 95},
+            ),
         ):
             result = await stats_service.get_overview_statistics()
-            
+
             assert "summary" in result
             assert result["summary"]["total_active_members"] == 5
             assert result["summary"]["total_tasks_completed"] == 10
@@ -104,25 +115,34 @@ class TestStatisticsService:
         self, stats_service, mock_db, sample_member
     ):
         """Test member performance report."""
-        with patch.object(
-            stats_service, "_get_member_task_statistics",
-            return_value={
-                "total_tasks": 2,
-                "completed_tasks": 2,
-                "completion_rate": 100.0
-            }
-        ), patch.object(
-            stats_service, "_get_member_work_hour_statistics",
-            return_value={"total_hours": 2.33}
-        ), patch.object(
-            stats_service, "_get_member_quality_statistics",
-            return_value={"avg_rating": 4.5}
-        ), patch.object(
-            stats_service, "_get_member_ranking",
-            return_value={"work_hour_rank": 1}
-        ), patch.object(
-            stats_service, "_get_member_trend_analysis",
-            return_value={"change_rate": 10.0}
+        with (
+            patch.object(
+                stats_service,
+                "_get_member_task_statistics",
+                return_value={
+                    "total_tasks": 2,
+                    "completed_tasks": 2,
+                    "completion_rate": 100.0,
+                },
+            ),
+            patch.object(
+                stats_service,
+                "_get_member_work_hour_statistics",
+                return_value={"total_hours": 2.33},
+            ),
+            patch.object(
+                stats_service,
+                "_get_member_quality_statistics",
+                return_value={"avg_rating": 4.5},
+            ),
+            patch.object(
+                stats_service, "_get_member_ranking", return_value={"work_hour_rank": 1}
+            ),
+            patch.object(
+                stats_service,
+                "_get_member_trend_analysis",
+                return_value={"change_rate": 10.0},
+            ),
         ):
             # Mock member query
             mock_member = Mock()
@@ -131,15 +151,13 @@ class TestStatisticsService:
             mock_member.student_id = sample_member.student_id
             mock_member.department = "IT"
             mock_member.role = sample_member.role
-            
+
             mock_result = Mock()
             mock_result.scalar_one_or_none.return_value = mock_member
             mock_db.execute.return_value = mock_result
-            
+
             result = await stats_service.get_member_performance_report(
-                member_id=sample_member.id,
-                year=2024,
-                month=1
+                member_id=sample_member.id, year=2024, month=1
             )
 
             assert result["member"]["id"] == sample_member.id
@@ -147,7 +165,9 @@ class TestStatisticsService:
             assert result["tasks"]["completed_tasks"] == 2
 
     @pytest.mark.asyncio
-    async def test_get_member_performance_report_no_member(self, stats_service, mock_db):
+    async def test_get_member_performance_report_no_member(
+        self, stats_service, mock_db
+    ):
         """Test member performance report with non-existent member."""
         # Mock empty member query result
         mock_result = Mock()
@@ -156,9 +176,7 @@ class TestStatisticsService:
 
         with pytest.raises(ValueError, match="成员不存在"):
             await stats_service.get_member_performance_report(
-                member_id=999,
-                year=2024,
-                month=1
+                member_id=999, year=2024, month=1
             )
 
     @pytest.mark.asyncio
@@ -172,24 +190,29 @@ class TestStatisticsService:
         mock_member.department = "IT"
         mock_member.role = Mock()
         mock_member.role.value = "member"
-        
+
         mock_result = Mock()
         mock_result.scalars.return_value.all.return_value = [mock_member]
         mock_db.execute.return_value = mock_result
-        
-        with patch.object(
-            stats_service, "_get_member_comparison_stats",
-            return_value={
-                "work_hours": {"total_hours": 40},
-                "tasks": {"total_tasks": 10},
-                "quality": {"avg_rating": 4.5}
-            }
-        ), patch.object(
-            stats_service, "_calculate_team_summary",
-            return_value={"total_members": 1, "total_hours": 40}
+
+        with (
+            patch.object(
+                stats_service,
+                "_get_member_comparison_stats",
+                return_value={
+                    "work_hours": {"total_hours": 40},
+                    "tasks": {"total_tasks": 10},
+                    "quality": {"avg_rating": 4.5},
+                },
+            ),
+            patch.object(
+                stats_service,
+                "_calculate_team_summary",
+                return_value={"total_members": 1, "total_hours": 40},
+            ),
         ):
             result = await stats_service.get_team_comparison_report()
-            
+
             assert "team_summary" in result
             assert "member_rankings" in result
 
@@ -197,16 +220,17 @@ class TestStatisticsService:
     async def test_get_monthly_trends(self, stats_service, mock_db):
         """Test monthly trends functionality."""
         with patch.object(
-            stats_service, "_get_monthly_statistics",
+            stats_service,
+            "_get_monthly_statistics",
             return_value={
                 "total_tasks": 20,
                 "completed_tasks": 18,
                 "total_work_hours": 40.5,
-                "completion_rate": 90.0
-            }
+                "completion_rate": 90.0,
+            },
         ):
             result = await stats_service.get_monthly_trends(months=3)
-            
+
             assert "monthly_data" in result
             assert "trend_analysis" in result
             assert result["analysis_months"] == 3
@@ -215,15 +239,14 @@ class TestStatisticsService:
     async def test_export_statistics_data(self, stats_service, mock_db):
         """Test statistics data export functionality."""
         with patch.object(
-            stats_service, "_export_summary_data",
-            return_value={"export_type": "summary", "data": {}}
+            stats_service,
+            "_export_summary_data",
+            return_value={"export_type": "summary", "data": {}},
         ):
             result = await stats_service.export_statistics_data(
-                "summary",
-                datetime(2024, 1, 1),
-                datetime(2024, 1, 31)
+                "summary", datetime(2024, 1, 1), datetime(2024, 1, 31)
             )
-            
+
             assert result["export_type"] == "summary"
             assert "data" in result
 
@@ -232,9 +255,7 @@ class TestStatisticsService:
         """Test export with invalid type raises error."""
         with pytest.raises(ValueError, match="不支持的导出类型"):
             await stats_service.export_statistics_data(
-                "invalid_type",
-                datetime(2024, 1, 1),
-                datetime(2024, 1, 31)
+                "invalid_type", datetime(2024, 1, 1), datetime(2024, 1, 31)
             )
 
     @pytest.mark.asyncio
@@ -242,28 +263,38 @@ class TestStatisticsService:
         """Test overview statistics with custom date range."""
         date_from = datetime(2024, 1, 1)
         date_to = datetime(2024, 1, 31)
-        
-        with patch.object(
-            stats_service, "_get_member_statistics_cached",
-            return_value={"active_count": 3}
-        ), patch.object(
-            stats_service, "_get_task_statistics_cached",
-            return_value={"completed_count": 15}
-        ), patch.object(
-            stats_service, "_get_work_hour_statistics_cached",
-            return_value={"total_hours": 75}
-        ), patch.object(
-            stats_service, "_get_performance_statistics_cached",
-            return_value={"overall_rating": 4.2}
-        ), patch.object(
-            stats_service, "_get_attendance_statistics_cached",
-            return_value={"overall_rate": 88}
+
+        with (
+            patch.object(
+                stats_service,
+                "_get_member_statistics_cached",
+                return_value={"active_count": 3},
+            ),
+            patch.object(
+                stats_service,
+                "_get_task_statistics_cached",
+                return_value={"completed_count": 15},
+            ),
+            patch.object(
+                stats_service,
+                "_get_work_hour_statistics_cached",
+                return_value={"total_hours": 75},
+            ),
+            patch.object(
+                stats_service,
+                "_get_performance_statistics_cached",
+                return_value={"overall_rating": 4.2},
+            ),
+            patch.object(
+                stats_service,
+                "_get_attendance_statistics_cached",
+                return_value={"overall_rate": 88},
+            ),
         ):
             result = await stats_service.get_overview_statistics(
-                date_from=date_from,
-                date_to=date_to
+                date_from=date_from, date_to=date_to
             )
-            
+
             assert result["period"]["from"] == date_from.isoformat()
             assert result["period"]["to"] == date_to.isoformat()
             assert result["summary"]["total_active_members"] == 3
@@ -274,23 +305,34 @@ class TestStatisticsService:
         stats_service = StatisticsService(mock_db)
         stats_service.cache_enabled = False
 
-        with patch.object(
-            stats_service, "_get_member_statistics_cached",
-            return_value={"active_count": 2}
-        ), patch.object(
-            stats_service, "_get_task_statistics_cached",
-            return_value={"completed_count": 5}
-        ), patch.object(
-            stats_service, "_get_work_hour_statistics_cached",
-            return_value={"total_hours": 25}
-        ), patch.object(
-            stats_service, "_get_performance_statistics_cached",
-            return_value={"overall_rating": 4.0}
-        ), patch.object(
-            stats_service, "_get_attendance_statistics_cached",
-            return_value={"overall_rate": 80}
+        with (
+            patch.object(
+                stats_service,
+                "_get_member_statistics_cached",
+                return_value={"active_count": 2},
+            ),
+            patch.object(
+                stats_service,
+                "_get_task_statistics_cached",
+                return_value={"completed_count": 5},
+            ),
+            patch.object(
+                stats_service,
+                "_get_work_hour_statistics_cached",
+                return_value={"total_hours": 25},
+            ),
+            patch.object(
+                stats_service,
+                "_get_performance_statistics_cached",
+                return_value={"overall_rating": 4.0},
+            ),
+            patch.object(
+                stats_service,
+                "_get_attendance_statistics_cached",
+                return_value={"overall_rate": 80},
+            ),
         ):
             result = await stats_service.get_overview_statistics()
-            
+
             assert "summary" in result
             assert result["summary"]["total_active_members"] == 2

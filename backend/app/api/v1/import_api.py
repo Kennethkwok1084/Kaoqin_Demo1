@@ -395,7 +395,7 @@ async def get_import_template(
 def get_supported_field_mappings() -> Dict[str, Any]:
     """
     获取支持的字段映射 (同步版本，用于测试)
-    
+
     Returns:
         Dict: 支持的字段映射信息
     """
@@ -415,7 +415,7 @@ def get_supported_field_mappings() -> Dict[str, Any]:
                 "contact": ["联系电话", "手机号", "电话"],
                 "employee_id": ["工号", "员工编号", "学号"],
                 "skill_level": ["技能等级", "级别", "水平"],
-            }
+            },
         },
-        "message": "成功获取字段映射配置"
+        "message": "成功获取字段映射配置",
     }
