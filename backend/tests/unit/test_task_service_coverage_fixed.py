@@ -265,7 +265,7 @@ class TestTaskServiceFixed:
         mock_result.scalar_one_or_none.return_value = mock_task
 
         # Mock member lookup
-        mock_member = Member(id=2, username="testuser", name="Test Member")
+        mock_member = Member(username="testuser", name="Test Member", class_name="测试班级")
         mock_member_result = Mock()
         mock_member_result.scalar_one_or_none.return_value = mock_member
 

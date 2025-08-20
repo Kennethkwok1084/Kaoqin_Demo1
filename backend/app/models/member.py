@@ -199,6 +199,8 @@ class Member(BaseModel):
         is_active: bool = True,
         profile_completed: bool = False,
         is_verified: bool = False,
+        login_count: int = 0,
+        last_login: Optional[datetime] = None,
         **kwargs: Any,
     ) -> None:
         """Initialize Member instance."""
@@ -217,8 +219,8 @@ class Member(BaseModel):
         self.is_active = is_active
         self.profile_completed = profile_completed
         self.is_verified = is_verified
-        self.login_count = 0
-        self.last_login = None
+        self.login_count = login_count
+        self.last_login = last_login
 
     def __repr__(self) -> str:
         """字符串表示"""

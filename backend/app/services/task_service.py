@@ -584,6 +584,45 @@ class TaskService:
             logger.error(f"Batch mark rush tasks error: {str(e)}")
             raise
 
+    async def batch_unmark_rush_tasks(
+        self,
+        date_from: datetime,
+        date_to: datetime,
+        task_ids: Optional[List[int]] = None,
+        remover_id: int = None,
+    ) -> Dict[str, Any]:
+        """
+        批量取消爆单标记
+
+        Args:
+            date_from: 开始时间
+            date_to: 结束时间
+            task_ids: 指定任务ID列表
+            remover_id: 取消标记人ID
+
+        Returns:
+            Dict: 取消标记结果
+        """
+        try:
+            result = await self.rush_task_service.unmark_rush_tasks_by_date(
+                date_from.date(), date_to.date(), task_ids, remover_id
+            )
+
+            # 记录操作日志
+            logger.info(f"Batch rush task unmarking by user {remover_id}: {result}")
+
+            return {
+                "success": True,
+                "unmarked_count": result.get("unmarked", 0),
+                "total_count": result.get("total", 0),
+                "period": {"from": date_from.isoformat(), "to": date_to.isoformat()},
+                "removed_by": remover_id,
+            }
+
+        except Exception as e:
+            logger.error(f"Batch unmark rush tasks error: {str(e)}")
+            raise
+
     async def get_rush_tasks_list(
         self,
         date_from: Optional[datetime] = None,
@@ -1782,3 +1821,60 @@ class AssistanceTaskService:
                 logger.warning(
                     f"Failed to update monthly summary after rush task marking: {str(e)}"
                 )
+
+    async def recalculate_task_work_hours(self, task_id: int) -> bool:
+        """
+        重新计算单个任务的工时
+
+        Args:
+            task_id: 任务ID
+
+        Returns:
+            bool: 是否成功重新计算
+        """
+        try:
+            # 获取任务
+            query = select(RepairTask).where(RepairTask.id == task_id)
+            result = await self.db.execute(query)
+            task = result.scalar_one_or_none()
+
+            if not task:
+                logger.warning(f"Task not found: {task_id}")
+                return False
+
+            # 保存旧的工时
+            old_work_minutes = task.work_minutes
+
+            # 重新计算工时
+            task.update_work_minutes()
+
+            # 检查是否有变化
+            if old_work_minutes != task.work_minutes:
+                await self.db.commit()
+                
+                # 更新月度汇总
+                if task.report_time and task.member_id:
+                    try:
+                        await self.work_hours_service.update_monthly_summary(
+                            task.member_id, 
+                            task.report_time.year, 
+                            task.report_time.month
+                        )
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to update monthly summary for task {task_id}: {str(e)}"
+                        )
+
+                logger.info(
+                    f"Task {task_id} work hours recalculated: "
+                    f"{old_work_minutes} -> {task.work_minutes} minutes"
+                )
+                return True
+            else:
+                logger.debug(f"Task {task_id} work hours unchanged: {old_work_minutes} minutes")
+                return False
+
+        except Exception as e:
+            logger.error(f"Failed to recalculate task work hours for {task_id}: {str(e)}")
+            await self.db.rollback()
+            return False

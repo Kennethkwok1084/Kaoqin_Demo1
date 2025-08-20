@@ -29,9 +29,9 @@ class TestTasksAPI:
         # Mock dependencies
         mock_db = AsyncMock()
         mock_user = Member(
-            id=1,
             username="test_user",
             name="测试用户",
+            class_name="测试班级",
             role=UserRole.MEMBER,
             is_active=True,
         )
@@ -81,13 +81,12 @@ class TestTasksAPI:
         # Mock dependencies
         mock_db = AsyncMock()
         mock_user = Member(
-            id=1,
             username="test_user",
             name="测试用户",
+            class_name="测试班级",
+            department="信息化建设处",
             role=UserRole.MEMBER,
             is_active=True,
-            department="信息化建设处",
-            class_name="测试班级",
         )
 
         # Mock empty database result
@@ -146,13 +145,12 @@ class TestTasksAPI:
         # Mock dependencies
         mock_db = AsyncMock()
         mock_user = Member(
-            id=1,
             username="test_user",
             name="测试用户",
+            class_name="测试班级",
+            department="信息化建设处",
             role=UserRole.MEMBER,
             is_active=True,
-            department="信息化建设处",
-            class_name="测试班级",
         )
 
         # Mock empty result (placeholder implementation)
@@ -186,13 +184,12 @@ class TestTasksAPI:
         # Mock dependencies
         mock_db = AsyncMock()
         mock_user = Member(
-            id=1,
             username="test_user",
             name="测试用户",
+            class_name="测试班级",
+            department="信息化建设处",
             role=UserRole.MEMBER,
             is_active=True,
-            department="信息化建设处",
-            class_name="测试班级",
         )
 
         # Mock empty result (placeholder implementation)

@@ -1,55 +1,49 @@
-==== 运行代码风格检查 (flake8) =====
-app/core/celery_app.py:92:29: F821 undefined name 'misc'
-app/core/celery_app.py:109:40: F821 undefined name 'misc'
-app/core/celery_app.py:117:39: F821 undefined name 'misc'
-app/core/database_compatibility.py:12:1: F401 'sqlalchemy.ext.asyncio.create_async_engine' imported but unused
-app/core/database_compatibility.py:85:82: W291 trailing whitespace
-app/models/task.py:401:52: F821 undefined name 'operator'
-app/services/stats_service.py:13:1: F811 redefinition of unused 'Any' from line 1
-app/services/stats_service.py:13:1: F811 redefinition of unused 'Dict' from line 1
-app/services/work_hours_service.py:728:50: F821 undefined name 'operator'
-app/services/work_hours_service.py:738:52: F821 undefined name 'operator'
+===== 运行代码风格检查 (flake8) =====
+app/core/database_compatibility.py:93:82: W291 trailing whitespace
+app/schemas/member.py:281:18: F821 undefined name 'Dict'
+app/services/stats_service.py:12:1: F811 redefinition of unused 'Any' from line 1
+app/services/stats_service.py:12:1: F811 redefinition of unused 'Dict' from line 1
+app/services/task_service.py:80:1: W293 blank line contains whitespace
+app/services/task_service.py:161:1: W293 blank line contains whitespace
+app/services/task_service.py:224:1: W293 blank line contains whitespace
+app/services/task_service.py:1108:1: W293 blank line contains whitespace
+app/services/task_service.py:1233:1: W293 blank line contains whitespace
 tests/business/test_data_integrity_operations.py:168:101: E501 line too long (104 > 100 characters)
 tests/business/test_data_integrity_operations.py:169:101: E501 line too long (107 > 100 characters)
-tests/business/test_data_integrity_operations.py:418:20: F821 undefined name 'func'
-tests/business/test_data_integrity_operations.py:420:66: F821 undefined name 'func'
-tests/business/test_data_integrity_operations.py:471:24: F821 undefined name 'func'
-tests/business/test_data_integrity_operations.py:474:24: F821 undefined name 'func'
-tests/business/test_data_integrity_operations.py:586:20: F821 undefined name 'func'
-tests/business/test_data_integrity_operations.py:592:20: F821 undefined name 'func'
-tests/business/test_data_integrity_operations.py:593:17: F821 undefined name 'and_'
-tests/conftest.py:237:5: F811 redefinition of unused 'os' from line 8
-tests/database_config.py:75:101: E501 line too long (111 > 100 characters)
-app/api/v1/tasks.py:2273: error: Unexpected keyword argument "status" for "AssistanceTask"  [call-arg]
-app/api/v1/tasks.py:2293: error: Item "None" of "datetime | None" has no attribute "month"  [union-attr]
-app/api/v1/tasks.py:2294: error: Item "None" of "datetime | None" has no attribute "year"  [union-attr]
-app/api/v1/tasks.py:2308: error: Unsupported operand types for / ("None" and "float")  [operator]
-app/api/v1/tasks.py:2308: note: Left operand is of type "int | None"
-app/api/v1/tasks.py:2323: error: Function is missing a return type annotation  [no-untyped-def]
-app/api/v1/tasks.py:2378: error: Item "None" of "datetime | None" has no attribute "isoformat"  [union-attr]
-app/api/v1/tasks.py:2379: error: Item "None" of "datetime | None" has no attribute "isoformat"  [union-attr]
-app/api/v1/tasks.py:2381: error: Unsupported operand types for / ("None" and "float")  [operator]
-app/api/v1/tasks.py:2381: note: Left operand is of type "int | None"
-app/api/v1/tasks.py:2393: error: Unsupported operand types for + ("None" and "int")  [operator]
-app/api/v1/tasks.py:2393: note: Left operand is of type "int | None"
-app/api/v1/tasks.py:2410: error: Function is missing a return type annotation  [no-untyped-def]
-app/api/v1/tasks.py:2466: error: Function is missing a return type annotation  [no-untyped-def]
-app/api/v1/tasks.py:2521: error: Item "None" of "datetime | None" has no attribute "isoformat"  [union-attr]
-app/api/v1/tasks.py:2539: error: Unsupported operand types for + ("None" and "int")  [operator]
-app/api/v1/tasks.py:2539: note: Left operand is of type "int | None"
-app/api/v1/tasks.py:2561: error: Function is missing a return type annotation  [no-untyped-def]
-app/api/v1/tasks.py:2729: error: Library stubs not installed for "dateutil"  [import-untyped]
-app/api/v1/tasks.py:2729: note: Hint: "python3 -m pip install types-python-dateutil"
-app/api/v1/tasks.py:2729: note: (or run "mypy --install-types" to install all missing stub packages)
-app/api/v1/tasks.py:2729: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
-app/api/v1/tasks.py:2877: error: Function is missing a return type annotation  [no-untyped-def]
-app/api/v1/tasks.py:2995: error: Function is missing a return type annotation  [no-untyped-def]
-app/api/v1/tasks.py:3081: error: Function is missing a return type annotation  [no-untyped-def]
-app/api/v1/tasks.py:3170: error: Function is missing a return type annotation  [no-untyped-def]
-app/api/v1/tasks.py:3227: error: Unsupported operand types for < ("float" and "None")  [operator]
-app/api/v1/tasks.py:3227: note: Left operand is of type "int | None"
-app/api/v1/tasks.py:3229: error: Unsupported operand types for > ("int" and "None")  [operator]
-app/api/v1/tasks.py:3229: note: Left operand is of type "int | None"
+tests/database_config.py:78:101: E501 line too long (111 > 100 characters)
+tests/database_config.py:85:101: E501 line too long (133 > 100 characters)
+tests/database_config.py:106:101: E501 line too long (173 > 100 characters)
+tests/integration/test_data_import_cache.py:300:25: F821 undefined name 'datetime'
+tests/integration/test_data_import_cache.py:313:25: F821 undefined name 'datetime'
+tests/test_field_mapping_fixes.py:82:101: E501 line too long (104 > 100 characters)
+❌ Flake8 代码风格检查失败
+===== 运行类型检查 (mypy) =====
+app/core/database_compatibility.py:111: error: Dict entry 0 has incompatible type "str": "str"; expected "str": "bool"  [dict-item]
+app/core/celery_app.py:9: error: Unused "type: ignore" comment  [unused-ignore]
+app/core/celery_app.py:10: error: Unused "type: ignore" comment  [unused-ignore]
+app/services/stats_service.py:146: error: Incompatible types in assignment (expression has type "dict[str, Any] | BaseException", variable has type "dict[str, Any]")  [assignment]
+app/services/stats_service.py:152: error: Incompatible types in assignment (expression has type "dict[str, Any] | BaseException", variable has type "dict[str, Any]")  [assignment]
+app/services/stats_service.py:158: error: Incompatible types in assignment (expression has type "dict[str, Any] | BaseException", variable has type "dict[str, Any]")  [assignment]
+app/services/stats_service.py:164: error: Incompatible types in assignment (expression has type "dict[str, Any] | BaseException", variable has type "dict[str, Any]")  [assignment]
+app/services/stats_service.py:170: error: Incompatible types in assignment (expression has type "dict[str, Any] | BaseException", variable has type "dict[str, Any]")  [assignment]
+app/schemas/member.py:281: error: Name "Dict" is not defined  [name-defined]
+app/schemas/member.py:281: note: Did you forget to import it from "typing"? (Suggestion: "from typing import Dict")
+app/services/task_service.py:171: error: Argument 1 to "update_monthly_summary" of "WorkHoursCalculationService" has incompatible type "int | None"; expected "int"  [arg-type]
+app/services/task_service.py:234: error: Argument 1 to "update_monthly_summary" of "WorkHoursCalculationService" has incompatible type "int | None"; expected "int"  [arg-type]
+app/services/task_service.py:497: error: Generator has incompatible item type "int | None"; expected "bool"  [misc]
+app/services/task_service.py:509: error: Generator has incompatible item type "int | None"; expected "bool"  [misc]
+app/services/task_service.py:552: error: Incompatible default for argument "marker_id" (default has type "None", argument has type "int")  [assignment]
+app/services/task_service.py:552: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+app/services/task_service.py:552: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+app/services/task_service.py:613: error: Argument 1 to "where" of "Select" has incompatible type "InstrumentedAttribute[bool | None]"; expected "ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement"  [arg-type]
+app/services/task_service.py:663: error: Generator has incompatible item type "int | None"; expected "bool"  [misc]
+app/services/task_service.py:702: error: Argument 1 to "where" of "Select" has incompatible type "InstrumentedAttribute[bool | None]"; expected "ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement"  [arg-type]
+app/services/task_service.py:715: error: Generator has incompatible item type "int | None"; expected "bool"  [misc]
+app/services/task_service.py:753: error: Argument "key" to "sort" of "list" has incompatible type "Callable[[dict[str, object]], object]"; expected "Callable[[dict[str, object]], SupportsDunderLT[Any] | SupportsDunderGT[Any]]"  [arg-type]
+app/services/task_service.py:753: error: Incompatible return value type (got "object", expected "SupportsDunderLT[Any] | SupportsDunderGT[Any]")  [return-value]
+app/services/task_service.py:789: error: Incompatible default for argument "remover_id" (default has type "None", argument has type "int")  [assignment]
+app/services/task_service.py:789: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+app/services/task_service.py:789: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
 app/api/v1/tasks.py:3240: error: Unsupported operand types for / ("None" and "float")  [operator]
 app/api/v1/tasks.py:3240: note: Left operand is of type "int | None"
 app/api/v1/tasks.py:3256: error: Unsupported operand types for + ("None" and "int")  [operator]
@@ -83,16 +77,13 @@ app/api/v1/tasks.py:3735: error: Function is missing a return type annotation  [
 app/api/v1/tasks.py:3776: error: Argument 1 to "set_status_by_work_order_status" of "RepairTask" has incompatible type "str | None"; expected "str"  [arg-type]
 app/api/v1/tasks.py:3809: error: Function is missing a return type annotation  [no-untyped-def]
 app/api/v1/tasks.py:3832: error: Unexpected keyword argument "marked_by" for "batch_mark_rush_tasks" of "TaskService"  [call-arg]
-app/services/task_service.py:541: note: "batch_mark_rush_tasks" of "TaskService" defined here
+app/services/task_service.py:547: note: "batch_mark_rush_tasks" of "TaskService" defined here
 app/api/v1/tasks.py:3842: error: "TaskService" has no attribute "batch_unmark_rush_tasks"; maybe "batch_mark_rush_tasks"?  [attr-defined]
 app/api/v1/tasks.py:3890: error: Function is missing a return type annotation  [no-untyped-def]
 app/api/v1/import_api.py:43: error: Argument 1 to "get" of "dict" has incompatible type "str | None"; expected "str"  [arg-type]
-Found 300 errors in 16 files (checked 42 source files)
+Found 260 errors in 13 files (checked 42 source files)
 ❌ mypy 类型检查失败
 ===== 代码质量检查总结 =====
-总共发现 2 个检查工具报告了错误
-⚠️ 代码质量检查发现问题，但允许继续构建以收集完整的错误信息
-请查看上述输出了解具体问题详情
 运行单元测试...
 ============================= test session starts ==============================
 platform linux -- Python 3.13.6, pytest-8.4.1, pluggy-1.6.0 -- /opt/hostedtoolcache/Python/3.13.6/x64/bin/python
@@ -107,29 +98,13 @@ collecting ... collected 245 items
 
 tests/unit/test_auth_api.py::TestAuthAPI::test_login_success 
 -------------------------------- live log call ---------------------------------
-2025-08-20 10:58:13 [    INFO] Successful login for user: TEST001
+2025-08-20 15:42:12 [    INFO] Successful login for user: TEST001
 PASSED                                                                   [  0%]
 tests/unit/test_auth_api.py::TestAuthAPI::test_login_user_not_found 
 -------------------------------- live log call ---------------------------------
-2025-08-20 10:58:13 [ WARNING] Login attempt with non-existent student_id: NONEXISTENT
+2025-08-20 15:42:12 [ WARNING] Login attempt with non-existent student_id: NONEXISTENT
 PASSED                                                                   [  0%]
 tests/unit/test_auth_api.py::TestAuthAPI::test_login_invalid_password FAILED [  1%]
-FAILED tests/unit/test_auth_api.py::TestAuthAPI::test_change_password_wrong_current - TypeError: __init__() missing 1 required positional argument: 'name'
-FAILED tests/unit/test_auth_api.py::TestAuthAPI::test_update_profile_success - AssertionError: assert 'Profile updated successfully' == '个人信息更新成功'
-  
-  - 个人信息更新成功
-  + Profile updated successfully
-FAILED tests/unit/test_auth_api.py::TestAuthAPI::test_rate_limiting_triggered - AssertionError: assert 500 == 429
- +  where 500 = HTTPException(status_code=500, detail='Login failed. Please try again.').status_code
- +    where HTTPException(status_code=500, detail='Login failed. Please try again.') = <ExceptionInfo HTTPException(status_code=500, detail='Login failed. Please try again.') tblen=2>.value
- +  and   429 = status.HTTP_429_TOO_MANY_REQUESTS
-FAILED tests/unit/test_coverage_boost.py::TestCoverageBoost::test_model_relationships - TypeError: __init__() missing 2 required positional arguments: 'username' and 'name'
-FAILED tests/unit/test_coverage_boost.py::TestCoverageBoost::test_import_api_functions - ImportError: cannot import name 'get_field_mapping' from 'app.api.v1.import_api' (/home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend/app/api/v1/import_api.py)
-FAILED tests/unit/test_coverage_boost.py::TestCoverageBoost::test_task_model_enums - AttributeError: type object 'TaskCategory' has no attribute 'SOFTWARE_ISSUE'
-FAILED tests/unit/test_import_api.py::TestImportAPI::test_get_field_mapping_member_table_success - TypeError: __init__() missing 1 required positional argument: 'name'
-FAILED tests/unit/test_import_api.py::TestImportAPI::test_get_field_mapping_attendance_table_success - TypeError: __init__() missing 1 required positional argument: 'name'
-FAILED tests/unit/test_import_api.py::TestImportAPI::test_get_field_mapping_invalid_table_type - TypeError: __init__() missing 1 required positional argument: 'name'
-FAILED tests/unit/test_import_api.py::TestImportAPI::test_get_field_mapping_comprehensive_response - TypeError: __init__() missing 1 required positional argument: 'name'
 FAILED tests/unit/test_import_api.py::TestImportAPI::test_get_field_mapping_business_rules_detailed - TypeError: __init__() missing 1 required positional argument: 'name'
 FAILED tests/unit/test_import_api.py::TestImportAPI::test_get_field_mapping_import_examples - TypeError: __init__() missing 1 required positional argument: 'name'
 FAILED tests/unit/test_import_api.py::TestImportAPI::test_get_field_mapping_data_processing_rules - TypeError: __init__() missing 1 required positional argument: 'name'
@@ -140,10 +115,10 @@ FAILED tests/unit/test_import_api_simple.py::TestImportAPISimple::test_get_field
 FAILED tests/unit/test_import_api_simple.py::TestImportAPISimple::test_get_field_mapping_import_config_structure - TypeError: __init__() missing 1 required positional argument: 'name'
 FAILED tests/unit/test_import_api_simple.py::TestImportAPISimple::test_get_field_mapping_required_fields - TypeError: __init__() missing 1 required positional argument: 'name'
 FAILED tests/unit/test_simple_coverage.py::TestBasicCoverage::test_config_loading - assert False
- +  where False = hasattr(Settings(APP_NAME='\u8003\u52e4\u7ba1\u7406\u7cfb\u7edf', APP_VERSION='0.1.0', DEBUG=True, TESTING=True, HOST='0.0.0.0', PORT=8000, RELOAD=False, DATABASE_URL='***localhost:5432/test_attendence', DATABASE_URL_SYNC='***localhost:5432/test_attendence', SECRET_KEY='test-secret-key-for-testing-only', ALGORITHM='HS256', ACCESS_TOKEN_EXPIRE_MINUTES=30, REFRESH_TOKEN_EXPIRE_DAYS=7, PWD_CONTEXT_SCHEMES=['bcrypt'], PWD_CONTEXT_DEPRECATED=None, ENCRYPTION_KEY='s7Xlyw52a2WVrVtb9q1R3h5TNF2GdwYM1UIBPj07sxs', SALT='tztSfKh9lXyZgwVAE16e1A', CORS_ORIGINS=['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:5173'], CORS_ALLOW_CREDENTIALS=True, CORS_ALLOW_METHODS=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], CORS_ALLOW_HEADERS=['*'], REDIS_URL='redis://localhost:6379/0', REDIS_PASSWORD=None, REDIS_DB=0, CELERY_BROKER_URL='redis://localhost:6379/1', CELERY_RESULT_BACKEND='redis://localhost:6379/2', MAX_FILE_SIZE=10485760, ALLOWED_FILE_TYPES=['.xlsx', '.xls', '.csv'], UPLOAD_DIR='uploads', LOG_LEVEL='INFO', LOG_FORMAT='%(asctime)s - %(name)s - %(levelname)s - %(message)s', MAIL_SERVER=None, MAIL_PORT=None, MAIL_USE_TLS=True, MAIL_USERNAME=None, MAIL_PASSWORD=None, MAIL_FROM=None, SENTRY_DSN=None, PROMETHEUS_PORT=9090, SECURITY_HEADERS_ENABLED=True, CSP_POLICY="default-src 'self'", DEFAULT_PAGE_SIZE=20, MAX_PAGE_SIZE=100, DEFAULT_ONLINE_TASK_MINUTES=40, DEFAULT_OFFLINE_TASK_MINUTES=100, RUSH_TASK_BONUS_MINUTES=15, POSITIVE_REVIEW_BONUS_MINUTES=30, LATE_RESPONSE_PENALTY_MINUTES=30, LATE_COMPLETION_PENALTY_MINUTES=30, NEGATIVE_REVIEW_PENALTY_MINUTES=60, RESPONSE_TIMEOUT_HOURS=24, COMPLETION_TIMEOUT_HOURS=48, MIN_RATING_FOR_POSITIVE=4, MAX_RATING_FOR_NEGATIVE=2), 'PROJECT_NAME')
+ +  where False = hasattr(Settings(APP_NAME='\u8003\u52e4\u7ba1\u7406\u7cfb\u7edf', APP_VERSION='0.1.0', DEBUG=True, TESTING=True, HOST='0.0.0.0', PORT=8000, RELOAD=False, DATABASE_URL='***localhost:5432/test_attendence', DATABASE_URL_SYNC='***localhost:5432/test_attendence', SECRET_KEY='test-secret-key-for-testing-only', ALGORITHM='HS256', ACCESS_TOKEN_EXPIRE_MINUTES=30, REFRESH_TOKEN_EXPIRE_DAYS=7, PWD_CONTEXT_SCHEMES=['bcrypt'], PWD_CONTEXT_DEPRECATED=None, ENCRYPTION_KEY='HTHJ7NN0365t5XZIsyBppEEa308r93aUomzp5153zuw', SALT='cyJtjP65Z56Zb6S-iAaoJg', CORS_ORIGINS=['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:5173'], CORS_ALLOW_CREDENTIALS=True, CORS_ALLOW_METHODS=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], CORS_ALLOW_HEADERS=['*'], REDIS_URL='redis://localhost:6379/0', REDIS_PASSWORD=None, REDIS_DB=0, CELERY_BROKER_URL='redis://localhost:6379/1', CELERY_RESULT_BACKEND='redis://localhost:6379/2', MAX_FILE_SIZE=10485760, ALLOWED_FILE_TYPES=['.xlsx', '.xls', '.csv'], UPLOAD_DIR='uploads', LOG_LEVEL='INFO', LOG_FORMAT='%(asctime)s - %(name)s - %(levelname)s - %(message)s', MAIL_SERVER=None, MAIL_PORT=None, MAIL_USE_TLS=True, MAIL_USERNAME=None, MAIL_PASSWORD=None, MAIL_FROM=None, SENTRY_DSN=None, PROMETHEUS_PORT=9090, SECURITY_HEADERS_ENABLED=True, CSP_POLICY="default-src 'self'", DEFAULT_PAGE_SIZE=20, MAX_PAGE_SIZE=100, DEFAULT_ONLINE_TASK_MINUTES=40, DEFAULT_OFFLINE_TASK_MINUTES=100, RUSH_TASK_BONUS_MINUTES=15, POSITIVE_REVIEW_BONUS_MINUTES=30, LATE_RESPONSE_PENALTY_MINUTES=30, LATE_COMPLETION_PENALTY_MINUTES=30, NEGATIVE_REVIEW_PENALTY_MINUTES=60, RESPONSE_TIMEOUT_HOURS=24, COMPLETION_TIMEOUT_HOURS=48, MIN_RATING_FOR_POSITIVE=4, MAX_RATING_FOR_NEGATIVE=2), 'PROJECT_NAME')
 FAILED tests/unit/test_simple_coverage.py::TestBasicCoverage::test_member_safe_dict - assert 0 == 5
 FAILED tests/unit/test_simple_coverage.py::TestBasicCoverage::test_password_strength_validation - AssertionError: assert (True, []) is True
- +  where (True, []) = <function validate_password_strength at 0x7f1771f6b920>('StrongPassword123!')
+ +  where (True, []) = <function validate_password_strength at 0x7f3aa5995580>('StrongPassword123!')
 FAILED tests/unit/test_simple_coverage.py::TestBasicCoverage::test_task_schemas_validation - ImportError: cannot import name 'RepairTaskCreate' from 'app.schemas.task' (/home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend/app/schemas/task.py)
 FAILED tests/unit/test_simple_coverage.py::TestBasicCoverage::test_member_schemas_validation - pydantic_core._pydantic_core.ValidationError: 1 validation error for MemberCreate
 student_id
@@ -157,14 +132,14 @@ FAILED tests/unit/test_work_hour_automation.py::TestWorkHourAutomationService::t
 FAILED tests/unit/test_work_hour_automation.py::TestWorkHourAutomationService::test_detect_late_response_tasks - TypeError: 'Mock' object is not subscriptable
 FAILED tests/unit/test_work_hour_automation.py::TestWorkHourAutomationService::test_detect_late_completion_tasks - TypeError: 'Mock' object is not subscriptable
 FAILED tests/unit/test_work_hour_automation.py::TestWorkHourAutomationService::test_detect_long_overdue_tasks - TypeError: 'Mock' object is not subscriptable
-FAILED tests/unit/test_work_hour_automation.py::TestWorkHourAutomationService::test_schedule_evaluation_response_automation - AttributeError: <app.services.work_hour_automation.WorkHourAutomationService object at 0x7f1765803d50> does not have the attribute '_process_evaluation_response'
-FAILED tests/unit/test_work_hour_automation.py::TestWorkHourAutomationService::test_process_evaluation_response_positive - AttributeError: <app.services.work_hour_automation.WorkHourAutomationService object at 0x7f175f900150> does not have the attribute '_apply_bonus_tag'
+FAILED tests/unit/test_work_hour_automation.py::TestWorkHourAutomationService::test_schedule_evaluation_response_automation - AttributeError: <app.services.work_hour_automation.WorkHourAutomationService object at 0x7f3a99537350> does not have the attribute '_process_evaluation_response'
+FAILED tests/unit/test_work_hour_automation.py::TestWorkHourAutomationService::test_process_evaluation_response_positive - AttributeError: <app.services.work_hour_automation.WorkHourAutomationService object at 0x7f3a99537c50> does not have the attribute '_apply_bonus_tag'
 FAILED tests/unit/test_work_hour_automation.py::TestWorkHourAutomationService::test_process_evaluation_response_negative - AttributeError: 'WorkHourAutomationService' object has no attribute '_process_evaluation_response'
 FAILED tests/unit/test_work_hour_automation.py::TestWorkHourAutomationService::test_apply_bonus_tag_success - AttributeError: 'WorkHourAutomationService' object has no attribute '_apply_bonus_tag'. Did you mean: '_apply_penalty_tag'?
-FAILED tests/unit/test_work_hour_automation.py::TestWorkHourAutomationService::test_batch_recalculate_work_hours - AttributeError: <app.services.task_service.TaskService object at 0x7f17653c47d0> does not have the attribute 'recalculate_task_work_hours'
+FAILED tests/unit/test_work_hour_automation.py::TestWorkHourAutomationService::test_batch_recalculate_work_hours - AttributeError: <app.services.task_service.TaskService object at 0x7f3a9944eed0> does not have the attribute 'recalculate_task_work_hours'
 FAILED tests/unit/test_work_hour_automation.py::TestWorkHourAutomationService::test_get_automation_statistics - StopAsyncIteration
 FAILED tests/unit/test_work_hour_automation.py::TestWorkHourAutomationService::test_error_handling_in_detection - Exception: Detection error
-FAILED tests/unit/test_work_hour_automation.py::TestWorkHourAutomationService::test_concurrent_processing_safety - AttributeError: <app.services.work_hour_automation.WorkHourAutomationService object at 0x7f176534ef30> does not have the attribute '_acquire_processing_lock'
+FAILED tests/unit/test_work_hour_automation.py::TestWorkHourAutomationService::test_concurrent_processing_safety - AttributeError: <app.services.work_hour_automation.WorkHourAutomationService object at 0x7f3a9957b200> does not have the attribute '_acquire_processing_lock'
 FAILED tests/unit/test_work_hours_service_exceptions.py::TestWorkHoursServiceExceptions::test_batch_update_monthly_summaries_invalid_member_ids - AssertionError: Regex pattern did not match.
  Regex: '成员ID列表必须为列表类型'
  Input: '成员ID必须为正整数: n'
@@ -176,29 +151,27 @@ FAILED tests/unit/test_work_hours_service_exceptions.py::TestRushTaskMarkingServ
 FAILED tests/unit/test_work_hours_service_exceptions.py::TestRushTaskMarkingServiceExceptions::test_batch_recalculate_invalid_member_ids - AssertionError: Regex pattern did not match.
  Regex: '成员ID列表必须为列表类型'
  Input: '成员ID必须为正整数: n'
-FAILED tests/unit/test_zero_coverage_modules.py::TestZeroCoverageModules::test_celery_app_import - NameError: name 'misc' is not defined
-FAILED tests/unit/test_zero_coverage_modules.py::TestZeroCoverageModules::test_celery_tasks_import - NameError: name 'misc' is not defined
-======= 51 failed, 129 passed, 3 warnings, 65 errors in 62.12s (0:01:02) =======
+============ 49 failed, 131 passed, 3 warnings, 65 errors in 58.36s ============
 单元测试失败，但继续集成测试
 单元测试覆盖率报告已生成
 使用本地PostgreSQL数据库进行集成测试...
-[2025-08-20 10:59:17] INFO: 开始运行集成测试套件
-[2025-08-20 10:59:17] INFO: 开始运行pytest集成测试
-[2025-08-20 10:59:17] WARNING: pytest-json-report未安装，跳过JSON报告
-[2025-08-20 11:00:20] INFO: 运行自定义集成测试
-[2025-08-20 11:00:20] INFO: 运行 tests/integration/simple_api_check.py
-[2025-08-20 11:00:22] INFO: PASS tests/integration/simple_api_check.py 通过
-[2025-08-20 11:00:22] INFO: 运行 tests/integration/quick_api_verification.py
-[2025-08-20 11:00:23] ERROR: FAIL tests/integration/quick_api_verification.py 失败 (退出码: 1)
-[2025-08-20 11:00:23] INFO: 运行API验证测试
-[2025-08-20 11:00:25] INFO: 测试结果已保存到: integration_test_results.json
-[2025-08-20 11:00:25] INFO: 测试报告已保存到: integration_test_report.txt
+[2025-08-20 15:43:12] INFO: 开始运行集成测试套件
+[2025-08-20 15:43:12] INFO: 开始运行pytest集成测试
+[2025-08-20 15:43:12] WARNING: pytest-json-report未安装，跳过JSON报告
+[2025-08-20 15:44:13] INFO: 运行自定义集成测试
+[2025-08-20 15:44:13] INFO: 运行 tests/integration/simple_api_check.py
+[2025-08-20 15:44:14] INFO: PASS tests/integration/simple_api_check.py 通过
+[2025-08-20 15:44:14] INFO: 运行 tests/integration/quick_api_verification.py
+[2025-08-20 15:44:16] ERROR: FAIL tests/integration/quick_api_verification.py 失败 (退出码: 1)
+[2025-08-20 15:44:16] INFO: 运行API验证测试
+[2025-08-20 15:44:17] INFO: 测试结果已保存到: integration_test_results.json
+[2025-08-20 15:44:17] INFO: 测试报告已保存到: integration_test_report.txt
 ==================================================
 集成测试报告
 ==================================================
-开始时间: 2025-08-20 10:59:17
-结束时间: 2025-08-20 11:00:25
-总耗时: 67.64秒
+开始时间: 2025-08-20 15:43:12
+结束时间: 2025-08-20 15:44:17
+总耗时: 65.86秒
 
 测试概览:
   总测试数: 4
@@ -223,7 +196,7 @@ api_verification: FAIL 失败
   退出码: 1
 
 ==================================================
-[2025-08-20 11:00:25] ERROR: FAILED 3/4 测试失败
+[2025-08-20 15:44:17] ERROR: FAILED 3/4 测试失败
 集成测试失败，但继续构建
 使用本地PostgreSQL数据库测试，环境独立可靠
 ============================= test session starts ==============================
@@ -239,80 +212,80 @@ collecting ... collected 15 items
 
 tests/perf/test_api_performance.py::TestAPIPerformance::test_tasks_list_performance 
 -------------------------------- live log call ---------------------------------
-2025-08-20 11:00:27 [    INFO] HTTP Request: GET http://testserver/api/v1/tasks/ "HTTP/1.1 400 Bad Request"
+2025-08-20 15:44:19 [    INFO] HTTP Request: GET http://testserver/api/v1/tasks/ "HTTP/1.1 400 Bad Request"
 FAILED                                                                   [  6%]
 tests/perf/test_api_performance.py::TestAPIPerformance::test_work_time_detail_performance 
 -------------------------------- live log call ---------------------------------
-2025-08-20 11:00:27 [    INFO] HTTP Request: GET http://testserver/api/v1/tasks/work-time-detail/1 "HTTP/1.1 400 Bad Request"
+2025-08-20 15:44:19 [    INFO] HTTP Request: GET http://testserver/api/v1/tasks/work-time-detail/1 "HTTP/1.1 400 Bad Request"
 PASSED                                                                   [ 13%]
 tests/perf/test_api_performance.py::TestAPIPerformance::test_field_mapping_performance 
 -------------------------------- live log call ---------------------------------
-2025-08-20 11:00:27 [    INFO] HTTP Request: GET http://testserver/api/v1/import/field-mapping "HTTP/1.1 400 Bad Request"
-PASSED                                                                   [ 20%]
-tests/perf/test_api_performance.py::TestAPIPerformance::test_concurrent_api_performance 
--------------------------------- live log call ---------------------------------
-2025-08-20 11:00:27 [    INFO] HTTP Request: GET http://testserver/api/v1/tasks/stats "HTTP/1.1 400 Bad Request"
-2025-08-20 11:00:27 [    INFO] HTTP Request: GET http://testserver/api/v1/tasks/stats "HTTP/1.1 400 Bad Request"
-2025-08-20 11:00:27 [    INFO] HTTP Request: GET http://testserver/api/v1/tasks/stats "HTTP/1.1 400 Bad Request"
-2025-08-20 11:00:27 [    INFO] HTTP Request: GET http://testserver/api/v1/tasks/stats "HTTP/1.1 400 Bad Request"
-2025-08-20 11:00:27 [    INFO] HTTP Request: GET http://testserver/api/v1/tasks/stats "HTTP/1.1 400 Bad Request"
-2025-08-20 11:00:27 [    INFO] HTTP Request: GET http://testserver/api/v1/tasks/stats "HTTP/1.1 400 Bad Request"
-2025-08-20 11:00:27 [    INFO] HTTP Request: GET http://testserver/api/v1/tasks/stats "HTTP/1.1 400 Bad Request"
-2025-08-20 11:00:27 [    INFO] HTTP Request: GET http://testserver/api/v1/tasks/stats "HTTP/1.1 400 Bad Request"
-2025-08-20 11:00:27 [    INFO] HTTP Request: GET http://testserver/api/v1/tasks/stats "HTTP/1.1 400 Bad Request"
-2025-08-20 11:00:27 [    INFO] HTTP Request: GET http://testserver/api/v1/tasks/stats "HTTP/1.1 400 Bad Request"
-FAILED                                                                   [ 26%]
-tests/perf/test_basic_performance.py::TestBasicPerformance::test_import_speed PASSED [ 33%]
-tests/perf/test_basic_performance.py::TestBasicPerformance::test_async_operation_speed PASSED [ 40%]
-tests/perf/test_basic_performance.py::TestBasicPerformance::test_json_processing_speed PASSED [ 46%]
-tests/perf/test_basic_performance.py::TestBasicPerformance::test_string_processing_speed PASSED [ 53%]
-tests/perf/test_basic_performance.py::TestBasicPerformance::test_data_processing_scalability[10] PASSED [ 60%]
-tests/perf/test_basic_performance.py::TestBasicPerformance::test_data_processing_scalability[100] PASSED [ 66%]
-tests/perf/test_basic_performance.py::TestBasicPerformance::test_data_processing_scalability[1000] PASSED [ 73%]
-tests/perf/test_import_performance.py::TestImportPerformance::test_import_1000_records_performance 
--------------------------------- live log call ---------------------------------
-2025-08-20 11:00:32 [    INFO] Starting intelligent A/B table matching...
-2025-08-20 11:00:32 [    INFO] Starting AB table matching with 1000 A-records
-2025-08-20 11:01:32 [   ERROR] AB table matching error: 
-2025-08-20 11:01:32 [   ERROR] Intelligent A/B table matching error: 
-2025-08-20 11:01:32 [    INFO] Using fallback simple matching...
-2025-08-20 11:02:32 [   ERROR] Fallback matching error: 
-PASSED                                                                   [ 80%]
-tests/perf/test_import_performance.py::TestImportPerformance::test_single_work_hour_calculation_performance FAILED [ 86%]
-tests/perf/test_import_performance.py::TestImportPerformance::test_batch_work_hour_calculation_performance FAILED [ 93%]
+2025-08-20 15:44:19 [    INFO] HTTP Request: GET http://testserver/api/v1/import/field-mapping "HTTP/1.1 400 Bad Request"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/pool/base.py:1264: in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/pool/base.py:711: in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/pool/impl.py:177: in _do_get
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/pool/impl.py:175: in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/pool/base.py:388: in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/pool/base.py:673: in __init__
+    self.__connect()
+/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/pool/base.py:899: in __connect
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/pool/base.py:895: in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/engine/create.py:661: in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/engine/default.py:629: in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:964: in connect
+    await_only(creator_fn(*arg, **kw)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/asyncpg/connection.py:2420: in connect
+    async with compat.timeout(timeout):
+               ^^^^^^^^^^^^^^^^^^^^^^^
+/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/asyncio/timeouts.py:116: in __aexit__
+    raise TimeoutError from exc_val
+E   TimeoutError
 
-Wrote benchmark data in: <_io.BufferedWriter name='benchmark-results.json'>
-tests/perf/test_import_performance.py::TestImportPerformance::test_fuzzy_member_matching_performance FAILED [100%]
-
-=================================== FAILURES ===================================
-________________ TestAPIPerformance.test_tasks_list_performance ________________
-tests/perf/test_api_performance.py:37: in test_tasks_list_performance
-    assert response.status_code == 200
-E   assert 400 == 200
-E    +  where 400 = <Response [400 Bad Request]>.status_code
-______________ TestAPIPerformance.test_concurrent_api_performance ______________
-tests/perf/test_api_performance.py:138: in test_concurrent_api_performance
-    assert response.status_code == 200
-E   assert 400 == 200
-E    +  where 400 = <Response [400 Bad Request]>.status_code
-_____ TestImportPerformance.test_single_work_hour_calculation_performance ______
-/opt/hostedtoolcache/Python/3.13.6/x64/lib/python3.13/site-packages/asyncpg/connection.py:2421: in connect
-    return await connect_utils._connect(
 --------------------------------------------------------------------------------------------------------- benchmark: 12 tests ----------------------------------------------------------------------------------------------------------
 Name (time in ns)                                  Min                     Max                   Mean                StdDev                 Median                   IQR            Outliers  OPS (Kops/s)            Rounds  Iterations
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-test_import_speed                              67.1300 (1.0)          573.5700 (1.30)         72.7253 (1.0)          8.9525 (1.0)          71.8300 (1.0)          0.6900 (1.0)     2318;3544   13,750.3655 (1.0)      121286         100
-test_field_mapping_performance                181.0000 (2.70)         481.0000 (1.09)        280.6000 (3.86)       116.5131 (13.01)       240.0000 (3.34)       104.2500 (151.09)        1;1    3,563.7920 (0.26)          5           1
-test_async_operation_speed                    190.0000 (2.83)         481.0000 (1.09)        320.6000 (4.41)       125.2010 (13.98)       341.0000 (4.75)       216.0000 (313.04)        2;0    3,119.1517 (0.23)          5           1
-test_tasks_list_performance                   200.0000 (2.98)         602.0000 (1.37)        358.6000 (4.93)       164.0238 (18.32)       310.0000 (4.32)       251.2500 (364.13)        1;0    2,788.6225 (0.20)          5           1
-test_work_time_detail_performance             210.0000 (3.13)         530.0000 (1.20)        300.2000 (4.13)       132.2694 (14.77)       250.0000 (3.48)       133.2500 (193.12)        1;0    3,331.1125 (0.24)          5           1
-test_import_1000_records_performance          250.0000 (3.72)         901.0000 (2.04)        480.6667 (6.61)       364.5961 (40.73)       291.0000 (4.05)       488.2500 (707.61)        1;0    2,080.4439 (0.15)          3           1
-test_concurrent_api_performance               271.0000 (4.04)         441.0000 (1.0)         337.3333 (4.64)        90.9414 (10.16)       300.0000 (4.18)       127.5000 (184.78)        1;0    2,964.4271 (0.22)          3           1
-test_data_processing_scalability[10]          941.0000 (14.02)     26,640.0000 (60.41)       995.4905 (13.69)      293.0922 (32.74)       981.0000 (13.66)       20.0000 (28.99)   1513;5267    1,004.5299 (0.07)     190840           1
-test_data_processing_scalability[100]       4,338.0000 (64.62)     68,268.0000 (154.80)    4,564.6240 (62.77)      706.2187 (78.88)     4,509.0000 (62.77)      111.0000 (160.87)  1858;4725      219.0761 (0.02)     119389           1
-test_data_processing_scalability[1000]     61,505.0000 (916.21)   594,221.0000 (>1000.0)  65,307.6494 (898.00)   7,275.0659 (812.63)   64,310.0000 (895.31)   2,334.0000 (>1000.0)   455;889       15.3121 (0.00)      10953           1
-test_string_processing_speed               88,376.0000 (>1000.0)  184,875.0000 (419.22)   91,158.5329 (>1000.0)  5,591.2414 (624.54)   89,747.0000 (>1000.0)    921.0000 (>1000.0)   654;783       10.9699 (0.00)       6384           1
-test_json_processing_speed                 90,680.0000 (>1000.0)  206,535.0000 (468.33)   94,807.8830 (>1000.0)  6,901.7306 (770.92)   92,583.0000 (>1000.0)  2,492.5000 (>1000.0)   462;827       10.5476 (0.00)       6427           1
+test_import_speed                              66.0200 (1.0)          462.2600 (1.25)         71.0849 (1.0)          9.1109 (1.0)          70.8300 (1.0)          3.0000 (1.0)     2274;2326   14,067.6871 (1.0)      146994         100
+test_async_operation_speed                    170.0000 (2.57)         370.0000 (1.0)         272.4000 (3.83)        89.7402 (9.85)        251.0000 (3.54)       163.2500 (54.42)         2;0    3,671.0720 (0.26)          5           1
+test_field_mapping_performance                171.0000 (2.59)         631.0000 (1.71)        326.4000 (4.59)       178.0570 (19.54)       280.0000 (3.95)       167.5000 (55.83)         1;0    3,063.7255 (0.22)          5           1
+test_tasks_list_performance                   180.0000 (2.73)         621.0000 (1.68)        374.6000 (5.27)       178.7577 (19.62)       421.0000 (5.94)       268.5000 (89.50)         2;0    2,669.5143 (0.19)          5           1
+test_work_time_detail_performance             221.0000 (3.35)         491.0000 (1.33)        338.6000 (4.76)       107.9041 (11.84)       350.0000 (4.94)       164.2500 (54.75)         2;0    2,953.3374 (0.21)          5           1
+test_import_1000_records_performance          261.0000 (3.95)         822.0000 (2.22)        464.6667 (6.54)       310.4679 (34.08)       311.0000 (4.39)       420.7500 (140.25)        1;0    2,152.0804 (0.15)          3           1
+test_concurrent_api_performance               291.0000 (4.41)         451.0000 (1.22)        357.6667 (5.03)        83.2667 (9.14)        331.0000 (4.67)       120.0000 (40.00)         1;0    2,795.8994 (0.20)          3           1
+test_data_processing_scalability[10]          952.0000 (14.42)     30,718.0000 (83.02)     1,056.4121 (14.86)      311.3670 (34.18)     1,041.0000 (14.70)       30.0000 (10.00)   2306;6847      946.6003 (0.07)     197629           1
+test_data_processing_scalability[100]       4,339.0000 (65.72)     36,679.0000 (99.13)     4,542.0563 (63.90)      640.3251 (70.28)     4,479.0000 (63.24)       50.0000 (16.67)   1471;2966      220.1646 (0.02)     124767           1
+test_data_processing_scalability[1000]     61,935.0000 (938.12)   160,990.0000 (435.11)   64,761.2777 (911.04)   7,057.5163 (774.63)   63,087.0000 (890.68)     511.0000 (170.33)   463;1254       15.4413 (0.00)      11175           1
+test_string_processing_speed               84,979.0000 (>1000.0)  183,332.0000 (495.49)   89,084.7962 (>1000.0)  7,976.3708 (875.48)   87,594.0000 (>1000.0)  1,231.0000 (410.33)    256;787       11.2253 (0.00)       6831           1
+test_json_processing_speed                 89,337.0000 (>1000.0)  237,233.0000 (641.17)   93,147.1860 (>1000.0)  7,558.5879 (829.62)   91,441.0001 (>1000.0)  1,021.9999 (340.67)    415;929       10.7357 (0.00)       6939           1
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Legend:
@@ -326,5 +299,5 @@ FAILED tests/perf/test_api_performance.py::TestAPIPerformance::test_concurrent_a
 FAILED tests/perf/test_import_performance.py::TestImportPerformance::test_single_work_hour_calculation_performance - TimeoutError
 FAILED tests/perf/test_import_performance.py::TestImportPerformance::test_batch_work_hour_calculation_performance - TimeoutError
 FAILED tests/perf/test_import_performance.py::TestImportPerformance::test_fuzzy_member_matching_performance - TimeoutError
-============ 5 failed, 10 passed, 10 warnings in 308.75s (0:05:08) =============
+============ 5 failed, 10 passed, 10 warnings in 309.28s (0:05:09) =============
 性能测试失败，但继续构建

@@ -112,8 +112,8 @@ class TestAuthAPI:
         mock_request.client.host = "127.0.0.1"
 
         mock_user = Member(
-            id=1,
             username="test_user",
+            name="测试用户",
             student_id="TEST001",
             password_hash="$2b$12$test_hash",
             role=UserRole.MEMBER,
@@ -147,8 +147,8 @@ class TestAuthAPI:
         mock_request.client.host = "127.0.0.1"
 
         mock_user = Member(
-            id=1,
             username="test_user",
+            name="测试用户",
             student_id="TEST001",
             password_hash="$2b$12$test_hash",
             role=UserRole.MEMBER,

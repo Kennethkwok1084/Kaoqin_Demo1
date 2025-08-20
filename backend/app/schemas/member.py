@@ -5,7 +5,7 @@
 
 import re
 from datetime import date, datetime
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -42,8 +42,8 @@ class MemberBase(BaseModel):
     @classmethod
     def validate_student_id(cls, v: Optional[str]) -> Optional[str]:
         """验证学号格式"""
-        if v is not None and not re.match(r"^\d+$", v):
-            raise ValueError("学号必须为纯数字")
+        if v is not None and not re.match(r"^[A-Za-z0-9]+$", v):
+            raise ValueError("学号只能包含字母和数字")
         return v
 
     @field_validator("phone")
@@ -248,8 +248,8 @@ class MemberImportItem(BaseModel):
         """验证学号格式"""
         if v is None or v == "" or v == "null" or v == "undefined":
             return None
-        if not re.match(r"^\d+$", str(v)):
-            raise ValueError("学号必须为纯数字")
+        if not re.match(r"^[A-Za-z0-9]+$", str(v)):
+            raise ValueError("学号只能包含字母和数字")
         return str(v)
 
     @field_validator("phone", mode="before")

@@ -108,6 +108,18 @@ class TaskCreate(TaskBase):
     )
     is_rush: bool = Field(default=False, description="是否为紧急任务")
 
+
+class RepairTaskCreate(TaskCreate):
+    """维修任务创建模型（继承通用任务创建）"""
+
+    # 设置默认为离线任务类型（维修任务通常是离线的）
+    task_type: TaskType = Field(default=TaskType.OFFLINE, description="任务类型（维修任务默认为离线类型）")
+    
+    # 维修任务特有字段
+    fault_description: Optional[str] = Field(None, max_length=1000, description="故障描述")
+    equipment_info: Optional[str] = Field(None, max_length=200, description="设备信息")
+    urgency_level: Optional[str] = Field(None, max_length=20, description="紧急程度")
+
     @field_validator("deadline")
     @classmethod
     def validate_deadline(cls, v: Optional[datetime]) -> Optional[datetime]:
@@ -131,9 +143,14 @@ class TaskCreate(TaskBase):
                 "reporter_name": "张老师",
                 "reporter_contact": "13812345678",
                 "is_rush": True,
+                "fault_description": "网络连接中断，设备指示灯异常",
+                "equipment_info": "华为交换机 S5720-28P-LI",
+                "urgency_level": "高"
             }
         }
     )
+
+
 
 
 class TaskUpdate(BaseModel):
@@ -230,6 +247,55 @@ class TaskResponse(TaskBase):
                 "updated_at": "2025-01-27T16:30:00",
                 "creator_name": "管理员",
                 "assignee_name": "张三",
+            }
+        },
+    )
+
+
+class RepairTaskResponse(TaskResponse):
+    """维修任务响应模型（继承通用任务响应）"""
+    
+    # 维修任务特有字段
+    fault_description: Optional[str] = Field(None, description="故障描述")
+    equipment_info: Optional[str] = Field(None, description="设备信息")
+    urgency_level: Optional[str] = Field(None, description="紧急程度")
+    
+    # 报修信息
+    reporter_name: Optional[str] = Field(None, description="报修人姓名")
+    reporter_contact: Optional[str] = Field(None, description="报修人联系方式")
+    
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": 1,
+                "task_number": "R202501270001",
+                "title": "图书馆3楼网络故障维修",
+                "description": "图书馆3楼网络设备无法正常连接",
+                "task_type": "repair",
+                "status": "completed",
+                "priority": "high",
+                "location": "图书馆3楼",
+                "created_by": 1,
+                "assigned_to": 2,
+                "estimated_minutes": 120,
+                "actual_minutes": 90,
+                "calculated_minutes": 115,
+                "completion_note": "已更换故障交换机",
+                "deadline": "2025-01-30T18:00:00",
+                "completed_at": "2025-01-27T16:30:00",
+                "is_rush": True,
+                "is_overdue": False,
+                "tags": [],
+                "created_at": "2025-01-27T14:00:00",
+                "updated_at": "2025-01-27T16:30:00",
+                "creator_name": "管理员",
+                "assignee_name": "张三",
+                "fault_description": "网络连接中断，设备指示灯异常",
+                "equipment_info": "华为交换机 S5720-28P-LI",
+                "urgency_level": "高",
+                "reporter_name": "张老师",
+                "reporter_contact": "13812345678"
             }
         },
     )

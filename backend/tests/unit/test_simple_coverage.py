@@ -159,14 +159,27 @@ class TestBasicCoverage:
         """Test password strength validation."""
         from app.core.security import validate_password_strength
 
-        # Test strong passwords
-        assert validate_password_strength("StrongPassword123!") is True
-        assert validate_password_strength("AnotherGood1@") is True
+        # Test strong passwords (should return (True, []))
+        is_valid, errors = validate_password_strength("StrongPassword123!")
+        assert is_valid is True
+        assert errors == []
+        
+        is_valid, errors = validate_password_strength("AnotherGood1@")
+        assert is_valid is True
+        assert errors == []
 
-        # Test weak passwords
-        assert validate_password_strength("weak") is False
-        assert validate_password_strength("12345678") is False
-        assert validate_password_strength("password") is False
+        # Test weak passwords (should return (False, [error_list]))
+        is_valid, errors = validate_password_strength("weak")
+        assert is_valid is False
+        assert len(errors) > 0
+        
+        is_valid, errors = validate_password_strength("12345678")
+        assert is_valid is False
+        assert len(errors) > 0
+        
+        is_valid, errors = validate_password_strength("password")
+        assert is_valid is False
+        assert len(errors) > 0
 
     def test_auth_schemas_validation(self):
         """Test authentication schema validation."""
@@ -190,7 +203,6 @@ class TestBasicCoverage:
 
         # Test task creation schema
         task_data = RepairTaskCreate(
-            task_id="REPAIR_001",
             title="测试任务",
             description="任务描述",
             location="测试地点",
@@ -198,8 +210,8 @@ class TestBasicCoverage:
             reporter_contact="13800138000",
         )
 
-        assert task_data.task_id == "REPAIR_001"
         assert task_data.title == "测试任务"
+        assert task_data.description == "任务描述"
 
     def test_member_schemas_validation(self):
         """Test member schema validation."""
@@ -297,7 +309,10 @@ class TestBasicCoverage:
         # Since BaseModel is abstract, we'll test via a concrete model
         from app.models.member import Member
 
-        member = Member()
+        member = Member(
+            username="test_base_user",
+            name="测试基础用户"
+        )
 
         # Test that base fields exist
         assert hasattr(member, "id")

@@ -3666,9 +3666,9 @@ async def enhanced_import_with_ab_matching(
     权限：组长及以上可执行增强导入
     """
     try:
-        from app.services.import_service import ImportService
+        from app.services.import_service import DataImportService
 
-        import_service = ImportService(db)
+        import_service = DataImportService(db)
 
         # 解析请求数据
         a_table_data = request_data.get("a_table_data", [])

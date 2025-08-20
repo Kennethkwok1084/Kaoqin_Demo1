@@ -64,6 +64,7 @@ class TaskType(enum.Enum):
 
     ONLINE = "online"  # 线上任务 (40分钟)
     OFFLINE = "offline"  # 线下任务 (100分钟)
+    REPAIR = "repair"  # 维修任务 (兼容旧代码)
 
 
 class TaskTagType(enum.Enum):

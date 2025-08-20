@@ -20,6 +20,7 @@ class Settings(BaseSettings):
 
     # Application Configuration
     APP_NAME: str = "考勤管理系统"
+    PROJECT_NAME: str = "考勤管理系统"  # Added for compatibility
     APP_VERSION: str = "0.1.0"
     DEBUG: bool = False
     TESTING: bool = False

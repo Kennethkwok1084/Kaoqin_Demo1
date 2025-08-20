@@ -147,8 +147,8 @@ class TestDataImportService:
 
         # Mock member lookup
         mock_members = [
-            Member(id=1, name="John", student_id="001"),
-            Member(id=2, name="Jane", student_id="002"),
+            Member(username="john", name="John", class_name="测试班级", student_id="001"),
+            Member(username="jane", name="Jane", class_name="测试班级", student_id="002"),
         ]
 
         with (
@@ -183,7 +183,7 @@ class TestDataImportService:
             }
         )
 
-        mock_members = [Member(id=1, name="John", student_id="001")]
+        mock_members = [Member(username="john", name="John", class_name="测试班级", student_id="001")]
 
         with (
             patch.object(service, "_get_all_members", return_value=mock_members),
@@ -205,8 +205,8 @@ class TestDataImportService:
         service = DataImportService(async_session)
 
         members = [
-            Member(id=1, name="John Doe", student_id="001", contact="123456"),
-            Member(id=2, name="Jane Smith", student_id="002", contact="789012"),
+            Member(username="johndoe", name="John Doe", class_name="测试班级", student_id="001", phone="123456"),
+            Member(username="janesmith", name="Jane Smith", class_name="测试班级", student_id="002", phone="789012"),
         ]
 
         # Test exact name match
@@ -241,7 +241,7 @@ class TestDataImportService:
             "reporter_contact": "123456",
         }
 
-        member = Member(id=1, name="John", student_id="001")
+        member = Member(username="john", name="John", class_name="测试班级", student_id="001")
 
         with (
             patch.object(service, "_task_exists", return_value=False),
@@ -271,7 +271,7 @@ class TestDataImportService:
         }
 
         existing_task = RepairTask(id=1, task_id="T001", title="Network Issue")
-        member = Member(id=1, name="John", student_id="001")
+        member = Member(username="john", name="John", class_name="测试班级", student_id="001")
 
         with (
             patch.object(service, "_task_exists", return_value=True),
@@ -369,8 +369,8 @@ class TestDataImportService:
         service = DataImportService(async_session)
 
         mock_members = [
-            Member(id=1, name="John", student_id="001"),
-            Member(id=2, name="Jane", student_id="002"),
+            Member(username="john", name="John", class_name="测试班级", student_id="001"),
+            Member(username="jane", name="Jane", class_name="测试班级", student_id="002"),
         ]
 
         mock_result = Mock()
@@ -581,7 +581,7 @@ def sample_excel_data():
 def sample_members():
     """Sample members for testing"""
     return [
-        Member(id=1, name="John Doe", student_id="001", contact="123456789"),
-        Member(id=2, name="Jane Smith", student_id="002", contact="987654321"),
-        Member(id=3, name="Bob Johnson", student_id="003", contact="555666777"),
+        Member(username="johndoe", name="John Doe", class_name="测试班级", student_id="001", phone="123456789"),
+        Member(username="janesmith", name="Jane Smith", class_name="测试班级", student_id="002", phone="987654321"),
+        Member(username="bobjohnson", name="Bob Johnson", class_name="测试班级", student_id="003", phone="555666777"),
     ]

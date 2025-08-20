@@ -9,6 +9,7 @@ from typing import AsyncGenerator
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.main import app
 
@@ -160,8 +161,15 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
 
 @pytest.fixture
 def auth_headers():
-    """Mock authentication headers for testing."""
-    return {"Authorization": "Bearer test_token", "Content-Type": "application/json"}
+    """Create valid authentication headers for testing."""
+    from app.core.security import create_access_token
+    
+    # Create a valid JWT token with a test user ID
+    access_token = create_access_token(subject=1)
+    return {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
 
 
 @pytest.fixture
