@@ -1,135 +1,150 @@
 """
-Custom exception classes for the application.
-Provides specific error types for different business logic scenarios.
+统一异常处理类
+提供不同业务场景的具体异常类型，使用统一消息管理
 """
 
 from typing import Any, Dict, Optional
 
 from fastapi import HTTPException, status
+from .messages import Messages, get_message
 
 
 class BaseCustomException(Exception):
-    """Base class for custom exceptions."""
+    """自定义异常基类"""
 
     def __init__(
         self,
-        message: str = "An error occurred",
+        message: str = None,
+        message_key: str = None,
         status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
         details: Optional[Dict[str, Any]] = None,
+        **message_kwargs
     ):
-        self.message = message
+        # 优先使用message_key从统一消息库获取消息
+        if message_key:
+            self.message = get_message(message_key, **message_kwargs)
+        elif message:
+            self.message = message
+        else:
+            self.message = Messages.GENERAL_ERROR
+            
+        self.message_key = message_key
         self.status_code = status_code
         self.details = details or {}
         super().__init__(self.message)
 
 
-# Authentication and Authorization Exceptions
+# 认证和授权相关异常
 class AuthenticationError(BaseCustomException):
-    """Raised when authentication fails."""
+    """认证失败时抛出的异常"""
 
-    def __init__(self, message: str = "Authentication failed"):
-        super().__init__(message, status.HTTP_401_UNAUTHORIZED)
+    def __init__(self, message: str = None, message_key: str = "AUTH_ERROR_CREDENTIALS_VALIDATION", **kwargs):
+        super().__init__(message=message, message_key=message_key, status_code=status.HTTP_401_UNAUTHORIZED, **kwargs)
 
 
 class AuthorizationError(BaseCustomException):
-    """Raised when authorization fails."""
+    """授权失败时抛出的异常"""
 
-    def __init__(self, message: str = "Access denied"):
-        super().__init__(message, status.HTTP_403_FORBIDDEN)
+    def __init__(self, message: str = None, message_key: str = "AUTH_ERROR_ADMIN_REQUIRED", **kwargs):
+        super().__init__(message=message, message_key=message_key, status_code=status.HTTP_403_FORBIDDEN, **kwargs)
 
 
 class InvalidTokenError(AuthenticationError):
-    """Raised when JWT token is invalid."""
+    """JWT令牌无效时抛出的异常"""
 
-    def __init__(self, message: str = "Invalid or expired token"):
-        super().__init__(message)
+    def __init__(self, message: str = None, message_key: str = "AUTH_ERROR_INVALID_TOKEN", **kwargs):
+        super().__init__(message=message, message_key=message_key, **kwargs)
 
 
 class TokenExpiredError(AuthenticationError):
-    """Raised when JWT token is expired."""
+    """JWT令牌过期时抛出的异常"""
 
-    def __init__(self, message: str = "Token has expired"):
-        super().__init__(message)
+    def __init__(self, message: str = None, message_key: str = "AUTH_ERROR_EXPIRED_TOKEN", **kwargs):
+        super().__init__(message=message, message_key=message_key, **kwargs)
 
 
 class InvalidCredentialsError(AuthenticationError):
-    """Raised when login credentials are invalid."""
+    """登录凭证无效时抛出的异常"""
 
-    def __init__(self, message: str = "Invalid username or password"):
-        super().__init__(message)
+    def __init__(self, message: str = None, message_key: str = "AUTH_ERROR_INVALID_CREDENTIALS", **kwargs):
+        super().__init__(message=message, message_key=message_key, **kwargs)
 
 
-# Data Validation Exceptions
+# 数据验证相关异常
 class ValidationError(BaseCustomException):
-    """Raised when data validation fails."""
+    """数据验证失败时抛出的异常"""
 
     def __init__(
         self,
-        message: str = "Validation error",
+        message: str = None,
+        message_key: str = "VALIDATION_ERROR_GENERAL",
         field_errors: Optional[Dict[str, str]] = None,
+        **kwargs
     ):
         super().__init__(
-            message,
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
-            {"field_errors": field_errors or {}},
+            message=message,
+            message_key=message_key,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            details={"field_errors": field_errors or {}},
+            **kwargs
         )
 
 
 class DuplicateResourceError(BaseCustomException):
-    """Raised when trying to create a duplicate resource."""
+    """尝试创建重复资源时抛出的异常"""
 
-    def __init__(self, message: str = "Resource already exists"):
-        super().__init__(message, status.HTTP_409_CONFLICT)
+    def __init__(self, message: str = None, message_key: str = "VALIDATION_ERROR_DUPLICATE_RESOURCE", **kwargs):
+        super().__init__(message=message, message_key=message_key, status_code=status.HTTP_409_CONFLICT, **kwargs)
 
 
 class ResourceNotFoundError(BaseCustomException):
-    """Raised when requested resource is not found."""
+    """请求的资源不存在时抛出的异常"""
 
-    def __init__(self, message: str = "Resource not found"):
-        super().__init__(message, status.HTTP_404_NOT_FOUND)
+    def __init__(self, message: str = None, message_key: str = "VALIDATION_ERROR_RESOURCE_NOT_FOUND", **kwargs):
+        super().__init__(message=message, message_key=message_key, status_code=status.HTTP_404_NOT_FOUND, **kwargs)
 
 
-# Business Logic Exceptions
+# 业务逻辑相关异常
 class BusinessLogicError(BaseCustomException):
-    """Raised when business logic validation fails."""
+    """业务逻辑验证失败时抛出的异常"""
 
-    def __init__(self, message: str = "Business logic error"):
-        super().__init__(message, status.HTTP_400_BAD_REQUEST)
+    def __init__(self, message: str = None, message_key: str = "VALIDATION_ERROR_BUSINESS_LOGIC", **kwargs):
+        super().__init__(message=message, message_key=message_key, status_code=status.HTTP_400_BAD_REQUEST, **kwargs)
 
 
 class TaskProcessingError(BusinessLogicError):
-    """Raised when task processing fails."""
+    """任务处理失败时抛出的异常"""
 
-    def __init__(self, message: str = "Task processing failed"):
-        super().__init__(message)
+    def __init__(self, message: str = None, message_key: str = "TASK_ERROR_PROCESSING_FAILED", **kwargs):
+        super().__init__(message=message, message_key=message_key, **kwargs)
 
 
 class WorkHourCalculationError(BusinessLogicError):
-    """Raised when work hour calculation fails."""
+    """工时计算失败时抛出的异常"""
 
-    def __init__(self, message: str = "Work hour calculation error"):
-        super().__init__(message)
+    def __init__(self, message: str = None, message_key: str = "ATTENDANCE_ERROR_WORK_HOURS_CALCULATION", **kwargs):
+        super().__init__(message=message, message_key=message_key, **kwargs)
 
 
 class AttendanceCalculationError(BusinessLogicError):
-    """Raised when attendance calculation fails."""
+    """考勤计算失败时抛出的异常"""
 
-    def __init__(self, message: str = "Attendance calculation error"):
-        super().__init__(message)
+    def __init__(self, message: str = None, message_key: str = "ATTENDANCE_ERROR_CALCULATION_FAILED", **kwargs):
+        super().__init__(message=message, message_key=message_key, **kwargs)
 
 
 class InvalidTaskStatusError(BusinessLogicError):
-    """Raised when task status transition is invalid."""
+    """无效任务状态转换时抛出的异常"""
 
-    def __init__(self, message: str = "Invalid task status transition"):
-        super().__init__(message)
+    def __init__(self, message: str = None, message_key: str = "VALIDATION_ERROR_INVALID_STATUS_TRANSITION", **kwargs):
+        super().__init__(message=message, message_key=message_key, **kwargs)
 
 
 class InvalidDateRangeError(BusinessLogicError):
-    """Raised when date range is invalid."""
+    """无效日期范围时抛出的异常"""
 
-    def __init__(self, message: str = "Invalid date range"):
-        super().__init__(message)
+    def __init__(self, message: str = None, message_key: str = "VALIDATION_ERROR_INVALID_DATE_RANGE", **kwargs):
+        super().__init__(message=message, message_key=message_key, **kwargs)
 
 
 # File Processing Exceptions

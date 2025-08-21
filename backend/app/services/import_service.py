@@ -72,10 +72,10 @@ class ImportResult:
 class DataImportService:
     """数据导入服务"""
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: Optional[AsyncSession]):
         self.db = db
-        self.task_service = TaskService(db)
-        self.ab_matching_service = ABTableMatchingService(db)
+        self.task_service = TaskService(db) if db else None
+        self.ab_matching_service = ABTableMatchingService(db) if db else None
 
         # A表和B表的列映射配置（重构扩展）
         self.column_mappings = {
@@ -871,7 +871,11 @@ class DataImportService:
                 or "系统" in repair_type
                 or "software" in repair_type.lower()
             ):
-                category = TaskCategory.SOFTWARE_SUPPORT
+                # 区分软件支持和软件问题
+                if "问题" in repair_type or "故障" in repair_type or "issue" in repair_type.lower():
+                    category = TaskCategory.SOFTWARE_ISSUE
+                else:
+                    category = TaskCategory.SOFTWARE_SUPPORT
 
         # 准备B表匹配数据
         matched_member_data = {

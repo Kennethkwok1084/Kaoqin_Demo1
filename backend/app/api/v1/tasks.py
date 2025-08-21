@@ -20,6 +20,9 @@ from app.api.deps import (
     get_current_active_group_leader,
     get_current_user,
     get_db,
+    check_user_can_manage_group,
+    check_user_can_access_task,
+    check_user_is_admin,
 )
 from app.models.member import Member, UserRole
 from app.models.task import (
@@ -72,7 +75,8 @@ async def get_monitoring_tasks(
         query = select(MonitoringTask).options(joinedload(MonitoringTask.member))
 
         # 权限过滤：非管理员只能看到自己的任务
-        if not current_user.can_manage_group:
+        from app.api.deps import check_user_can_manage_group
+        if not check_user_can_manage_group(current_user):
             query = query.where(MonitoringTask.member_id == current_user.id)
 
         # 分页查询
@@ -86,7 +90,7 @@ async def get_monitoring_tasks(
 
         # 获取总数
         count_query = select(func.count(MonitoringTask.id))
-        if not current_user.can_manage_group:
+        if not check_user_can_manage_group(current_user):
             count_query = count_query.where(MonitoringTask.member_id == current_user.id)
 
         count_result = await db.execute(count_query)
@@ -150,7 +154,7 @@ async def get_fix_tasks(
         )
 
         # 权限过滤：非管理员只能看到自己的任务
-        if not current_user.can_manage_group:
+        if not check_user_can_manage_group(current_user):
             query = query.where(RepairTask.member_id == current_user.id)
 
         # 分页查询
@@ -162,7 +166,7 @@ async def get_fix_tasks(
 
         # 获取总数
         count_query = select(func.count(RepairTask.id))
-        if not current_user.can_manage_group:
+        if not check_user_can_manage_group(current_user):
             count_query = count_query.where(RepairTask.member_id == current_user.id)
 
         count_result = await db.execute(count_query)
@@ -235,7 +239,7 @@ async def get_assistance_tasks(
         query = select(AssistanceTask).options(joinedload(AssistanceTask.member))
 
         # 权限过滤：非管理员只能看到自己的任务
-        if not current_user.can_manage_group:
+        if not check_user_can_manage_group(current_user):
             query = query.where(AssistanceTask.member_id == current_user.id)
 
         # 分页查询
@@ -249,7 +253,7 @@ async def get_assistance_tasks(
 
         # 获取总数
         count_query = select(func.count(AssistanceTask.id))
-        if not current_user.can_manage_group:
+        if not check_user_can_manage_group(current_user):
             count_query = count_query.where(AssistanceTask.member_id == current_user.id)
 
         count_result = await db.execute(count_query)
@@ -446,7 +450,7 @@ async def get_work_time_detail(
             )
 
         # 权限检查
-        if not (task.member_id == current_user.id or current_user.can_manage_group):
+        if not check_user_can_access_task(current_user, task.member_id):
             raise HTTPException(
                 status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="无权限查看该任务工时详情",
@@ -623,7 +627,7 @@ async def get_repair_task(
             )
 
         # 权限检查
-        if not (task.member_id == current_user.id or current_user.can_manage_group):
+        if not check_user_can_access_task(current_user, task.member_id):
             raise HTTPException(
                 status_code=http_status.HTTP_403_FORBIDDEN, detail="无权限查看该任务"
             )
@@ -811,7 +815,7 @@ async def update_repair_task(
 
         # 权限检查
         is_task_owner = task.member_id == current_user.id
-        if not (is_task_owner or current_user.can_manage_group):
+        if not check_user_can_access_task(current_user, task.member_id):
             raise HTTPException(
                 status_code=http_status.HTTP_403_FORBIDDEN, detail="无权限修改该任务"
             )
@@ -820,7 +824,7 @@ async def update_repair_task(
         update_data = task_update.dict(exclude_unset=True)
 
         # 普通用户限制
-        if is_task_owner and not current_user.can_manage_group:
+        if is_task_owner and not check_user_can_manage_group(current_user):
             restricted_fields = ["assigned_to", "priority", "task_type"]
             for field in restricted_fields:
                 if field in update_data:
@@ -845,7 +849,7 @@ async def update_repair_task(
         for field, value in update_data.items():
             if field == "tag_ids":
                 # 更新标签关联
-                if current_user.can_manage_group:
+                if check_user_can_manage_group(current_user):
                     # 清除现有标签
                     task.tags.clear()
 
@@ -1064,7 +1068,7 @@ async def update_task_status(
 
         # 权限检查
         is_task_owner = task.member_id == current_user.id
-        if not (is_task_owner or current_user.can_manage_group):
+        if not check_user_can_access_task(current_user, task.member_id):
             raise HTTPException(
                 status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="无权限修改该任务状态",
@@ -1679,7 +1683,7 @@ async def calculate_work_hours(
 
         # 权限检查
         is_task_owner = task.member_id == current_user.id
-        if not (is_task_owner or current_user.can_manage_group):
+        if not check_user_can_access_task(current_user, task.member_id):
             raise HTTPException(
                 status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="无权限计算该任务工时",
@@ -2189,7 +2193,7 @@ async def get_monitoring_tasks_list(
 
         # 权限控制
         query_member_id = member_id
-        if not current_user.can_manage_group and member_id != current_user.id:
+        if not check_user_can_manage_group(current_user) and member_id != current_user.id:
             query_member_id = current_user.id
 
         # 构建查询
@@ -2343,7 +2347,7 @@ async def get_assistance_tasks_list(
 
         # 权限控制
         query_member_id = member_id
-        if not current_user.can_manage_group and member_id != current_user.id:
+        if not check_user_can_manage_group(current_user) and member_id != current_user.id:
             query_member_id = current_user.id
 
         # 构建查询
@@ -3115,7 +3119,7 @@ async def recalculate_single_task_hours(
 
         # 权限检查
         is_task_owner = task.member_id == current_user.id
-        if not (is_task_owner or current_user.can_manage_group):
+        if not check_user_can_access_task(current_user, task.member_id):
             raise HTTPException(
                 status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="无权限重新计算该任务工时",

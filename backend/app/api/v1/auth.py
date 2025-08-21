@@ -14,15 +14,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import create_response, get_current_user, get_db
 from app.core.config import settings
+from app.core.messages import get_message
 from app.core.security import (
     create_access_token,
     create_refresh_token,
     get_password_hash,
-    rate_limiter,
     validate_password_strength,
     verify_password,
     verify_token,
 )
+from app.core.rate_limiter import login_rate_limit
 from app.models.member import Member
 from app.schemas.auth import (
     ChangePasswordRequest,
@@ -37,6 +38,7 @@ security = HTTPBearer()
 
 
 @router.post("/login", response_model=Dict[str, Any])
+@login_rate_limit(max_requests=5, window_seconds=60)
 async def login(
     request: Request, login_data: LoginRequest, db: AsyncSession = Depends(get_db)
 ) -> Dict[str, Any]:
@@ -48,17 +50,6 @@ async def login(
 
     Rate limiting: 5 attempts per minute per IP.
     """
-    client_ip = request.client.host if request.client else "unknown"
-
-    # Rate limiting check
-    if not rate_limiter.is_allowed(
-        f"login:{client_ip}", max_requests=5, window_seconds=60
-    ):
-        logger.warning(f"Too many login attempts from IP: {client_ip}")
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Too many login attempts. Please try again later.",
-        )
 
     try:
         # Find user by student_id
@@ -73,29 +64,31 @@ async def login(
                 f"Login attempt with non-existent student_id: {login_data.student_id}"
             )
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
+                status_code=status.HTTP_401_UNAUTHORIZED, 
+                detail=get_message("AUTH_ERROR_INVALID_CREDENTIALS")
             )
 
         if not user.is_active:
             logger.warning(f"Login attempt for inactive user: {login_data.student_id}")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Account is disabled. Please contact administrator.",
+                detail=get_message("AUTH_ERROR_ACCOUNT_DISABLED"),
             )
 
         # Verify password
         if not verify_password(login_data.password, user.password_hash):
             logger.warning(f"Invalid password for user: {login_data.student_id}")
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
+                status_code=status.HTTP_401_UNAUTHORIZED, 
+                detail=get_message("AUTH_ERROR_INVALID_CREDENTIALS")
             )
 
         # Update login info
         user.update_login_info()
         await db.commit()
 
-        # Refresh user object to avoid lazy loading issues
-        await db.refresh(user)
+        # Refresh user object to avoid lazy loading issues - specify attributes to avoid greenlet issues
+        await db.refresh(user, ['role', 'group_id', 'is_active', 'username', 'name', 'student_id'])
 
         # Create tokens
         access_token = create_access_token(
@@ -117,15 +110,20 @@ async def login(
             "user": user.get_safe_dict(),
         }
 
-        return create_response(data=response_data, message="Login successful")
+        return create_response(
+            data=response_data, 
+            message_key="AUTH_SUCCESS_LOGIN"
+        )
 
-    except HTTPException:
+    except HTTPException as http_exc:
+        # Re-raise HTTP exceptions (including rate limiting 429) without modification
+        logger.warning(f"HTTP exception during login for {login_data.student_id}: {http_exc.detail}")
         raise
     except Exception as e:
-        logger.error(f"Login error for {login_data.student_id}: {str(e)}")
+        logger.error(f"Unexpected login error for {login_data.student_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Login failed. Please try again.",
+            detail=get_message("AUTH_ERROR_LOGIN_FAILED"),
         )
 
 

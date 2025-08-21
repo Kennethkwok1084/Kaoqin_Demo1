@@ -35,6 +35,7 @@ class TaskCategory(enum.Enum):
     NETWORK_REPAIR = "network_repair"  # 网络维修
     HARDWARE_REPAIR = "hardware_repair"  # 硬件维修
     SOFTWARE_SUPPORT = "software_support"  # 软件支持
+    SOFTWARE_ISSUE = "software_issue"  # 软件问题
     MONITORING = "monitoring"  # 日常监控
     ASSISTANCE = "assistance"  # 协助任务
     OTHER = "other"  # 其他

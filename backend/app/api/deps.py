@@ -1,7 +1,6 @@
 """
-Dependency injection module for FastAPI.
-Provides common dependencies for database sessions, authentication,
-and pagination.
+依赖注入模块
+提供数据库会话、认证和分页的通用依赖项，使用统一消息管理
 """
 
 import logging
@@ -15,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_async_session, get_sync_session
 from app.core.security import verify_token
+from app.core.messages import success_response, error_response, get_message, Messages
 from app.models.member import Member
 
 logger = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ async def get_current_user(
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
+        detail=get_message("AUTH_ERROR_CREDENTIALS_VALIDATION"),
         headers={"WWW-Authenticate": "Bearer"},
     )
 
@@ -87,7 +87,8 @@ async def get_current_user(
 
     if not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user"
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail=get_message("AUTH_ERROR_INACTIVE_USER")
         )
 
     return user
@@ -115,10 +116,14 @@ async def get_admin_user(
     Raises:
         HTTPException: If user is not admin
     """
-    if not current_user.is_admin:
+    # Direct role comparison to avoid property method async issues
+    from app.models.member import UserRole
+    
+    if not current_user.role or current_user.role != UserRole.ADMIN:
+        logger.warning(f"Admin access denied for user {current_user.student_id} with role {current_user.role}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions",
+            detail=get_message("AUTH_ERROR_ADMIN_REQUIRED"),
         )
     return current_user
 
@@ -138,10 +143,14 @@ async def get_group_leader_or_admin(
     Raises:
         HTTPException: If user is not group leader or admin
     """
-    if not current_user.can_manage_group:
+    # Direct role comparison to avoid property method async issues
+    from app.models.member import UserRole
+    
+    if not current_user.role or current_user.role not in [UserRole.ADMIN, UserRole.GROUP_LEADER]:
+        logger.warning(f"Group leader/admin access denied for user {current_user.student_id} with role {current_user.role}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions. Group leader or admin role required.",
+            detail=get_message("AUTH_ERROR_GROUP_LEADER_REQUIRED"),
         )
     return current_user
 
@@ -166,7 +175,8 @@ async def get_current_active_admin(
 
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required"
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail=get_message("AUTH_ERROR_ADMIN_REQUIRED")
         )
     return current_user
 
@@ -186,10 +196,13 @@ async def get_current_active_group_leader(
     Raises:
         HTTPException: If user is not group leader/admin or not active
     """
-    if not current_user.can_manage_group:
+    # Direct role comparison to avoid property method async issues
+    from app.models.member import UserRole
+    
+    if current_user.role not in [UserRole.ADMIN, UserRole.GROUP_LEADER]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Group leader or admin privileges required",
+            detail=get_message("AUTH_ERROR_GROUP_LEADER_REQUIRED"),
         )
     return current_user
 
@@ -352,18 +365,29 @@ class PaginatedResponse:
 
 def create_response(
     data: Any = None,
-    message: str = "Success",
+    message: str = None,
+    message_key: str = None,
     status_code: int = 200,
     success: Optional[bool] = None,
     error_code: Optional[str] = None,
+    details: Optional[Dict[str, Any]] = None,
+    **message_kwargs
 ) -> Dict[str, Any]:
-    """Create standardized API response."""
+    """创建标准化API响应，支持统一消息管理"""
+    # 优先使用message_key获取消息
+    if message_key:
+        final_message = get_message(message_key, **message_kwargs)
+    elif message:
+        final_message = message
+    else:
+        final_message = Messages.GENERAL_SUCCESS if status_code < 400 else Messages.GENERAL_ERROR
+    
     # Use provided success value or calculate from status_code
     success_value = success if success is not None else (status_code < 400)
 
     response = {
         "success": success_value,
-        "message": message,
+        "message": final_message,
         "data": data,
         "status_code": status_code,
     }
@@ -371,19 +395,67 @@ def create_response(
     # Add error_code if provided
     if error_code is not None:
         response["error_code"] = error_code
+    
+    # Add details if provided
+    if details is not None:
+        response["details"] = details
 
     return response
 
 
 def create_error_response(
-    message: str = "An error occurred",
+    message: str = None,
+    message_key: str = None,
     details: Optional[Dict[str, Any]] = None,
     status_code: int = 400,
+    **message_kwargs
 ) -> Dict[str, Any]:
-    """Create standardized API error response."""
+    """创建标准化API错误响应，支持统一消息管理"""
+    # 优先使用message_key获取消息
+    if message_key:
+        final_message = get_message(message_key, **message_kwargs)
+    elif message:
+        final_message = message
+    else:
+        final_message = Messages.GENERAL_ERROR
+    
     return {
         "success": False,
-        "message": message,
+        "message": final_message,
         "details": details or {},
         "status_code": status_code,
     }
+
+
+def check_user_can_manage_group(user: Member) -> bool:
+    """
+    Safe utility function to check if user can manage group.
+    Avoids async/greenlet issues with property methods.
+    """
+    from app.models.member import UserRole
+    
+    if not user or not hasattr(user, 'role') or user.role is None:
+        return False
+    return user.role in [UserRole.ADMIN, UserRole.GROUP_LEADER]
+
+
+def check_user_is_admin(user: Member) -> bool:
+    """
+    Safe utility function to check if user is admin.
+    Avoids async/greenlet issues with property methods.
+    """
+    from app.models.member import UserRole
+    
+    if not user or not hasattr(user, 'role') or user.role is None:
+        return False
+    return user.role == UserRole.ADMIN
+
+
+def check_user_can_access_task(user: Member, task_owner_id: int) -> bool:
+    """
+    Check if user can access a specific task.
+    User can access if they own the task or can manage group.
+    """
+    if not user:
+        return False
+    return task_owner_id == user.id or check_user_can_manage_group(user)

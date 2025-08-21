@@ -55,7 +55,7 @@ class MatchResult:
 class ABTableMatchingService:
     """A/B表智能匹配服务"""
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: Optional[AsyncSession]):
         self.db = db
 
         # 匹配权重配置

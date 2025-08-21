@@ -1,4 +1,4 @@
-// HTTP 客户端配置
+// HTTP 客户端配置 - 统一消息管理
 
 import axios, {
   type AxiosInstance,
@@ -8,6 +8,7 @@ import axios, {
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getToken, removeToken } from '@/utils/auth'
 import router from '@/router'
+import { MessageManager, MESSAGES } from '@/constants/messages'
 
 // 创建axios实例
 export const http: AxiosInstance = axios.create({
@@ -39,6 +40,7 @@ http.interceptors.request.use(
   },
   error => {
     console.error('请求拦截器错误:', error)
+    ElMessage.error(MESSAGES.NETWORK_ERROR_CONNECTION)
     return Promise.reject(error)
   }
 )
@@ -68,66 +70,77 @@ http.interceptors.response.use(
 
     // 处理网络错误
     if (!error.response) {
-      ElMessage.error('网络连接失败，请检查网络设置')
+      ElMessage.error(MESSAGES.NETWORK_ERROR_CONNECTION)
       return Promise.reject(error)
     }
 
     const { status, data } = error.response
-    const message = (data as any)?.message || '请求失败'
+    const serverMessage = (data as any)?.message
+
+    // 优先使用服务器返回的消息，否则使用统一消息管理
+    let displayMessage: string
+
+    if (serverMessage) {
+      // 如果服务器有返回消息，直接使用
+      displayMessage = serverMessage
+    } else {
+      // 使用统一的HTTP错误消息
+      displayMessage = MessageManager.getHttpErrorMessage(status)
+    }
 
     switch (status) {
       case 400:
-        ElMessage.error(`请求错误: ${message}`)
+        ElMessage.error(displayMessage)
         break
 
       case 401:
-        ElMessage.error('登录已过期，请重新登录')
+        ElMessage.error(displayMessage)
         removeToken()
         router.replace('/login')
         break
 
       case 403:
-        ElMessage.error('权限不足，无法访问')
+        ElMessage.error(displayMessage)
         router.replace('/403')
         break
 
       case 404:
-        ElMessage.error('请求的资源不存在')
+        ElMessage.error(displayMessage)
         break
 
       case 422:
         // 表单验证错误
-        if ((data as any)?.errors) {
-          const errors = (data as any).errors
+        if ((data as any)?.details?.field_errors) {
+          const errors = (data as any).details.field_errors
           const errorMessages = Object.values(errors).flat().join('; ')
-          ElMessage.error(`表单验证失败: ${errorMessages}`)
+          ElMessage.error(`${MESSAGES.HTTP_ERROR_422}: ${errorMessages}`)
         } else {
-          ElMessage.error(`验证失败: ${message}`)
+          ElMessage.error(displayMessage)
         }
         break
 
       case 429:
-        ElMessage.error('请求过于频繁，请稍后再试')
+        ElMessage.error(displayMessage)
         break
 
       case 500:
-        ElMessage.error('服务器内部错误')
+        ElMessage.error(displayMessage)
         break
 
       case 502:
-        ElMessage.error('网关错误')
+        ElMessage.error(displayMessage)
         break
 
       case 503:
-        ElMessage.error('服务暂时不可用')
+        ElMessage.error(displayMessage)
         break
 
       case 504:
-        ElMessage.error('网关超时')
+        ElMessage.error(displayMessage)
         break
 
       default:
-        ElMessage.error(`请求失败 (${status}): ${message}`)
+        ElMessage.error(displayMessage)
     }
 
     return Promise.reject(error)

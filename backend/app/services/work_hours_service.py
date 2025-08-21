@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class WorkHoursCalculationService:
     """工时计算服务 - 实现新的考勤规则"""
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: Optional[AsyncSession]):
         self.db = db
 
         # 基础工时配置（分钟）
@@ -888,7 +888,7 @@ class WorkHoursCalculationService:
 class RushTaskMarkingService:
     """爆单标记服务"""
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: Optional[AsyncSession]):
         self.db = db
 
     async def mark_rush_tasks_by_date(

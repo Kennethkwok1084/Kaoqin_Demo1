@@ -63,9 +63,9 @@ class TestAuthAPI:
                 "app.api.v1.auth.create_refresh_token",
                 return_value="mock_refresh_token",
             ),
-            patch("app.api.v1.auth.rate_limiter") as mock_rate_limiter,
+            patch("app.core.rate_limiter.global_rate_limiter") as mock_rate_limiter,
         ):
-            mock_rate_limiter.check_rate_limit = AsyncMock()
+            mock_rate_limiter.is_allowed.return_value = True
 
             login_data = LoginRequest(student_id="TEST001", password="test_password")
 
@@ -92,8 +92,8 @@ class TestAuthAPI:
         mock_result.scalar_one_or_none.return_value = None
         mock_db.execute.return_value = mock_result
 
-        with patch("app.api.v1.auth.rate_limiter") as mock_rate_limiter:
-            mock_rate_limiter.check_rate_limit = AsyncMock()
+        with patch("app.core.rate_limiter.global_rate_limiter") as mock_rate_limiter:
+            mock_rate_limiter.is_allowed.return_value = True
 
             login_data = LoginRequest(
                 student_id="NONEXISTENT", password="test_password"
@@ -128,9 +128,9 @@ class TestAuthAPI:
         # Mock password verification failure
         with (
             patch("app.api.v1.auth.verify_password", return_value=False),
-            patch("app.api.v1.auth.rate_limiter") as mock_rate_limiter,
+            patch("app.core.rate_limiter.global_rate_limiter") as mock_rate_limiter,
         ):
-            mock_rate_limiter.check_rate_limit = AsyncMock()
+            mock_rate_limiter.is_allowed.return_value = True
 
             login_data = LoginRequest(student_id="TEST001", password="wrong_password")
 
@@ -162,9 +162,9 @@ class TestAuthAPI:
 
         with (
             patch("app.api.v1.auth.verify_password", return_value=True),
-            patch("app.api.v1.auth.rate_limiter") as mock_rate_limiter,
+            patch("app.core.rate_limiter.global_rate_limiter") as mock_rate_limiter,
         ):
-            mock_rate_limiter.check_rate_limit = AsyncMock()
+            mock_rate_limiter.is_allowed.return_value = True
 
             login_data = LoginRequest(student_id="TEST001", password="test_password")
 
@@ -340,14 +340,9 @@ class TestAuthAPI:
         mock_request = Mock()
         mock_request.client.host = "127.0.0.1"
 
-        # Mock rate limiter to raise exception
-        with patch("app.api.v1.auth.rate_limiter") as mock_rate_limiter:
-            mock_rate_limiter.check_rate_limit = AsyncMock(
-                side_effect=HTTPException(
-                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    detail="Too many requests",
-                )
-            )
+        # Mock global rate limiter to return False (rate limit exceeded)
+        with patch("app.core.rate_limiter.global_rate_limiter") as mock_rate_limiter:
+            mock_rate_limiter.is_allowed.return_value = False
 
             login_data = LoginRequest(student_id="TEST001", password="test_password")
 
@@ -355,3 +350,4 @@ class TestAuthAPI:
                 await login(request=mock_request, login_data=login_data, db=mock_db)
 
             assert exc_info.value.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+            assert "Too many login attempts" in str(exc_info.value.detail)

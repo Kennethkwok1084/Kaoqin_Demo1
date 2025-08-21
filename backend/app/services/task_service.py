@@ -36,10 +36,10 @@ logger = logging.getLogger(__name__)
 class TaskService:
     """任务管理服务"""
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: Optional[AsyncSession]):
         self.db = db
-        self.work_hours_service = WorkHoursCalculationService(db)
-        self.rush_task_service = RushTaskMarkingService(db)
+        self.work_hours_service = WorkHoursCalculationService(db) if db else None
+        self.rush_task_service = RushTaskMarkingService(db) if db else None
 
     async def create_repair_task(
         self, task_data: Dict[str, Any], creator_id: int
