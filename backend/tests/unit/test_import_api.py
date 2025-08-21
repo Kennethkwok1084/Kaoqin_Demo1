@@ -54,7 +54,12 @@ class TestImportAPI:
         """Test field mapping endpoint - member table success case."""
         # Mock dependencies
         mock_db = AsyncMock()
-        mock_user = Member(username="test_user", name="测试管理员", class_name="测试班级", role=UserRole.ADMIN)
+        mock_user = Member(
+            username="test_user",
+            name="测试管理员",
+            class_name="测试班级",
+            role=UserRole.ADMIN,
+        )
 
         # Call endpoint
         result = await get_import_field_mapping(
@@ -76,7 +81,12 @@ class TestImportAPI:
         """Test field mapping endpoint - attendance table success case."""
         # Mock dependencies
         mock_db = AsyncMock()
-        mock_user = Member(username="test_user", name="测试管理员", class_name="测试班级", role=UserRole.ADMIN)
+        mock_user = Member(
+            username="test_user",
+            name="测试管理员",
+            class_name="测试班级",
+            role=UserRole.ADMIN,
+        )
 
         # Call endpoint
         result = await get_import_field_mapping(
@@ -100,7 +110,12 @@ class TestImportAPI:
         """Test field mapping endpoint - invalid table type."""
         # Mock dependencies
         mock_db = AsyncMock()
-        mock_user = Member(username="test_user", name="测试用户", class_name="测试班级", role=UserRole.MEMBER)
+        mock_user = Member(
+            username="test_user",
+            name="测试用户",
+            class_name="测试班级",
+            role=UserRole.MEMBER,
+        )
 
         # Call endpoint with invalid table type
         result = await get_import_field_mapping(
@@ -116,7 +131,12 @@ class TestImportAPI:
         """Test field mapping endpoint - comprehensive response structure."""
         # Mock dependencies
         mock_db = AsyncMock()
-        mock_user = Member(username="test_user", name="测试管理员", class_name="测试班级", role=UserRole.ADMIN)
+        mock_user = Member(
+            username="test_user",
+            name="测试管理员",
+            class_name="测试班级",
+            role=UserRole.ADMIN,
+        )
 
         # Call endpoint
         result = await get_import_field_mapping(
@@ -167,7 +187,12 @@ class TestImportAPI:
         """Test field mapping endpoint - detailed business rules."""
         # Mock dependencies
         mock_db = AsyncMock()
-        mock_user = Member(username="test_user", name="测试用户", class_name="测试班级", role=UserRole.MEMBER)
+        mock_user = Member(
+            username="test_user",
+            name="测试用户",
+            class_name="测试班级",
+            role=UserRole.MEMBER,
+        )
 
         # Call endpoint
         result = await get_import_field_mapping(
@@ -197,7 +222,12 @@ class TestImportAPI:
         """Test field mapping endpoint - import examples provided."""
         # Mock dependencies
         mock_db = AsyncMock()
-        mock_user = Member(username="test_user", name="测试用户", class_name="测试班级", role=UserRole.MEMBER)
+        mock_user = Member(
+            username="test_user",
+            name="测试用户",
+            class_name="测试班级",
+            role=UserRole.MEMBER,
+        )
 
         # Call endpoint
         result = await get_import_field_mapping(
@@ -229,7 +259,12 @@ class TestImportAPI:
         """Test field mapping endpoint - data processing rules."""
         # Mock dependencies
         mock_db = AsyncMock()
-        mock_user = Member(username="test_user", name="测试管理员", class_name="测试班级", role=UserRole.ADMIN)
+        mock_user = Member(
+            username="test_user",
+            name="测试管理员",
+            class_name="测试班级",
+            role=UserRole.ADMIN,
+        )
 
         # Call endpoint
         result = await get_import_field_mapping(
@@ -261,13 +296,23 @@ class TestImportAPI:
         mock_db = AsyncMock()
 
         # Test member permission
-        mock_member = Member(username="member", name="测试成员", class_name="测试班级", role=UserRole.MEMBER)
+        mock_member = Member(
+            username="member",
+            name="测试成员",
+            class_name="测试班级",
+            role=UserRole.MEMBER,
+        )
         member_result = await get_import_field_mapping(
             table_type="task_table", current_user=mock_member, db=mock_db
         )
 
         # Test admin permission
-        mock_admin = Member(username="admin", name="测试管理员", class_name="管理班级", role=UserRole.ADMIN)
+        mock_admin = Member(
+            username="admin",
+            name="测试管理员",
+            class_name="管理班级",
+            role=UserRole.ADMIN,
+        )
         admin_result = await get_import_field_mapping(
             table_type="member_table", current_user=mock_admin, db=mock_db
         )

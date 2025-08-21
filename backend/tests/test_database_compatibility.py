@@ -178,10 +178,13 @@ class TestSQLiteEnumValidator:
         for tag_type in valid_tag_types:
             assert SQLiteEnumValidator.validate_task_tag_type(tag_type) is True
 
-        # 大小写兼容（小写）
+        # 大小写兼容性测试
         assert (
-            SQLiteEnumValidator.validate_task_tag_type("RUSH_ORDER") is False
-        )  # 只接受小写
+            SQLiteEnumValidator.validate_task_tag_type("RUSH_ORDER") is True
+        )  # 大小写不敏感
+        assert (
+            SQLiteEnumValidator.validate_task_tag_type("Rush_Order") is True
+        )  # 混合大小写也可以
 
         # 无效值
         assert SQLiteEnumValidator.validate_task_tag_type("invalid") is False

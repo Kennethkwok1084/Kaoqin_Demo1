@@ -113,10 +113,14 @@ class RepairTaskCreate(TaskCreate):
     """维修任务创建模型（继承通用任务创建）"""
 
     # 设置默认为离线任务类型（维修任务通常是离线的）
-    task_type: TaskType = Field(default=TaskType.OFFLINE, description="任务类型（维修任务默认为离线类型）")
-    
+    task_type: TaskType = Field(
+        default=TaskType.OFFLINE, description="任务类型（维修任务默认为离线类型）"
+    )
+
     # 维修任务特有字段
-    fault_description: Optional[str] = Field(None, max_length=1000, description="故障描述")
+    fault_description: Optional[str] = Field(
+        None, max_length=1000, description="故障描述"
+    )
     equipment_info: Optional[str] = Field(None, max_length=200, description="设备信息")
     urgency_level: Optional[str] = Field(None, max_length=20, description="紧急程度")
 
@@ -145,12 +149,10 @@ class RepairTaskCreate(TaskCreate):
                 "is_rush": True,
                 "fault_description": "网络连接中断，设备指示灯异常",
                 "equipment_info": "华为交换机 S5720-28P-LI",
-                "urgency_level": "高"
+                "urgency_level": "高",
             }
         }
     )
-
-
 
 
 class TaskUpdate(BaseModel):
@@ -254,16 +256,16 @@ class TaskResponse(TaskBase):
 
 class RepairTaskResponse(TaskResponse):
     """维修任务响应模型（继承通用任务响应）"""
-    
+
     # 维修任务特有字段
     fault_description: Optional[str] = Field(None, description="故障描述")
     equipment_info: Optional[str] = Field(None, description="设备信息")
     urgency_level: Optional[str] = Field(None, description="紧急程度")
-    
+
     # 报修信息
     reporter_name: Optional[str] = Field(None, description="报修人姓名")
     reporter_contact: Optional[str] = Field(None, description="报修人联系方式")
-    
+
     model_config = ConfigDict(
         from_attributes=True,
         json_schema_extra={
@@ -295,7 +297,7 @@ class RepairTaskResponse(TaskResponse):
                 "equipment_info": "华为交换机 S5720-28P-LI",
                 "urgency_level": "高",
                 "reporter_name": "张老师",
-                "reporter_contact": "13812345678"
+                "reporter_contact": "13812345678",
             }
         },
     )

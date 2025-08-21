@@ -62,7 +62,7 @@ class TestCoverageBoost:
         from app.models.task import RepairTask
 
         # Test that relationship attributes exist
-        member = Member()
+        member = Member(username="test_user", name="测试用户", class_name="测试班级")
         assert hasattr(member, "repair_tasks")
         assert hasattr(member, "monitoring_tasks")
         assert hasattr(member, "assistance_tasks")

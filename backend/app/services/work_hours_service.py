@@ -248,7 +248,8 @@ class WorkHoursCalculationService:
         except Exception as e:
             logger.error(
                 f"Unexpected error calculating task "
-                f"{task.id if hasattr(task, 'id') else 'unknown'} work minutes: {str(e)}"
+                f"{task.id if hasattr(task,
+                                      'id') else 'unknown'} work minutes: {str(e)}"
             )
             raise RuntimeError(f"工时计算过程发生未预期错误: {str(e)}")
 
@@ -547,6 +548,10 @@ class WorkHoursCalculationService:
             raise ValueError("月份必须在1-12范围内")
 
         if member_ids is not None:
+            if not isinstance(member_ids, list):
+                logger.error(f"member_ids must be a list, got: {type(member_ids)}")
+                raise ValueError("成员ID列表必须为列表类型")
+            
             for member_id in member_ids:
                 if not isinstance(member_id, int) or member_id <= 0:
                     logger.error(f"Invalid member_id in list: {member_id}")
@@ -911,11 +916,22 @@ class RushTaskMarkingService:
             RuntimeError: 标记过程出现错误
         """
         # 输入校验
+        if not isinstance(date_from, date):
+            logger.error(f"date_from must be a date object, got: {type(date_from)}")
+            raise ValueError("开始日期必须为date对象")
+        
+        if not isinstance(date_to, date):
+            logger.error(f"date_to must be a date object, got: {type(date_to)}")
+            raise ValueError("结束日期必须为date对象")
+        
         if date_from > date_to:
             logger.error(f"date_from {date_from} is after date_to {date_to}")
             raise ValueError("开始日期不能晚于结束日期")
 
         if task_ids is not None:
+            if not isinstance(task_ids, list):
+                logger.error(f"task_ids must be a list, got: {type(task_ids)}")
+                raise ValueError("任务ID列表必须为列表类型")
 
             for task_id in task_ids:
                 if not isinstance(task_id, int) or task_id <= 0:
@@ -1035,11 +1051,22 @@ class RushTaskMarkingService:
             RuntimeError: 重算过程出现错误
         """
         # 输入校验
+        if not isinstance(date_from, date):
+            logger.error(f"date_from must be a date object, got: {type(date_from)}")
+            raise ValueError("开始日期必须为date对象")
+        
+        if not isinstance(date_to, date):
+            logger.error(f"date_to must be a date object, got: {type(date_to)}")
+            raise ValueError("结束日期必须为date对象")
+        
         if date_from > date_to:
             logger.error(f"date_from {date_from} is after date_to {date_to}")
             raise ValueError("开始日期不能晚于结束日期")
 
         if member_ids is not None:
+            if not isinstance(member_ids, list):
+                logger.error(f"member_ids must be a list, got: {type(member_ids)}")
+                raise ValueError("成员ID列表必须为列表类型")
 
             for member_id in member_ids:
                 if not isinstance(member_id, int) or member_id <= 0:
@@ -1132,3 +1159,298 @@ class RushTaskMarkingService:
             await self.db.rollback()
             logger.error(f"Batch recalculate work hours error: {str(e)}")
             raise RuntimeError(f"批量重新计算工时时出错: {str(e)}")
+
+    async def batch_mark_rush_tasks(
+        self,
+        date_from: date,
+        date_to: date,
+        task_ids: Optional[List[int]] = None,
+        marked_by: Optional[int] = None,
+    ) -> Dict[str, int]:
+        """
+        批量标记爆单任务（别名方法）
+
+        Args:
+            date_from: 开始日期
+            date_to: 结束日期
+            task_ids: 指定的任务ID列表
+            marked_by: 标记人ID
+
+        Returns:
+            Dict: 标记结果统计
+        """
+        return await self.mark_rush_tasks_by_date(date_from, date_to, task_ids, marked_by)
+
+    async def get_rush_tasks_list(
+        self,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
+        member_id: Optional[int] = None,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> Dict[str, any]:
+        """
+        获取爆单任务列表
+
+        Args:
+            date_from: 开始日期
+            date_to: 结束日期
+            member_id: 成员ID筛选
+            page: 页码
+            page_size: 每页大小
+
+        Returns:
+            Dict: 爆单任务列表和统计
+        """
+        try:
+            from sqlalchemy import func, desc
+            from sqlalchemy.orm import joinedload
+
+            # 构建查询
+            query = (
+                select(RepairTask)
+                .options(selectinload(RepairTask.tags), joinedload(RepairTask.member))
+                .where(RepairTask.is_rush_order.is_(True))
+            )
+
+            if date_from:
+                query = query.where(RepairTask.report_time >= date_from)
+            if date_to:
+                query = query.where(RepairTask.report_time <= date_to)
+            if member_id:
+                query = query.where(RepairTask.member_id == member_id)
+
+            # 获取总数
+            count_query = select(func.count()).select_from(query.subquery())
+            count_result = await self.db.execute(count_query)
+            total = count_result.scalar() or 0
+
+            # 分页查询
+            offset = (page - 1) * page_size
+            query = (
+                query.order_by(desc(RepairTask.report_time))
+                .limit(page_size)
+                .offset(offset)
+            )
+
+            result = await self.db.execute(query)
+            tasks = result.scalars().all()
+
+            # 转换为字典格式
+            task_list = []
+            for task in tasks:
+                task_data = {
+                    "id": task.id,
+                    "task_id": task.task_id,
+                    "title": task.title,
+                    "member": {"id": task.member.id, "name": task.member.name} if task.member else None,
+                    "task_type": task.task_type.value if task.task_type else "online",
+                    "status": task.status.value if task.status else "pending",
+                    "report_time": (
+                        task.report_time.isoformat() if task.report_time else None
+                    ),
+                    "work_minutes": task.work_minutes,
+                    "is_rush_order": task.is_rush_order,
+                }
+                task_list.append(task_data)
+
+            # 计算统计信息
+            total_work_minutes = sum(task.work_minutes or 0 for task in tasks)
+
+            return {
+                "tasks": task_list,
+                "pagination": {
+                    "page": page,
+                    "page_size": page_size,
+                    "total": total,
+                    "pages": (total + page_size - 1) // page_size,
+                },
+                "statistics": {
+                    "total_rush_tasks": total,
+                    "current_page_count": len(tasks),
+                    "total_work_hours": round(total_work_minutes / 60.0, 2),
+                },
+            }
+
+        except Exception as e:
+            logger.error(f"Get rush tasks list error: {str(e)}")
+            raise
+
+    async def get_statistics(
+        self, date_from: Optional[date] = None, date_to: Optional[date] = None
+    ) -> Dict[str, any]:
+        """
+        获取爆单任务统计报表
+
+        Args:
+            date_from: 开始日期
+            date_to: 结束日期
+
+        Returns:
+            Dict: 统计数据
+        """
+        try:
+            from sqlalchemy.orm import joinedload
+
+            # 构建基础查询
+            base_query = (
+                select(RepairTask)
+                .options(joinedload(RepairTask.member))
+                .where(RepairTask.is_rush_order.is_(True))
+            )
+
+            if date_from:
+                base_query = base_query.where(RepairTask.report_time >= date_from)
+            if date_to:
+                base_query = base_query.where(RepairTask.report_time <= date_to)
+
+            result = await self.db.execute(base_query)
+            rush_tasks = result.scalars().all()
+
+            # 总体统计
+            total_tasks = len(rush_tasks)
+            total_work_minutes = sum(task.work_minutes or 0 for task in rush_tasks)
+            total_work_hours = round(total_work_minutes / 60.0, 2)
+
+            # 按状态统计
+            from app.models.task import TaskStatus, TaskType
+            status_stats = {}
+            for status in TaskStatus:
+                status_stats[status.value] = len(
+                    [t for t in rush_tasks if t.status == status]
+                )
+
+            # 按任务类型统计
+            type_stats = {
+                "online": len(
+                    [t for t in rush_tasks if t.task_type == TaskType.ONLINE]
+                ),
+                "offline": len(
+                    [t for t in rush_tasks if t.task_type == TaskType.OFFLINE]
+                ),
+            }
+
+            # 按成员统计
+            member_stats = {}
+            for task in rush_tasks:
+                if task.member:
+                    member_name = task.member.name
+                    if member_name not in member_stats:
+                        member_stats[member_name] = {"task_count": 0, "work_minutes": 0}
+                    member_stats[member_name]["task_count"] += 1
+                    member_stats[member_name]["work_minutes"] += task.work_minutes or 0
+
+            # 转换为列表格式
+            member_list = [
+                {
+                    "member_name": name,
+                    "task_count": stats["task_count"],
+                    "work_hours": round(stats["work_minutes"] / 60.0, 2),
+                }
+                for name, stats in member_stats.items()
+            ]
+            member_list.sort(key=lambda x: x.get("task_count", 0) or 0, reverse=True)
+
+            # 按月份统计
+            month_stats = {}
+            for task in rush_tasks:
+                if task.report_time:
+                    month_key = task.report_time.strftime("%Y-%m")
+                    if month_key not in month_stats:
+                        month_stats[month_key] = 0
+                    month_stats[month_key] += 1
+
+            return {
+                "period": {
+                    "from": date_from.isoformat() if date_from else None,
+                    "to": date_to.isoformat() if date_to else None,
+                },
+                "summary": {
+                    "total_tasks": total_tasks,
+                    "total_work_hours": total_work_hours,
+                    "average_task_hours": (
+                        round(total_work_hours / total_tasks, 2)
+                        if total_tasks > 0
+                        else 0
+                    ),
+                },
+                "by_status": status_stats,
+                "by_type": type_stats,
+                "by_member": member_list,
+                "by_month": month_stats,
+            }
+
+        except Exception as e:
+            logger.error(f"Get rush tasks statistics error: {str(e)}")
+            raise
+
+    async def remove_rush_marking(
+        self, task_ids: List[int], remover_id: Optional[int] = None
+    ) -> Dict[str, any]:
+        """
+        移除爆单任务标记
+
+        Args:
+            task_ids: 任务ID列表
+            remover_id: 操作人ID
+
+        Returns:
+            Dict: 操作结果
+        """
+        try:
+            from sqlalchemy import and_
+
+            # 查询指定任务
+            query = (
+                select(RepairTask)
+                .options(selectinload(RepairTask.tags))
+                .where(RepairTask.id.in_(task_ids))
+            )
+
+            result = await self.db.execute(query)
+            tasks = result.scalars().all()
+
+            # 获取爆单标签
+            from app.models.task import TaskTagType
+            rush_tag_query = select(TaskTag).where(
+                and_(
+                    TaskTag.tag_type == TaskTagType.RUSH_ORDER,
+                    TaskTag.name == "爆单任务",
+                )
+            )
+            rush_tag_result = await self.db.execute(rush_tag_query)
+            rush_tag = rush_tag_result.scalar_one_or_none()
+
+            removed_count = 0
+
+            for task in tasks:
+                if task.is_rush_order:
+                    # 取消爆单标记
+                    task.is_rush_order = False
+
+                    # 移除爆单标签
+                    if rush_tag and rush_tag in task.tags:
+                        task.tags.remove(rush_tag)
+
+                    # 重新计算工时
+                    task.update_work_minutes()
+
+                    removed_count += 1
+
+            await self.db.commit()
+
+            logger.info(
+                f"Removed rush marking from {removed_count} tasks by user {remover_id}"
+            )
+
+            return {
+                "success": True,
+                "removed_count": removed_count,
+                "total_count": len(tasks),
+                "removed_by": remover_id,
+            }
+
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"Remove rush task marking error: {str(e)}")
+            raise

@@ -131,36 +131,42 @@ class StatisticsService:
                 attendance_stats,
             ) = results
 
-            # 处理异常结果 - Initialize with empty dicts and proper type handling
+            # 处理异常结果 - Initialize with empty dicts
+            member_stats_data: Dict[str, Any] = {}
+            task_stats_data: Dict[str, Any] = {}
+            work_hour_stats_data: Dict[str, Any] = {}
+            performance_stats_data: Dict[str, Any] = {}
+            attendance_stats_data: Dict[str, Any] = {}
+
             if isinstance(member_stats, Exception):
                 logger.error(f"Member stats error: {member_stats}")
-                member_stats_data: Dict[str, Any] = {}
+                member_stats_data = {}
             else:
-                member_stats_data = member_stats if isinstance(member_stats, dict) else {}
+                member_stats_data = member_stats
 
             if isinstance(task_stats, Exception):
                 logger.error(f"Task stats error: {task_stats}")
-                task_stats_data: Dict[str, Any] = {}
+                task_stats_data = {}
             else:
-                task_stats_data = task_stats if isinstance(task_stats, dict) else {}
+                task_stats_data = task_stats
 
             if isinstance(work_hour_stats, Exception):
                 logger.error(f"Work hour stats error: {work_hour_stats}")
-                work_hour_stats_data: Dict[str, Any] = {}
+                work_hour_stats_data = {}
             else:
-                work_hour_stats_data = work_hour_stats if isinstance(work_hour_stats, dict) else {}
+                work_hour_stats_data = work_hour_stats
 
             if isinstance(performance_stats, Exception):
                 logger.error(f"Performance stats error: {performance_stats}")
-                performance_stats_data: Dict[str, Any] = {}
+                performance_stats_data = {}
             else:
-                performance_stats_data = performance_stats if isinstance(performance_stats, dict) else {}
+                performance_stats_data = performance_stats
 
             if isinstance(attendance_stats, Exception):
                 logger.error(f"Attendance stats error: {attendance_stats}")
-                attendance_stats_data: Dict[str, Any] = {}
+                attendance_stats_data = {}
             else:
-                attendance_stats_data = attendance_stats if isinstance(attendance_stats, dict) else {}
+                attendance_stats_data = attendance_stats
 
             result = {
                 "period": {"from": date_from.isoformat(), "to": date_to.isoformat()},

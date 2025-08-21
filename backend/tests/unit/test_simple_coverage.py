@@ -163,7 +163,7 @@ class TestBasicCoverage:
         is_valid, errors = validate_password_strength("StrongPassword123!")
         assert is_valid is True
         assert errors == []
-        
+
         is_valid, errors = validate_password_strength("AnotherGood1@")
         assert is_valid is True
         assert errors == []
@@ -172,11 +172,11 @@ class TestBasicCoverage:
         is_valid, errors = validate_password_strength("weak")
         assert is_valid is False
         assert len(errors) > 0
-        
+
         is_valid, errors = validate_password_strength("12345678")
         assert is_valid is False
         assert len(errors) > 0
-        
+
         is_valid, errors = validate_password_strength("password")
         assert is_valid is False
         assert len(errors) > 0
@@ -309,10 +309,7 @@ class TestBasicCoverage:
         # Since BaseModel is abstract, we'll test via a concrete model
         from app.models.member import Member
 
-        member = Member(
-            username="test_base_user",
-            name="测试基础用户"
-        )
+        member = Member(username="test_base_user", name="测试基础用户")
 
         # Test that base fields exist
         assert hasattr(member, "id")

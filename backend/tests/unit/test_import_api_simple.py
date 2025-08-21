@@ -45,7 +45,12 @@ class TestImportAPISimple:
         """Test field mapping endpoint - member table success case."""
         # Mock dependencies
         mock_db = AsyncMock()
-        mock_user = Member(username="test_user", name="测试管理员", class_name="测试班级", role=UserRole.ADMIN)
+        mock_user = Member(
+            username="test_user",
+            name="测试管理员",
+            class_name="测试班级",
+            role=UserRole.ADMIN,
+        )
 
         # Call endpoint
         result = await get_import_field_mapping(
@@ -64,7 +69,12 @@ class TestImportAPISimple:
 
         # Mock dependencies
         mock_db = AsyncMock()
-        mock_user = Member(username="test_user", name="测试用户", class_name="测试班级", role=UserRole.MEMBER)
+        mock_user = Member(
+            username="test_user",
+            name="测试用户",
+            class_name="测试班级",
+            role=UserRole.MEMBER,
+        )
 
         # Call endpoint with invalid table type should fallback to task_table
         result = await get_import_field_mapping(
@@ -80,7 +90,12 @@ class TestImportAPISimple:
         """Test field mapping endpoint - business rules structure."""
         # Mock dependencies
         mock_db = AsyncMock()
-        mock_user = Member(username="test_user", name="测试用户", class_name="测试班级", role=UserRole.MEMBER)
+        mock_user = Member(
+            username="test_user",
+            name="测试用户",
+            class_name="测试班级",
+            role=UserRole.MEMBER,
+        )
 
         # Call endpoint
         result = await get_import_field_mapping(
@@ -115,7 +130,12 @@ class TestImportAPISimple:
         """Test field mapping endpoint - import config structure."""
         # Mock dependencies
         mock_db = AsyncMock()
-        mock_user = Member(username="test_user", name="测试用户", class_name="测试班级", role=UserRole.MEMBER)
+        mock_user = Member(
+            username="test_user",
+            name="测试用户",
+            class_name="测试班级",
+            role=UserRole.MEMBER,
+        )
 
         # Call endpoint
         result = await get_import_field_mapping(
@@ -142,7 +162,12 @@ class TestImportAPISimple:
         """Test field mapping endpoint - required fields identification."""
         # Mock dependencies
         mock_db = AsyncMock()
-        mock_user = Member(username="test_user", name="测试用户", class_name="测试班级", role=UserRole.MEMBER)
+        mock_user = Member(
+            username="test_user",
+            name="测试用户",
+            class_name="测试班级",
+            role=UserRole.MEMBER,
+        )
 
         # Call endpoint
         result = await get_import_field_mapping(

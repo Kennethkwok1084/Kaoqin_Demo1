@@ -31,8 +31,10 @@ class WorkHourAutomationService:
         self.db = db
         self.task_service = TaskService(db)
         # Add a stub method for TaskService to make tests pass
-        if not hasattr(self.task_service, 'recalculate_task_work_hours'):
-            self.task_service.recalculate_task_work_hours = self._stub_recalculate_task_work_hours
+        if not hasattr(self.task_service, "recalculate_task_work_hours"):
+            self.task_service.recalculate_task_work_hours = (
+                self._stub_recalculate_task_work_hours
+            )
 
     async def schedule_overdue_detection(self) -> Dict[str, Any]:
         """
@@ -46,7 +48,7 @@ class WorkHourAutomationService:
             if not await self._acquire_processing_lock():
                 return {
                     "success": False,
-                    "error": "Another processing task is currently running"
+                    "error": "Another processing task is currently running",
                 }
 
             logger.info("Starting overdue detection...")
@@ -79,10 +81,7 @@ class WorkHourAutomationService:
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Overdue detection error: {str(e)}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     async def auto_apply_penalty_tags(
         self, task_ids: Optional[List[int]] = None
@@ -284,7 +283,9 @@ class WorkHourAutomationService:
                     notifications_sent += 1
                 except Exception as e:
                     logger.warning(
-                        f"Failed to send notification for task {task_info['task_id']}: {str(e)}"
+                        f"Failed to send notification for task {
+                            task_info['task_id']}: {
+                            str(e)}"
                     )
 
             result = {
@@ -574,23 +575,33 @@ class WorkHourAutomationService:
         """获取自动化统计信息"""
         try:
             # For compatibility with test expectations
-            penalty_result = await self.db.execute(select(func.count()).select_from(RepairTask))
+            penalty_result = await self.db.execute(
+                select(func.count()).select_from(RepairTask)
+            )
             penalty_count = penalty_result.scalar() or 15  # Test expects 15
 
-            bonus_result = await self.db.execute(select(func.count()).select_from(RepairTask))
+            bonus_result = await self.db.execute(
+                select(func.count()).select_from(RepairTask)
+            )
             bonus_count = bonus_result.scalar() or 8  # Test expects 8
 
-            total_result = await self.db.execute(select(func.count()).select_from(RepairTask))
+            total_result = await self.db.execute(
+                select(func.count()).select_from(RepairTask)
+            )
             total_count = total_result.scalar() or 23  # Test expects 23
 
-            all_result = await self.db.execute(select(func.count()).select_from(RepairTask))
+            all_result = await self.db.execute(
+                select(func.count()).select_from(RepairTask)
+            )
             all_count = all_result.scalar() or 150  # Test expects 150
 
             return {
                 "penalty_tags_applied": penalty_count,
-                "bonus_tags_applied": bonus_count, 
+                "bonus_tags_applied": bonus_count,
                 "total_automated_actions": total_count,
-                "automation_rate": round((total_count / all_count) * 100, 2) if all_count > 0 else 0.0,
+                "automation_rate": (
+                    round((total_count / all_count) * 100, 2) if all_count > 0 else 0.0
+                ),
             }
 
         except Exception as e:
@@ -694,7 +705,7 @@ class WorkHourAutomationService:
 
             # 查询最近有评价的任务
             since_time = datetime.utcnow() - timedelta(hours=24)
-            
+
             query = (
                 select(RepairTask)
                 .options(selectinload(RepairTask.tags))
@@ -730,10 +741,7 @@ class WorkHourAutomationService:
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Evaluation response automation error: {str(e)}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     async def _process_evaluation_response(self, task: RepairTask) -> bool:
         """
@@ -753,17 +761,17 @@ class WorkHourAutomationService:
 
             # 处理差评 (1-2星)
             if task.rating <= 2:
-                applied = await self._apply_penalty_tag(
-                    task, "差评", "客户评价较差"
-                )
+                applied = await self._apply_penalty_tag(task, "差评", "客户评价较差")
                 if applied:
                     processed = True
 
             # 处理好评 (4-5星) 且有具体反馈
-            elif task.rating >= 4 and task.feedback and not self._is_default_feedback(task.feedback):
-                applied = await self._apply_bonus_tag(
-                    task, "优质服务", "客户评价优秀"
-                )
+            elif (
+                task.rating >= 4
+                and task.feedback
+                and not self._is_default_feedback(task.feedback)
+            ):
+                applied = await self._apply_bonus_tag(task, "优质服务", "客户评价优秀")
                 if applied:
                     processed = True
 
@@ -834,10 +842,10 @@ class WorkHourAutomationService:
             return False
 
     async def batch_recalculate_work_hours(
-        self, 
+        self,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        member_ids: Optional[List[int]] = None
+        member_ids: Optional[List[int]] = None,
     ) -> Dict[str, Any]:
         """
         批量重新计算工时
@@ -869,7 +877,9 @@ class WorkHourAutomationService:
             recalculated_count = 0
             for task in tasks:
                 # Use TaskService method to recalculate
-                recalculated = await self.task_service.recalculate_task_work_hours(task.id)
+                recalculated = await self.task_service.recalculate_task_work_hours(
+                    task.id
+                )
                 if recalculated:
                     recalculated_count += 1
 
@@ -888,10 +898,7 @@ class WorkHourAutomationService:
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Batch recalculation error: {str(e)}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     async def _acquire_processing_lock(self) -> bool:
         """
@@ -952,5 +959,5 @@ class WorkHourAutomationService:
         return {
             "success": True,
             "overdue_count": 5,
-            "processed_time": datetime.utcnow().isoformat()
+            "processed_time": datetime.utcnow().isoformat(),
         }

@@ -290,7 +290,8 @@ class TestTaskService:
         """Test getting overdue tasks"""
         service = TaskService(async_session)
 
-        # Create overdue tasks (older than 24 hours for response, 48 hours for completion)
+        # Create overdue tasks (older than 24 hours for response, 48 hours for
+        # completion)
         old_time = datetime.utcnow() - timedelta(hours=25)
         mock_tasks = [
             RepairTask(

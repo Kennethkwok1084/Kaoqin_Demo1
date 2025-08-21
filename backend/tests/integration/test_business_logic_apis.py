@@ -184,7 +184,9 @@ class TestWorkHoursManagementAPI:
         assert "average_hours_per_task" in summary
 
         print(
-            f"✅ 工时统计测试通过: 统计了 {summary['total_tasks']} 个任务，总工时 {summary['total_work_hours']} 小时"
+            f"✅ 工时统计测试通过: 统计了 {
+                summary['total_tasks']} 个任务，总工时 {
+                summary['total_work_hours']} 小时"
         )
 
 
@@ -331,7 +333,10 @@ class TestStatisticsAPI:
         assert member_info["id"] == test_user_id
 
         print(
-            f"✅ 个人月度报表测试通过: 用户 {member_info['name']} 的 {current_date.year}年{current_date.month}月报表"
+            f"✅ 个人月度报表测试通过: 用户 {
+                member_info['name']} 的 {
+                current_date.year}年{
+                current_date.month}月报表"
         )
 
     async def test_export_statistics_data(

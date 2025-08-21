@@ -120,7 +120,8 @@ def cleanup_expired_data(self, days_to_keep: int = 90) -> Dict[str, Any]:
     """
     try:
         logger.info(
-            f"Starting data cleanup task (ID: {self.request.id}, days_to_keep: {days_to_keep})"
+            f"Starting data cleanup task (ID: {
+                self.request.id}, days_to_keep: {days_to_keep})"
         )
 
         async def _cleanup_data():
@@ -270,7 +271,8 @@ def export_statistics_report(
     """
     try:
         logger.info(
-            f"Starting statistics report export task (ID: {self.request.id}, type: {report_type})"
+            f"Starting statistics report export task (ID: {
+                self.request.id}, type: {report_type})"
         )
 
         async def _export_report():

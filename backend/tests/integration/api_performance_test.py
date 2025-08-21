@@ -382,7 +382,8 @@ class APIPerformanceTester:
             for load_result in metrics["load_test_results"]:
                 report.append(f"  - {load_result['endpoint_name']}:")
                 report.append(
-                    f"    * Requests per second: {load_result['requests_per_second']:.2f}"
+                    f"    * Requests per second: {
+                        load_result['requests_per_second']:.2f}"
                 )
                 report.append(f"    * Success rate: {load_result['success_rate']:.1f}%")
 

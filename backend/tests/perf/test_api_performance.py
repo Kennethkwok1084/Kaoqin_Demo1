@@ -163,12 +163,12 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
 def auth_headers():
     """Create valid authentication headers for testing."""
     from app.core.security import create_access_token
-    
+
     # Create a valid JWT token with a test user ID
     access_token = create_access_token(subject=1)
     return {
         "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
 
 

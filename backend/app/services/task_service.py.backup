@@ -167,10 +167,9 @@ class TaskService:
             await self.db.refresh(task)
 
             # 更新对应成员的月度工时汇总
-            if task.member_id is not None:
-                await self.work_hours_service.update_monthly_summary(
-                    task.member_id, start_time.year, start_time.month
-                )
+            await self.work_hours_service.update_monthly_summary(
+                task.member_id, start_time.year, start_time.month
+            )
 
             logger.info(
                 f"Monitoring task created: {task.id}, work_minutes: {work_minutes}"
@@ -231,10 +230,9 @@ class TaskService:
             await self.db.refresh(task)
 
             # 更新对应成员的月度工时汇总
-            if task.member_id is not None:
-                await self.work_hours_service.update_monthly_summary(
-                    task.member_id, start_time.year, start_time.month
-                )
+            await self.work_hours_service.update_monthly_summary(
+                task.member_id, start_time.year, start_time.month
+            )
 
             logger.info(
                 f"Assistance task created: {task.id}, work_minutes: {work_minutes}"
@@ -250,7 +248,7 @@ class TaskService:
         self,
         task_id: int,
         new_status: TaskStatus,
-        operator_id: int,
+        user_id: int,
         completion_note: Optional[str] = None,
         actual_minutes: Optional[int] = None,
     ) -> RepairTask:
@@ -260,7 +258,7 @@ class TaskService:
         Args:
             task_id: 任务ID
             new_status: 新状态
-            operator_id: 操作用户ID
+            user_id: 操作用户ID
             completion_note: 完成备注
             actual_minutes: 实际工时
 
@@ -343,8 +341,8 @@ class TaskService:
     async def assign_task(
         self,
         task_id: int,
-        member_id: int,
-        operator_id: int,
+        assigned_to: int,
+        assigner_id: int,
         assignment_note: Optional[str] = None,
     ) -> RepairTask:
         """
@@ -352,8 +350,8 @@ class TaskService:
 
         Args:
             task_id: 任务ID
-            member_id: 分配给的成员ID
-            operator_id: 分配者ID
+            assigned_to: 分配给的成员ID
+            assigner_id: 分配者ID
             assignment_note: 分配备注
 
         Returns:
@@ -369,7 +367,7 @@ class TaskService:
                 raise ValueError("任务不存在")
 
             # 验证目标成员
-            member_query = select(Member).where(Member.id == member_id)
+            member_query = select(Member).where(Member.id == assigned_to)
             member_result = await self.db.execute(member_query)
             member = member_result.scalar_one_or_none()
 
@@ -378,7 +376,7 @@ class TaskService:
 
             # 更新分配
             old_member_id = task.member_id
-            task.member_id = member_id
+            task.member_id = assigned_to
 
             # 添加分配记录
             if assignment_note:
@@ -395,7 +393,7 @@ class TaskService:
             await self.db.refresh(task)
 
             logger.info(
-                f"Task {task_id} assigned from {old_member_id} to {member_id}"
+                f"Task {task_id} assigned from {old_member_id} to {assigned_to}"
             )
             return task
 
@@ -405,7 +403,7 @@ class TaskService:
             raise
 
     async def add_task_feedback(
-        self, task_id: int, rating: int, feedback: Optional[str] = None, operator_id: Optional[int] = None
+        self, task_id: int, rating: int, feedback: Optional[str] = None
     ) -> RepairTask:
         """
         添加任务反馈
@@ -414,7 +412,6 @@ class TaskService:
             task_id: 任务ID
             rating: 评分 (1-5)
             feedback: 反馈内容
-            operator_id: 操作者ID
 
         Returns:
             RepairTask: 更新后的任务
@@ -499,7 +496,7 @@ class TaskService:
                 [t for t in tasks if t.status == TaskStatus.IN_PROGRESS]
             )
 
-            total_work_minutes = sum(t.work_minutes or 0 for t in tasks)
+            total_work_minutes = sum(t.work_minutes for t in tasks)
             total_work_hours = round(total_work_minutes / 60.0, 2)
 
             # 类型分布
@@ -511,7 +508,7 @@ class TaskService:
             avg_rating = 0.0
             if rated_tasks:
                 avg_rating = round(
-                    sum(t.rating for t in rated_tasks if t.rating is not None) / len(rated_tasks), 2
+                    sum(t.rating for t in rated_tasks) / len(rated_tasks), 2
                 )
 
             # 延迟统计
@@ -554,7 +551,7 @@ class TaskService:
         date_from: datetime,
         date_to: datetime,
         task_ids: Optional[List[int]] = None,
-        marker_id: Optional[int] = None,
+        marker_id: int = None,
     ) -> Dict[str, Any]:
         """
         批量标记爆单任务
@@ -569,7 +566,7 @@ class TaskService:
             Dict: 标记结果
         """
         try:
-            result = await rush_service.mark_rush_tasks_by_date(
+            result = await self.rush_task_service.mark_rush_tasks_by_date(
                 date_from.date(), date_to.date(), task_ids, marker_id
             )
 
@@ -594,7 +591,7 @@ class TaskService:
         date_from: datetime,
         date_to: datetime,
         task_ids: Optional[List[int]] = None,
-        remover_id: Optional[int] = None,
+        remover_id: int = None,
     ) -> Dict[str, Any]:
         """
         批量取消爆单标记
@@ -609,7 +606,7 @@ class TaskService:
             Dict: 取消标记结果
         """
         try:
-            result = await rush_service.mark_rush_tasks_by_date(
+            result = await self.rush_task_service.unmark_rush_tasks_by_date(
                 date_from.date(), date_to.date(), task_ids, remover_id
             )
 
@@ -654,7 +651,7 @@ class TaskService:
             query = (
                 select(RepairTask)
                 .options(selectinload(RepairTask.tags), joinedload(RepairTask.member))
-                .where(RepairTask.is_rush_order.is_(True))
+                .where(RepairTask.is_rush_order)
             )
 
             if date_from:
@@ -704,7 +701,7 @@ class TaskService:
                 task_list.append(task_data)
 
             # 计算统计信息
-            total_work_minutes = sum(task.work_minutes or 0 for task in tasks)
+            total_work_minutes = sum(task.work_minutes for task in tasks)
 
             return {
                 "tasks": task_list,
@@ -743,7 +740,7 @@ class TaskService:
             base_query = (
                 select(RepairTask)
                 .options(joinedload(RepairTask.member))
-                .where(RepairTask.is_rush_order.is_(True))
+                .where(RepairTask.is_rush_order)
             )
 
             if date_from:
@@ -756,7 +753,7 @@ class TaskService:
 
             # 总体统计
             total_tasks = len(rush_tasks)
-            total_work_minutes = sum(task.work_minutes or 0 for task in rush_tasks)
+            total_work_minutes = sum(task.work_minutes for task in rush_tasks)
             total_work_hours = round(total_work_minutes / 60.0, 2)
 
             # 按状态统计
@@ -794,7 +791,7 @@ class TaskService:
                 }
                 for name, stats in member_stats.items()
             ]
-            member_list.sort(key=lambda x: x.get("task_count", 0) or 0, reverse=True)
+            member_list.sort(key=lambda x: x["task_count"], reverse=True)
 
             # 按月份统计
             month_stats = {}
@@ -830,7 +827,7 @@ class TaskService:
             raise
 
     async def remove_rush_task_marking(
-        self, task_ids: List[int], remover_id: Optional[int] = None
+        self, task_ids: List[int], remover_id: int = None
     ) -> Dict[str, Any]:
         """
         移除爆单任务标记
@@ -897,132 +894,6 @@ class TaskService:
             logger.error(f"Remove rush task marking error: {str(e)}")
             raise
 
-    async def recalculate_task_work_hours(self, task_id: int) -> bool:
-        """
-        重新计算单个任务的工时
-
-        Args:
-            task_id: 任务ID
-
-        Returns:
-            bool: 是否成功重新计算
-        """
-        try:
-            # 获取任务
-            query = select(RepairTask).where(RepairTask.id == task_id)
-            result = await self.db.execute(query)
-            task = result.scalar_one_or_none()
-
-            if not task:
-                logger.warning(f"Task not found: {task_id}")
-                return False
-
-            # 保存旧的工时
-            old_work_minutes = task.work_minutes
-
-            # 重新计算工时
-            task.update_work_minutes()
-
-            # 检查是否有变化
-            if old_work_minutes != task.work_minutes:
-                await self.db.commit()
-
-                # 更新月度汇总
-                if task.report_time and task.member_id:
-                    try:
-                        await self.work_hours_service.update_monthly_summary(
-                            task.member_id,
-                            task.report_time.year,
-                            task.report_time.month,
-                        )
-                    except Exception as e:
-                        logger.warning(
-                            f"Failed to update monthly summary for task {task_id}: {str(e)}"
-                        )
-
-                logger.info(
-                    f"Task {task_id} work hours recalculated: "
-                    f"{old_work_minutes} -> {task.work_minutes} minutes"
-                )
-                return True
-            else:
-                logger.debug(
-                    f"Task {task_id} work hours unchanged: {old_work_minutes} minutes"
-                )
-                return False
-
-        except Exception as e:
-            logger.error(
-                f"Failed to recalculate task work hours for {task_id}: {str(e)}"
-            )
-            await self.db.rollback()
-            return False
-
-    async def get_tasks_by_status(
-        self, status: TaskStatus, member_id: Optional[int] = None
-    ) -> List[RepairTask]:
-        """
-        根据状态获取任务列表
-
-        Args:
-            status: 任务状态
-            member_id: 可选的成员ID筛选
-
-        Returns:
-            List[RepairTask]: 任务列表
-        """
-        try:
-            query = select(RepairTask).where(RepairTask.status == status)
-            
-            if member_id:
-                query = query.where(RepairTask.member_id == member_id)
-            
-            result = await self.db.execute(query)
-            return result.scalars().all()
-
-        except Exception as e:
-            logger.error(f"Get tasks by status error: {str(e)}")
-            raise
-
-    async def _recalculate_work_hours_if_needed(self, task: RepairTask) -> None:
-        """
-        如果需要，重新计算工时
-
-        Args:
-            task: 要检查的任务
-        """
-        try:
-            old_work_minutes = task.work_minutes
-            task.update_work_minutes()
-            
-            if old_work_minutes != task.work_minutes:
-                logger.info(
-                    f"Task {task.id} work hours updated: "
-                    f"{old_work_minutes} -> {task.work_minutes} minutes"
-                )
-        except Exception as e:
-            logger.warning(f"Failed to recalculate work hours for task {task.id}: {str(e)}")
-
-    async def _calculate_member_summary(
-        self, 
-        member_id: int, 
-        date_from: Optional[datetime] = None,
-        date_to: Optional[datetime] = None
-    ) -> Dict[str, Any]:
-        """
-        计算成员任务汇总（内部方法）
-
-        Args:
-            member_id: 成员ID
-            date_from: 开始时间
-            date_to: 结束时间
-
-        Returns:
-            Dict: 汇总数据
-        """
-        # 这是 get_member_task_summary 的内部实现
-        return await self.get_member_task_summary(member_id, date_from, date_to)
-
     # 私有方法
 
     async def _generate_task_id(self) -> str:
@@ -1079,15 +950,9 @@ class TaskService:
             tag = TaskTag(
                 name=name,
                 work_minutes_modifier=modifier,
+                tag_type=tag_type,
                 is_active=True,
             )
-            # Set tag_type after instantiation to avoid constructor issues
-            if tag_type == "bonus":
-                tag.tag_type = TaskTagType.BONUS
-            elif tag_type == "penalty":
-                tag.tag_type = TaskTagType.PENALTY
-            else:
-                tag.tag_type = TaskTagType.CATEGORY
             self.db.add(tag)
             await self.db.flush()
 
@@ -1125,7 +990,7 @@ class TaskService:
             return False
 
         completion_hours = (
-            task.completion_time - task.response_time  
+            task.completion_time - task.response_time  # type: ignore[operator]
         ).total_seconds() / 3600
         return completion_hours > 48  # 超过48小时为延迟完成
 
@@ -1157,7 +1022,7 @@ class TaskService:
             # 检查处理超时 (>48小时)
             if response_time and completion_time:
                 processing_hours = (
-                    completion_time - response_time  
+                    completion_time - response_time  # type: ignore[operator]
                 ).total_seconds() / 3600
                 if processing_hours > 48:
                     await self._add_standard_tag(task, "超时处理")
@@ -1331,7 +1196,7 @@ class MonitoringTaskService:
             tasks = result.scalars().all()
 
             total_tasks = len(tasks)
-            total_work_minutes = sum(t.work_minutes or 0 for t in tasks)
+            total_work_minutes = sum(t.work_minutes for t in tasks)
             total_work_hours = round(total_work_minutes / 60.0, 2)
 
             # 按类型统计
@@ -1456,7 +1321,7 @@ class AssistanceTaskService:
             tasks = result.scalars().all()
 
             total_tasks = len(tasks)
-            total_work_minutes = sum(t.work_minutes or 0 for t in tasks)
+            total_work_minutes = sum(t.work_minutes for t in tasks)
             total_work_hours = round(total_work_minutes / 60.0, 2)
 
             # 按部门统计
@@ -1519,7 +1384,7 @@ class AssistanceTaskService:
                 try:
                     # 检查是否已存在相同工单
                     existing_task = await self._find_existing_task_by_work_order_id(
-                        data.get("work_order_id") or ""
+                        data.get("work_order_id")
                     )
 
                     if existing_task:
@@ -1571,7 +1436,7 @@ class AssistanceTaskService:
         date_from: str,
         date_to: str,
         task_ids: Optional[List[int]] = None,
-        marked_by: Optional[int] = None,
+        marked_by: int = None,
     ) -> Dict[str, int]:
         """
         批量标记爆单任务
@@ -1593,11 +1458,11 @@ class AssistanceTaskService:
             end_date = datetime.strptime(date_to, "%Y-%m-%d").date()
 
             # Use TaskService for rush task operations
-            if self.rush_task_service is None:
-                rush_service = TaskService(self.db)
-            else:
-                rush_service = self.rush_task_service
-            result = await rush_service.mark_rush_tasks_by_date(
+            if not self.rush_task_service:
+                self.rush_task_service = TaskService(self.db)
+
+            assert self.rush_task_service is not None
+            result = await self.rush_task_service.mark_rush_tasks_by_date(
                 start_date, end_date, task_ids, marked_by
             )
 
@@ -1620,7 +1485,7 @@ class AssistanceTaskService:
     ) -> List[Dict[str, Any]]:
         """执行A/B表匹配逻辑"""
         # 创建匹配索引：联系人+联系方式
-        match_index: Dict[str, List[int]] = {}
+        match_index = {}
 
         for i, data in enumerate(maintenance_data):
             contact_person = data.get("contact_person", "").strip()
@@ -1951,10 +1816,9 @@ class AssistanceTaskService:
         # 更新月度汇总
         for member_id, year, month in members_to_update:
             try:
-                if member_id is not None:
-                    await self.work_hours_service.update_monthly_summary(
-                        member_id, year, month
-                    )
+                await self.work_hours_service.update_monthly_summary(
+                    member_id, year, month
+                )
             except Exception as e:
                 logger.warning(
                     f"Failed to update monthly summary after rush task marking: {

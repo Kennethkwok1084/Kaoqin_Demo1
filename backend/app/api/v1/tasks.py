@@ -107,7 +107,7 @@ async def get_monitoring_tasks(
                     ),
                     "end_time": task.end_time.isoformat() if task.end_time else None,
                     "work_minutes": task.work_minutes,
-                    "work_hours": round(task.work_minutes / 60.0, 2),
+                    "work_hours": round((task.work_minutes or 0) / 60.0, 2),
                     "status": task.status.value,
                     "member_id": task.member_id,
                     "member_name": task.member.name if task.member else None,
@@ -190,7 +190,7 @@ async def get_fix_tasks(
                         else None
                     ),
                     "work_minutes": task.work_minutes,
-                    "work_hours": round(task.work_minutes / 60.0, 2),
+                    "work_hours": round((task.work_minutes or 0) / 60.0, 2),
                     "member_id": task.member_id,
                     "member_name": task.member.name if task.member else None,
                     "reporter_name": task.reporter_name,
@@ -270,7 +270,7 @@ async def get_assistance_tasks(
                     ),
                     "end_time": task.end_time.isoformat() if task.end_time else None,
                     "work_minutes": task.work_minutes,
-                    "work_hours": round(task.work_minutes / 60.0, 2),
+                    "work_hours": round((task.work_minutes or 0) / 60.0, 2),
                     "status": task.status.value,
                     "member_id": task.member_id,
                     "member_name": task.member.name if task.member else None,
@@ -389,7 +389,7 @@ async def get_all_tasks(
                 "estimatedHours": (
                     task.base_work_minutes / 60 if task.base_work_minutes else 0
                 ),
-                "actualHours": task.work_minutes / 60 if task.work_minutes else None,
+                "actualHours": (task.work_minutes or 0) / 60 if task.work_minutes else None,
                 "startedAt": (
                     task.response_time.isoformat() if task.response_time else None
                 ),
@@ -464,7 +464,7 @@ async def get_work_time_detail(
                 "status": task.status.value,
                 "work_time_breakdown": work_time_detail,
                 "total_work_minutes": task.work_minutes,
-                "total_work_hours": round(task.work_minutes / 60.0, 2),
+                "total_work_hours": round((task.work_minutes or 0) / 60.0, 2),
                 "calculated_at": datetime.utcnow().isoformat(),
             },
             message="工时详情获取成功",
@@ -2145,7 +2145,9 @@ async def create_monitoring_task(
         )
 
         logger.info(
-            f"Monitoring task created by {current_user.student_id}: {monitoring_task.id}"
+            f"Monitoring task created by {
+                current_user.student_id}: {
+                monitoring_task.id}"
         )
 
         return create_response(
@@ -2153,7 +2155,7 @@ async def create_monitoring_task(
                 "id": monitoring_task.id,
                 "title": monitoring_task.title,
                 "work_minutes": monitoring_task.work_minutes,
-                "work_hours": round(monitoring_task.work_minutes / 60.0, 2),
+                "work_hours": round(monitoring_(task.work_minutes or 0) / 60.0, 2),
             },
             message="监控任务登记成功",
         )
@@ -2226,7 +2228,7 @@ async def get_monitoring_tasks_list(
                     "start_time": task.start_time.isoformat(),
                     "end_time": task.end_time.isoformat(),
                     "work_minutes": task.work_minutes,
-                    "work_hours": round(task.work_minutes / 60.0, 2),
+                    "work_hours": round((task.work_minutes or 0) / 60.0, 2),
                     "member_name": task.member.name if task.member else "未知",
                     "created_at": task.created_at.isoformat(),
                 }
@@ -2297,7 +2299,9 @@ async def create_assistance_task(
         )
 
         logger.info(
-            f"Assistance task created by {current_user.student_id}: {assistance_task.id}"
+            f"Assistance task created by {
+                current_user.student_id}: {
+                assistance_task.id}"
         )
 
         return create_response(
@@ -2305,7 +2309,7 @@ async def create_assistance_task(
                 "id": assistance_task.id,
                 "title": assistance_task.title,
                 "work_minutes": assistance_task.work_minutes,
-                "work_hours": round(assistance_task.work_minutes / 60.0, 2),
+                "work_hours": round(assistance_(task.work_minutes or 0) / 60.0, 2),
             },
             message="协助任务登记成功",
         )
@@ -2378,7 +2382,7 @@ async def get_assistance_tasks_list(
                     "start_time": task.start_time.isoformat(),
                     "end_time": task.end_time.isoformat(),
                     "work_minutes": task.work_minutes,
-                    "work_hours": round(task.work_minutes / 60.0, 2),
+                    "work_hours": round((task.work_minutes or 0) / 60.0, 2),
                     "member_name": task.member.name if task.member else "未知",
                     "created_at": task.created_at.isoformat(),
                 }
@@ -2690,12 +2694,15 @@ async def import_maintenance_orders(
                                     assigned_member_id = matched_member.id
                                     matched_assignee_count += 1
                                     matched_assignees.append(
-                                        f"'{assignee_name}' -> '{matched_member.name}' (姓氏匹配)"
+                                        f"'{assignee_name}' -> '{
+                                            matched_member.name}' (姓氏匹配)"
                                     )
                                     logger.info(
                                         f"Found by surname: '{assignee_name}'"
                                         f" -> "
-                                        f"'{matched_member.name}' (ID: {matched_member.id})"
+                                        f"'{
+                                            matched_member.name}' (ID: {
+                                            matched_member.id})"
                                     )
                                 else:
                                     logger.warning(
@@ -3060,7 +3067,8 @@ async def batch_recalculate_work_hours(
         }
 
         logger.info(
-            f"Batch work hours recalculation completed by {current_user.student_id}: {result_data}"
+            f"Batch work hours recalculation completed by {
+                current_user.student_id}: {result_data}"
         )
 
         return create_response(
@@ -3226,7 +3234,7 @@ async def get_pending_work_hours_review(
             anomaly_reasons = []
             if task.work_minutes > threshold_minutes:
                 anomaly_reasons.append(f"工时过高({task.work_minutes}分钟)")
-            if task.work_minutes < 10:
+            if (task.work_minutes or 0) < 10:
                 anomaly_reasons.append(f"工时过低({task.work_minutes}分钟)")
             if task.rating is not None and task.rating <= 2:
                 anomaly_reasons.append(f"评分过低({task.rating}星)")
@@ -3237,7 +3245,7 @@ async def get_pending_work_hours_review(
                     "title": task.title,
                     "member_name": task.member.name if task.member else "未知",
                     "work_minutes": task.work_minutes,
-                    "work_hours": round(task.work_minutes / 60.0, 2),
+                    "work_hours": round((task.work_minutes or 0) / 60.0, 2),
                     "rating": task.rating,
                     "status": task.status.value,
                     "task_type": task.task_type.value,
@@ -3266,7 +3274,8 @@ async def get_pending_work_hours_review(
         }
 
         logger.info(
-            f"Pending work hours review retrieved by {current_user.student_id}, total: {total}"
+            f"Pending work hours review retrieved by {
+                current_user.student_id}, total: {total}"
         )
 
         return create_response(
@@ -3342,7 +3351,8 @@ async def adjust_task_work_hours(
 
         # 记录调整日志
         logger.info(
-            f"Task {task_id} work hours manually adjusted by {current_user.student_id}: "
+            f"Task {task_id} work hours manually adjusted by {
+                current_user.student_id}: "
             f"{original_minutes} -> {task.work_minutes} minutes, reason: {reason}"
         )
 
@@ -3639,7 +3649,9 @@ async def execute_ab_table_matching(
         }
 
         logger.info(
-            f"AB matching executed by {current_user.student_id}: {match_rate:.2%} match rate"
+            f"AB matching executed by {
+                current_user.student_id}: {
+                match_rate:.2%} match rate"
         )
 
         return create_response(
@@ -3789,7 +3801,8 @@ async def apply_status_mapping(
         }
 
         logger.info(
-            f"Status mapping applied by {current_user.student_id}: {updated_count} tasks updated"
+            f"Status mapping applied by {
+                current_user.student_id}: {updated_count} tasks updated"
         )
 
         return create_response(

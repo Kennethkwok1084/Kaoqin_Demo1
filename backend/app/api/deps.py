@@ -351,27 +351,27 @@ class PaginatedResponse:
 
 
 def create_response(
-    data: Any = None, 
-    message: str = "Success", 
+    data: Any = None,
+    message: str = "Success",
     status_code: int = 200,
     success: Optional[bool] = None,
-    error_code: Optional[str] = None
+    error_code: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Create standardized API response."""
     # Use provided success value or calculate from status_code
     success_value = success if success is not None else (status_code < 400)
-    
+
     response = {
         "success": success_value,
         "message": message,
         "data": data,
         "status_code": status_code,
     }
-    
+
     # Add error_code if provided
     if error_code is not None:
         response["error_code"] = error_code
-    
+
     return response
 
 

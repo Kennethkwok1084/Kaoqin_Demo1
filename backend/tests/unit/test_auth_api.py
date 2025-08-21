@@ -181,6 +181,7 @@ class TestAuthAPI:
         mock_user = Member(
             id=1,
             username="test_user",
+            name="测试用户",
             student_id="TEST001",
             role=UserRole.MEMBER,
             is_active=True,
@@ -232,6 +233,7 @@ class TestAuthAPI:
         mock_user = Member(
             id=1,
             username="test_user",
+            name="测试用户",
             password_hash="$2b$12$old_hash",
             role=UserRole.MEMBER,
             is_active=True,
@@ -239,7 +241,7 @@ class TestAuthAPI:
 
         with (
             patch("app.api.v1.auth.verify_password", return_value=True),
-            patch("app.api.v1.auth.validate_password_strength", return_value=True),
+            patch("app.api.v1.auth.validate_password_strength", return_value=(True, [])),
             patch("app.api.v1.auth.get_password_hash", return_value="$2b$12$new_hash"),
         ):
             password_data = ChangePasswordRequest(
@@ -261,6 +263,7 @@ class TestAuthAPI:
         mock_user = Member(
             id=1,
             username="test_user",
+            name="测试用户",
             password_hash="$2b$12$old_hash",
             role=UserRole.MEMBER,
             is_active=True,

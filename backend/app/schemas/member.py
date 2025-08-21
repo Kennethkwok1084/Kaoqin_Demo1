@@ -282,7 +282,9 @@ class MemberImportItem(BaseModel):
         for key, value in values.items():
             if value is None or value == "" or value == "null" or value == "undefined":
                 if key in ["student_id", "phone", "username"]:
-                    cleaned[key] = ""  # Use empty string instead of None for string fields
+                    cleaned[key] = (
+                        ""  # Use empty string instead of None for string fields
+                    )
                 elif key == "role":
                     cleaned[key] = "member"
                 elif key == "department":

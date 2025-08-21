@@ -15,9 +15,9 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.database import get_async_session
-from app.models.base import Base
 from app.core.security import get_password_hash
 from app.main import app
+from app.models.base import Base
 from app.models.member import Member, UserRole
 
 # Import database testing configuration

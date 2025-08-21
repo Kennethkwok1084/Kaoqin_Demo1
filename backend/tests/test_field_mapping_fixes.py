@@ -79,7 +79,8 @@ class TestCriticalFieldMappingIssues:
         # 验证backend使用的实际字段名
         task_data = {
             "id": task.id,
-            "task_number": f"T{datetime.now().strftime('%Y%m%d')}{task.id:04d}",  # backend生成task_number
+            # backend生成task_number
+            "task_number": f"T{datetime.now().strftime('%Y%m%d')}{task.id:04d}",
             "assigned_to": task.member_id,  # backend使用assigned_to不是member_id
             "estimated_minutes": task.estimated_minutes,  # backend使用minutes不是hours
             "actual_minutes": task.actual_minutes,  # backend使用minutes不是hours

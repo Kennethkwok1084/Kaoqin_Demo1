@@ -107,7 +107,7 @@ class TestTasksAPI:
         # Mock dependencies
         mock_db = AsyncMock()
         mock_user = Member(
-            id=2, username="other_user", role=UserRole.MEMBER, is_active=True
+            id=2, username="other_user", name="其他用户", class_name="测试班级", role=UserRole.MEMBER, is_active=True
         )
 
         # Mock task belonging to different user
@@ -131,7 +131,8 @@ class TestTasksAPI:
     @pytest.mark.asyncio
     async def test_get_repair_list_success(self):
         """Test repair tasks list endpoint - success case."""
-        # Call endpoint (get_repair_list doesn't take parameters in actual implementation)
+        # Call endpoint (get_repair_list doesn't take parameters in actual
+        # implementation)
         result = await get_repair_list()
 
         # Verify results (based on actual implementation)
@@ -223,7 +224,7 @@ class TestTasksAPI:
         # Mock dependencies
         mock_db = AsyncMock()
         mock_admin_user = Member(
-            id=1, username="admin_user", role=UserRole.ADMIN, is_active=True
+            id=1, username="admin_user", name="管理员", class_name="管理员", role=UserRole.ADMIN, is_active=True
         )
 
         # Mock database result

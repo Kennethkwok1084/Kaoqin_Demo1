@@ -15,6 +15,20 @@ except ImportError:
     from pydantic import BaseSettings  # type: ignore[no-redef]
 
 
+def _get_env_file() -> str:
+    """Get the appropriate .env file based on environment"""
+    # Check for CI environment first
+    if os.getenv("CI") == "true" or os.getenv("GITHUB_ACTIONS") == "true":
+        if os.path.exists(".env.ci"):
+            return ".env.ci"
+    # Check for testing environment
+    elif os.getenv("TESTING") == "true":
+        if os.path.exists(".env.test"):
+            return ".env.test"
+    # Default to .env
+    return ".env"
+
+
 class Settings(BaseSettings):
     """Application settings configuration."""
 
@@ -43,9 +57,15 @@ class Settings(BaseSettings):
     def assemble_db_connection(cls, v: Optional[str]) -> str:
         if isinstance(v, str) and v:
             return v
-        # Check if running in CI environment
-        if os.getenv("CI") or os.getenv("GITHUB_ACTIONS"):
-            return "postgresql+asyncpg://postgres:postgres@localhost:5432/test_db"
+        
+        # Check if we're in any testing/CI environment and use SQLite by default
+        if os.getenv("CI") == "true" or os.getenv("GITHUB_ACTIONS") == "true":
+            return "sqlite+aiosqlite:///./ci_test_attendence.db"
+        elif os.getenv("TESTING") == "true":
+            return "sqlite+aiosqlite:///./test_attendence.db"
+        elif os.getenv("POSTGRES_TEST") == "true":
+            return "postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence"
+        
         # Fallback to development PostgreSQL if no environment variable is set
         return "postgresql+asyncpg://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev"
 
@@ -54,9 +74,15 @@ class Settings(BaseSettings):
     def assemble_db_connection_sync(cls, v: Optional[str]) -> str:
         if isinstance(v, str) and v:
             return v
-        # Check if running in CI environment
-        if os.getenv("CI") or os.getenv("GITHUB_ACTIONS"):
-            return "postgresql://postgres:postgres@localhost:5432/test_db"
+        
+        # Check if we're in any testing/CI environment and use SQLite by default
+        if os.getenv("CI") == "true" or os.getenv("GITHUB_ACTIONS") == "true":
+            return "sqlite:///./ci_test_attendence.db"
+        elif os.getenv("TESTING") == "true":
+            return "sqlite:///./test_attendence.db"
+        elif os.getenv("POSTGRES_TEST") == "true":
+            return "postgresql://postgres:postgres@localhost:5432/test_attendence"
+        
         # Default fallback for sync database URL
         return "postgresql://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev"
 
@@ -159,7 +185,7 @@ class Settings(BaseSettings):
     MAX_RATING_FOR_NEGATIVE: int = 2
 
     model_config = {
-        "env_file": ".env",
+        "env_file": _get_env_file(),
         "case_sensitive": True,
         "env_file_encoding": "utf-8",
         "extra": "ignore",

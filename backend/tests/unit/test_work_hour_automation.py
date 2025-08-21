@@ -434,7 +434,8 @@ class TestWorkHourAutomationService:
     @pytest.mark.asyncio
     async def test_time_threshold_calculations(self, automation_service):
         """Test time threshold calculations for different task types."""
-        # Test response time threshold (should be 30 minutes for urgent, 4 hours for normal)
+        # Test response time threshold (should be 30 minutes for urgent, 4 hours
+        # for normal)
         urgent_threshold = automation_service._get_response_time_threshold(
             is_urgent=True
         )
@@ -445,7 +446,8 @@ class TestWorkHourAutomationService:
         assert urgent_threshold == timedelta(minutes=30)
         assert normal_threshold == timedelta(hours=4)
 
-        # Test completion time threshold (should be 24 hours for urgent, 72 hours for normal)
+        # Test completion time threshold (should be 24 hours for urgent, 72 hours
+        # for normal)
         urgent_completion = automation_service._get_completion_time_threshold(
             is_urgent=True
         )
