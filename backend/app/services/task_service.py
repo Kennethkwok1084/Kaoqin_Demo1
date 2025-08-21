@@ -405,7 +405,11 @@ class TaskService:
             raise
 
     async def add_task_feedback(
-        self, task_id: int, rating: int, feedback: Optional[str] = None, operator_id: Optional[int] = None
+        self,
+        task_id: int,
+        rating: int,
+        feedback: Optional[str] = None,
+        operator_id: Optional[int] = None
     ) -> RepairTask:
         """
         添加任务反馈
@@ -511,7 +515,9 @@ class TaskService:
             avg_rating = 0.0
             if rated_tasks:
                 avg_rating = round(
-                    sum(t.rating for t in rated_tasks if t.rating is not None) / len(rated_tasks), 2
+                    sum(t.rating for t in rated_tasks if t.rating is not None)
+                    / len(rated_tasks),
+                    2
                 )
 
             # 延迟统计
@@ -937,7 +943,8 @@ class TaskService:
                         )
                     except Exception as e:
                         logger.warning(
-                            f"Failed to update monthly summary for task {task_id}: {str(e)}"
+                            f"Failed to update monthly summary for task {task_id}: "
+                            f"{str(e)}"
                         )
 
                 logger.info(
@@ -1001,7 +1008,9 @@ class TaskService:
                     f"{old_work_minutes} -> {task.work_minutes} minutes"
                 )
         except Exception as e:
-            logger.warning(f"Failed to recalculate work hours for task {task.id}: {str(e)}")
+            logger.warning(
+                f"Failed to recalculate work hours for task {task.id}: {str(e)}"
+            )
 
     async def _calculate_member_summary(
         self, 

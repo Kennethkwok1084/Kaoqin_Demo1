@@ -998,7 +998,8 @@ class RushTaskMarkingService:
             await self.db.commit()
 
             logger.info(
-                f"Marked {marked_count} new rush tasks, updated {updated_count} tasks total"
+                f"Marked {marked_count} new rush tasks, "
+                f"updated {updated_count} tasks total"
             )
             return {
                 "marked": marked_count,
@@ -1179,7 +1180,9 @@ class RushTaskMarkingService:
         Returns:
             Dict: 标记结果统计
         """
-        return await self.mark_rush_tasks_by_date(date_from, date_to, task_ids, marked_by)
+        return await self.mark_rush_tasks_by_date(
+            date_from, date_to, task_ids, marked_by
+        )
 
     async def get_rush_tasks_list(
         self,
@@ -1243,7 +1246,11 @@ class RushTaskMarkingService:
                     "id": task.id,
                     "task_id": task.task_id,
                     "title": task.title,
-                    "member": {"id": task.member.id, "name": task.member.name} if task.member else None,
+                    "member": (
+                        {"id": task.member.id, "name": task.member.name}
+                        if task.member
+                        else None
+                    ),
                     "task_type": task.task_type.value if task.task_type else "online",
                     "status": task.status.value if task.status else "pending",
                     "report_time": (

@@ -136,7 +136,9 @@ class StatisticsService:
                 logger.error(f"Member stats error: {member_stats}")
                 member_stats_data: Dict[str, Any] = {}
             else:
-                member_stats_data = member_stats if isinstance(member_stats, dict) else {}
+                member_stats_data = (
+                    member_stats if isinstance(member_stats, dict) else {}
+                )
 
             if isinstance(task_stats, Exception):
                 logger.error(f"Task stats error: {task_stats}")
@@ -148,19 +150,25 @@ class StatisticsService:
                 logger.error(f"Work hour stats error: {work_hour_stats}")
                 work_hour_stats_data: Dict[str, Any] = {}
             else:
-                work_hour_stats_data = work_hour_stats if isinstance(work_hour_stats, dict) else {}
+                work_hour_stats_data = (
+                    work_hour_stats if isinstance(work_hour_stats, dict) else {}
+                )
 
             if isinstance(performance_stats, Exception):
                 logger.error(f"Performance stats error: {performance_stats}")
                 performance_stats_data: Dict[str, Any] = {}
             else:
-                performance_stats_data = performance_stats if isinstance(performance_stats, dict) else {}
+                performance_stats_data = (
+                    performance_stats if isinstance(performance_stats, dict) else {}
+                )
 
             if isinstance(attendance_stats, Exception):
                 logger.error(f"Attendance stats error: {attendance_stats}")
                 attendance_stats_data: Dict[str, Any] = {}
             else:
-                attendance_stats_data = attendance_stats if isinstance(attendance_stats, dict) else {}
+                attendance_stats_data = (
+                    attendance_stats if isinstance(attendance_stats, dict) else {}
+                )
 
             result = {
                 "period": {"from": date_from.isoformat(), "to": date_to.isoformat()},

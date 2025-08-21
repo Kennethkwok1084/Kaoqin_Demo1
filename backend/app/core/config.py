@@ -64,7 +64,10 @@ class Settings(BaseSettings):
         elif os.getenv("TESTING") == "true":
             return "sqlite+aiosqlite:///./test_attendence.db"
         elif os.getenv("POSTGRES_TEST") == "true":
-            return "postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence"
+            return (
+                "postgresql+asyncpg://postgres:postgres@localhost:5432/"
+                "test_attendence"
+            )
         
         # Fallback to development PostgreSQL if no environment variable is set
         return "postgresql+asyncpg://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev"

@@ -38,35 +38,70 @@ class BaseCustomException(Exception):
 class AuthenticationError(BaseCustomException):
     """认证失败时抛出的异常"""
 
-    def __init__(self, message: str = None, message_key: str = "AUTH_ERROR_CREDENTIALS_VALIDATION", **kwargs):
-        super().__init__(message=message, message_key=message_key, status_code=status.HTTP_401_UNAUTHORIZED, **kwargs)
+    def __init__(
+        self,
+        message: str = None,
+        message_key: str = "AUTH_ERROR_CREDENTIALS_VALIDATION",
+        **kwargs
+    ):
+        super().__init__(
+            message=message,
+            message_key=message_key,
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            **kwargs
+        )
 
 
 class AuthorizationError(BaseCustomException):
     """授权失败时抛出的异常"""
 
-    def __init__(self, message: str = None, message_key: str = "AUTH_ERROR_ADMIN_REQUIRED", **kwargs):
-        super().__init__(message=message, message_key=message_key, status_code=status.HTTP_403_FORBIDDEN, **kwargs)
+    def __init__(
+        self,
+        message: str = None,
+        message_key: str = "AUTH_ERROR_ADMIN_REQUIRED",
+        **kwargs
+    ):
+        super().__init__(
+            message=message,
+            message_key=message_key,
+            status_code=status.HTTP_403_FORBIDDEN,
+            **kwargs
+        )
 
 
 class InvalidTokenError(AuthenticationError):
     """JWT令牌无效时抛出的异常"""
 
-    def __init__(self, message: str = None, message_key: str = "AUTH_ERROR_INVALID_TOKEN", **kwargs):
+    def __init__(
+        self,
+        message: str = None,
+        message_key: str = "AUTH_ERROR_INVALID_TOKEN",
+        **kwargs
+    ):
         super().__init__(message=message, message_key=message_key, **kwargs)
 
 
 class TokenExpiredError(AuthenticationError):
     """JWT令牌过期时抛出的异常"""
 
-    def __init__(self, message: str = None, message_key: str = "AUTH_ERROR_EXPIRED_TOKEN", **kwargs):
+    def __init__(
+        self,
+        message: str = None,
+        message_key: str = "AUTH_ERROR_EXPIRED_TOKEN",
+        **kwargs
+    ):
         super().__init__(message=message, message_key=message_key, **kwargs)
 
 
 class InvalidCredentialsError(AuthenticationError):
     """登录凭证无效时抛出的异常"""
 
-    def __init__(self, message: str = None, message_key: str = "AUTH_ERROR_INVALID_CREDENTIALS", **kwargs):
+    def __init__(
+        self,
+        message: str = None,
+        message_key: str = "AUTH_ERROR_INVALID_CREDENTIALS",
+        **kwargs
+    ):
         super().__init__(message=message, message_key=message_key, **kwargs)
 
 
@@ -93,57 +128,112 @@ class ValidationError(BaseCustomException):
 class DuplicateResourceError(BaseCustomException):
     """尝试创建重复资源时抛出的异常"""
 
-    def __init__(self, message: str = None, message_key: str = "VALIDATION_ERROR_DUPLICATE_RESOURCE", **kwargs):
-        super().__init__(message=message, message_key=message_key, status_code=status.HTTP_409_CONFLICT, **kwargs)
+    def __init__(
+        self,
+        message: str = None,
+        message_key: str = "VALIDATION_ERROR_DUPLICATE_RESOURCE",
+        **kwargs
+    ):
+        super().__init__(
+            message=message,
+            message_key=message_key,
+            status_code=status.HTTP_409_CONFLICT,
+            **kwargs
+        )
 
 
 class ResourceNotFoundError(BaseCustomException):
     """请求的资源不存在时抛出的异常"""
 
-    def __init__(self, message: str = None, message_key: str = "VALIDATION_ERROR_RESOURCE_NOT_FOUND", **kwargs):
-        super().__init__(message=message, message_key=message_key, status_code=status.HTTP_404_NOT_FOUND, **kwargs)
+    def __init__(
+        self,
+        message: str = None,
+        message_key: str = "VALIDATION_ERROR_RESOURCE_NOT_FOUND",
+        **kwargs
+    ):
+        super().__init__(
+            message=message,
+            message_key=message_key,
+            status_code=status.HTTP_404_NOT_FOUND,
+            **kwargs
+        )
 
 
 # 业务逻辑相关异常
 class BusinessLogicError(BaseCustomException):
     """业务逻辑验证失败时抛出的异常"""
 
-    def __init__(self, message: str = None, message_key: str = "VALIDATION_ERROR_BUSINESS_LOGIC", **kwargs):
-        super().__init__(message=message, message_key=message_key, status_code=status.HTTP_400_BAD_REQUEST, **kwargs)
+    def __init__(
+        self,
+        message: str = None,
+        message_key: str = "VALIDATION_ERROR_BUSINESS_LOGIC",
+        **kwargs
+    ):
+        super().__init__(
+            message=message,
+            message_key=message_key,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            **kwargs
+        )
 
 
 class TaskProcessingError(BusinessLogicError):
     """任务处理失败时抛出的异常"""
 
-    def __init__(self, message: str = None, message_key: str = "TASK_ERROR_PROCESSING_FAILED", **kwargs):
+    def __init__(
+        self,
+        message: str = None,
+        message_key: str = "TASK_ERROR_PROCESSING_FAILED",
+        **kwargs
+    ):
         super().__init__(message=message, message_key=message_key, **kwargs)
 
 
 class WorkHourCalculationError(BusinessLogicError):
     """工时计算失败时抛出的异常"""
 
-    def __init__(self, message: str = None, message_key: str = "ATTENDANCE_ERROR_WORK_HOURS_CALCULATION", **kwargs):
+    def __init__(
+        self,
+        message: str = None,
+        message_key: str = "ATTENDANCE_ERROR_WORK_HOURS_CALCULATION",
+        **kwargs
+    ):
         super().__init__(message=message, message_key=message_key, **kwargs)
 
 
 class AttendanceCalculationError(BusinessLogicError):
     """考勤计算失败时抛出的异常"""
 
-    def __init__(self, message: str = None, message_key: str = "ATTENDANCE_ERROR_CALCULATION_FAILED", **kwargs):
+    def __init__(
+        self,
+        message: str = None,
+        message_key: str = "ATTENDANCE_ERROR_CALCULATION_FAILED",
+        **kwargs
+    ):
         super().__init__(message=message, message_key=message_key, **kwargs)
 
 
 class InvalidTaskStatusError(BusinessLogicError):
     """无效任务状态转换时抛出的异常"""
 
-    def __init__(self, message: str = None, message_key: str = "VALIDATION_ERROR_INVALID_STATUS_TRANSITION", **kwargs):
+    def __init__(
+        self,
+        message: str = None,
+        message_key: str = "VALIDATION_ERROR_INVALID_STATUS_TRANSITION",
+        **kwargs
+    ):
         super().__init__(message=message, message_key=message_key, **kwargs)
 
 
 class InvalidDateRangeError(BusinessLogicError):
     """无效日期范围时抛出的异常"""
 
-    def __init__(self, message: str = None, message_key: str = "VALIDATION_ERROR_INVALID_DATE_RANGE", **kwargs):
+    def __init__(
+        self,
+        message: str = None,
+        message_key: str = "VALIDATION_ERROR_INVALID_DATE_RANGE",
+        **kwargs
+    ):
         super().__init__(message=message, message_key=message_key, **kwargs)
 
 

@@ -120,7 +120,10 @@ async def get_admin_user(
     from app.models.member import UserRole
     
     if not current_user.role or current_user.role != UserRole.ADMIN:
-        logger.warning(f"Admin access denied for user {current_user.student_id} with role {current_user.role}")
+        logger.warning(
+            f"Admin access denied for user {current_user.student_id} "
+            f"with role {current_user.role}"
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=get_message("AUTH_ERROR_ADMIN_REQUIRED"),
@@ -146,8 +149,14 @@ async def get_group_leader_or_admin(
     # Direct role comparison to avoid property method async issues
     from app.models.member import UserRole
     
-    if not current_user.role or current_user.role not in [UserRole.ADMIN, UserRole.GROUP_LEADER]:
-        logger.warning(f"Group leader/admin access denied for user {current_user.student_id} with role {current_user.role}")
+    if (
+        not current_user.role
+        or current_user.role not in [UserRole.ADMIN, UserRole.GROUP_LEADER]
+    ):
+        logger.warning(
+            f"Group leader/admin access denied for user {current_user.student_id} "
+            f"with role {current_user.role}"
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=get_message("AUTH_ERROR_GROUP_LEADER_REQUIRED"),
@@ -380,7 +389,11 @@ def create_response(
     elif message:
         final_message = message
     else:
-        final_message = Messages.GENERAL_SUCCESS if status_code < 400 else Messages.GENERAL_ERROR
+        final_message = (
+            Messages.GENERAL_SUCCESS
+            if status_code < 400
+            else Messages.GENERAL_ERROR
+        )
     
     # Use provided success value or calculate from status_code
     success_value = success if success is not None else (status_code < 400)

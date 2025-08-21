@@ -292,7 +292,8 @@ class Member(BaseModel):
             "is_active": self.is_active,
             "profile_completed": self.profile_completed,
             "needs_profile_completion": not self.profile_completed,
-            "status_display": "在职" if self.is_active else "离职",  # Direct calculation to avoid property access
+            # Direct calculation to avoid property access
+            "status_display": "在职" if self.is_active else "离职",
             "is_verified": self.is_verified,
             "last_login": self.last_login.isoformat() if self.last_login else None,
             "login_count": self.login_count,

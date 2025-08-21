@@ -872,7 +872,11 @@ class DataImportService:
                 or "software" in repair_type.lower()
             ):
                 # 区分软件支持和软件问题
-                if "问题" in repair_type or "故障" in repair_type or "issue" in repair_type.lower():
+                if (
+                    "问题" in repair_type
+                    or "故障" in repair_type
+                    or "issue" in repair_type.lower()
+                ):
                     category = TaskCategory.SOFTWARE_ISSUE
                 else:
                     category = TaskCategory.SOFTWARE_SUPPORT

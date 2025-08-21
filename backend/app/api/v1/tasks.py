@@ -393,7 +393,9 @@ async def get_all_tasks(
                 "estimatedHours": (
                     task.base_work_minutes / 60 if task.base_work_minutes else 0
                 ),
-                "actualHours": (task.work_minutes or 0) / 60 if task.work_minutes else None,
+                "actualHours": (
+                    (task.work_minutes or 0) / 60 if task.work_minutes else None
+                ),
                 "startedAt": (
                     task.response_time.isoformat() if task.response_time else None
                 ),
@@ -2026,7 +2028,10 @@ def _calculate_detailed_work_time_breakdown(task: RepairTask) -> Dict[str, Any]:
                 "name": "差评惩罚",
                 "minutes": settings.NEGATIVE_REVIEW_PENALTY_MINUTES,
                 "type": "BAD_RATING",
-                "description": f"用户评价{task.rating}星(≤{settings.MAX_RATING_FOR_NEGATIVE}星)",
+                "description": (
+                    f"用户评价{task.rating}星"
+                    f"(≤{settings.MAX_RATING_FOR_NEGATIVE}星)"
+                ),
             }
         )
         total_penalty_minutes += settings.NEGATIVE_REVIEW_PENALTY_MINUTES
@@ -2193,7 +2198,10 @@ async def get_monitoring_tasks_list(
 
         # 权限控制
         query_member_id = member_id
-        if not check_user_can_manage_group(current_user) and member_id != current_user.id:
+        if (
+            not check_user_can_manage_group(current_user)
+            and member_id != current_user.id
+        ):
             query_member_id = current_user.id
 
         # 构建查询
@@ -2347,7 +2355,10 @@ async def get_assistance_tasks_list(
 
         # 权限控制
         query_member_id = member_id
-        if not check_user_can_manage_group(current_user) and member_id != current_user.id:
+        if (
+            not check_user_can_manage_group(current_user)
+            and member_id != current_user.id
+        ):
             query_member_id = current_user.id
 
         # 构建查询
@@ -2710,7 +2721,8 @@ async def import_maintenance_orders(
                                     )
                                 else:
                                     logger.warning(
-                                        f"No matching member found for: '{assignee_name}' "
+                                        f"No matching member found for: "
+                                        f"'{assignee_name}' "
                                         f"(cleaned: '{clean_name}')"
                                     )
                             else:
@@ -3052,7 +3064,8 @@ async def batch_recalculate_work_hours(
                 if task.work_minutes != old_minutes:
                     recalculated_count += 1
                     logger.info(
-                        f"Task {task.id} work hours updated: {old_minutes} -> {task.work_minutes}"
+                        f"Task {task.id} work hours updated: "
+                        f"{old_minutes} -> {task.work_minutes}"
                     )
 
             except Exception as e:

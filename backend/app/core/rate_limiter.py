@@ -59,7 +59,9 @@ def rate_limit(
                 key = actual_key_func(request)
                 
                 # Check rate limit
-                if not global_rate_limiter.is_allowed(key, max_requests, window_seconds):
+                if not global_rate_limiter.is_allowed(
+                    key, max_requests, window_seconds
+                ):
                     logger.warning(f"Rate limit exceeded for key: {key}")
                     raise HTTPException(
                         status_code=status.HTTP_429_TOO_MANY_REQUESTS,

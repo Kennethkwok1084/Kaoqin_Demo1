@@ -337,7 +337,11 @@ def success_response(message_key: str, data: Any = None, **kwargs) -> Dict[str, 
     """创建成功响应"""
     return message_manager.create_success_response(message_key, data, **kwargs)
 
-def error_response(message_key: str, details: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+def error_response(
+    message_key: str,
+    details: Optional[Dict[str, Any]] = None,
+    **kwargs
+) -> Dict[str, Any]:
     """创建错误响应"""
     return message_manager.create_error_response(message_key, details, **kwargs)
 

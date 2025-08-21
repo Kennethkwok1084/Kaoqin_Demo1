@@ -87,8 +87,11 @@ async def login(
         user.update_login_info()
         await db.commit()
 
-        # Refresh user object to avoid lazy loading issues - specify attributes to avoid greenlet issues
-        await db.refresh(user, ['role', 'group_id', 'is_active', 'username', 'name', 'student_id'])
+        # Refresh user object to avoid lazy loading issues
+        # Specify attributes to avoid greenlet issues
+        await db.refresh(
+            user, ['role', 'group_id', 'is_active', 'username', 'name', 'student_id']
+        )
 
         # Create tokens
         access_token = create_access_token(
@@ -117,7 +120,10 @@ async def login(
 
     except HTTPException as http_exc:
         # Re-raise HTTP exceptions (including rate limiting 429) without modification
-        logger.warning(f"HTTP exception during login for {login_data.student_id}: {http_exc.detail}")
+        logger.warning(
+            f"HTTP exception during login for {login_data.student_id}: "
+            f"{http_exc.detail}"
+        )
         raise
     except Exception as e:
         logger.error(f"Unexpected login error for {login_data.student_id}: {str(e)}")
