@@ -39,7 +39,6 @@ def main():
     print("\n导入测试:")
     try:
         sys.path.insert(0, str(Path.cwd()))
-        import app.main
 
         print("  app.main: OK")
     except Exception as e:

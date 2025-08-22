@@ -197,9 +197,8 @@ class TestBasicCoverage:
 
     def test_task_schemas_validation(self):
         """Test task schema validation."""
-        from datetime import datetime
 
-        from app.schemas.task import RepairTaskCreate, RepairTaskResponse
+        from app.schemas.task import RepairTaskCreate
 
         # Test task creation schema
         task_data = RepairTaskCreate(
@@ -215,7 +214,7 @@ class TestBasicCoverage:
 
     def test_member_schemas_validation(self):
         """Test member schema validation."""
-        from app.schemas.member import MemberCreate, MemberResponse
+        from app.schemas.member import MemberCreate
 
         # Test member creation
         member_data = MemberCreate(
@@ -251,8 +250,6 @@ class TestBasicCoverage:
         from app.core.exceptions import (
             AuthenticationError,
             AuthorizationError,
-            DatabaseError,
-            ExternalServiceError,
             ValidationError,
         )
 
@@ -302,9 +299,6 @@ class TestBasicCoverage:
 
     def test_database_base_model(self):
         """Test base model functionality."""
-        from datetime import datetime
-
-        from app.models.base import BaseModel
 
         # Since BaseModel is abstract, we'll test via a concrete model
         from app.models.member import Member
@@ -403,7 +397,6 @@ class TestBasicCoverage:
     def test_json_serialization(self):
         """Test JSON serialization of common data structures."""
         import json
-        from datetime import date, datetime
 
         # Test serializing common data types
         data = {

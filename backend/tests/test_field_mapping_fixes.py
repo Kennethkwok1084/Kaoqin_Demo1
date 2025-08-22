@@ -6,13 +6,11 @@ Comprehensive testing and validation of frontend-backend field mapping
 from datetime import datetime
 
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.member import Member, UserRole
 from app.models.task import RepairTask, TaskCategory, TaskPriority, TaskStatus, TaskType
-from app.schemas.auth import LoginRequest, LoginResponse, UserProfileResponse
-from app.schemas.member import MemberCreate, MemberResponse
-from app.schemas.task import TaskCreate, TaskResponse
+from app.schemas.auth import LoginRequest
+from app.schemas.task import TaskCreate
 
 
 @pytest.mark.asyncio

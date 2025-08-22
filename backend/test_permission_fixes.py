@@ -6,12 +6,9 @@ This script tests the core functionality that was identified as problematic.
 
 import asyncio
 import sys
-from unittest.mock import AsyncMock, MagicMock
 
 from app.api.deps import (
     get_admin_user,
-    get_current_active_admin,
-    get_current_active_group_leader,
     get_group_leader_or_admin,
 )
 from app.core.security import rate_limiter
@@ -145,10 +142,10 @@ def test_rate_limiter():
     for i in range(3):
         result = rate_limiter.is_allowed(key, max_requests=3, window_seconds=60)
         if result:
-            print_success(f"Request {i+1}: Allowed as expected")
+            print_success(f"Request {i + 1}: Allowed as expected")
             test_results.append(True)
         else:
-            print_error(f"Request {i+1}: Should have been allowed")
+            print_error(f"Request {i + 1}: Should have been allowed")
             test_results.append(False)
 
     # Block the 4th request
@@ -210,15 +207,15 @@ def test_member_model_properties():
     # Test property access (should work without async issues)
     try:
         # Test admin properties
-        assert admin_user.is_admin == True
-        assert admin_user.can_manage_group == True
+        assert admin_user.is_admin
+        assert admin_user.can_manage_group
         print_success("Admin user properties work correctly")
         test_results.append(True)
 
         # Test group leader properties
         assert group_leader_user.is_admin == False
-        assert group_leader_user.is_group_leader == True
-        assert group_leader_user.can_manage_group == True
+        assert group_leader_user.is_group_leader
+        assert group_leader_user.can_manage_group
         print_success("Group leader properties work correctly")
         test_results.append(True)
 
@@ -232,7 +229,7 @@ def test_member_model_properties():
         # Test get_safe_dict method (was causing async issues)
         safe_dict = admin_user.get_safe_dict()
         assert safe_dict["role"] == "admin"
-        assert safe_dict["is_active"] == True
+        assert safe_dict["is_active"]
         assert "status_display" in safe_dict
         print_success("get_safe_dict method works without async issues")
         test_results.append(True)

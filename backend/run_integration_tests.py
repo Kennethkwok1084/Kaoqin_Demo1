@@ -6,13 +6,12 @@
 """
 
 import argparse
-import asyncio
 import json
 import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 
 class IntegrationTestRunner:
@@ -45,7 +44,7 @@ class IntegrationTestRunner:
 
         # 尝试添加JSON报告（如果可用）
         try:
-            import pytest_json_report
+            pass
 
             cmd.extend(["--json-report", "--json-report-file=test_results.json"])
         except ImportError:

@@ -4,12 +4,11 @@ CI/CD Pipeline Simulation Script
 Simulates the complete CI/CD build pipeline to verify all fixes are working
 """
 
-import os
 import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 
 
 def run_command(
@@ -130,7 +129,7 @@ def main():
     # Run pipeline stages
     for stage in pipeline_stages:
         stage_name = stage["name"]
-        print(f"\n{'='*20} {stage_name.upper()} {'='*20}")
+        print(f"\n{'=' * 20} {stage_name.upper()} {'=' * 20}")
 
         stage_results = {}
         stage_success = True

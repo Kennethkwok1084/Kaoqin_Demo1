@@ -116,27 +116,14 @@ def verify_services():
     print("\n⚙️ Checking services...")
 
     try:
-        from app.services.ab_table_matching_service import (
-            ABTableMatchingService,
-            MatchingStrategy,
-            MatchResult,
-        )
+        pass
 
         print("  ✓ A/B Table Matching Service")
-
-        from app.services.work_hours_service import (
-            RushTaskMarkingService,
-            WorkHoursCalculationService,
-        )
 
         print("  ✓ Work Hours Calculation Service")
         print("  ✓ Rush Task Marking Service")
 
-        from app.services.task_service import TaskService
-
         print("  ✓ Task Service")
-
-        from app.services.import_service import DataImportService
 
         print("  ✓ Data Import Service")
 

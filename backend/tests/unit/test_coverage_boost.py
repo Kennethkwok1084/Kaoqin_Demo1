@@ -143,7 +143,7 @@ class TestCoverageBoost:
     def test_enum_values_access(self):
         """Test enum values can be accessed."""
         from app.models.member import UserRole
-        from app.models.task import TaskCategory, TaskPriority, TaskStatus, TaskType
+        from app.models.task import TaskStatus, TaskType
 
         # Test enum value access
         assert UserRole.ADMIN.value == "admin"
@@ -209,8 +209,7 @@ class TestCoverageBoost:
 
     def test_model_string_representations(self):
         """Test model string representations."""
-        from app.models.member import Member, UserRole
-        from app.models.task import RepairTask, TaskStatus
+        from app.models.member import Member
 
         # Test Member __repr__
         member = Member(

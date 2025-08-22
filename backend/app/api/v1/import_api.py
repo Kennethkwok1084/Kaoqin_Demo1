@@ -433,9 +433,6 @@ def get_field_mapping(table_type: str = "task_table") -> Dict[str, Any]:
     Returns:
         Dict: 字段映射配置
     """
-    from sqlalchemy.ext.asyncio import create_async_engine
-
-    from app.core.config import settings
     from app.services.import_service import DataImportService
 
     # 创建临时数据库连接用于初始化服务

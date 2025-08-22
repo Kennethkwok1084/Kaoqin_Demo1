@@ -89,10 +89,14 @@ async def test_remote_integration():
                 access_token = login_result.get("access_token")
                 print(f"[OK] Login successful!")
                 print(
-                    f"[DEBUG] Login response keys: {login_result.keys() if login_result else 'None'}"
+                    f"[DEBUG] Login response keys: {
+                        login_result.keys() if login_result else 'None'}"
                 )
                 print(
-                    f"[DEBUG] Login response data: {login_result.get('data', {}) if login_result else 'None'}"
+                    f"[DEBUG] Login response data: {
+                        login_result.get(
+                            'data',
+                            {}) if login_result else 'None'}"
                 )
 
                 # 检查不同的token字段位置

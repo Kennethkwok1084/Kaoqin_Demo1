@@ -10,9 +10,8 @@ from sqlalchemy import and_, func, select, text
 from sqlalchemy.exc import IntegrityError
 
 from app.core.database_compatibility import SQLiteEnumValidator
-from app.models.attendance import AttendanceRecord
 from app.models.member import Member, UserRole
-from app.models.task import RepairTask, TaskCategory, TaskStatus, TaskType
+from app.models.task import RepairTask, TaskStatus, TaskType
 from app.services.import_service import DataImportService
 
 

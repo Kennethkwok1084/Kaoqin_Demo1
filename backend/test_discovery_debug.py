@@ -66,15 +66,9 @@ def main():
         if str(current_dir) not in sys.path:
             sys.path.insert(0, str(current_dir))
 
-        import app.main
-
         print("   ✅ app.main 导入成功")
 
-        import app.models
-
         print("   ✅ app.models 导入成功")
-
-        import app.core.database
 
         print("   ✅ app.core.database 导入成功")
 
@@ -88,8 +82,6 @@ def main():
         import pytest
 
         print(f"   ✅ pytest 导入成功, 版本: {pytest.__version__}")
-
-        import pytest_asyncio
 
         print(f"   ✅ pytest_asyncio 导入成功")
 

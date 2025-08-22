@@ -3,24 +3,14 @@
 测试数据库迁移修复脚本
 验证修复后的迁移文件是否能在不同环境中安全执行
 """
-import asyncio
-import os
+import logging
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 # 添加项目根目录到Python路径
 sys.path.insert(0, str(Path(__file__).parent))
 
-import logging
-
-from alembic import command
-from alembic.config import Config
-from alembic.runtime.environment import EnvironmentContext
-from alembic.script import ScriptDirectory
-from sqlalchemy import create_engine, text
-from sqlalchemy.engine import Engine
 
 # 设置日志
 logging.basicConfig(level=logging.INFO)
@@ -94,9 +84,9 @@ def test_sql_commands():
     # 简单的语法检查（PostgreSQL客户端不可用时）
     for i, sql in enumerate(test_sql_commands):
         if "DO $$" in sql and "END $$;" in sql:
-            logger.info(f"✅ SQL命令 {i+1} DO块语法正确")
+            logger.info(f"✅ SQL命令 {i + 1} DO块语法正确")
         else:
-            logger.error(f"❌ SQL命令 {i+1} DO块语法错误")
+            logger.error(f"❌ SQL命令 {i + 1} DO块语法错误")
             return False
 
     return True

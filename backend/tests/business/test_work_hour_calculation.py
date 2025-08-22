@@ -4,7 +4,6 @@
 """
 
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
 
 import pytest
 

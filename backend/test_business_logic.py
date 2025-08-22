@@ -3,9 +3,6 @@
 Test core business logic without database dependencies
 """
 
-from datetime import datetime, timedelta
-from decimal import Decimal
-
 
 class MockTask:
     def __init__(

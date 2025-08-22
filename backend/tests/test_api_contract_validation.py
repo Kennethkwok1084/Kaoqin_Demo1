@@ -6,7 +6,6 @@ API Contract Validation Tests
 from datetime import datetime
 
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.member import Member, UserRole
 from app.models.task import RepairTask, TaskCategory, TaskPriority, TaskStatus, TaskType

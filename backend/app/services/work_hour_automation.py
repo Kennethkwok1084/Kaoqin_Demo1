@@ -18,7 +18,6 @@ from app.models.task import (
     RepairTask,
     TaskStatus,
     TaskTag,
-    TaskTagType,
     task_tag_association,
 )
 from app.services.task_service import TaskService

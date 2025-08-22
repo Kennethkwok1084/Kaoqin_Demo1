@@ -4,7 +4,6 @@
 """
 
 import asyncio
-import os
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine

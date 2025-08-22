@@ -3,7 +3,7 @@ Tests for modules with 0% coverage to improve overall coverage.
 Focus on basic imports and simple functionality.
 """
 
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
@@ -158,10 +158,6 @@ class TestZeroCoverageModules:
         """Test custom exception classes."""
         from app.core.exceptions import (
             AuthenticationError,
-            AuthorizationError,
-            BusinessLogicError,
-            DatabaseError,
-            ExternalServiceError,
             ValidationError,
         )
 

@@ -14,8 +14,6 @@ from app.models.task import (
     TaskCategory,
     TaskPriority,
     TaskStatus,
-    TaskTag,
-    TaskTagType,
     TaskType,
 )
 from app.services.task_service import TaskService

@@ -10,14 +10,11 @@ import pytest
 
 from app.models.member import Member, UserRole
 from app.models.task import (
-    AssistanceTask,
     MonitoringTask,
     RepairTask,
     TaskCategory,
     TaskPriority,
     TaskStatus,
-    TaskTag,
-    TaskTagType,
     TaskType,
 )
 from app.services.task_service import TaskService

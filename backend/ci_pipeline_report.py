@@ -4,7 +4,6 @@ CI/CD Pipeline Health Report Generator
 """
 
 import subprocess
-import sys
 
 
 def run_command(cmd):

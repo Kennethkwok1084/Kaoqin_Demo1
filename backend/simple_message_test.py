@@ -2,12 +2,11 @@
 简单测试消息系统是否正常工作
 """
 
+from app.core.messages import get_message, success_response
 import os
 import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "app"))
-
-from app.core.messages import Messages, get_message, success_response
 
 
 def test_basic_functionality():

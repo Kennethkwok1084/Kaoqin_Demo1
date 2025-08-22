@@ -210,7 +210,7 @@ def test_integration_scenarios():
     ]
 
     result5 = simulate_ab_matching(a_record, b_records)
-    assert result5["matched"] == True, "A/B matching failed"
+    assert result5["matched"], "A/B matching failed"
     assert result5["confidence"] == 1.0, f"Expected 1.0, got {result5['confidence']}"
     assert result5["match"]["name"] == "张三", "Wrong match selected"
 

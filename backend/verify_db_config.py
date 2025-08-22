@@ -9,8 +9,7 @@ import os
 import sys
 from typing import Any, Dict
 
-import asyncpg
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import StaticPool
 
 # Import project modules
@@ -139,7 +138,7 @@ async def main():
         if result["connection_success"]:
             successful += 1
 
-    print(f"\nSuccess Rate: {successful}/{total} ({successful/total*100:.1f}%)")
+    print(f"\nSuccess Rate: {successful}/{total} ({successful / total * 100:.1f}%)")
 
     # Recommendations
     print("\nRECOMMENDATIONS")

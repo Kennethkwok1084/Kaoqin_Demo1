@@ -3,24 +3,22 @@
 验证消息格式化和多语言支持是否正常工作
 """
 
-import os
-import sys
-
-sys.path.append(os.path.join(os.path.dirname(__file__), "app"))
-
-from app.core.exceptions import (
-    AuthenticationError,
-    ResourceNotFoundError,
-    ValidationError,
-)
 from app.core.messages import (
-    MessageFormatter,
     MessageManager,
     Messages,
     error_response,
     get_message,
     success_response,
 )
+from app.core.exceptions import (
+    AuthenticationError,
+    ResourceNotFoundError,
+    ValidationError,
+)
+import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "app"))
 
 
 def test_message_formatting():

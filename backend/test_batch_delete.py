@@ -2,8 +2,6 @@
 Test script to verify the batch delete endpoint works correctly
 """
 
-import json
-
 
 def test_batch_delete_endpoint():
     """Test the batch delete endpoint structure"""

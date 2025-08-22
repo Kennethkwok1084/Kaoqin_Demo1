@@ -171,10 +171,10 @@ async def get_statistics_overview(
 
         attendance_query = select(
             func.count().label("total_attendance"),
-            func.count(case((AttendanceRecord.is_late_checkin == True, 1))).label(
+            func.count(case((AttendanceRecord.is_late_checkin, 1))).label(
                 "late_checkins"
             ),
-            func.count(case((AttendanceRecord.is_early_checkout == True, 1))).label(
+            func.count(case((AttendanceRecord.is_early_checkout, 1))).label(
                 "early_checkouts"
             ),
             func.avg(AttendanceRecord.work_hours).label("avg_work_hours"),
@@ -1133,18 +1133,24 @@ async def get_work_hours_overview(
                         team_summary.get("total_hours") or 0.0  # type: ignore[arg-type]
                     ) + float(member_data.get("total_hours") or 0.0)
                     team_summary["total_repair_hours"] = float(
-                        team_summary.get("total_repair_hours") or 0.0  # type: ignore[arg-type]
+                        # type: ignore[arg-type]
+                        team_summary.get("total_repair_hours")
+                        or 0.0
                     ) + float(member_data.get("repair_task_hours") or 0.0)
                     team_summary["total_monitoring_hours"] = float(
-                        team_summary.get("total_monitoring_hours") or 0.0  # type: ignore[arg-type]
+                        # type: ignore[arg-type]
+                        team_summary.get("total_monitoring_hours")
+                        or 0.0
                     ) + float(member_data.get("monitoring_hours") or 0.0)
                     team_summary["total_assistance_hours"] = float(
-                        team_summary.get("total_assistance_hours") or 0.0  # type: ignore[arg-type]
+                        # type: ignore[arg-type]
+                        team_summary.get("total_assistance_hours")
+                        or 0.0
                     ) + float(member_data.get("assistance_hours") or 0.0)
 
                     if member_data.get("is_full_attendance", False):
                         team_summary["full_attendance_count"] = (
-                            int(team_summary.get("full_attendance_count") or 0) + 1  # type: ignore[call-overload]
+                            int(team_summary.get("full_attendance_count") or 0) + 1
                         )
 
                     if "member_details" not in team_summary:

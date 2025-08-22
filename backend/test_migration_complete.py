@@ -4,19 +4,15 @@
 测试数据库迁移是否可以正常工作，不会出现表已存在的冲突
 """
 
+from app.core.database import async_engine
+from sqlalchemy import text
 import asyncio
-import os
 import sys
 from pathlib import Path
 
 # 添加backend目录到Python路径
 backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
-
-from sqlalchemy import text
-
-from app.core.database import async_engine
-from app.models.base import Base
 
 
 async def test_clean_migration():
@@ -89,9 +85,9 @@ async def test_clean_migration():
             result = await conn.execute(
                 text(
                     """
-                SELECT table_name 
-                FROM information_schema.tables 
-                WHERE table_schema = 'public' 
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_schema = 'public'
                 AND table_type = 'BASE TABLE'
                 ORDER BY table_name
             """
@@ -125,8 +121,8 @@ async def test_clean_migration():
             result = await conn.execute(
                 text(
                     """
-                SELECT typname 
-                FROM pg_type 
+                SELECT typname
+                FROM pg_type
                 WHERE typname IN ('userrole', 'taskstatus', 'taskcategory', 'taskpriority', 'tasktype', 'tasktagtype', 'attendanceexceptionstatus')
                 ORDER BY typname
             """
@@ -175,7 +171,7 @@ async def test_clean_migration():
             await conn.execute(
                 text(
                     """
-                INSERT INTO members (username, name, class_name, password_hash, role, department, join_date, is_active, profile_completed, is_verified, login_count) 
+                INSERT INTO members (username, name, class_name, password_hash, role, department, join_date, is_active, profile_completed, is_verified, login_count)
                 VALUES ('test_user', '测试用户', '测试班级', 'test_hash', 'MEMBER', '信息化建设处', CURRENT_DATE, true, false, false, 0)
                 ON CONFLICT (username) DO NOTHING
             """

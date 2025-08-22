@@ -7,9 +7,8 @@ Systematically improve test coverage from 19% to 90%+
 import json
 import subprocess
 import sys
-from dataclasses import asdict
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 # Import the AI recommendation engine (optional)
 sys.path.append(str(Path(__file__).parent.parent))
@@ -232,76 +231,76 @@ from app.models.task import RepairTask, TaskType, TaskStatus
 @pytest.mark.asyncio
 class Test{service_name.title().replace('_', '')}:
     """Comprehensive {service_name} tests"""
-    
+
     async def test_service_initialization(self, async_session):
         """Test service initialization"""
         # Test service can be created with session
         service = {service_name.title().replace('_', 'Service')}(async_session)
         assert service is not None
         assert service.session == async_session
-    
+
     async def test_basic_operations(self, async_session):
         """Test basic CRUD operations"""
         service = {service_name.title().replace('_', 'Service')}(async_session)
-        
+
         # Test data creation
         test_data = {{
             "name": "Test Item",
             "description": "Test Description"
         }}
-        
+
         # Add actual service method tests here
         # result = await service.create(test_data)
         # assert result is not None
-        
+
     async def test_error_handling(self, async_session):
         """Test error handling"""
         service = {service_name.title().replace('_', 'Service')}(async_session)
-        
+
         # Test invalid input handling
         with pytest.raises((ValueError, TypeError)):
             await service.some_method(None)
-            
+
         # Test database error handling
         with patch.object(async_session, 'execute', side_effect=Exception("DB Error")):
             with pytest.raises(Exception):
                 await service.some_method({{}})
-                
+
     async def test_edge_cases(self, async_session):
         """Test edge cases and boundary conditions"""
         service = {service_name.title().replace('_', 'Service')}(async_session)
-        
+
         # Test empty inputs
         result = await service.some_method({{}})
         # Add assertions
-        
+
         # Test large inputs
         # Test concurrent access
         # Test resource cleanup
-        
+
     def test_utility_methods(self):
         """Test utility and helper methods"""
         # Test static methods
         # Test data validation
         # Test formatting functions
         pass
-        
+
     @patch('app.services.{service_name}.external_dependency')
     async def test_external_dependencies(self, mock_dependency, async_session):
         """Test external dependency integration"""
         service = {service_name.title().replace('_', 'Service')}(async_session)
-        
+
         # Mock external calls
         mock_dependency.return_value = "mocked_result"
-        
+
         # Test service behavior with mocked dependencies
         # result = await service.method_using_external_service()
         # assert mock_dependency.called
-        
+
     async def test_performance_characteristics(self, async_session):
         """Test performance and resource usage"""
         service = {service_name.title().replace('_', 'Service')}(async_session)
-        
+
         # Test bulk operations
         # Test memory usage
         # Test execution time
@@ -326,10 +325,10 @@ from sqlalchemy.exc import IntegrityError
 from app.models.{model_name} import *
 
 
-@pytest.mark.asyncio 
+@pytest.mark.asyncio
 class Test{model_name.title()}Model:
     """Comprehensive {model_name} model tests"""
-    
+
     async def test_model_creation(self, async_session):
         """Test basic model creation"""
         # Test valid model creation
@@ -337,49 +336,49 @@ class Test{model_name.title()}Model:
             "name": "Test {model_name.title()}",
             "created_at": datetime.utcnow()
         }}
-        
+
         # instance = {model_name.title()}(**model_data)
         # async_session.add(instance)
         # await async_session.commit()
         # assert instance.id is not None
-        
+
     async def test_model_validation(self):
         """Test model validation rules"""
         # Test required fields
         with pytest.raises(TypeError):
             {model_name.title()}()
-            
+
         # Test field validation
         # Test data type validation
         # Test constraint validation
-        
+
     async def test_model_relationships(self, async_session):
         """Test model relationships"""
         # Test foreign key relationships
         # Test cascade behavior
         # Test relationship loading
         pass
-        
+
     async def test_model_methods(self):
         """Test model instance methods"""
         # Test custom methods
-        # Test property methods  
+        # Test property methods
         # Test string representations
         pass
-        
+
     def test_model_properties(self):
         """Test model properties and computed fields"""
         # Test property calculations
         # Test data transformations
         # Test validation properties
         pass
-        
+
     async def test_model_constraints(self, async_session):
         """Test database constraints"""
         # Test unique constraints
         # Test not null constraints
         # Test check constraints
-        
+
         # Example:
         # with pytest.raises(IntegrityError):
         #     duplicate = {model_name.title()}(name="duplicate")
@@ -458,7 +457,11 @@ async def main():
     print("Coverage improvement phases:")
     for phase in improvement_plan:
         print(
-            f"  Phase {phase['phase']}: {phase['name']} -> {phase['target_coverage']}% ({phase['duration_days']} days)"
+            f"  Phase {
+                phase['phase']}: {
+                phase['name']} -> {
+                phase['target_coverage']}% ({
+                    phase['duration_days']} days)"
         )
 
     # Step 4: Get AI recommendations (if available)
@@ -477,7 +480,8 @@ async def main():
 
         ai_recommendations = await ai_system.analyze_and_recommend(test_results)
         print(
-            f"Generated {ai_recommendations['metadata']['total_recommendations']} AI recommendations"
+            f"Generated {
+                ai_recommendations['metadata']['total_recommendations']} AI recommendations"
         )
     else:
         print("\nAI recommendations skipped (OpenAI dependency not available)")
@@ -497,7 +501,8 @@ async def main():
     print(f"Current Coverage: {analyzer.current_coverage}%")
     print(f"Target Coverage: {analyzer.target_coverage}%")
     print(
-        f"Improvement Needed: {analyzer.target_coverage - analyzer.current_coverage:.1f}%"
+        f"Improvement Needed: {
+            analyzer.target_coverage - analyzer.current_coverage:.1f}%"
     )
     print(f"Phases Planned: {len(improvement_plan)}")
     print(f"Test Files Created: {len(created_files)}")

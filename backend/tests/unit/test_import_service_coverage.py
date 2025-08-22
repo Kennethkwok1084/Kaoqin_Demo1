@@ -3,17 +3,14 @@ Comprehensive tests for DataImportService
 Generated to improve test coverage to 90%+
 """
 
-import tempfile
-from datetime import datetime
-from pathlib import Path
-from unittest.mock import AsyncMock, Mock, mock_open, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pandas as pd
 import pytest
 from fastapi import UploadFile
 
-from app.models.member import Member, UserRole
-from app.models.task import RepairTask, TaskCategory, TaskStatus, TaskType
+from app.models.member import Member
+from app.models.task import RepairTask
 from app.services.import_service import DataImportService, ImportResult
 
 

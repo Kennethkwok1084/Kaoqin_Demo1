@@ -6,18 +6,25 @@ Updated to support dual database testing strategy (SQLite/PostgreSQL).
 
 # Force SQLite usage for tests to avoid asyncpg event loop issues
 # Set BEFORE imports to ensure it's available during database config loading
+from tests.database_config import (
+    test_config,
+)
+from app.models.member import Member, UserRole
+from app.models.base import Base
+from app.main import app
+from app.core.security import get_password_hash
+from app.core.database import get_async_session
+from sqlalchemy.ext.asyncio import AsyncSession
+from httpx import AsyncClient
+from fastapi.testclient import TestClient
+import pytest_asyncio
+import pytest
+from typing import AsyncGenerator, Generator
+import asyncio
 import os
 
 os.environ["FORCE_SQLITE_TESTS"] = "true"
 
-import asyncio
-from typing import AsyncGenerator, Generator
-
-import pytest
-import pytest_asyncio
-from fastapi.testclient import TestClient
-from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 import app.models.attendance  # noqa: F401
 
@@ -25,20 +32,8 @@ import app.models.attendance  # noqa: F401
 import app.models.base  # noqa: F401
 import app.models.member  # noqa: F401
 import app.models.task  # noqa: F401
-from app.core.database import get_async_session
-from app.core.security import get_password_hash
-from app.main import app
-from app.models.base import Base
-from app.models.member import Member, UserRole
 
 # Import database testing configuration
-from tests.database_config import (
-    DatabaseCompatibilityChecker,
-    database_agnostic,
-    postgresql_only,
-    sqlite_only,
-    test_config,
-)
 
 # Environment variable already set at top of file
 

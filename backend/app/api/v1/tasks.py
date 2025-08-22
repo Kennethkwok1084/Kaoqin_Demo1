@@ -16,7 +16,6 @@ from sqlalchemy.orm import joinedload, selectinload
 from app.api.deps import (
     check_user_can_access_task,
     check_user_can_manage_group,
-    check_user_is_admin,
     create_error_response,
     create_response,
     get_current_active_admin,
@@ -1078,7 +1077,6 @@ async def update_task_status(
             )
 
         # 权限检查
-        is_task_owner = task.member_id == current_user.id
         if task.member_id and not check_user_can_access_task(
             current_user, task.member_id
         ):
@@ -1701,7 +1699,6 @@ async def calculate_work_hours(
             )
 
         # 权限检查
-        is_task_owner = task.member_id == current_user.id
         if task.member_id and not check_user_can_access_task(
             current_user, task.member_id
         ):
@@ -3171,7 +3168,6 @@ async def recalculate_single_task_hours(
             )
 
         # 权限检查
-        is_task_owner = task.member_id == current_user.id
         if not check_user_can_access_task(current_user, task.member_id or 0):
             raise HTTPException(
                 status_code=http_status.HTTP_403_FORBIDDEN,
@@ -3506,9 +3502,13 @@ async def get_work_hours_statistics(
 
         # 转换类型统计格式
         for type_name, stats in type_stats.items():
-            stats["total_hours"] = round(stats["total_minutes"] / 60.0, 2)  # type: ignore[assignment]
+            stats["total_hours"] = round(
+                stats["total_minutes"] / 60.0, 2
+            )  # type: ignore[assignment]
             stats["avg_hours"] = (
-                round(float(stats["total_hours"]) / stats["count"], 2)  # type: ignore[assignment]
+                round(
+                    float(stats["total_hours"]) / stats["count"], 2
+                )  # type: ignore[assignment]
                 if stats["count"] > 0
                 else 0.0
             )
@@ -3774,8 +3774,12 @@ async def enhanced_import_with_ab_matching(
         failed_imports = import_result["failed_imports"]
         matched_records = import_result.get("matched_records", 0)
 
-        success_rate = successful_imports / total_records if total_records > 0 else 0  # type: ignore[operator]
-        match_rate = matched_records / total_records if total_records > 0 else 0  # type: ignore[operator]
+        success_rate = (
+            successful_imports / total_records if total_records > 0 else 0
+        )  # type: ignore[operator]
+        match_rate = (
+            matched_records / total_records if total_records > 0 else 0
+        )  # type: ignore[operator]
 
         response_data = {
             "import_summary": {
