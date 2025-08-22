@@ -24,6 +24,7 @@ from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, BaseModel
+
 if TYPE_CHECKING:
     from app.models.member import Member
 

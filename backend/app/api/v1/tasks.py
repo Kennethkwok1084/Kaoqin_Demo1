@@ -14,15 +14,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
 from app.api.deps import (
+    check_user_can_access_task,
+    check_user_can_manage_group,
+    check_user_is_admin,
     create_error_response,
     create_response,
     get_current_active_admin,
     get_current_active_group_leader,
     get_current_user,
     get_db,
-    check_user_can_manage_group,
-    check_user_can_access_task,
-    check_user_is_admin,
 )
 from app.models.member import Member, UserRole
 from app.models.task import (
@@ -76,6 +76,7 @@ async def get_monitoring_tasks(
 
         # 权限过滤：非管理员只能看到自己的任务
         from app.api.deps import check_user_can_manage_group
+
         if not check_user_can_manage_group(current_user):
             query = query.where(MonitoringTask.member_id == current_user.id)
 

@@ -7,6 +7,7 @@ Updated to support dual database testing strategy (SQLite/PostgreSQL).
 # Force SQLite usage for tests to avoid asyncpg event loop issues
 # Set BEFORE imports to ensure it's available during database config loading
 import os
+
 os.environ["FORCE_SQLITE_TESTS"] = "true"
 
 import asyncio
@@ -18,15 +19,15 @@ from fastapi.testclient import TestClient
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.core.database import get_async_session
-from app.core.security import get_password_hash
-from app.main import app
-# Import models in correct order to avoid forward reference issues  
+import app.models.attendance  # noqa: F401
+
+# Import models in correct order to avoid forward reference issues
 import app.models.base  # noqa: F401
 import app.models.member  # noqa: F401
 import app.models.task  # noqa: F401
-import app.models.attendance  # noqa: F401
-
+from app.core.database import get_async_session
+from app.core.security import get_password_hash
+from app.main import app
 from app.models.base import Base
 from app.models.member import Member, UserRole
 
@@ -40,6 +41,7 @@ from tests.database_config import (
 )
 
 # Environment variable already set at top of file
+
 
 @pytest.fixture(scope="session", autouse=True)
 def force_sqlite_for_tests():

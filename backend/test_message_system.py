@@ -3,17 +3,25 @@
 验证消息格式化和多语言支持是否正常工作
 """
 
-import sys
 import os
+import sys
+
 sys.path.append(os.path.join(os.path.dirname(__file__), 'app'))
 
-from app.core.messages import (
-    Messages, MessageFormatter, MessageManager, 
-    get_message, success_response, error_response
-)
 from app.core.exceptions import (
-    AuthenticationError, ValidationError, ResourceNotFoundError
+    AuthenticationError,
+    ResourceNotFoundError,
+    ValidationError,
 )
+from app.core.messages import (
+    MessageFormatter,
+    MessageManager,
+    Messages,
+    error_response,
+    get_message,
+    success_response,
+)
+
 
 def test_message_formatting():
     """测试消息格式化功能"""

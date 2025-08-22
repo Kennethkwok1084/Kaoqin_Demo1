@@ -551,7 +551,7 @@ class WorkHoursCalculationService:
             if not isinstance(member_ids, list):
                 logger.error(f"member_ids must be a list, got: {type(member_ids)}")
                 raise ValueError("成员ID列表必须为列表类型")
-            
+
             for member_id in member_ids:
                 if not isinstance(member_id, int) or member_id <= 0:
                     logger.error(f"Invalid member_id in list: {member_id}")
@@ -919,11 +919,11 @@ class RushTaskMarkingService:
         if not isinstance(date_from, date):
             logger.error(f"date_from must be a date object, got: {type(date_from)}")
             raise ValueError("开始日期必须为date对象")
-        
+
         if not isinstance(date_to, date):
             logger.error(f"date_to must be a date object, got: {type(date_to)}")
             raise ValueError("结束日期必须为date对象")
-        
+
         if date_from > date_to:
             logger.error(f"date_from {date_from} is after date_to {date_to}")
             raise ValueError("开始日期不能晚于结束日期")
@@ -1055,11 +1055,11 @@ class RushTaskMarkingService:
         if not isinstance(date_from, date):
             logger.error(f"date_from must be a date object, got: {type(date_from)}")
             raise ValueError("开始日期必须为date对象")
-        
+
         if not isinstance(date_to, date):
             logger.error(f"date_to must be a date object, got: {type(date_to)}")
             raise ValueError("结束日期必须为date对象")
-        
+
         if date_from > date_to:
             logger.error(f"date_from {date_from} is after date_to {date_to}")
             raise ValueError("开始日期不能晚于结束日期")
@@ -1206,7 +1206,7 @@ class RushTaskMarkingService:
             Dict: 爆单任务列表和统计
         """
         try:
-            from sqlalchemy import func, desc
+            from sqlalchemy import desc, func
             from sqlalchemy.orm import joinedload
 
             # 构建查询
@@ -1321,6 +1321,7 @@ class RushTaskMarkingService:
 
             # 按状态统计
             from app.models.task import TaskStatus, TaskType
+
             status_stats = {}
             for status in TaskStatus:
                 status_stats[status.value] = len(
@@ -1419,6 +1420,7 @@ class RushTaskMarkingService:
 
             # 获取爆单标签
             from app.models.task import TaskTagType
+
             rush_tag_query = select(TaskTag).where(
                 and_(
                     TaskTag.tag_type == TaskTagType.RUSH_ORDER,

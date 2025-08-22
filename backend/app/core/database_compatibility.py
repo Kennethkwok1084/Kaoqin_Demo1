@@ -188,7 +188,7 @@ def get_test_database_url() -> str:
     # 强制使用SQLite时始终使用SQLite
     if os.getenv("FORCE_SQLITE_TESTS") == "true":
         return "sqlite+aiosqlite:///./test_attendence.db"
-    
+
     # 优先级：显式PostgreSQL测试 > CI环境 > 集成测试 > 本地开发
     if os.getenv("POSTGRES_TEST") == "true":
         # 显式要求使用PostgreSQL测试
@@ -221,6 +221,6 @@ def should_use_postgresql_tests() -> bool:
         return False
     # 只有明确指定PostgreSQL测试时才使用
     return bool(
-        os.getenv("POSTGRES_TEST") == "true" or
-        (os.getenv("INTEGRATION_TEST") == "true" and not os.getenv("CI"))
+        os.getenv("POSTGRES_TEST") == "true"
+        or (os.getenv("INTEGRATION_TEST") == "true" and not os.getenv("CI"))
     )

@@ -10,13 +10,14 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
 
+import app.models  # noqa: F401
+import app.models.attendance  # noqa: F401
+
 # Import all models to ensure they are registered with Base metadata
 # Import in correct order to avoid forward reference issues
 import app.models.base  # noqa: F401
 import app.models.member  # noqa: F401
 import app.models.task  # noqa: F401
-import app.models.attendance  # noqa: F401
-import app.models  # noqa: F401
 from app.core.database_compatibility import (
     DatabaseCompatibilityChecker,
     DatabaseType,

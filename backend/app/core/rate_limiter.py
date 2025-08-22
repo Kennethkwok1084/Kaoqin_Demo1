@@ -22,24 +22,24 @@ def rate_limit(
 ) -> Callable:
     """
     Rate limiting decorator for FastAPI endpoints.
-    
+
     Args:
         max_requests: Maximum number of requests allowed
         window_seconds: Time window in seconds
         key_func: Function to generate rate limit key from request
         error_message: Error message for rate limit exceeded
-    
+
     Returns:
         Decorator function
     """
-    
+
     def default_key_func(request: Request) -> str:
         """Default key function using client IP"""
         client_ip = request.client.host if request.client else "unknown"
         return f"rate_limit:{client_ip}"
-    
+
     actual_key_func = key_func or default_key_func
-    
+
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
@@ -49,15 +49,15 @@ def rate_limit(
                 if isinstance(arg, Request):
                     request = arg
                     break
-            
+
             if not request:
                 # If no request found, look in kwargs
-                request = kwargs.get('request')
-            
+                request = kwargs.get("request")
+
             if request:
                 # Generate rate limit key
                 key = actual_key_func(request)
-                
+
                 # Check rate limit
                 if not global_rate_limiter.is_allowed(
                     key, max_requests, window_seconds
@@ -67,9 +67,11 @@ def rate_limit(
                         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                         detail=error_message,
                     )
-            
+
             return await func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -81,11 +83,11 @@ def login_rate_limit(
     Specialized rate limiting decorator for login endpoints.
     Uses client IP for rate limiting key.
     """
-    
+
     def key_func(request: Request) -> str:
         client_ip = request.client.host if request.client else "unknown"
         return f"login:{client_ip}"
-    
+
     return rate_limit(
         max_requests=max_requests,
         window_seconds=window_seconds,

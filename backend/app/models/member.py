@@ -232,35 +232,35 @@ class Member(BaseModel):
     @property
     def is_admin(self) -> bool:
         """检查是否为管理员"""
-        if not hasattr(self, 'role') or self.role is None:
+        if not hasattr(self, "role") or self.role is None:
             return False
         return bool(self.role == UserRole.ADMIN)
 
     @property
     def is_group_leader(self) -> bool:
         """检查是否为组长"""
-        if not hasattr(self, 'role') or self.role is None:
+        if not hasattr(self, "role") or self.role is None:
             return False
         return bool(self.role == UserRole.GROUP_LEADER)
 
     @property
     def can_manage_group(self) -> bool:
         """检查是否可以管理组员"""
-        if not hasattr(self, 'role') or self.role is None:
+        if not hasattr(self, "role") or self.role is None:
             return False
         return bool(self.role in [UserRole.ADMIN, UserRole.GROUP_LEADER])
 
     @property
     def can_import_data(self) -> bool:
         """检查是否可以导入数据"""
-        if not hasattr(self, 'role') or self.role is None:
+        if not hasattr(self, "role") or self.role is None:
             return False
         return bool(self.role == UserRole.ADMIN)
 
     @property
     def can_mark_rush_tasks(self) -> bool:
         """检查是否可以标记紧急任务"""
-        if not hasattr(self, 'role') or self.role is None:
+        if not hasattr(self, "role") or self.role is None:
             return False
         return bool(self.role == UserRole.ADMIN)
 

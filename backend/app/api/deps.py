@@ -13,8 +13,8 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_async_session, get_sync_session
+from app.core.messages import Messages, error_response, get_message, success_response
 from app.core.security import verify_token
-from app.core.messages import success_response, error_response, get_message, Messages
 from app.models.member import Member
 
 logger = logging.getLogger(__name__)
@@ -87,8 +87,8 @@ async def get_current_user(
 
     if not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
-            detail=get_message("AUTH_ERROR_INACTIVE_USER")
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=get_message("AUTH_ERROR_INACTIVE_USER"),
         )
 
     return user
@@ -118,7 +118,7 @@ async def get_admin_user(
     """
     # Direct role comparison to avoid property method async issues
     from app.models.member import UserRole
-    
+
     if not current_user.role or current_user.role != UserRole.ADMIN:
         logger.warning(
             f"Admin access denied for user {current_user.student_id} "
@@ -148,11 +148,11 @@ async def get_group_leader_or_admin(
     """
     # Direct role comparison to avoid property method async issues
     from app.models.member import UserRole
-    
-    if (
-        not current_user.role
-        or current_user.role not in [UserRole.ADMIN, UserRole.GROUP_LEADER]
-    ):
+
+    if not current_user.role or current_user.role not in [
+        UserRole.ADMIN,
+        UserRole.GROUP_LEADER,
+    ]:
         logger.warning(
             f"Group leader/admin access denied for user {current_user.student_id} "
             f"with role {current_user.role}"
@@ -184,8 +184,8 @@ async def get_current_active_admin(
 
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
-            detail=get_message("AUTH_ERROR_ADMIN_REQUIRED")
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=get_message("AUTH_ERROR_ADMIN_REQUIRED"),
         )
     return current_user
 
@@ -207,7 +207,7 @@ async def get_current_active_group_leader(
     """
     # Direct role comparison to avoid property method async issues
     from app.models.member import UserRole
-    
+
     if current_user.role not in [UserRole.ADMIN, UserRole.GROUP_LEADER]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -380,7 +380,7 @@ def create_response(
     success: Optional[bool] = None,
     error_code: Optional[str] = None,
     details: Optional[Dict[str, Any]] = None,
-    **message_kwargs
+    **message_kwargs,
 ) -> Dict[str, Any]:
     """创建标准化API响应，支持统一消息管理"""
     # 优先使用message_key获取消息
@@ -390,11 +390,9 @@ def create_response(
         final_message = message
     else:
         final_message = (
-            Messages.GENERAL_SUCCESS
-            if status_code < 400
-            else Messages.GENERAL_ERROR
+            Messages.GENERAL_SUCCESS if status_code < 400 else Messages.GENERAL_ERROR
         )
-    
+
     # Use provided success value or calculate from status_code
     success_value = success if success is not None else (status_code < 400)
 
@@ -408,7 +406,7 @@ def create_response(
     # Add error_code if provided
     if error_code is not None:
         response["error_code"] = error_code
-    
+
     # Add details if provided
     if details is not None:
         response["details"] = details
@@ -421,7 +419,7 @@ def create_error_response(
     message_key: str = None,
     details: Optional[Dict[str, Any]] = None,
     status_code: int = 400,
-    **message_kwargs
+    **message_kwargs,
 ) -> Dict[str, Any]:
     """创建标准化API错误响应，支持统一消息管理"""
     # 优先使用message_key获取消息
@@ -431,7 +429,7 @@ def create_error_response(
         final_message = message
     else:
         final_message = Messages.GENERAL_ERROR
-    
+
     return {
         "success": False,
         "message": final_message,
@@ -446,8 +444,8 @@ def check_user_can_manage_group(user: Member) -> bool:
     Avoids async/greenlet issues with property methods.
     """
     from app.models.member import UserRole
-    
-    if not user or not hasattr(user, 'role') or user.role is None:
+
+    if not user or not hasattr(user, "role") or user.role is None:
         return False
     return user.role in [UserRole.ADMIN, UserRole.GROUP_LEADER]
 
@@ -458,8 +456,8 @@ def check_user_is_admin(user: Member) -> bool:
     Avoids async/greenlet issues with property methods.
     """
     from app.models.member import UserRole
-    
-    if not user or not hasattr(user, 'role') or user.role is None:
+
+    if not user or not hasattr(user, "role") or user.role is None:
         return False
     return user.role == UserRole.ADMIN
 

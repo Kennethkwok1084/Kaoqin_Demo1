@@ -394,9 +394,7 @@ class TaskService:
             await self.db.commit()
             await self.db.refresh(task)
 
-            logger.info(
-                f"Task {task_id} assigned from {old_member_id} to {member_id}"
-            )
+            logger.info(f"Task {task_id} assigned from {old_member_id} to {member_id}")
             return task
 
         except Exception as e:
@@ -409,7 +407,7 @@ class TaskService:
         task_id: int,
         rating: int,
         feedback: Optional[str] = None,
-        operator_id: Optional[int] = None
+        operator_id: Optional[int] = None,
     ) -> RepairTask:
         """
         添加任务反馈
@@ -517,7 +515,7 @@ class TaskService:
                 avg_rating = round(
                     sum(t.rating for t in rated_tasks if t.rating is not None)
                     / len(rated_tasks),
-                    2
+                    2,
                 )
 
             # 延迟统计
@@ -980,10 +978,10 @@ class TaskService:
         """
         try:
             query = select(RepairTask).where(RepairTask.status == status)
-            
+
             if member_id:
                 query = query.where(RepairTask.member_id == member_id)
-            
+
             result = await self.db.execute(query)
             return result.scalars().all()
 
@@ -1001,7 +999,7 @@ class TaskService:
         try:
             old_work_minutes = task.work_minutes
             task.update_work_minutes()
-            
+
             if old_work_minutes != task.work_minutes:
                 logger.info(
                     f"Task {task.id} work hours updated: "
@@ -1013,10 +1011,10 @@ class TaskService:
             )
 
     async def _calculate_member_summary(
-        self, 
-        member_id: int, 
+        self,
+        member_id: int,
         date_from: Optional[datetime] = None,
-        date_to: Optional[datetime] = None
+        date_to: Optional[datetime] = None,
     ) -> Dict[str, Any]:
         """
         计算成员任务汇总（内部方法）
@@ -1134,7 +1132,7 @@ class TaskService:
             return False
 
         completion_hours = (
-            task.completion_time - task.response_time  
+            task.completion_time - task.response_time
         ).total_seconds() / 3600
         return completion_hours > 48  # 超过48小时为延迟完成
 
@@ -1166,7 +1164,7 @@ class TaskService:
             # 检查处理超时 (>48小时)
             if response_time and completion_time:
                 processing_hours = (
-                    completion_time - response_time  
+                    completion_time - response_time
                 ).total_seconds() / 3600
                 if processing_hours > 48:
                     await self._add_standard_tag(task, "超时处理")

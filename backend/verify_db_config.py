@@ -7,15 +7,18 @@ Tests different database configurations and environments.
 import asyncio
 import os
 import sys
-from typing import Dict, Any
+from typing import Any, Dict
 
 import asyncpg
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 # Import project modules
 from app.core.config import settings
-from app.core.database_compatibility import get_test_database_url, should_use_postgresql_tests
+from app.core.database_compatibility import (
+    get_test_database_url,
+    should_use_postgresql_tests,
+)
 from app.models.base import Base
 
 

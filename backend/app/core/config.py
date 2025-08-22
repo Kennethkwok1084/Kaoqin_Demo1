@@ -57,7 +57,7 @@ class Settings(BaseSettings):
     def assemble_db_connection(cls, v: Optional[str]) -> str:
         if isinstance(v, str) and v:
             return v
-        
+
         # Check if we're in any testing/CI environment and use SQLite by default
         if os.getenv("CI") == "true" or os.getenv("GITHUB_ACTIONS") == "true":
             return "sqlite+aiosqlite:///./ci_test_attendence.db"
@@ -68,7 +68,7 @@ class Settings(BaseSettings):
                 "postgresql+asyncpg://postgres:postgres@localhost:5432/"
                 "test_attendence"
             )
-        
+
         # Fallback to development PostgreSQL if no environment variable is set
         return "postgresql+asyncpg://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev"
 
@@ -77,7 +77,7 @@ class Settings(BaseSettings):
     def assemble_db_connection_sync(cls, v: Optional[str]) -> str:
         if isinstance(v, str) and v:
             return v
-        
+
         # Check if we're in any testing/CI environment and use SQLite by default
         if os.getenv("CI") == "true" or os.getenv("GITHUB_ACTIONS") == "true":
             return "sqlite:///./ci_test_attendence.db"
@@ -85,7 +85,7 @@ class Settings(BaseSettings):
             return "sqlite:///./test_attendence.db"
         elif os.getenv("POSTGRES_TEST") == "true":
             return "postgresql://postgres:postgres@localhost:5432/test_attendence"
-        
+
         # Default fallback for sync database URL
         return "postgresql://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev"
 

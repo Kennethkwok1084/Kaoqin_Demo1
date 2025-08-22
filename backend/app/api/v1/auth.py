@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import create_response, get_current_user, get_db
 from app.core.config import settings
 from app.core.messages import get_message
+from app.core.rate_limiter import login_rate_limit
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -23,7 +24,6 @@ from app.core.security import (
     verify_password,
     verify_token,
 )
-from app.core.rate_limiter import login_rate_limit
 from app.models.member import Member
 from app.schemas.auth import (
     ChangePasswordRequest,
@@ -64,8 +64,8 @@ async def login(
                 f"Login attempt with non-existent student_id: {login_data.student_id}"
             )
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, 
-                detail=get_message("AUTH_ERROR_INVALID_CREDENTIALS")
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=get_message("AUTH_ERROR_INVALID_CREDENTIALS"),
             )
 
         if not user.is_active:
@@ -79,8 +79,8 @@ async def login(
         if not verify_password(login_data.password, user.password_hash):
             logger.warning(f"Invalid password for user: {login_data.student_id}")
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, 
-                detail=get_message("AUTH_ERROR_INVALID_CREDENTIALS")
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=get_message("AUTH_ERROR_INVALID_CREDENTIALS"),
             )
 
         # Update login info
@@ -90,7 +90,7 @@ async def login(
         # Refresh user object to avoid lazy loading issues
         # Specify attributes to avoid greenlet issues
         await db.refresh(
-            user, ['role', 'group_id', 'is_active', 'username', 'name', 'student_id']
+            user, ["role", "group_id", "is_active", "username", "name", "student_id"]
         )
 
         # Create tokens
@@ -113,10 +113,7 @@ async def login(
             "user": user.get_safe_dict(),
         }
 
-        return create_response(
-            data=response_data, 
-            message_key="AUTH_SUCCESS_LOGIN"
-        )
+        return create_response(data=response_data, message_key="AUTH_SUCCESS_LOGIN")
 
     except HTTPException as http_exc:
         # Re-raise HTTP exceptions (including rate limiting 429) without modification
@@ -149,15 +146,15 @@ async def refresh_token(
         )
         if not payload:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, 
-                detail=get_message("AUTH_ERROR_INVALID_TOKEN")
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=get_message("AUTH_ERROR_INVALID_TOKEN"),
             )
 
         user_id_str: Optional[Union[str, int]] = payload.get("sub")
         if not user_id_str:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, 
-                detail=get_message("AUTH_ERROR_INVALID_TOKEN_PAYLOAD")
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=get_message("AUTH_ERROR_INVALID_TOKEN_PAYLOAD"),
             )
 
         user_id = int(user_id_str) if isinstance(user_id_str, str) else user_id_str
@@ -187,8 +184,7 @@ async def refresh_token(
         }
 
         return create_response(
-            data=response_data, 
-            message_key="AUTH_SUCCESS_REFRESH_TOKEN"
+            data=response_data, message_key="AUTH_SUCCESS_REFRESH_TOKEN"
         )
 
     except HTTPException:
@@ -244,8 +240,7 @@ async def get_current_user_profile(
         }
 
         return create_response(
-            data=profile_data, 
-            message_key="AUTH_SUCCESS_PROFILE_RETRIEVE"
+            data=profile_data, message_key="AUTH_SUCCESS_PROFILE_RETRIEVE"
         )
 
     except Exception as e:
@@ -283,7 +278,9 @@ async def update_user_profile(
                     )
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
-                        detail=get_message("AUTH_ERROR_UNAUTHORIZED_UPDATE", field=field),
+                        detail=get_message(
+                            "AUTH_ERROR_UNAUTHORIZED_UPDATE", field=field
+                        ),
                     )
 
         # Validate email format if provided
@@ -307,6 +304,7 @@ async def update_user_profile(
         logger.info(f"Profile updated for user: {current_user.student_id}")
 
         from app.core.messages import success_response
+
         return success_response(
             "AUTH_SUCCESS_PROFILE_UPDATE", data=current_user.get_safe_dict()
         )
@@ -319,6 +317,7 @@ async def update_user_profile(
         )
         await db.rollback()
         from app.core.messages import Messages
+
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=Messages.AUTH_ERROR_PROFILE_UPDATE_FAILED,
@@ -404,15 +403,15 @@ async def verify_user_token(
         payload: Optional[Dict[str, Any]] = verify_token(credentials.credentials)
         if not payload:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, 
-                detail=get_message("AUTH_ERROR_INVALID_TOKEN")
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=get_message("AUTH_ERROR_INVALID_TOKEN"),
             )
 
         user_id_str: Optional[Union[str, int]] = payload.get("sub")
         if not user_id_str:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, 
-                detail=get_message("AUTH_ERROR_INVALID_TOKEN_PAYLOAD")
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=get_message("AUTH_ERROR_INVALID_TOKEN_PAYLOAD"),
             )
 
         user_id = int(user_id_str) if isinstance(user_id_str, str) else user_id_str

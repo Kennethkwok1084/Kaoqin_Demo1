@@ -125,36 +125,46 @@ class ABTableMatchingService:
             # 执行批量匹配
             match_results = []
             total_records = len(a_table_data)
-            
+
             for i in range(0, total_records, batch_size):
-                batch = a_table_data[i:i + batch_size]
+                batch = a_table_data[i : i + batch_size]
                 batch_end = min(i + batch_size, total_records)
-                
-                logger.info(f"Processing batch {i // batch_size + 1}: records {i+1}-{batch_end}/{total_records}")
-                
+
+                logger.info(
+                    f"Processing batch {i // batch_size + 1}: records {i+1}-{batch_end}/{total_records}"
+                )
+
                 # Process batch
                 for j, a_record in enumerate(batch):
                     # Check timeout
                     if time.time() - start_time > timeout_seconds:
-                        logger.warning(f"AB table matching timeout after {timeout_seconds}s, processed {len(match_results)}/{total_records} records")
+                        logger.warning(
+                            f"AB table matching timeout after {timeout_seconds}s, processed {len(match_results)}/{total_records} records"
+                        )
                         # Return partial results instead of failing completely
                         stats = self._calculate_matching_stats(match_results)
-                        logger.info(f"Partial matching completed due to timeout: {stats}")
+                        logger.info(
+                            f"Partial matching completed due to timeout: {stats}"
+                        )
                         return match_results
-                    
+
                     result = await self._match_single_record(
                         a_record, member_index, strategies
                     )
                     match_results.append(result)
-                    
+
                     # Log progress every 50 records
                     if (i + j + 1) % 50 == 0:
                         progress = (i + j + 1) / total_records * 100
                         elapsed_time = time.time() - start_time
-                        estimated_total_time = elapsed_time / progress * 100 if progress > 0 else 0
-                        logger.info(f"Progress: {progress:.1f}% ({i + j + 1}/{total_records} records), "
-                                   f"elapsed: {elapsed_time:.1f}s, estimated total: {estimated_total_time:.1f}s")
-                
+                        estimated_total_time = (
+                            elapsed_time / progress * 100 if progress > 0 else 0
+                        )
+                        logger.info(
+                            f"Progress: {progress:.1f}% ({i + j + 1}/{total_records} records), "
+                            f"elapsed: {elapsed_time:.1f}s, estimated total: {estimated_total_time:.1f}s"
+                        )
+
                 # Small pause between batches to prevent overwhelming the database
                 await asyncio.sleep(0.01)  # 10ms pause
 

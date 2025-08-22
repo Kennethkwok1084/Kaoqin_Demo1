@@ -12,7 +12,7 @@ from app.api.deps import (
     get_admin_user,
     get_current_active_admin,
     get_current_active_group_leader,
-    get_group_leader_or_admin
+    get_group_leader_or_admin,
 )
 from app.core.security import rate_limiter
 from app.models.member import Member, UserRole

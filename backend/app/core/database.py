@@ -29,6 +29,7 @@ convention = {
 }
 Base.metadata = MetaData(naming_convention=convention)
 
+
 # Async Database Engine
 def _get_async_engine_args() -> Dict[str, Any]:
     """Get engine arguments based on database type."""
@@ -39,28 +40,34 @@ def _get_async_engine_args() -> Dict[str, Any]:
         "pool_pre_ping": True,
         "execution_options": {"compiled_cache": {}},
     }
-    
+
     if "sqlite" in db_url:
         # SQLite-specific configuration
         from sqlalchemy.pool import StaticPool
-        base_args.update({
-            "poolclass": StaticPool,
-            "connect_args": {"check_same_thread": False},
-        })
+
+        base_args.update(
+            {
+                "poolclass": StaticPool,
+                "connect_args": {"check_same_thread": False},
+            }
+        )
     else:
         # PostgreSQL-specific configuration
-        base_args.update({
-            "pool_size": 5,
-            "max_overflow": 10,
-            "pool_recycle": 1800,
-            "connect_args": {
-                "command_timeout": 300,  # Increase to 5 minutes for large data processing
-                "server_settings": {
-                    "application_name": "kaoqin_backend",
+        base_args.update(
+            {
+                "pool_size": 5,
+                "max_overflow": 10,
+                "pool_recycle": 1800,
+                "connect_args": {
+                    "command_timeout": 300,  # Increase to 5 minutes for large data processing
+                    "server_settings": {
+                        "application_name": "kaoqin_backend",
+                    },
                 },
-            },
-        })
+            }
+        )
     return base_args
+
 
 async_engine = create_async_engine(get_database_url(), **_get_async_engine_args())
 
@@ -73,6 +80,7 @@ AsyncSessionLocal = async_sessionmaker(
     autoflush=False,
 )
 
+
 # Sync Database Engine (for Alembic migrations)
 def _get_sync_engine_args():
     """Get sync engine arguments based on database type."""
@@ -82,22 +90,28 @@ def _get_sync_engine_args():
         "future": True,
         "pool_pre_ping": True,
     }
-    
+
     if "sqlite" in db_url:
         # SQLite-specific configuration
         from sqlalchemy.pool import StaticPool
-        base_args.update({
-            "poolclass": StaticPool,
-            "connect_args": {"check_same_thread": False},
-        })
+
+        base_args.update(
+            {
+                "poolclass": StaticPool,
+                "connect_args": {"check_same_thread": False},
+            }
+        )
     else:
         # PostgreSQL-specific configuration
-        base_args.update({
-            "pool_size": 5,
-            "max_overflow": 10,
-            "pool_recycle": 3600,
-        })
+        base_args.update(
+            {
+                "pool_size": 5,
+                "max_overflow": 10,
+                "pool_recycle": 3600,
+            }
+        )
     return base_args
+
 
 sync_engine = create_engine(get_database_url_sync(), **_get_sync_engine_args())
 

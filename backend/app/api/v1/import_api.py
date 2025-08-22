@@ -424,30 +424,31 @@ def get_supported_field_mappings() -> Dict[str, Any]:
 def get_field_mapping(table_type: str = "task_table") -> Dict[str, Any]:
     """
     获取字段映射 (同步版本，用于测试兼容性)
-    
+
     Args:
         table_type: 表格类型，默认为 "task_table"
-    
+
     Returns:
         Dict: 字段映射配置
     """
-    from app.services.import_service import DataImportService
     from sqlalchemy.ext.asyncio import create_async_engine
+
     from app.core.config import settings
-    
+    from app.services.import_service import DataImportService
+
     # 创建临时数据库连接用于初始化服务
     try:
         # 简化版本，直接返回映射配置
         service = DataImportService(None)  # type: ignore[arg-type]
-        
+
         # 获取字段映射配置
         field_mappings = service.column_mappings.get(table_type, {})
-        
+
         if not field_mappings:
             # Fallback到task_table
             table_type = "task_table"
             field_mappings = service.column_mappings.get(table_type, {})
-        
+
         return {
             "success": True,
             "table_type": table_type,

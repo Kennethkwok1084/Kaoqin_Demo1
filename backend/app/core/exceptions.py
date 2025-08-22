@@ -6,6 +6,7 @@
 from typing import Any, Dict, Optional
 
 from fastapi import HTTPException, status
+
 from .messages import Messages, get_message
 
 
@@ -18,7 +19,7 @@ class BaseCustomException(Exception):
         message_key: str = None,
         status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
         details: Optional[Dict[str, Any]] = None,
-        **message_kwargs
+        **message_kwargs,
     ):
         # 优先使用message_key从统一消息库获取消息
         if message_key:
@@ -27,7 +28,7 @@ class BaseCustomException(Exception):
             self.message = message
         else:
             self.message = Messages.GENERAL_ERROR
-            
+
         self.message_key = message_key
         self.status_code = status_code
         self.details = details or {}
@@ -42,13 +43,13 @@ class AuthenticationError(BaseCustomException):
         self,
         message: str = None,
         message_key: str = "AUTH_ERROR_CREDENTIALS_VALIDATION",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             message=message,
             message_key=message_key,
             status_code=status.HTTP_401_UNAUTHORIZED,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -59,13 +60,13 @@ class AuthorizationError(BaseCustomException):
         self,
         message: str = None,
         message_key: str = "AUTH_ERROR_ADMIN_REQUIRED",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             message=message,
             message_key=message_key,
             status_code=status.HTTP_403_FORBIDDEN,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -76,7 +77,7 @@ class InvalidTokenError(AuthenticationError):
         self,
         message: str = None,
         message_key: str = "AUTH_ERROR_INVALID_TOKEN",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(message=message, message_key=message_key, **kwargs)
 
@@ -88,7 +89,7 @@ class TokenExpiredError(AuthenticationError):
         self,
         message: str = None,
         message_key: str = "AUTH_ERROR_EXPIRED_TOKEN",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(message=message, message_key=message_key, **kwargs)
 
@@ -100,7 +101,7 @@ class InvalidCredentialsError(AuthenticationError):
         self,
         message: str = None,
         message_key: str = "AUTH_ERROR_INVALID_CREDENTIALS",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(message=message, message_key=message_key, **kwargs)
 
@@ -114,14 +115,14 @@ class ValidationError(BaseCustomException):
         message: str = None,
         message_key: str = "VALIDATION_ERROR_GENERAL",
         field_errors: Optional[Dict[str, str]] = None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             message=message,
             message_key=message_key,
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             details={"field_errors": field_errors or {}},
-            **kwargs
+            **kwargs,
         )
 
 
@@ -132,13 +133,13 @@ class DuplicateResourceError(BaseCustomException):
         self,
         message: str = None,
         message_key: str = "VALIDATION_ERROR_DUPLICATE_RESOURCE",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             message=message,
             message_key=message_key,
             status_code=status.HTTP_409_CONFLICT,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -149,13 +150,13 @@ class ResourceNotFoundError(BaseCustomException):
         self,
         message: str = None,
         message_key: str = "VALIDATION_ERROR_RESOURCE_NOT_FOUND",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             message=message,
             message_key=message_key,
             status_code=status.HTTP_404_NOT_FOUND,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -167,13 +168,13 @@ class BusinessLogicError(BaseCustomException):
         self,
         message: str = None,
         message_key: str = "VALIDATION_ERROR_BUSINESS_LOGIC",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             message=message,
             message_key=message_key,
             status_code=status.HTTP_400_BAD_REQUEST,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -184,7 +185,7 @@ class TaskProcessingError(BusinessLogicError):
         self,
         message: str = None,
         message_key: str = "TASK_ERROR_PROCESSING_FAILED",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(message=message, message_key=message_key, **kwargs)
 
@@ -196,7 +197,7 @@ class WorkHourCalculationError(BusinessLogicError):
         self,
         message: str = None,
         message_key: str = "ATTENDANCE_ERROR_WORK_HOURS_CALCULATION",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(message=message, message_key=message_key, **kwargs)
 
@@ -208,7 +209,7 @@ class AttendanceCalculationError(BusinessLogicError):
         self,
         message: str = None,
         message_key: str = "ATTENDANCE_ERROR_CALCULATION_FAILED",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(message=message, message_key=message_key, **kwargs)
 
@@ -220,7 +221,7 @@ class InvalidTaskStatusError(BusinessLogicError):
         self,
         message: str = None,
         message_key: str = "VALIDATION_ERROR_INVALID_STATUS_TRANSITION",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(message=message, message_key=message_key, **kwargs)
 
@@ -232,7 +233,7 @@ class InvalidDateRangeError(BusinessLogicError):
         self,
         message: str = None,
         message_key: str = "VALIDATION_ERROR_INVALID_DATE_RANGE",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(message=message, message_key=message_key, **kwargs)
 
@@ -384,7 +385,10 @@ def handle_validation_error(error: Exception) -> ValidationError:
             field_errors[field] = err["msg"]
 
         from app.core.messages import Messages
-        return ValidationError(Messages.VALIDATION_ERROR_GENERAL, field_errors=field_errors)
+
+        return ValidationError(
+            Messages.VALIDATION_ERROR_GENERAL, field_errors=field_errors
+        )
 
     return ValidationError(str(error))
 
