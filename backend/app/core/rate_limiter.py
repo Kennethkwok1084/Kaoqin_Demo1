@@ -5,7 +5,7 @@ Provides decorators and middleware for API endpoint rate limiting.
 
 import functools
 import logging
-from typing import Callable, Optional
+from typing import Any, Awaitable, Callable, Optional
 
 from fastapi import HTTPException, Request, status
 
@@ -19,7 +19,7 @@ def rate_limit(
     window_seconds: int = 60,
     key_func: Optional[Callable[[Request], str]] = None,
     error_message: str = "Too many requests. Please try again later.",
-) -> Callable:
+) -> Callable[[Callable[..., Awaitable[Any]]], Callable[..., Awaitable[Any]]]:
     """
     Rate limiting decorator for FastAPI endpoints.
 
@@ -40,9 +40,9 @@ def rate_limit(
 
     actual_key_func = key_func or default_key_func
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
         @functools.wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
             # Extract request from arguments
             request = None
             for arg in args:
@@ -78,7 +78,7 @@ def rate_limit(
 def login_rate_limit(
     max_requests: int = 5,
     window_seconds: int = 60,
-) -> Callable:
+) -> Callable[[Callable[..., Awaitable[Any]]], Callable[..., Awaitable[Any]]]:
     """
     Specialized rate limiting decorator for login endpoints.
     Uses client IP for rate limiting key.

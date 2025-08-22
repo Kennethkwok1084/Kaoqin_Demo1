@@ -40,7 +40,9 @@ async def get_import_field_mapping(
         import_service = DataImportService(db)
 
         # 获取字段映射配置，如果无效则fallback到task_table
-        field_mappings = import_service.column_mappings.get(table_type, {})
+        field_mappings = import_service.column_mappings.get(
+            table_type or "task_table", {}
+        )
 
         if not field_mappings:
             # Fallback到task_table而不是抛出异常
@@ -439,7 +441,7 @@ def get_field_mapping(table_type: str = "task_table") -> Dict[str, Any]:
     # 创建临时数据库连接用于初始化服务
     try:
         # 简化版本，直接返回映射配置
-        service = DataImportService(None)  # type: ignore[arg-type]
+        service = DataImportService(None)
 
         # 获取字段映射配置
         field_mappings = service.column_mappings.get(table_type, {})

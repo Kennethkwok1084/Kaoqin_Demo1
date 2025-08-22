@@ -374,13 +374,13 @@ class PaginatedResponse:
 
 def create_response(
     data: Any = None,
-    message: str = None,
-    message_key: str = None,
+    message: Optional[str] = None,
+    message_key: Optional[str] = None,
     status_code: int = 200,
     success: Optional[bool] = None,
     error_code: Optional[str] = None,
     details: Optional[Dict[str, Any]] = None,
-    **message_kwargs,
+    **message_kwargs: Any,
 ) -> Dict[str, Any]:
     """创建标准化API响应，支持统一消息管理"""
     # 优先使用message_key获取消息
@@ -415,11 +415,11 @@ def create_response(
 
 
 def create_error_response(
-    message: str = None,
-    message_key: str = None,
+    message: Optional[str] = None,
+    message_key: Optional[str] = None,
     details: Optional[Dict[str, Any]] = None,
     status_code: int = 400,
-    **message_kwargs,
+    **message_kwargs: Any,
 ) -> Dict[str, Any]:
     """创建标准化API错误响应，支持统一消息管理"""
     # 优先使用message_key获取消息

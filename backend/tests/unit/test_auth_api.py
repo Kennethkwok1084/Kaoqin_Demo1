@@ -189,7 +189,7 @@ class TestAuthAPI:
 
         # Mock token verification and user retrieval
         with (
-            patch("app.api.v1.auth.verify_token", return_value={"user_id": 1}),
+            patch("app.api.v1.auth.verify_token", return_value={"sub": 1}),
             patch("app.api.v1.auth.get_current_user", return_value=mock_user),
             patch(
                 "app.api.v1.auth.create_access_token", return_value="new_access_token"

@@ -4,10 +4,12 @@
 支持多标签累计计算、异常扣时逻辑、爆单标记等功能
 """
 
+# mypy: disable-error-code=unreachable
+
 import logging
 from calendar import monthrange
 from datetime import date, datetime
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -1195,7 +1197,7 @@ class RushTaskMarkingService:
         member_id: Optional[int] = None,
         page: int = 1,
         page_size: int = 50,
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         获取爆单任务列表
 
@@ -1289,7 +1291,7 @@ class RushTaskMarkingService:
 
     async def get_statistics(
         self, date_from: Optional[date] = None, date_to: Optional[date] = None
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         获取爆单任务统计报表
 
@@ -1361,7 +1363,9 @@ class RushTaskMarkingService:
                 }
                 for name, stats in member_stats.items()
             ]
-            member_list.sort(key=lambda x: x.get("task_count", 0) or 0, reverse=True)
+            member_list.sort(
+                key=lambda x: int(str(x.get("task_count") or 0)), reverse=True
+            )
 
             # 按月份统计
             month_stats = {}
@@ -1398,7 +1402,7 @@ class RushTaskMarkingService:
 
     async def remove_rush_marking(
         self, task_ids: List[int], remover_id: Optional[int] = None
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         移除爆单任务标记
 

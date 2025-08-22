@@ -4,9 +4,12 @@ Celery异步任务定义
 """
 
 import asyncio
+import concurrent.futures
 import logging
 from datetime import datetime, timedelta
 from typing import Any, Awaitable, Callable, Dict, List, Optional
+
+from celery import Task
 
 from app.core.celery_app import celery_app
 from app.core.database import AsyncSessionLocal
@@ -24,19 +27,17 @@ def run_async_task(
         loop = asyncio.get_event_loop()
         if loop.is_running():
             # 如果事件循环正在运行，创建新的事件循环
-            import concurrent.futures
-
             with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, async_func(*args, **kwargs))
+                future: concurrent.futures.Future[Any] = executor.submit(asyncio.run, async_func(*args, **kwargs))  # type: ignore[arg-type]
                 return future.result()
         else:
             return loop.run_until_complete(async_func(*args, **kwargs))
     except RuntimeError:
         # 创建新的事件循环
-        return asyncio.run(async_func(*args, **kwargs))
+        return asyncio.run(async_func(*args, **kwargs))  # type: ignore[arg-type]
 
 
-@celery_app.task(bind=True, name="app.core.celery_tasks.schedule_overdue_detection")
+@celery_app.task(bind=True, name="app.core.celery_tasks.schedule_overdue_detection")  # type: ignore[misc]
 def schedule_overdue_detection(self: Any) -> Dict[str, Any]:
     """
     定时检测超时任务
@@ -54,7 +55,7 @@ def schedule_overdue_detection(self: Any) -> Dict[str, Any]:
         result = run_async_task(_detect_overdue)
 
         logger.info(f"Overdue detection completed: {result}")
-        return result
+        return dict(result) if result else {}
 
     except Exception as e:
         logger.error(f"Overdue detection task failed: {str(e)}")
@@ -62,7 +63,7 @@ def schedule_overdue_detection(self: Any) -> Dict[str, Any]:
         raise self.retry(exc=e, countdown=300, max_retries=3)
 
 
-@celery_app.task(bind=True, name="app.core.celery_tasks.process_review_bonuses")
+@celery_app.task(bind=True, name="app.core.celery_tasks.process_review_bonuses")  # type: ignore[misc]
 def process_review_bonuses(self: Any) -> Dict[str, Any]:
     """
     处理评价奖励
@@ -71,7 +72,7 @@ def process_review_bonuses(self: Any) -> Dict[str, Any]:
     try:
         logger.info(f"Starting review bonus processing task (ID: {self.request.id})")
 
-        async def _process_bonuses():
+        async def _process_bonuses() -> Dict[str, Any]:
             async with AsyncSessionLocal() as db:
                 automation_service = WorkHourAutomationService(db)
                 result = await automation_service.process_review_bonuses()
@@ -80,15 +81,15 @@ def process_review_bonuses(self: Any) -> Dict[str, Any]:
         result = run_async_task(_process_bonuses)
 
         logger.info(f"Review bonus processing completed: {result}")
-        return result
+        return dict(result) if result else {}
 
     except Exception as e:
         logger.error(f"Review bonus processing task failed: {str(e)}")
         raise self.retry(exc=e, countdown=180, max_retries=3)
 
 
-@celery_app.task(bind=True, name="app.core.celery_tasks.send_notifications")
-def send_notifications(self) -> Dict[str, Any]:
+@celery_app.task(bind=True, name="app.core.celery_tasks.send_notifications")  # type: ignore[misc]
+def send_notifications(self: Any) -> Dict[str, Any]:
     """
     发送超时提醒通知
     每15分钟执行一次，发送即将超时的任务提醒
@@ -96,7 +97,7 @@ def send_notifications(self) -> Dict[str, Any]:
     try:
         logger.info(f"Starting notification sending task (ID: {self.request.id})")
 
-        async def _send_notifications():
+        async def _send_notifications() -> Dict[str, Any]:
             async with AsyncSessionLocal() as db:
                 automation_service = WorkHourAutomationService(db)
                 result = await automation_service.send_overdue_notifications()
@@ -105,15 +106,15 @@ def send_notifications(self) -> Dict[str, Any]:
         result = run_async_task(_send_notifications)
 
         logger.info(f"Notification sending completed: {result}")
-        return result
+        return dict(result) if result else {}
 
     except Exception as e:
         logger.error(f"Notification sending task failed: {str(e)}")
         raise self.retry(exc=e, countdown=120, max_retries=3)
 
 
-@celery_app.task(bind=True, name="app.core.celery_tasks.cleanup_expired_data")
-def cleanup_expired_data(self, days_to_keep: int = 90) -> Dict[str, Any]:
+@celery_app.task(bind=True, name="app.core.celery_tasks.cleanup_expired_data")  # type: ignore[misc]
+def cleanup_expired_data(self: Any, days_to_keep: int = 90) -> Dict[str, Any]:
     """
     清理过期数据
     每天凌晨2点执行，清理过期的任务数据
@@ -124,7 +125,7 @@ def cleanup_expired_data(self, days_to_keep: int = 90) -> Dict[str, Any]:
                 self.request.id}, days_to_keep: {days_to_keep})"
         )
 
-        async def _cleanup_data():
+        async def _cleanup_data() -> Dict[str, Any]:
             async with AsyncSessionLocal() as db:
                 automation_service = WorkHourAutomationService(db)
                 result = await automation_service.cleanup_expired_data(days_to_keep)
@@ -133,15 +134,15 @@ def cleanup_expired_data(self, days_to_keep: int = 90) -> Dict[str, Any]:
         result = run_async_task(_cleanup_data)
 
         logger.info(f"Data cleanup completed: {result}")
-        return result
+        return dict(result) if result else {}
 
     except Exception as e:
         logger.error(f"Data cleanup task failed: {str(e)}")
         raise self.retry(exc=e, countdown=3600, max_retries=2)
 
 
-@celery_app.task(bind=True, name="app.core.celery_tasks.generate_daily_statistics")
-def generate_daily_statistics(self) -> Dict[str, Any]:
+@celery_app.task(bind=True, name="app.core.celery_tasks.generate_daily_statistics")  # type: ignore[misc]
+def generate_daily_statistics(self: Any) -> Dict[str, Any]:
     """
     生成每日统计报告
     每天凌晨3点执行，生成前一天的统计数据
@@ -151,7 +152,7 @@ def generate_daily_statistics(self) -> Dict[str, Any]:
             f"Starting daily statistics generation task (ID: {self.request.id})"
         )
 
-        async def _generate_stats():
+        async def _generate_stats() -> Dict[str, Any]:
             async with AsyncSessionLocal() as db:
                 stats_service = StatisticsService(db)
 
@@ -164,10 +165,8 @@ def generate_daily_statistics(self) -> Dict[str, Any]:
                 daily_overview = await stats_service.get_overview_statistics(
                     start_time, end_time
                 )
-                member_stats = await stats_service.get_member_statistics(
-                    date_from=start_time, date_to=end_time
-                )
-                task_stats = await stats_service.get_task_statistics(
+                member_stats = await stats_service._get_member_statistics()
+                task_stats = await stats_service._get_task_statistics(
                     date_from=start_time, date_to=end_time
                 )
 
@@ -181,15 +180,15 @@ def generate_daily_statistics(self) -> Dict[str, Any]:
         result = run_async_task(_generate_stats)
 
         logger.info(f"Daily statistics generation completed: {result}")
-        return result
+        return dict(result) if result else {}
 
     except Exception as e:
         logger.error(f"Daily statistics generation task failed: {str(e)}")
         raise self.retry(exc=e, countdown=1800, max_retries=2)
 
 
-@celery_app.task(bind=True, name="app.core.celery_tasks.weekly_work_hour_recalculation")
-def weekly_work_hour_recalculation(self) -> Dict[str, Any]:
+@celery_app.task(bind=True, name="app.core.celery_tasks.weekly_work_hour_recalculation")  # type: ignore[misc]
+def weekly_work_hour_recalculation(self: Any) -> Dict[str, Any]:
     """
     每周工时重算
     每周日凌晨4点执行，重新计算上周的所有任务工时
@@ -199,7 +198,7 @@ def weekly_work_hour_recalculation(self) -> Dict[str, Any]:
             f"Starting weekly work hour recalculation task (ID: {self.request.id})"
         )
 
-        async def _recalculate_hours():
+        async def _recalculate_hours() -> Dict[str, Any]:
             async with AsyncSessionLocal() as db:
                 automation_service = WorkHourAutomationService(db)
 
@@ -225,15 +224,17 @@ def weekly_work_hour_recalculation(self) -> Dict[str, Any]:
         result = run_async_task(_recalculate_hours)
 
         logger.info(f"Weekly work hour recalculation completed: {result}")
-        return result
+        return dict(result) if result else {}
 
     except Exception as e:
         logger.error(f"Weekly work hour recalculation task failed: {str(e)}")
         raise self.retry(exc=e, countdown=3600, max_retries=2)
 
 
-@celery_app.task(bind=True, name="app.core.celery_tasks.batch_apply_penalties")
-def batch_apply_penalties(self, task_ids: Optional[List[int]] = None) -> Dict[str, Any]:
+@celery_app.task(bind=True, name="app.core.celery_tasks.batch_apply_penalties")  # type: ignore[misc]
+def batch_apply_penalties(
+    self: Any, task_ids: Optional[List[int]] = None
+) -> Dict[str, Any]:
     """
     批量应用惩罚标签
     手动触发或定时执行，对指定任务批量应用惩罚
@@ -241,7 +242,7 @@ def batch_apply_penalties(self, task_ids: Optional[List[int]] = None) -> Dict[st
     try:
         logger.info(f"Starting batch penalty application task (ID: {self.request.id})")
 
-        async def _apply_penalties():
+        async def _apply_penalties() -> Dict[str, Any]:
             async with AsyncSessionLocal() as db:
                 automation_service = WorkHourAutomationService(db)
                 result = await automation_service.auto_apply_penalty_tags(task_ids)
@@ -250,21 +251,21 @@ def batch_apply_penalties(self, task_ids: Optional[List[int]] = None) -> Dict[st
         result = run_async_task(_apply_penalties)
 
         logger.info(f"Batch penalty application completed: {result}")
-        return result
+        return dict(result) if result else {}
 
     except Exception as e:
         logger.error(f"Batch penalty application task failed: {str(e)}")
         raise self.retry(exc=e, countdown=300, max_retries=3)
 
 
-@celery_app.task(bind=True, name="app.core.celery_tasks.export_statistics_report")
+@celery_app.task(bind=True, name="app.core.celery_tasks.export_statistics_report")  # type: ignore[misc]
 def export_statistics_report(
-    self,
+    self: Any,
     report_type: str,
     date_from: str,
     date_to: str,
     member_ids: Optional[List[int]] = None,
-):
+) -> Dict[str, Any]:
     """
     导出统计报告
     异步生成和导出各种格式的统计报告
@@ -275,7 +276,7 @@ def export_statistics_report(
                 self.request.id}, type: {report_type})"
         )
 
-        async def _export_report():
+        async def _export_report() -> Dict[str, Any]:
             async with AsyncSessionLocal() as db:
                 stats_service = StatisticsService(db)
 
@@ -287,11 +288,9 @@ def export_statistics_report(
                         start_date, end_date
                     )
                 elif report_type == "member":
-                    data = await stats_service.get_member_statistics(
-                        member_ids=member_ids, date_from=start_date, date_to=end_date
-                    )
+                    data = await stats_service._get_member_statistics()
                 elif report_type == "task":
-                    data = await stats_service.get_task_statistics(
+                    data = await stats_service._get_task_statistics(
                         date_from=start_date, date_to=end_date
                     )
                 else:
@@ -308,16 +307,18 @@ def export_statistics_report(
 
         result = run_async_task(_export_report)
 
-        logger.info(f"Statistics report export completed: {result['report_type']}")
-        return result
+        logger.info(
+            f"Statistics report export completed: {result['report_type'] if result else 'unknown'}"
+        )
+        return dict(result) if result else {}
 
     except Exception as e:
         logger.error(f"Statistics report export task failed: {str(e)}")
         raise self.retry(exc=e, countdown=600, max_retries=2)
 
 
-@celery_app.task(bind=True, name="app.core.celery_tasks.system_health_check")
-def system_health_check(self) -> Dict[str, Any]:
+@celery_app.task(bind=True, name="app.core.celery_tasks.system_health_check")  # type: ignore[misc]
+def system_health_check(self: Any) -> Dict[str, Any]:
     """
     系统健康检查
     定期检查系统各组件的健康状态
@@ -325,7 +326,7 @@ def system_health_check(self) -> Dict[str, Any]:
     try:
         logger.info(f"Starting system health check task (ID: {self.request.id})")
 
-        async def _health_check():
+        async def _health_check() -> Dict[str, Any]:
             health_status = {
                 "timestamp": datetime.utcnow().isoformat(),
                 "database": "unknown",
@@ -336,7 +337,9 @@ def system_health_check(self) -> Dict[str, Any]:
             # 检查数据库连接
             try:
                 async with AsyncSessionLocal() as db:
-                    await db.execute("SELECT 1")
+                    from sqlalchemy import text
+
+                    await db.execute(text("SELECT 1"))
                     health_status["database"] = "healthy"
             except Exception as e:
                 health_status["database"] = f"unhealthy: {str(e)}"
@@ -353,7 +356,7 @@ def system_health_check(self) -> Dict[str, Any]:
         result = run_async_task(_health_check)
 
         logger.info(f"System health check completed: {result}")
-        return result
+        return dict(result) if result else {}
 
     except Exception as e:
         logger.error(f"System health check task failed: {str(e)}")

@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import pandas as pd  # type: ignore[import-untyped]
+import pandas as pd
 from fastapi import UploadFile
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -73,9 +73,11 @@ class DataImportService:
     """数据导入服务"""
 
     def __init__(self, db: Optional[AsyncSession]):
+        if db is None:
+            raise ValueError("Database session is required")
         self.db = db
-        self.task_service = TaskService(db) if db else None
-        self.ab_matching_service = ABTableMatchingService(db) if db else None
+        self.task_service = TaskService(db)
+        self.ab_matching_service = ABTableMatchingService(db)
 
         # A表和B表的列映射配置（重构扩展）
         self.column_mappings = {
@@ -430,8 +432,10 @@ class DataImportService:
             # 转换为字典列表
             data = df.fillna("").to_dict("records")
 
-            logger.info(f"Parsed {len(data)} rows from Excel file")
-            return data
+            # 确保返回正确的类型
+            result: List[Dict[str, Any]] = list(data)
+            logger.info(f"Parsed {len(result)} rows from Excel file")
+            return result
 
         except Exception as e:
             logger.error(f"Parse Excel error: {str(e)}")
@@ -572,7 +576,7 @@ class DataImportService:
             from dateutil import parser  # type: ignore[import-untyped]
 
             dt = parser.parse(datetime_str)
-            return dt.strftime("%Y-%m-%d %H:%M:%S")
+            return str(dt.strftime("%Y-%m-%d %H:%M:%S"))
         except Exception:
             # 如果解析失败，返回原字符串
             return datetime_str
@@ -655,7 +659,6 @@ class DataImportService:
             return {
                 "matched": matched_data,
                 "unmatched": unmatched_data,
-                "match_stats": match_stats,
             }
 
         except Exception as e:
@@ -843,17 +846,21 @@ class DataImportService:
         report_time = datetime.utcnow()
         if report_time_str:
             try:
-                from dateutil import parser  # type: ignore[import-untyped]
+                from dateutil import parser
 
                 report_time = parser.parse(report_time_str)
             except Exception:
                 pass
 
         # 根据B表检修形式判断任务类型（重构逻辑）
-        task_type = self._determine_task_type_by_repair_form(repair_form, repair_type)
+        task_type = self._determine_task_type_by_repair_form(
+            repair_form or "", repair_type or ""
+        )
 
         # 根据A表工单状态映射任务状态（重构逻辑）
-        task_status = self._map_work_order_status_to_task_status(work_order_status)
+        task_status = self._map_work_order_status_to_task_status(
+            work_order_status or ""
+        )
 
         # 判断任务类别
         category = TaskCategory.NETWORK_REPAIR
@@ -917,7 +924,7 @@ class DataImportService:
         }
 
     def _determine_task_type_by_repair_form(
-        self, repair_form: str, repair_type: str = None
+        self, repair_form: str, repair_type: Optional[str] = None
     ) -> TaskType:
         """
         根据B表检修形式判断任务类型（重构逻辑）
@@ -991,8 +998,8 @@ class DataImportService:
 
     def _validate_import_data(self, data: List[Dict[str, Any]]) -> Dict[str, List[str]]:
         """验证导入数据"""
-        errors = []
-        warnings = []
+        errors: List[str] = []
+        warnings: List[str] = []
 
         if not data:
             errors.append("没有有效的数据可导入")
@@ -1226,10 +1233,6 @@ class DataImportService:
                 task_id=task_id,
                 title=import_data.get("title", "导入的维修任务"),
                 description=import_data.get("description"),
-                category=import_data.get("category", TaskCategory.NETWORK_REPAIR),
-                priority=import_data.get("priority", TaskPriority.MEDIUM),
-                task_type=import_data.get("task_type", TaskType.ONLINE),
-                status=import_data.get("status", TaskStatus.PENDING),
                 location=import_data.get("location"),
                 member_id=import_data.get("assigned_to"),
                 report_time=import_data.get("report_time", datetime.utcnow()),
@@ -1273,7 +1276,7 @@ class DataImportService:
 
     async def _add_import_tags_to_task(
         self, task: RepairTask, import_data: Dict[str, Any]
-    ):
+    ) -> None:
         """
         根据导入数据为任务添加相应标签
         """
@@ -1301,11 +1304,11 @@ class DataImportService:
             if report_time and response_time:
                 # 检查响应超时
                 if isinstance(report_time, str):
-                    from dateutil import parser  # type: ignore[import-untyped]
+                    from dateutil import parser
 
                     report_time = parser.parse(report_time)
                 if isinstance(response_time, str):
-                    from dateutil import parser  # type: ignore[import-untyped]
+                    from dateutil import parser
 
                     response_time = parser.parse(response_time)
 
@@ -1318,11 +1321,11 @@ class DataImportService:
             if response_time and completion_time:
                 # 检查处理超时
                 if isinstance(response_time, str):
-                    from dateutil import parser  # type: ignore[import-untyped]
+                    from dateutil import parser
 
                     response_time = parser.parse(response_time)
                 if isinstance(completion_time, str):
-                    from dateutil import parser  # type: ignore[import-untyped]
+                    from dateutil import parser
 
                     completion_time = parser.parse(completion_time)
 
@@ -1381,4 +1384,4 @@ class DataImportService:
         count_result = await self.db.execute(count_query)
         count = count_result.scalar()
 
-        return f"R{today}{str(count + 1).zfill(4)}"
+        return f"R{today}{str((count or 0) + 1).zfill(4)}"

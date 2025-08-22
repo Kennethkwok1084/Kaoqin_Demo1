@@ -2,6 +2,7 @@
 Pytest plugin to set environment variables before any imports.
 This ensures FORCE_SQLITE_TESTS is set early to avoid PostgreSQL asyncio issues.
 """
+
 import os
 
 

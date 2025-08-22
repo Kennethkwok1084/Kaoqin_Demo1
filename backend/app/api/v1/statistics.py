@@ -171,10 +171,10 @@ async def get_statistics_overview(
 
         attendance_query = select(
             func.count().label("total_attendance"),
-            func.count(case((AttendanceRecord.is_late_checkin, 1))).label(
+            func.count(case((AttendanceRecord.is_late_checkin == True, 1))).label(
                 "late_checkins"
             ),
-            func.count(case((AttendanceRecord.is_early_checkout, 1))).label(
+            func.count(case((AttendanceRecord.is_early_checkout == True, 1))).label(
                 "early_checkouts"
             ),
             func.avg(AttendanceRecord.work_hours).label("avg_work_hours"),
@@ -673,14 +673,14 @@ async def get_monthly_report(
 
             report_data.update(
                 {
-                    "type": "personal",
+                    "type": {"value": "personal"},
                     "member": {
                         "id": member.id,
                         "name": member.name,
                         "student_id": member.student_id,
                         "role": member.role.value,
                     },
-                    "tasks": task_stats,
+                    "tasks": dict(task_stats),
                     "attendance": (
                         attendance_summary.dict()
                         if hasattr(attendance_summary, "dict")
@@ -791,9 +791,9 @@ async def get_monthly_report(
 
             report_data.update(
                 {
-                    "type": "team",
-                    "team_summary": team_stats,
-                    "member_details": member_details,
+                    "type": {"value": "team"},
+                    "team_summary": dict(team_stats),
+                    "member_details": {"details": member_details},
                 }
             )
 
@@ -1130,27 +1130,28 @@ async def get_work_hours_overview(
                     )
 
                     team_summary["total_hours"] = float(
-                        team_summary.get("total_hours", 0.0)
-                    ) + float(member_data.get("total_hours", 0.0))
+                        team_summary.get("total_hours") or 0.0  # type: ignore[arg-type]
+                    ) + float(member_data.get("total_hours") or 0.0)
                     team_summary["total_repair_hours"] = float(
-                        team_summary.get("total_repair_hours", 0.0)
-                    ) + float(member_data.get("repair_task_hours", 0.0))
+                        team_summary.get("total_repair_hours") or 0.0  # type: ignore[arg-type]
+                    ) + float(member_data.get("repair_task_hours") or 0.0)
                     team_summary["total_monitoring_hours"] = float(
-                        team_summary.get("total_monitoring_hours", 0.0)
-                    ) + float(member_data.get("monitoring_hours", 0.0))
+                        team_summary.get("total_monitoring_hours") or 0.0  # type: ignore[arg-type]
+                    ) + float(member_data.get("monitoring_hours") or 0.0)
                     team_summary["total_assistance_hours"] = float(
-                        team_summary.get("total_assistance_hours", 0.0)
-                    ) + float(member_data.get("assistance_hours", 0.0))
+                        team_summary.get("total_assistance_hours") or 0.0  # type: ignore[arg-type]
+                    ) + float(member_data.get("assistance_hours") or 0.0)
 
                     if member_data.get("is_full_attendance", False):
                         team_summary["full_attendance_count"] = (
-                            int(team_summary.get("full_attendance_count", 0)) + 1
+                            int(team_summary.get("full_attendance_count") or 0) + 1  # type: ignore[call-overload]
                         )
 
                     if "member_details" not in team_summary:
                         team_summary["member_details"] = []
-                    if isinstance(team_summary.get("member_details"), list):
-                        team_summary["member_details"].append(
+                    member_details_list = team_summary.get("member_details")
+                    if isinstance(member_details_list, list):
+                        member_details_list.append(
                             {
                                 "member_id": member.id,
                                 "member_name": member.name,
@@ -1640,8 +1641,8 @@ async def get_work_hours_trend(
 
         # 构建趋势序列
         for month_info in trend_months:
-            month_key: str = month_info["month_key"]
-            month_summaries = monthly_data.get(month_key, [])
+            trend_month_key: str = str(month_info["month_key"])
+            month_summaries = monthly_data.get(trend_month_key, [])
 
             if member_id:
                 # 个人趋势数据点

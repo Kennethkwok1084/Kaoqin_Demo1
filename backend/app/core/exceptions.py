@@ -15,12 +15,12 @@ class BaseCustomException(Exception):
 
     def __init__(
         self,
-        message: str = None,
-        message_key: str = None,
+        message: Optional[str] = None,
+        message_key: Optional[str] = None,
         status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
         details: Optional[Dict[str, Any]] = None,
-        **message_kwargs,
-    ):
+        **message_kwargs: Any,
+    ) -> None:
         # 优先使用message_key从统一消息库获取消息
         if message_key:
             self.message = get_message(message_key, **message_kwargs)
@@ -41,10 +41,10 @@ class AuthenticationError(BaseCustomException):
 
     def __init__(
         self,
-        message: str = None,
+        message: Optional[str] = None,
         message_key: str = "AUTH_ERROR_CREDENTIALS_VALIDATION",
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(
             message=message,
             message_key=message_key,
@@ -58,10 +58,10 @@ class AuthorizationError(BaseCustomException):
 
     def __init__(
         self,
-        message: str = None,
+        message: Optional[str] = None,
         message_key: str = "AUTH_ERROR_ADMIN_REQUIRED",
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(
             message=message,
             message_key=message_key,
@@ -75,10 +75,10 @@ class InvalidTokenError(AuthenticationError):
 
     def __init__(
         self,
-        message: str = None,
+        message: Optional[str] = None,
         message_key: str = "AUTH_ERROR_INVALID_TOKEN",
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(message=message, message_key=message_key, **kwargs)
 
 
@@ -87,10 +87,10 @@ class TokenExpiredError(AuthenticationError):
 
     def __init__(
         self,
-        message: str = None,
+        message: Optional[str] = None,
         message_key: str = "AUTH_ERROR_EXPIRED_TOKEN",
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(message=message, message_key=message_key, **kwargs)
 
 
@@ -99,10 +99,10 @@ class InvalidCredentialsError(AuthenticationError):
 
     def __init__(
         self,
-        message: str = None,
+        message: Optional[str] = None,
         message_key: str = "AUTH_ERROR_INVALID_CREDENTIALS",
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(message=message, message_key=message_key, **kwargs)
 
 
@@ -112,11 +112,11 @@ class ValidationError(BaseCustomException):
 
     def __init__(
         self,
-        message: str = None,
+        message: Optional[str] = None,
         message_key: str = "VALIDATION_ERROR_GENERAL",
         field_errors: Optional[Dict[str, str]] = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(
             message=message,
             message_key=message_key,
@@ -131,10 +131,10 @@ class DuplicateResourceError(BaseCustomException):
 
     def __init__(
         self,
-        message: str = None,
+        message: Optional[str] = None,
         message_key: str = "VALIDATION_ERROR_DUPLICATE_RESOURCE",
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(
             message=message,
             message_key=message_key,
@@ -148,10 +148,10 @@ class ResourceNotFoundError(BaseCustomException):
 
     def __init__(
         self,
-        message: str = None,
+        message: Optional[str] = None,
         message_key: str = "VALIDATION_ERROR_RESOURCE_NOT_FOUND",
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(
             message=message,
             message_key=message_key,
@@ -166,10 +166,10 @@ class BusinessLogicError(BaseCustomException):
 
     def __init__(
         self,
-        message: str = None,
+        message: Optional[str] = None,
         message_key: str = "VALIDATION_ERROR_BUSINESS_LOGIC",
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(
             message=message,
             message_key=message_key,
@@ -183,10 +183,10 @@ class TaskProcessingError(BusinessLogicError):
 
     def __init__(
         self,
-        message: str = None,
+        message: Optional[str] = None,
         message_key: str = "TASK_ERROR_PROCESSING_FAILED",
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(message=message, message_key=message_key, **kwargs)
 
 
@@ -195,10 +195,10 @@ class WorkHourCalculationError(BusinessLogicError):
 
     def __init__(
         self,
-        message: str = None,
+        message: Optional[str] = None,
         message_key: str = "ATTENDANCE_ERROR_WORK_HOURS_CALCULATION",
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(message=message, message_key=message_key, **kwargs)
 
 
@@ -207,10 +207,10 @@ class AttendanceCalculationError(BusinessLogicError):
 
     def __init__(
         self,
-        message: str = None,
+        message: Optional[str] = None,
         message_key: str = "ATTENDANCE_ERROR_CALCULATION_FAILED",
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(message=message, message_key=message_key, **kwargs)
 
 
@@ -219,10 +219,10 @@ class InvalidTaskStatusError(BusinessLogicError):
 
     def __init__(
         self,
-        message: str = None,
+        message: Optional[str] = None,
         message_key: str = "VALIDATION_ERROR_INVALID_STATUS_TRANSITION",
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(message=message, message_key=message_key, **kwargs)
 
 
@@ -231,10 +231,10 @@ class InvalidDateRangeError(BusinessLogicError):
 
     def __init__(
         self,
-        message: str = None,
+        message: Optional[str] = None,
         message_key: str = "VALIDATION_ERROR_INVALID_DATE_RANGE",
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(message=message, message_key=message_key, **kwargs)
 
 

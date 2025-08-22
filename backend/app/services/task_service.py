@@ -41,7 +41,7 @@ class TaskService:
             raise ValueError("Database session is required")
         self.db: AsyncSession = db
         self.work_hours_service = WorkHoursCalculationService(db)
-        self.rush_task_service = RushTaskMarkingService(db)
+        self.rush_task_service: RushTaskMarkingService = RushTaskMarkingService(db)
 
     async def create_repair_task(
         self, task_data: Dict[str, Any], creator_id: int
@@ -576,7 +576,7 @@ class TaskService:
             Dict: 标记结果
         """
         try:
-            result = await rush_service.mark_rush_tasks_by_date(
+            result = await self.rush_task_service.mark_rush_tasks_by_date(
                 date_from.date(), date_to.date(), task_ids, marker_id
             )
 
@@ -616,7 +616,7 @@ class TaskService:
             Dict: 取消标记结果
         """
         try:
-            result = await rush_service.mark_rush_tasks_by_date(
+            result = await self.rush_task_service.mark_rush_tasks_by_date(
                 date_from.date(), date_to.date(), task_ids, remover_id
             )
 
@@ -801,7 +801,9 @@ class TaskService:
                 }
                 for name, stats in member_stats.items()
             ]
-            member_list.sort(key=lambda x: x.get("task_count", 0) or 0, reverse=True)
+            member_list.sort(
+                key=lambda x: int(str(x.get("task_count") or 0)), reverse=True
+            )
 
             # 按月份统计
             month_stats = {}
@@ -1374,7 +1376,7 @@ class AssistanceTaskService:
 
         self.work_hours_service = WorkHoursCalculationService(db)
         # For rush_task_service, we'll use TaskService
-        self.rush_task_service = None  # Will be set when needed
+        self.rush_task_service: RushTaskMarkingService = RushTaskMarkingService(db)
 
     async def create_assistance_task(
         self,
@@ -1582,7 +1584,7 @@ class AssistanceTaskService:
         date_to: str,
         task_ids: Optional[List[int]] = None,
         marked_by: Optional[int] = None,
-    ) -> Dict[str, int]:
+    ) -> Dict[str, Any]:
         """
         批量标记爆单任务
 
@@ -1599,15 +1601,11 @@ class AssistanceTaskService:
             from datetime import datetime
 
             # 转换日期格式
-            start_date = datetime.strptime(date_from, "%Y-%m-%d").date()
-            end_date = datetime.strptime(date_to, "%Y-%m-%d").date()
+            start_date = datetime.strptime(date_from, "%Y-%m-%d")
+            end_date = datetime.strptime(date_to, "%Y-%m-%d")
 
-            # Use TaskService for rush task operations
-            if self.rush_task_service is None:
-                rush_service = TaskService(self.db)
-            else:
-                rush_service = self.rush_task_service
-            result = await rush_service.mark_rush_tasks_by_date(
+            # Use rush_task_service for rush task operations
+            result = await self.rush_task_service.mark_rush_tasks_by_date(
                 start_date, end_date, task_ids, marked_by
             )
 
@@ -1770,18 +1768,12 @@ class AssistanceTaskService:
             title=data.get("title", "维修任务"),
             description=data.get("description", ""),
             location=data.get("location", ""),
-            task_type=task_type,
             member_id=member_id,
             report_time=data.get("report_time", datetime.utcnow()),
             response_time=data.get("response_time"),
             completion_time=data.get("complete_time"),
             reporter_name=data.get("contact_person"),
             reporter_contact=data.get("contact_phone"),
-            status=(
-                TaskStatus.COMPLETED
-                if data.get("complete_time")
-                else TaskStatus.PENDING
-            ),
             import_batch_id=batch_id,
             is_matched=data.get("_matched", False),
         )
@@ -1862,8 +1854,7 @@ class AssistanceTaskService:
                 tag = TaskTag(
                     name=tag_name,
                     description=f"自动创建的{tag_name}标签",
-                    work_minutes_modifier=config["modifier"],
-                    tag_type=config["type"],
+                    work_minutes_modifier=int(str(config["modifier"])),
                     is_active=True,
                 )
                 self.db.add(tag)

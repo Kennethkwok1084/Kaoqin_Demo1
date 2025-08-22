@@ -337,7 +337,7 @@ class AttendanceService:
 
             exception_summary = {}
             for exc in exceptions:
-                exc_type = exc.exception_type
+                exc_type = exc.exception_type or "unknown"
                 if exc_type not in exception_summary:
                     exception_summary[exc_type] = {
                         "count": 0,
@@ -348,7 +348,7 @@ class AttendanceService:
                 exception_summary[exc_type]["count"] += 1
                 exception_summary[exc_type][exc.status.value] += 1
 
-            # 构建响应，包含新的工时分类数据
+            # 构建响应
             return AttendanceSummaryResponse(
                 member_id=member_id,
                 year=year,
@@ -356,39 +356,7 @@ class AttendanceService:
                 total_work_days=total_work_days,
                 expected_work_days=expected_work_days,
                 attendance_rate=round(attendance_rate, 2),
-                # 使用新的工时计算结果
                 total_work_hours=round(float(monthly_summary.total_hours or 0), 2),
-                repair_task_hours=round(
-                    float(monthly_summary.repair_task_hours or 0), 2
-                ),
-                monitoring_hours=round(float(monthly_summary.monitoring_hours or 0), 2),
-                assistance_hours=round(float(monthly_summary.assistance_hours or 0), 2),
-                carried_hours=round(float(monthly_summary.carried_hours or 0), 2),
-                remaining_hours=round(float(monthly_summary.remaining_hours or 0), 2),
-                # 详细工时分类
-                online_repair_hours=round(
-                    float(monthly_summary.online_repair_hours or 0), 2
-                ),
-                offline_repair_hours=round(
-                    float(monthly_summary.offline_repair_hours or 0), 2
-                ),
-                rush_task_hours=round(float(monthly_summary.rush_task_hours or 0), 2),
-                positive_review_hours=round(
-                    float(monthly_summary.positive_review_hours or 0), 2
-                ),
-                # 惩罚统计
-                penalty_hours=round(float(monthly_summary.penalty_hours or 0), 2),
-                late_response_penalty_hours=round(
-                    float(monthly_summary.late_response_penalty_hours or 0), 2
-                ),
-                late_completion_penalty_hours=round(
-                    float(monthly_summary.late_completion_penalty_hours or 0), 2
-                ),
-                negative_review_penalty_hours=round(
-                    float(monthly_summary.negative_review_penalty_hours or 0), 2
-                ),
-                # 出勤统计
-                total_attendance_hours=round(total_attendance_hours, 2),
                 average_work_hours=(
                     round(float(monthly_summary.total_hours or 0) / total_work_days, 2)
                     if total_work_days > 0
@@ -399,9 +367,6 @@ class AttendanceService:
                 total_late_minutes=total_late_minutes,
                 total_early_minutes=total_early_minutes,
                 exception_summary=exception_summary,
-                # 满勤状态
-                is_full_attendance=monthly_summary.total_hours >= 30.0,
-                monthly_requirement=30.0,
                 records=[
                     {
                         "date": (
@@ -690,11 +655,11 @@ class AttendanceService:
                 date_to=date_to,
                 total_records=total_records,
                 total_members=total_members,
-                total_work_hours=round(total_work_hours, 2),
+                total_work_hours=round(float(total_work_hours), 2),
                 average_work_hours=(
-                    round(total_work_hours / total_records, 2)
+                    round(float(total_work_hours) / total_records, 2)
                     if total_records > 0
-                    else 0
+                    else 0.0
                 ),
                 late_rate=(
                     round(total_late_count / total_records * 100, 2)
@@ -834,7 +799,7 @@ class AttendanceService:
 
     # 私有方法
 
-    def _calculate_late_checkin(self, record: AttendanceRecord):
+    def _calculate_late_checkin(self, record: AttendanceRecord) -> None:
         """计算迟到情况"""
         if not record.checkin_time:
             return
@@ -858,7 +823,7 @@ class AttendanceService:
             record.is_late_checkin = False
             record.late_checkin_minutes = None
 
-    def _calculate_early_checkout(self, record: AttendanceRecord):
+    def _calculate_early_checkout(self, record: AttendanceRecord) -> None:
         """计算早退情况"""
         if not record.checkout_time:
             return
@@ -882,10 +847,10 @@ class AttendanceService:
             record.is_early_checkout = False
             record.early_checkout_minutes = None
 
-    def _calculate_work_hours(self, record: AttendanceRecord):
+    def _calculate_work_hours(self, record: AttendanceRecord) -> None:
         """计算工作时长"""
         if not record.checkin_time or not record.checkout_time:
-            record.work_hours = 0.0
+            record.work_hours = 0.0  # type: ignore
             return
 
         # 计算总时长
@@ -906,7 +871,7 @@ class AttendanceService:
             total_minutes -= lunch_minutes
 
         # 转换为小时
-        record.work_hours = max(0, total_minutes / 60)
+        record.work_hours = max(0, total_minutes / 60)  # type: ignore
 
     def _calculate_work_days_in_month(self, year: int, month: int) -> int:
         """计算月份中的工作日数量（排除周末）"""

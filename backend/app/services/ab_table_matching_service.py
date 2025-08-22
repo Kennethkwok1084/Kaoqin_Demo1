@@ -58,6 +58,8 @@ class ABTableMatchingService:
     """A/B表智能匹配服务"""
 
     def __init__(self, db: Optional[AsyncSession]):
+        if db is None:
+            raise ValueError("Database session is required")
         self.db = db
 
         # 匹配权重配置
@@ -123,7 +125,7 @@ class ABTableMatchingService:
                 member_index = self._merge_b_table_data(member_index, b_table_data)
 
             # 执行批量匹配
-            match_results = []
+            match_results: List[MatchResult] = []
             total_records = len(a_table_data)
 
             for i in range(0, total_records, batch_size):

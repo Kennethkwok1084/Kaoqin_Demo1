@@ -82,10 +82,10 @@ AsyncSessionLocal = async_sessionmaker(
 
 
 # Sync Database Engine (for Alembic migrations)
-def _get_sync_engine_args():
+def _get_sync_engine_args() -> Dict[str, Any]:
     """Get sync engine arguments based on database type."""
     db_url = get_database_url_sync()
-    base_args = {
+    base_args: Dict[str, Any] = {
         "echo": settings.DEBUG,
         "future": True,
         "pool_pre_ping": True,
