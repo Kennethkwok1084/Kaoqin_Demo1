@@ -9,7 +9,6 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
-
 from app.core.celery_app import celery_app
 from app.core.database import AsyncSessionLocal
 from app.services.stats_service import StatisticsService
@@ -28,8 +27,8 @@ def run_async_task(
             # 如果事件循环正在运行，创建新的事件循环
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 future: concurrent.futures.Future[Any] = executor.submit(
-                    asyncio.run, async_func(*args, **kwargs)
-                )  # type: ignore[arg-type]
+                    asyncio.run, async_func(*args, **kwargs)  # type: ignore[arg-type]
+                )
                 return future.result()
         else:
             return loop.run_until_complete(async_func(*args, **kwargs))
@@ -38,7 +37,6 @@ def run_async_task(
         return asyncio.run(async_func(*args, **kwargs))  # type: ignore[arg-type]
 
 
-# type: ignore[misc]
 @celery_app.task(bind=True, name="app.core.celery_tasks.schedule_overdue_detection")
 def schedule_overdue_detection(self: Any) -> Dict[str, Any]:
     """
@@ -65,7 +63,6 @@ def schedule_overdue_detection(self: Any) -> Dict[str, Any]:
         raise self.retry(exc=e, countdown=300, max_retries=3)
 
 
-# type: ignore[misc]
 @celery_app.task(bind=True, name="app.core.celery_tasks.process_review_bonuses")
 def process_review_bonuses(self: Any) -> Dict[str, Any]:
     """
@@ -91,7 +88,6 @@ def process_review_bonuses(self: Any) -> Dict[str, Any]:
         raise self.retry(exc=e, countdown=180, max_retries=3)
 
 
-# type: ignore[misc]
 @celery_app.task(bind=True, name="app.core.celery_tasks.send_notifications")
 def send_notifications(self: Any) -> Dict[str, Any]:
     """
@@ -117,7 +113,6 @@ def send_notifications(self: Any) -> Dict[str, Any]:
         raise self.retry(exc=e, countdown=120, max_retries=3)
 
 
-# type: ignore[misc]
 @celery_app.task(bind=True, name="app.core.celery_tasks.cleanup_expired_data")
 def cleanup_expired_data(self: Any, days_to_keep: int = 90) -> Dict[str, Any]:
     """
@@ -146,7 +141,6 @@ def cleanup_expired_data(self: Any, days_to_keep: int = 90) -> Dict[str, Any]:
         raise self.retry(exc=e, countdown=3600, max_retries=2)
 
 
-# type: ignore[misc]
 @celery_app.task(bind=True, name="app.core.celery_tasks.generate_daily_statistics")
 def generate_daily_statistics(self: Any) -> Dict[str, Any]:
     """
@@ -193,7 +187,6 @@ def generate_daily_statistics(self: Any) -> Dict[str, Any]:
         raise self.retry(exc=e, countdown=1800, max_retries=2)
 
 
-# type: ignore[misc]
 @celery_app.task(bind=True, name="app.core.celery_tasks.weekly_work_hour_recalculation")
 def weekly_work_hour_recalculation(self: Any) -> Dict[str, Any]:
     """
@@ -238,7 +231,6 @@ def weekly_work_hour_recalculation(self: Any) -> Dict[str, Any]:
         raise self.retry(exc=e, countdown=3600, max_retries=2)
 
 
-# type: ignore[misc]
 @celery_app.task(bind=True, name="app.core.celery_tasks.batch_apply_penalties")
 def batch_apply_penalties(
     self: Any, task_ids: Optional[List[int]] = None
@@ -266,7 +258,6 @@ def batch_apply_penalties(
         raise self.retry(exc=e, countdown=300, max_retries=3)
 
 
-# type: ignore[misc]
 @celery_app.task(bind=True, name="app.core.celery_tasks.export_statistics_report")
 def export_statistics_report(
     self: Any,
@@ -327,7 +318,6 @@ def export_statistics_report(
         raise self.retry(exc=e, countdown=600, max_retries=2)
 
 
-# type: ignore[misc]
 @celery_app.task(bind=True, name="app.core.celery_tasks.system_health_check")
 def system_health_check(self: Any) -> Dict[str, Any]:
     """

@@ -4,7 +4,7 @@ Verify that the refactored system is ready for production use
 """
 
 
-def verify_files_exist():
+def verify_files_exist() -> bool:
     """Verify all key files exist"""
     import os
 
@@ -28,7 +28,7 @@ def verify_files_exist():
     return len(missing_files) == 0
 
 
-def verify_model_enhancements():
+def verify_model_enhancements() -> bool:
     """Verify model enhancements"""
     print("\n🏗️ Checking model enhancements...")
 
@@ -111,7 +111,7 @@ def verify_model_enhancements():
         return False
 
 
-def verify_services():
+def verify_services() -> bool:
     """Verify new services can be imported"""
     print("\n⚙️ Checking services...")
 
@@ -133,7 +133,7 @@ def verify_services():
         return False
 
 
-def verify_api_endpoints():
+def verify_api_endpoints() -> bool:
     """Verify new API endpoints exist"""
     print("\n🌐 Checking API endpoints...")
 
@@ -165,7 +165,7 @@ def verify_api_endpoints():
         return False
 
 
-def main():
+def main() -> int:
     """Run all verifications"""
     print("🔍 System Readiness Verification")
     print("=" * 50)

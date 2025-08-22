@@ -134,7 +134,8 @@ class ABTableMatchingService:
                 batch_end = min(i + batch_size, total_records)
 
                 logger.info(
-                    f"Processing batch {i // batch_size + 1}: records {i + 1}-{batch_end}/{total_records}"
+                    f"Processing batch {i // batch_size + 1}: records "
+                    f"{i + 1}-{batch_end}/{total_records}"
                 )
 
                 # Process batch
@@ -142,8 +143,8 @@ class ABTableMatchingService:
                     # Check timeout
                     if time.time() - start_time > timeout_seconds:
                         logger.warning(
-                            f"AB table matching timeout after {timeout_seconds}s, processed {
-                                len(match_results)}/{total_records} records"
+                            f"AB table matching timeout after {timeout_seconds}s, "
+                            f"processed {len(match_results)}/{total_records} records"
                         )
                         # Return partial results instead of failing completely
                         stats = self._calculate_matching_stats(match_results)
@@ -165,8 +166,10 @@ class ABTableMatchingService:
                             elapsed_time / progress * 100 if progress > 0 else 0
                         )
                         logger.info(
-                            f"Progress: {progress:.1f}% ({i + j + 1}/{total_records} records), "
-                            f"elapsed: {elapsed_time:.1f}s, estimated total: {estimated_total_time:.1f}s"
+                            f"Progress: {progress:.1f}% "
+                            f"({i + j + 1}/{total_records} records), "
+                            f"elapsed: {elapsed_time:.1f}s, "
+                            f"estimated total: {estimated_total_time:.1f}s"
                         )
 
                 # Small pause between batches to prevent overwhelming the database

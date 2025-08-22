@@ -4,7 +4,7 @@ Tests core algorithms with corrected logic
 """
 
 
-def test_basic_algorithms():
+def test_basic_algorithms() -> None:
     """Test basic algorithms that form the core of refactored functionality"""
     print("Testing core algorithms...")
 
@@ -45,10 +45,10 @@ def test_basic_algorithms():
     print("  ✓ Levenshtein similarity algorithm working")
 
     # Test 2: Work hours calculation logic
-    def calculate_rush_hours(penalties_minutes):
+    def calculate_rush_hours(penalties_minutes: list[int]) -> int:
         return max(0, 15 - sum(abs(p) for p in penalties_minutes))
 
-    def calculate_normal_hours(base_minutes, bonuses, penalties):
+    def calculate_normal_hours(base_minutes: int, bonuses: list[int], penalties: list[int]) -> int:
         return max(0, base_minutes + sum(bonuses) - sum(abs(p) for p in penalties))
 
     assert calculate_rush_hours([]) == 15, "Rush order base calculation failed"
@@ -64,7 +64,7 @@ def test_basic_algorithms():
     # Test 3: Phone number cleaning
     import re
 
-    def clean_phone(phone):
+    def clean_phone(phone: str) -> str:
         if not phone:
             return ""
         cleaned = re.sub(r"[^\d+]", "", str(phone))
@@ -79,7 +79,7 @@ def test_basic_algorithms():
     print("  ✓ Phone number cleaning working")
 
     # Test 4: Status mapping
-    def map_status(work_order_status):
+    def map_status(work_order_status: str) -> str:
         if not work_order_status:
             return "pending"
         status_lower = work_order_status.lower()
@@ -98,12 +98,12 @@ def test_basic_algorithms():
     print("  ✓ Status mapping working")
 
 
-def test_integration_scenarios():
+def test_integration_scenarios() -> None:
     """Test integration scenarios that represent real usage"""
     print("Testing integration scenarios...")
 
     # Scenario 1: Rush order task processing
-    def process_rush_order_task(base_minutes, has_timeout_response, has_bad_rating):
+    def process_rush_order_task(base_minutes: int, has_timeout_response: bool, has_bad_rating: bool) -> dict[str, object]:
         penalties = []
         if has_timeout_response:
             penalties.append(-30)
@@ -132,7 +132,7 @@ def test_integration_scenarios():
     print("  ✓ Rush order processing scenarios working")
 
     # Scenario 2: Normal task processing
-    def process_normal_task(base_minutes, has_good_rating, has_timeout):
+    def process_normal_task(base_minutes: int, has_good_rating: bool, has_timeout: bool) -> dict[str, object]:
         bonuses = []
         penalties = []
 
@@ -167,10 +167,10 @@ def test_integration_scenarios():
     print("  ✓ Normal task processing scenarios working")
 
     # Scenario 3: A/B table matching simulation
-    def simulate_ab_matching(a_record, b_records):
+    def simulate_ab_matching(a_record: dict[str, str], b_records: list[dict[str, str]]) -> dict[str, object]:
         """Simulate finding best match from B table for A record"""
 
-        def calculate_similarity(name1, phone1, name2, phone2):
+        def calculate_similarity(name1: str, phone1: str, name2: str, phone2: str) -> float:
             # Simple similarity calculation
             name_sim = (
                 1.0
@@ -212,12 +212,12 @@ def test_integration_scenarios():
     result5 = simulate_ab_matching(a_record, b_records)
     assert result5["matched"], "A/B matching failed"
     assert result5["confidence"] == 1.0, f"Expected 1.0, got {result5['confidence']}"
-    assert result5["match"]["name"] == "张三", "Wrong match selected"
+    assert result5["match"] and result5["match"]["name"] == "张三", "Wrong match selected"  # type: ignore[index]
 
     print("  ✓ A/B table matching simulation working")
 
 
-def main():
+def main() -> int:
     """Run comprehensive tests"""
     print("🧪 Running comprehensive tests for refactored functionality...")
     print("=" * 60)

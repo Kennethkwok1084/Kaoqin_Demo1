@@ -4,9 +4,10 @@ CI/CD Pipeline Health Report Generator
 """
 
 import subprocess
+from typing import Tuple
 
 
-def run_command(cmd):
+def run_command(cmd: str) -> Tuple[int, str, str]:
     """Run a command and return results"""
     try:
         result = subprocess.run(
@@ -19,7 +20,7 @@ def run_command(cmd):
         return -1, "", str(e)
 
 
-def main():
+def main() -> None:
     """Generate comprehensive CI/CD pipeline health report"""
     print("=== CI/CD PIPELINE HEALTH REPORT ===")
     print()

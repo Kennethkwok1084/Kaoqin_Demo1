@@ -11,7 +11,7 @@ import traceback
 from pathlib import Path
 
 
-def main():
+def main() -> None:
     print("调试pytest测试发现问题")
     print("=" * 50)
 

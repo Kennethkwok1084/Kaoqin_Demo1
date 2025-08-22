@@ -4,11 +4,13 @@
 测试数据库迁移是否可以正常工作，不会出现表已存在的冲突
 """
 
-from app.core.database import async_engine
-from sqlalchemy import text
 import asyncio
 import sys
 from pathlib import Path
+
+from sqlalchemy import text
+
+from app.core.database import async_engine
 
 # 添加backend目录到Python路径
 backend_dir = Path(__file__).parent

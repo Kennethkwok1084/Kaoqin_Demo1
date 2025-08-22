@@ -2,13 +2,15 @@
 Test database migration by creating a simple task
 """
 
-from app.models.task import RepairTask, TaskStatus, TaskType
-from app.core.config import get_database_url
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 import asyncio
 import os
 import sys
 from datetime import datetime
+
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+from app.core.config import get_database_url
+from app.models.task import RepairTask, TaskStatus, TaskType
 
 # Add the app directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))

@@ -3745,15 +3745,8 @@ async def enhanced_import_with_ab_matching(
     权限：组长及以上可执行增强导入
     """
     try:
-        from app.services.import_service import DataImportService
-
-        import_service = DataImportService(db)
-
         # 解析请求数据
         a_table_data = request_data.get("a_table_data", [])
-        b_table_data = request_data.get("b_table_data", [])
-        auto_create_tasks = request_data.get("auto_create_tasks", True)
-        import_options = request_data.get("import_options", {})
 
         if not a_table_data:
             raise HTTPException(
@@ -3774,12 +3767,21 @@ async def enhanced_import_with_ab_matching(
         failed_imports = import_result["failed_imports"]
         matched_records = import_result.get("matched_records", 0)
 
+        successful_imports_count = (
+            successful_imports if isinstance(successful_imports, (int, float)) else 0
+        )
+        matched_records_count = (
+            matched_records if isinstance(matched_records, (int, float)) else 0
+        )
+
         success_rate = (
-            successful_imports / total_records if total_records > 0 else 0
-        )  # type: ignore[operator]
+            float(successful_imports_count) / total_records
+            if total_records > 0
+            else 0.0
+        )
         match_rate = (
-            matched_records / total_records if total_records > 0 else 0
-        )  # type: ignore[operator]
+            float(matched_records_count) / total_records if total_records > 0 else 0.0
+        )
 
         response_data = {
             "import_summary": {

@@ -3,7 +3,7 @@
 import re
 
 
-def test_name_cleaning():
+def test_name_cleaning() -> bool:
     """Test name cleaning logic"""
 
     def clean_name(name: str) -> str:

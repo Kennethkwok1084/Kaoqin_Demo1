@@ -171,12 +171,12 @@ async def get_statistics_overview(
 
         attendance_query = select(
             func.count().label("total_attendance"),
-            func.count(case((AttendanceRecord.is_late_checkin, 1))).label(
-                "late_checkins"
-            ),
-            func.count(case((AttendanceRecord.is_early_checkout, 1))).label(
-                "early_checkouts"
-            ),
+            func.sum(
+                case((AttendanceRecord.is_late_checkin.is_(True), 1), else_=0)
+            ).label("late_checkins"),
+            func.sum(
+                case((AttendanceRecord.is_early_checkout.is_(True), 1), else_=0)
+            ).label("early_checkouts"),
             func.avg(AttendanceRecord.work_hours).label("avg_work_hours"),
             func.sum(AttendanceRecord.work_hours).label("total_work_hours"),
         ).where(
@@ -1130,27 +1130,21 @@ async def get_work_hours_overview(
                     )
 
                     team_summary["total_hours"] = float(
-                        team_summary.get("total_hours") or 0.0  # type: ignore[arg-type]
-                    ) + float(member_data.get("total_hours") or 0.0)
+                        str(team_summary.get("total_hours", 0.0))
+                    ) + float(str(member_data.get("total_hours", 0.0)))
                     team_summary["total_repair_hours"] = float(
-                        # type: ignore[arg-type]
-                        team_summary.get("total_repair_hours")
-                        or 0.0
-                    ) + float(member_data.get("repair_task_hours") or 0.0)
+                        str(team_summary.get("total_repair_hours", 0.0))
+                    ) + float(str(member_data.get("repair_task_hours", 0.0)))
                     team_summary["total_monitoring_hours"] = float(
-                        # type: ignore[arg-type]
-                        team_summary.get("total_monitoring_hours")
-                        or 0.0
-                    ) + float(member_data.get("monitoring_hours") or 0.0)
+                        str(team_summary.get("total_monitoring_hours", 0.0))
+                    ) + float(str(member_data.get("monitoring_hours", 0.0)))
                     team_summary["total_assistance_hours"] = float(
-                        # type: ignore[arg-type]
-                        team_summary.get("total_assistance_hours")
-                        or 0.0
-                    ) + float(member_data.get("assistance_hours") or 0.0)
+                        str(team_summary.get("total_assistance_hours", 0.0))
+                    ) + float(str(member_data.get("assistance_hours", 0.0)))
 
                     if member_data.get("is_full_attendance", False):
                         team_summary["full_attendance_count"] = (
-                            int(team_summary.get("full_attendance_count") or 0) + 1
+                            int(str(team_summary.get("full_attendance_count", 0))) + 1
                         )
 
                     if "member_details" not in team_summary:

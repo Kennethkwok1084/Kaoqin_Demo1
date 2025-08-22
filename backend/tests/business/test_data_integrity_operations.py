@@ -575,7 +575,7 @@ class TestDataIntegrityEdgeCases:
         # 分批插入以避免内存问题
         batch_insert_size = 20
         for i in range(0, len(tasks), batch_insert_size):
-            batch = tasks[i : i + batch_insert_size]
+            batch = tasks[i: i + batch_insert_size]
             async_session.add_all(batch)
 
         await async_session.commit()

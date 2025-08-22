@@ -59,7 +59,7 @@ def _get_async_engine_args() -> Dict[str, Any]:
                 "max_overflow": 10,
                 "pool_recycle": 1800,
                 "connect_args": {
-                    "command_timeout": 300,  # Increase to 5 minutes for large data processing
+                    "command_timeout": 300,  # 5 min for large data
                     "server_settings": {
                         "application_name": "kaoqin_backend",
                     },

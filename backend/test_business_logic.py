@@ -7,13 +7,13 @@ Test core business logic without database dependencies
 class MockTask:
     def __init__(
         self,
-        task_type="ONLINE",
-        is_rush=False,
-        has_positive_review=False,
-        late_response=False,
-        late_completion=False,
-        has_negative_review=False,
-    ):
+        task_type: str = "ONLINE",
+        is_rush: bool = False,
+        has_positive_review: bool = False,
+        late_response: bool = False,
+        late_completion: bool = False,
+        has_negative_review: bool = False,
+    ) -> None:
         self.task_type = task_type
         self.is_rush = is_rush
         self.has_positive_review = has_positive_review
@@ -22,7 +22,7 @@ class MockTask:
         self.has_negative_review = has_negative_review
 
 
-def calculate_work_hours(task):
+def calculate_work_hours(task: MockTask) -> int:
     """Calculate work hours based on business rules"""
     # Base hours
     base_hours = 40 if task.task_type == "ONLINE" else 100
@@ -44,7 +44,7 @@ def calculate_work_hours(task):
     return max(0, base_hours)
 
 
-def test_ab_table_matching():
+def test_ab_table_matching() -> dict[str, float]:
     """Test A/B table matching logic"""
     # Mock member data
     members = [
@@ -96,7 +96,7 @@ def test_ab_table_matching():
     }
 
 
-def main():
+def main() -> bool:
     print("Core Business Logic Validation")
     print("=" * 50)
 

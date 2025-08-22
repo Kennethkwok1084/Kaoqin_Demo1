@@ -4,31 +4,31 @@ Provides database setup, test client, and common fixtures.
 Updated to support dual database testing strategy (SQLite/PostgreSQL).
 """
 
-# Force SQLite usage for tests to avoid asyncpg event loop issues
-# Set BEFORE imports to ensure it's available during database config loading
+import asyncio
+import os
+from typing import AsyncGenerator, Generator
+
+import pytest
+import pytest_asyncio
+from fastapi.testclient import TestClient
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.database import get_async_session
+from app.core.security import get_password_hash
+from app.main import app
+from app.models.base import Base
+from app.models.member import Member, UserRole
 from tests.database_config import (
     test_config,
 )
-from app.models.member import Member, UserRole
-from app.models.base import Base
-from app.main import app
-from app.core.security import get_password_hash
-from app.core.database import get_async_session
-from sqlalchemy.ext.asyncio import AsyncSession
-from httpx import AsyncClient
-from fastapi.testclient import TestClient
-import pytest_asyncio
-import pytest
-from typing import AsyncGenerator, Generator
-import asyncio
-import os
 
+# Force SQLite usage for tests to avoid asyncpg event loop issues
+# Set BEFORE imports to ensure it's available during database config loading
 os.environ["FORCE_SQLITE_TESTS"] = "true"
 
-
-import app.models.attendance  # noqa: F401
-
 # Import models in correct order to avoid forward reference issues
+import app.models.attendance  # noqa: F401
 import app.models.base  # noqa: F401
 import app.models.member  # noqa: F401
 import app.models.task  # noqa: F401

@@ -1752,11 +1752,6 @@ class AssistanceTaskService:
         self, data: Dict[str, Any], importer_id: int, batch_id: str
     ) -> RepairTask:
         """创建维修任务"""
-        # 确定任务类型
-        task_type = TaskType.ONLINE
-        if data.get("task_type") == "offline_repair":
-            task_type = TaskType.OFFLINE
-
         # 查找或创建成员
         member_id = await self._find_or_create_member_for_task(data)
 

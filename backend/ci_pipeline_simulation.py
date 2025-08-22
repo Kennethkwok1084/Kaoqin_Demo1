@@ -8,7 +8,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
 
 def run_command(
@@ -54,14 +54,14 @@ def run_command(
         return False, "", str(e)
 
 
-def main():
+def main() -> None:
     """Main CI pipeline simulation"""
     print("=" * 60)
     print("CI/CD PIPELINE SIMULATION")
     print("=" * 60)
 
     # Pipeline stages - matching GitHub Actions workflow
-    pipeline_stages = [
+    pipeline_stages: List[Dict[str, object]] = [
         # Stage 1: Dependencies
         {
             "name": "Install Dependencies",
@@ -128,13 +128,15 @@ def main():
 
     # Run pipeline stages
     for stage in pipeline_stages:
-        stage_name = stage["name"]
+        stage_name = str(stage["name"])
         print(f"\n{'=' * 20} {stage_name.upper()} {'=' * 20}")
 
         stage_results = {}
         stage_success = True
 
-        for command, description in stage["commands"]:
+        commands = stage["commands"]
+        assert isinstance(commands, list)
+        for command, description in commands:
             success, stdout, stderr = run_command(command, description)
             stage_results[description] = success
 

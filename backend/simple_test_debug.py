@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 
-def main():
+def main() -> None:
     print("pytest测试发现问题调试")
     print("=" * 40)
 

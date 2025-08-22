@@ -4,7 +4,7 @@ Tests core algorithms and data structures
 """
 
 
-def test_levenshtein_similarity():
+def test_levenshtein_similarity() -> None:
     """Test the Levenshtein similarity algorithm (extracted from AB matching service)"""
 
     def levenshtein_similarity(s1: str, s2: str) -> float:
@@ -51,7 +51,7 @@ def test_levenshtein_similarity():
     print("✓ Levenshtein similarity algorithm tests passed")
 
 
-def test_name_cleaning():
+def test_name_cleaning() -> None:
     """Test name cleaning logic"""
     import re
 
@@ -74,7 +74,7 @@ def test_name_cleaning():
     print("✓ Name cleaning logic tests passed")
 
 
-def test_phone_cleaning():
+def test_phone_cleaning() -> None:
     """Test phone number cleaning logic"""
     import re
 
@@ -104,17 +104,17 @@ def test_phone_cleaning():
     print("✓ Phone cleaning logic tests passed")
 
 
-def test_work_hours_logic():
+def test_work_hours_logic() -> None:
     """Test work hours calculation logic"""
 
-    def calculate_rush_order_hours(base_minutes: int, penalties: list) -> int:
+    def calculate_rush_order_hours(base_minutes: int, penalties: list[int]) -> int:
         """Calculate rush order work hours (15 minutes - penalties)"""
         rush_base = 15
         total_penalties = sum(abs(p) for p in penalties)
         return max(0, rush_base - total_penalties)
 
     def calculate_normal_hours(
-        base_minutes: int, bonuses: list, penalties: list
+        base_minutes: int, bonuses: list[int], penalties: list[int]
     ) -> int:
         """Calculate normal task work hours (base + bonuses - penalties)"""
         total_bonuses = sum(bonuses)
@@ -134,7 +134,7 @@ def test_work_hours_logic():
     print("✓ Work hours calculation logic tests passed")
 
 
-def test_status_mapping():
+def test_status_mapping() -> None:
     """Test status mapping logic"""
 
     def map_work_order_status(work_order_status: str) -> str:
@@ -165,7 +165,7 @@ def test_status_mapping():
     print("✓ Status mapping logic tests passed")
 
 
-def test_task_type_mapping():
+def test_task_type_mapping() -> None:
     """Test task type mapping from repair form"""
 
     def map_repair_form_to_task_type(repair_form: str) -> str:
@@ -192,7 +192,7 @@ def test_task_type_mapping():
     print("✓ Task type mapping logic tests passed")
 
 
-def main():
+def main() -> int:
     """Run all logic tests"""
     print("Testing refactored logic components...")
     print("=" * 50)

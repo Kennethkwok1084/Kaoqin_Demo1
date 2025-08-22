@@ -308,7 +308,6 @@ class AttendanceService:
 
             # 统计计算
             total_work_days = len([r for r in records if r.checkin_time])
-            total_attendance_hours = sum(r.work_hours or 0 for r in records)
             total_late_days = len([r for r in records if r.is_late_checkin])
             total_early_days = len([r for r in records if r.is_early_checkout])
             total_late_minutes = sum(r.late_checkin_minutes or 0 for r in records)

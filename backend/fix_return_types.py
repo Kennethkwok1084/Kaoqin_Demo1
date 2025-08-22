@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 
 
-def fix_return_types_in_file(file_path: Path):
+def fix_return_types_in_file(file_path: Path) -> None:
     """Fix missing return type annotations in a single file"""
     if not file_path.exists():
         return
@@ -17,7 +17,7 @@ def fix_return_types_in_file(file_path: Path):
     # Pattern to match async def without return type annotation
     pattern = r"(async def [^(]+\([^)]*\)):(\s*\n)"
 
-    def replacement(match):
+    def replacement(match: re.Match[str]) -> str:
         func_sig = match.group(1)
         newline = match.group(2)
 
@@ -35,7 +35,7 @@ def fix_return_types_in_file(file_path: Path):
         print(f"Fixed return types in {file_path}")
 
 
-def main():
+def main() -> None:
     """Fix return types in key API files"""
     backend_dir = Path(__file__).parent
     api_files = [

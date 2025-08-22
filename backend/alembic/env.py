@@ -5,6 +5,7 @@ Configures the migration context and database connection.
 
 import asyncio
 from logging.config import fileConfig
+from typing import Any, Dict
 
 from alembic import context
 from sqlalchemy import pool
@@ -35,14 +36,17 @@ target_metadata = Base.metadata
 # ... etc.
 
 
-def get_url():
+def get_url() -> str:
     """Get database URL from environment or config."""
     # Try to get URL from environment first
     try:
         return get_database_url()  # Use async URL for migrations
     except Exception:
         # Fallback to config file
-        return config.get_main_option("sqlalchemy.url")
+        url = config.get_main_option("sqlalchemy.url")
+        if url is None:
+            raise ValueError("No database URL found in environment or config")
+        return url
 
 
 def run_migrations_offline() -> None:
@@ -88,7 +92,7 @@ def do_run_migrations(connection: Connection) -> None:
 
 async def run_async_migrations() -> None:
     """Run migrations in async mode."""
-    configuration = config.get_section(config.config_ini_section)
+    configuration = config.get_section(config.config_ini_section) or {}
     configuration["sqlalchemy.url"] = get_url()
 
     connectable = async_engine_from_config(

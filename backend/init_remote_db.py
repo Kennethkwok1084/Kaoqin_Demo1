@@ -14,7 +14,7 @@ os.environ["DATABASE_URL"] = (
 )
 
 
-async def test_basic_connection():
+async def test_basic_connection() -> bool:
     """测试基础连接 - 使用asyncpg直连"""
     print("=== Testing Basic Connection (asyncpg) ===")
 
@@ -64,7 +64,7 @@ async def test_basic_connection():
         return False
 
 
-async def create_members_table_minimal():
+async def create_members_table_minimal() -> bool:
     """创建最小化的members表结构"""
     print("=== Creating Minimal Members Table ===")
 
@@ -146,7 +146,7 @@ async def create_members_table_minimal():
         return False
 
 
-async def main():
+async def main() -> bool:
     """主函数"""
     print("=== Remote Database Initialization ===")
 

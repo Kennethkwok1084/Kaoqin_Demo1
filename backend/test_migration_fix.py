@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def test_migration_syntax():
+def test_migration_syntax() -> bool:
     """测试迁移文件语法正确性"""
     logger.info("测试迁移文件语法...")
 
@@ -49,7 +49,7 @@ def test_migration_syntax():
     return True
 
 
-def test_sql_commands():
+def test_sql_commands() -> bool:
     """测试SQL命令的语法正确性"""
     logger.info("测试SQL命令语法...")
 
@@ -92,7 +92,7 @@ def test_sql_commands():
     return True
 
 
-def test_alembic_config():
+def test_alembic_config() -> bool:
     """测试Alembic配置"""
     logger.info("测试Alembic配置...")
 
@@ -117,7 +117,7 @@ def test_alembic_config():
         return False
 
 
-def main():
+def main() -> None:
     """主测试函数"""
     logger.info("开始数据库迁移修复验证...")
 

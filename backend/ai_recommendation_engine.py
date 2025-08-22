@@ -263,7 +263,7 @@ class HybridRecommendationEngine:
         self, context: RecommendationContext
     ) -> Dict[str, Any]:
         """生成混合建议"""
-        result = {
+        result: Dict[str, Any] = {
             "timestamp": datetime.now().isoformat(),
             "ai_enabled": self.enable_ai,
             "recommendations": [],
@@ -276,12 +276,13 @@ class HybridRecommendationEngine:
         )
 
         # 2. 如果启用AI，生成AI建议
-        ai_recommendations = []
+        ai_recommendations: List[Any] = []
         if self.enable_ai:
             try:
-                ai_recommendations = await self.llm_service.generate_recommendations(
-                    context
-                )
+                if self.llm_service is not None:
+                    ai_recommendations = await self.llm_service.generate_recommendations(
+                        context
+                    )
                 result["metadata"]["ai_analysis_success"] = True
             except Exception as e:
                 logger.error(f"AI分析失败，降级到规则引擎: {e}")
@@ -399,7 +400,7 @@ class EnhancedRecommendationSystem:
             "database_performance": "good",
         }
 
-    async def _save_recommendations(self, recommendations: Dict[str, Any]):
+    async def _save_recommendations(self, recommendations: Dict[str, Any]) -> None:
         """保存建议到文件"""
         output_dir = Path("reports/ai_recommendations")
         output_dir.mkdir(exist_ok=True, parents=True)
@@ -414,7 +415,7 @@ class EnhancedRecommendationSystem:
 
 
 # 使用示例
-async def main():
+async def main() -> None:
     """主函数演示"""
     # 模拟测试结果
     test_results = {

@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 os.environ["ENVIRONMENT"] = "test"
 
 
-async def simple_test():
+async def simple_test() -> None:
     """Simple test with minimal setup"""
     print("=== Simple Test ===")
 
@@ -24,7 +24,8 @@ async def simple_test():
         async with engine.begin() as conn:
             result = await conn.execute(text("SELECT 1 as test"))
             test_value = result.fetchone()
-            print(f"[OK] Database connection test: {test_value[0]}")
+            if test_value:
+                print(f"[OK] Database connection test: {test_value[0]}")
 
             # 手动创建简单表
             await conn.execute(
@@ -55,7 +56,8 @@ async def simple_test():
             # 查询测试数据
             result = await conn.execute(text("SELECT * FROM test_members"))
             user = result.fetchone()
-            print(f"[OK] Test data retrieved: {user[1]} - {user[2]}")
+            if user:
+                print(f"[OK] Test data retrieved: {user[1]} - {user[2]}")
 
     except Exception as e:
         print(f"[ERROR] Test failed: {e}")

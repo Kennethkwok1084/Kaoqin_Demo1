@@ -3,14 +3,16 @@
 """
 Database initialization script to create default admin user for testing
 """
-from app.models.member import Member, UserRole
-from app.core.security import get_password_hash
-from app.core.database import AsyncSessionLocal
-from sqlalchemy import select
 import asyncio
 import sys
 from datetime import datetime
 from pathlib import Path
+
+from sqlalchemy import select
+
+from app.core.database import AsyncSessionLocal
+from app.core.security import get_password_hash
+from app.models.member import Member, UserRole
 
 # 添加项目根目录到Python路径
 sys.path.insert(0, str(Path(__file__).parent.parent))

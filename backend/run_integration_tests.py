@@ -31,7 +31,7 @@ class IntegrationTestRunner:
             },
         }
 
-    def log(self, message: str, level: str = "INFO"):
+    def log(self, message: str, level: str = "INFO") -> None:
         if self.verbose or level != "DEBUG":
             timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
             print(f"[{timestamp}] {level}: {message}")
@@ -210,7 +210,7 @@ class IntegrationTestRunner:
         report_lines.append("=" * 50)
         return "\n".join(report_lines)
 
-    def save_results(self):
+    def save_results(self) -> None:
         """保存测试结果到文件"""
         # 保存JSON格式结果
         results_file = Path("integration_test_results.json")
@@ -283,7 +283,7 @@ class IntegrationTestRunner:
             return 1
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="运行集成测试")
     parser.add_argument("--verbose", "-v", action="store_true", help="启用详细输出")
     parser.add_argument(

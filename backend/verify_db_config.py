@@ -78,7 +78,7 @@ async def test_database_connection(engine_url: str, description: str) -> Dict[st
     return result
 
 
-async def main():
+async def main() -> int:
     """Main verification function."""
     print("Database Configuration Verification")
     print("=" * 50)

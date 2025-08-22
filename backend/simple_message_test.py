@@ -2,14 +2,15 @@
 简单测试消息系统是否正常工作
 """
 
-from app.core.messages import get_message, success_response
 import os
 import sys
+
+from app.core.messages import get_message, success_response
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "app"))
 
 
-def test_basic_functionality():
+def test_basic_functionality() -> None:
     """测试基本功能"""
 
     # 测试基本消息
