@@ -243,7 +243,7 @@ class FileProcessingError(BaseCustomException):
     """Raised when file processing fails."""
 
     def __init__(self, message: str = "File processing error"):
-        super().__init__(message, status.HTTP_400_BAD_REQUEST)
+        super().__init__(message=message, status_code=status.HTTP_400_BAD_REQUEST)
 
 
 class InvalidFileFormatError(FileProcessingError):
@@ -279,7 +279,9 @@ class DatabaseError(BaseCustomException):
     """Raised when database operations fail."""
 
     def __init__(self, message: str = "Database error"):
-        super().__init__(message, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        super().__init__(
+            message=message, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 class DatabaseConnectionError(DatabaseError):
@@ -302,7 +304,7 @@ class RateLimitExceededError(BaseCustomException):
     """Raised when rate limit is exceeded."""
 
     def __init__(self, message: str = "Rate limit exceeded"):
-        super().__init__(message, status.HTTP_429_TOO_MANY_REQUESTS)
+        super().__init__(message=message, status_code=status.HTTP_429_TOO_MANY_REQUESTS)
 
 
 # Configuration Exceptions
@@ -310,7 +312,9 @@ class ConfigurationError(BaseCustomException):
     """Raised when configuration is invalid."""
 
     def __init__(self, message: str = "Configuration error"):
-        super().__init__(message, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        super().__init__(
+            message=message, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 class MissingConfigurationError(ConfigurationError):
@@ -325,7 +329,7 @@ class ExternalServiceError(BaseCustomException):
     """Raised when external service fails."""
 
     def __init__(self, message: str = "External service error"):
-        super().__init__(message, status.HTTP_502_BAD_GATEWAY)
+        super().__init__(message=message, status_code=status.HTTP_502_BAD_GATEWAY)
 
 
 class EmailServiceError(ExternalServiceError):

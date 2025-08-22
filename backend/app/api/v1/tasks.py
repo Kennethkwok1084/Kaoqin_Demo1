@@ -3535,7 +3535,7 @@ async def get_work_hours_statistics(
                 )
 
             # 按总工时排序
-            member_stats.sort(key=lambda x: x["total_hours"], reverse=True)
+            member_stats.sort(key=lambda x: x.get("total_hours", 0), reverse=True)
 
         response_data = {
             "period": {

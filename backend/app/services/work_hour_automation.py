@@ -111,8 +111,8 @@ class WorkHourAutomationService:
                     )
                 )
 
-            result = await self.db.execute(query)
-            tasks = result.scalars().all()
+            db_result = await self.db.execute(query)
+            tasks = db_result.scalars().all()
 
             penalty_applied = 0
 
@@ -162,8 +162,8 @@ class WorkHourAutomationService:
                 )
             )
 
-            result = await self.db.execute(query)
-            tasks = result.scalars().all()
+            db_result = await self.db.execute(query)
+            tasks = db_result.scalars().all()
 
             bonuses_applied = 0
 
@@ -219,8 +219,8 @@ class WorkHourAutomationService:
             if date_to:
                 query = query.where(RepairTask.report_time <= date_to)
 
-            result = await self.db.execute(query)
-            tasks = result.scalars().all()
+            db_result = await self.db.execute(query)
+            tasks = db_result.scalars().all()
 
             recalculated_count = 0
             total_minutes_before = 0

@@ -63,7 +63,7 @@ class TestTaskService:
             assert task.task_type == TaskType.ONLINE
             assert task.member_id == sample_member.id
             assert async_session.add.called
-            await async_session.flush.assert_called_once()
+            async_session.flush.assert_called_once()
 
     async def test_create_repair_task_with_tags(self, async_session, sample_member):
         """Test repair task creation with tags"""
@@ -416,6 +416,7 @@ async def sample_member(async_session):
     """Create a sample member for testing"""
     member = Member(
         id=1,
+        username="testmember",
         student_id="202501001",
         name="Test Member",
         role=UserRole.MEMBER,

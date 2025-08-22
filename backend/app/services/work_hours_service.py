@@ -32,7 +32,9 @@ class WorkHoursCalculationService:
     """工时计算服务 - 实现新的考勤规则"""
 
     def __init__(self, db: Optional[AsyncSession]):
-        self.db = db
+        if db is None:
+            raise ValueError("Database session is required")
+        self.db: AsyncSession = db
 
         # 基础工时配置（分钟）
         self.ONLINE_TASK_MINUTES = 40  # 线上任务
@@ -889,7 +891,9 @@ class RushTaskMarkingService:
     """爆单标记服务"""
 
     def __init__(self, db: Optional[AsyncSession]):
-        self.db = db
+        if db is None:
+            raise ValueError("Database session is required")
+        self.db: AsyncSession = db
 
     async def mark_rush_tasks_by_date(
         self,

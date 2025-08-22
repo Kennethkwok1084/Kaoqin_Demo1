@@ -224,7 +224,7 @@ class AttendanceService:
             result = await self.db.execute(query)
             records = result.scalars().all()
 
-            return records
+            return list(records)
 
         except Exception as e:
             logger.error(f"Get attendance records error: {str(e)}")
@@ -517,7 +517,7 @@ class AttendanceService:
             query = query.offset((page - 1) * size).limit(size)
 
             result = await self.db.execute(query)
-            return result.scalars().all()
+            return list(result.scalars().all())
 
         except Exception as e:
             logger.error(f"Get attendance exceptions error: {str(e)}")

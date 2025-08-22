@@ -37,9 +37,11 @@ class TaskService:
     """任务管理服务"""
 
     def __init__(self, db: Optional[AsyncSession]):
-        self.db = db
-        self.work_hours_service = WorkHoursCalculationService(db) if db else None
-        self.rush_task_service = RushTaskMarkingService(db) if db else None
+        if db is None:
+            raise ValueError("Database session is required")
+        self.db: AsyncSession = db
+        self.work_hours_service = WorkHoursCalculationService(db)
+        self.rush_task_service = RushTaskMarkingService(db)
 
     async def create_repair_task(
         self, task_data: Dict[str, Any], creator_id: int
@@ -108,7 +110,8 @@ class TaskService:
             # 工时计算将在后续操作中进行
 
             await self.db.commit()
-            await self.db.refresh(task)
+            # Remove refresh to avoid session persistence issues
+            # The task object is already populated with the correct data
 
             logger.info(f"Repair task created: {task.task_id}")
             return task
@@ -983,7 +986,7 @@ class TaskService:
                 query = query.where(RepairTask.member_id == member_id)
 
             result = await self.db.execute(query)
-            return result.scalars().all()
+            return list(result.scalars().all())
 
         except Exception as e:
             logger.error(f"Get tasks by status error: {str(e)}")
