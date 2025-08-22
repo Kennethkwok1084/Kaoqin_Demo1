@@ -256,15 +256,15 @@ class TestBasicCoverage:
             ValidationError,
         )
 
-        # Test exception instantiation
-        validation_error = ValidationError("Validation failed")
-        assert str(validation_error) == "Validation failed"
+        # Test exception instantiation with explicit message and no message_key
+        validation_error = ValidationError("数据验证失败", message_key=None)
+        assert str(validation_error) == "数据验证失败"
 
-        auth_error = AuthenticationError("Authentication failed")
-        assert str(auth_error) == "Authentication failed"
+        auth_error = AuthenticationError("认证失败", message_key=None)
+        assert str(auth_error) == "认证失败"
 
-        authz_error = AuthorizationError("Authorization failed")
-        assert str(authz_error) == "Authorization failed"
+        authz_error = AuthorizationError("授权失败", message_key=None)
+        assert str(authz_error) == "授权失败"
 
     def test_response_creation(self):
         """Test API response creation utility."""

@@ -197,7 +197,7 @@ class MessageFormatter:
     """消息格式化工具类"""
     
     @staticmethod
-    def format_message(message: str, **kwargs: Any) -> str:
+    def format_message(message: str, **kwargs) -> str:
         """
         格式化消息模板
         
@@ -262,7 +262,7 @@ class MessageManager:
         self.messages = Messages()
         self.formatter = MessageFormatter()
     
-    def get_message(self, message_key: str, **format_kwargs: Any) -> str:
+    def get_message(self, message_key: str, **format_kwargs) -> str:
         """
         获取格式化后的消息
         
@@ -329,11 +329,11 @@ class MessageManager:
 message_manager = MessageManager()
 
 # 便捷函数
-def get_message(message_key: str, **kwargs: Any) -> str:
+def get_message(message_key: str, **kwargs) -> str:
     """获取格式化消息"""
     return message_manager.get_message(message_key, **kwargs)
 
-def success_response(message_key: str, data: Any = None, **kwargs: Any) -> Dict[str, Any]:
+def success_response(message_key: str, data: Any = None, **kwargs) -> Dict[str, Any]:
     """创建成功响应"""
     return message_manager.create_success_response(message_key, data, **kwargs)
 
@@ -345,10 +345,10 @@ def error_response(
     """创建错误响应"""
     return message_manager.create_error_response(message_key, details, **kwargs)
 
-def warning_response(message_key: str, data: Any = None, **kwargs: Any) -> Dict[str, Any]:
+def warning_response(message_key: str, data: Any = None, **kwargs) -> Dict[str, Any]:
     """创建警告响应"""
     return message_manager.create_warning_response(message_key, data, **kwargs)
 
-def info_response(message_key: str, data: Any = None, **kwargs: Any) -> Dict[str, Any]:
+def info_response(message_key: str, data: Any = None, **kwargs) -> Dict[str, Any]:
     """创建信息响应"""
     return message_manager.create_info_response(message_key, data, **kwargs)

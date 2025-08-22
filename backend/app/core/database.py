@@ -30,7 +30,7 @@ convention = {
 Base.metadata = MetaData(naming_convention=convention)
 
 # Async Database Engine
-def _get_async_engine_args():
+def _get_async_engine_args() -> Dict[str, Any]:
     """Get engine arguments based on database type."""
     db_url = get_database_url()
     base_args = {
@@ -54,7 +54,7 @@ def _get_async_engine_args():
             "max_overflow": 10,
             "pool_recycle": 1800,
             "connect_args": {
-                "command_timeout": 60,
+                "command_timeout": 300,  # Increase to 5 minutes for large data processing
                 "server_settings": {
                     "application_name": "kaoqin_backend",
                 },

@@ -149,13 +149,15 @@ async def refresh_token(
         )
         if not payload:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+                status_code=status.HTTP_401_UNAUTHORIZED, 
+                detail=get_message("AUTH_ERROR_INVALID_TOKEN")
             )
 
         user_id_str: Optional[Union[str, int]] = payload.get("sub")
         if not user_id_str:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload"
+                status_code=status.HTTP_401_UNAUTHORIZED, 
+                detail=get_message("AUTH_ERROR_INVALID_TOKEN_PAYLOAD")
             )
 
         user_id = int(user_id_str) if isinstance(user_id_str, str) else user_id_str
@@ -167,7 +169,7 @@ async def refresh_token(
         if not user or not user.is_active:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive",
+                detail=get_message("AUTH_ERROR_USER_NOT_FOUND"),
             )
 
         # Create new access token
@@ -185,7 +187,8 @@ async def refresh_token(
         }
 
         return create_response(
-            data=response_data, message="Token refreshed successfully"
+            data=response_data, 
+            message_key="AUTH_SUCCESS_REFRESH_TOKEN"
         )
 
     except HTTPException:
@@ -194,7 +197,7 @@ async def refresh_token(
         logger.error(f"Token refresh error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Token refresh failed",
+            detail=get_message("AUTH_ERROR_TOKEN_REFRESH_FAILED"),
         )
 
 
@@ -209,7 +212,7 @@ async def logout(current_user: Member = Depends(get_current_user)) -> Dict[str, 
     try:
         logger.info(f"User logged out: {current_user.student_id}")
 
-        return create_response(message="Logout successful")
+        return create_response(message_key="AUTH_SUCCESS_LOGOUT")
 
     except Exception as e:
         logger.error(f"Logout error for user {current_user.student_id}: {str(e)}")
@@ -241,14 +244,15 @@ async def get_current_user_profile(
         }
 
         return create_response(
-            data=profile_data, message="Profile retrieved successfully"
+            data=profile_data, 
+            message_key="AUTH_SUCCESS_PROFILE_RETRIEVE"
         )
 
     except Exception as e:
         logger.error(f"Get profile error for user {current_user.student_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve profile",
+            detail=get_message("AUTH_ERROR_PROFILE_RETRIEVE_FAILED"),
         )
 
 
@@ -279,7 +283,7 @@ async def update_user_profile(
                     )
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
-                        detail=f"Not authorized to update {field}",
+                        detail=get_message("AUTH_ERROR_UNAUTHORIZED_UPDATE", field=field),
                     )
 
         # Validate email format if provided
@@ -289,7 +293,7 @@ async def update_user_profile(
             if not validate_email_format(update_data["email"]):
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail="Invalid email format",
+                    detail=get_message("AUTH_ERROR_INVALID_EMAIL_FORMAT"),
                 )
 
         # Update user fields
@@ -302,8 +306,9 @@ async def update_user_profile(
 
         logger.info(f"Profile updated for user: {current_user.student_id}")
 
-        return create_response(
-            data=current_user.get_safe_dict(), message="Profile updated successfully"
+        from app.core.messages import success_response
+        return success_response(
+            "AUTH_SUCCESS_PROFILE_UPDATE", data=current_user.get_safe_dict()
         )
 
     except HTTPException:
@@ -313,9 +318,10 @@ async def update_user_profile(
             f"Profile update error for user {current_user.student_id}: {str(e)}"
         )
         await db.rollback()
+        from app.core.messages import Messages
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Profile update failed",
+            detail=Messages.AUTH_ERROR_PROFILE_UPDATE_FAILED,
         )
 
 
@@ -340,7 +346,7 @@ async def change_password(
             )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Current password is incorrect",
+                detail=get_message("AUTH_ERROR_CURRENT_PASSWORD_INCORRECT"),
             )
 
         # Validate new password strength
@@ -350,7 +356,7 @@ async def change_password(
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail={
-                    "message": "Password does not meet strength requirements",
+                    "message": get_message("AUTH_WARNING_PASSWORD_WEAK"),
                     "errors": errors,
                 },
             )
@@ -359,7 +365,7 @@ async def change_password(
         if verify_password(password_data.new_password, current_user.password_hash):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="New password must be different from current password",
+                detail=get_message("AUTH_ERROR_NEW_PASSWORD_SAME"),
             )
 
         # Update password
@@ -368,7 +374,7 @@ async def change_password(
 
         logger.info(f"Password changed for user: {current_user.student_id}")
 
-        return create_response(message="Password changed successfully")
+        return create_response(message_key="AUTH_SUCCESS_PASSWORD_CHANGE")
 
     except HTTPException:
         raise
@@ -379,7 +385,7 @@ async def change_password(
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Password change failed",
+            detail=get_message("AUTH_ERROR_PASSWORD_CHANGE_FAILED"),
         )
 
 
@@ -398,13 +404,15 @@ async def verify_user_token(
         payload: Optional[Dict[str, Any]] = verify_token(credentials.credentials)
         if not payload:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+                status_code=status.HTTP_401_UNAUTHORIZED, 
+                detail=get_message("AUTH_ERROR_INVALID_TOKEN")
             )
 
         user_id_str: Optional[Union[str, int]] = payload.get("sub")
         if not user_id_str:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload"
+                status_code=status.HTTP_401_UNAUTHORIZED, 
+                detail=get_message("AUTH_ERROR_INVALID_TOKEN_PAYLOAD")
             )
 
         user_id = int(user_id_str) if isinstance(user_id_str, str) else user_id_str
@@ -416,7 +424,7 @@ async def verify_user_token(
         if not user or not user.is_active:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive",
+                detail=get_message("AUTH_ERROR_USER_NOT_FOUND"),
             )
 
         # Calculate token expiration time
@@ -429,7 +437,7 @@ async def verify_user_token(
                 "expires_at": exp_timestamp,
                 "user": user.get_safe_dict(),
             },
-            message="Token is valid",
+            message_key="AUTH_INFO_TOKEN_VALID",
         )
 
     except HTTPException:
@@ -438,7 +446,7 @@ async def verify_user_token(
         logger.error(f"Token verification error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Token verification failed",
+            detail=get_message("AUTH_ERROR_TOKEN_VERIFICATION_FAILED"),
         )
 
 
@@ -448,5 +456,5 @@ async def auth_health_check() -> Dict[str, Any]:
     """Authentication service health check."""
     return create_response(
         data={"service": "auth", "status": "healthy"},
-        message="Authentication service is running",
+        message_key="AUTH_INFO_SERVICE_RUNNING",
     )

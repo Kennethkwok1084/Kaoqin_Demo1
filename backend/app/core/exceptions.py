@@ -383,7 +383,8 @@ def handle_validation_error(error: Exception) -> ValidationError:
             field = ".".join(str(loc) for loc in err["loc"])
             field_errors[field] = err["msg"]
 
-        return ValidationError("Validation failed", field_errors=field_errors)
+        from app.core.messages import Messages
+        return ValidationError(Messages.VALIDATION_ERROR_GENERAL, field_errors=field_errors)
 
     return ValidationError(str(error))
 

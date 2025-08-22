@@ -4,8 +4,10 @@ A/B表智能匹配服务（重构版）
 支持多种匹配策略和机器学习优化
 """
 
+import asyncio
 import logging
 import re
+import time
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional
@@ -85,6 +87,8 @@ class ABTableMatchingService:
         a_table_data: List[Dict[str, Any]],
         b_table_data: Optional[List[Dict[str, Any]]] = None,
         strategies: Optional[List[MatchingStrategy]] = None,
+        batch_size: int = 100,
+        timeout_seconds: int = 240,  # 4 minutes timeout
     ) -> List[MatchResult]:
         """
         执行A/B表智能匹配
@@ -105,8 +109,9 @@ class ABTableMatchingService:
             ]
 
         try:
+            start_time = time.time()
             logger.info(
-                f"Starting AB table matching with {len(a_table_data)} A-records"
+                f"Starting AB table matching with {len(a_table_data)} A-records, timeout: {timeout_seconds}s"
             )
 
             # 获取现有成员数据
@@ -117,13 +122,41 @@ class ABTableMatchingService:
             if b_table_data:
                 member_index = self._merge_b_table_data(member_index, b_table_data)
 
-            # 执行匹配
+            # 执行批量匹配
             match_results = []
-            for a_record in a_table_data:
-                result = await self._match_single_record(
-                    a_record, member_index, strategies
-                )
-                match_results.append(result)
+            total_records = len(a_table_data)
+            
+            for i in range(0, total_records, batch_size):
+                batch = a_table_data[i:i + batch_size]
+                batch_end = min(i + batch_size, total_records)
+                
+                logger.info(f"Processing batch {i // batch_size + 1}: records {i+1}-{batch_end}/{total_records}")
+                
+                # Process batch
+                for j, a_record in enumerate(batch):
+                    # Check timeout
+                    if time.time() - start_time > timeout_seconds:
+                        logger.warning(f"AB table matching timeout after {timeout_seconds}s, processed {len(match_results)}/{total_records} records")
+                        # Return partial results instead of failing completely
+                        stats = self._calculate_matching_stats(match_results)
+                        logger.info(f"Partial matching completed due to timeout: {stats}")
+                        return match_results
+                    
+                    result = await self._match_single_record(
+                        a_record, member_index, strategies
+                    )
+                    match_results.append(result)
+                    
+                    # Log progress every 50 records
+                    if (i + j + 1) % 50 == 0:
+                        progress = (i + j + 1) / total_records * 100
+                        elapsed_time = time.time() - start_time
+                        estimated_total_time = elapsed_time / progress * 100 if progress > 0 else 0
+                        logger.info(f"Progress: {progress:.1f}% ({i + j + 1}/{total_records} records), "
+                                   f"elapsed: {elapsed_time:.1f}s, estimated total: {estimated_total_time:.1f}s")
+                
+                # Small pause between batches to prevent overwhelming the database
+                await asyncio.sleep(0.01)  # 10ms pause
 
             # 统计结果
             stats = self._calculate_matching_stats(match_results)

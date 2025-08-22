@@ -79,10 +79,10 @@ jobs:
         fi
 
         # 安装测试相关依赖
-        pip install pytest pytest-asyncio pytest-cov pytest-html pytest-json-report pytest-benchmark asyncpg psycopg2-binary alembic
+        pip install pytest pytest-asyncio pytest-cov pytest-html pytest-json-report pytest-benchmark asyncpg psycopg2-binary alembic aiosqlite
 
         # 检查是否安装成功
-        python -c "import pytest, fastapi, sqlalchemy; print('主要依赖安装成功')"
+        python -c "import pytest, fastapi, sqlalchemy, aiosqlite; print('主要依赖安装成功')"
 
     - name: Set environment variables
       run: |

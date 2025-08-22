@@ -166,11 +166,11 @@ class TestZeroCoverageModules:
         )
 
         # Test exception instantiation
-        validation_error = ValidationError("Test validation error")
-        assert str(validation_error) == "Test validation error"
+        validation_error = ValidationError("数据验证失败")
+        assert str(validation_error) == "数据验证失败"
 
-        auth_error = AuthenticationError("Test auth error")
-        assert str(auth_error) == "Test auth error"
+        auth_error = AuthenticationError("认证失败", message_key=None)
+        assert str(auth_error) == "认证失败"
 
     def test_api_endpoint_imports(self):
         """Test that API endpoint modules can be imported."""

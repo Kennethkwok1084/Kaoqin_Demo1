@@ -1,7 +1,7 @@
 {
   "test_summary": {
     "overall_performance_grade": "Excellent",
-    "average_response_time_ms": 4.6,
+    "average_response_time_ms": 2.93,
     "recommendations": [
       "Performance is good, consider load balancing for production",
       "Monitor performance under real-world load conditions",
@@ -17,10 +17,10 @@
       "success_count": 5,
       "success_rate": 100.0,
       "response_times": {
-        "average_ms": 8.06,
-        "min_ms": 2.23,
-        "max_ms": 25.9,
-        "median_ms": 4.3
+        "average_ms": 3.36,
+        "min_ms": 2.02,
+        "max_ms": 7.39,
+        "median_ms": 2.54
       },
       "content_length": {
         "average_bytes": 100
@@ -38,13 +38,13 @@
       "success_count": 5,
       "success_rate": 100.0,
       "response_times": {
-        "average_ms": 8.76,
-        "min_ms": 2.97,
-        "max_ms": 24.83,
-        "median_ms": 4.23
+        "average_ms": 4.15,
+        "min_ms": 3.18,
+        "max_ms": 5.97,
+        "median_ms": 3.88
       },
       "content_length": {
-        "average_bytes": 79
+        "average_bytes": 74
       },
       "performance_grade": "Excellent",
       "status_codes": [
@@ -59,13 +59,13 @@
       "success_count": 5,
       "success_rate": 100.0,
       "response_times": {
-        "average_ms": 3.9,
-        "min_ms": 2.6,
-        "max_ms": 4.73,
-        "median_ms": 4.02
+        "average_ms": 2.51,
+        "min_ms": 2.27,
+        "max_ms": 2.85,
+        "median_ms": 2.4
       },
       "content_length": {
-        "average_bytes": 123
+        "average_bytes": 176
       },
       "performance_grade": "Excellent",
       "status_codes": [
@@ -80,10 +80,10 @@
       "success_count": 5,
       "success_rate": 100.0,
       "response_times": {
-        "average_ms": 3.85,
-        "min_ms": 2.55,
-        "max_ms": 4.91,
-        "median_ms": 4.06
+        "average_ms": 2.22,
+        "min_ms": 2.11,
+        "max_ms": 2.43,
+        "median_ms": 2.19
       },
       "content_length": {
         "average_bytes": 128
@@ -101,10 +101,10 @@
       "success_count": 5,
       "success_rate": 100.0,
       "response_times": {
-        "average_ms": 2.42,
-        "min_ms": 2.25,
-        "max_ms": 2.61,
-        "median_ms": 2.41
+        "average_ms": 3.09,
+        "min_ms": 2.26,
+        "max_ms": 4.19,
+        "median_ms": 2.62
       },
       "content_length": {
         "average_bytes": 80
@@ -122,10 +122,10 @@
       "success_count": 5,
       "success_rate": 100.0,
       "response_times": {
-        "average_ms": 2.71,
-        "min_ms": 2.38,
-        "max_ms": 3.05,
-        "median_ms": 2.6
+        "average_ms": 2.33,
+        "min_ms": 2.21,
+        "max_ms": 2.52,
+        "median_ms": 2.26
       },
       "content_length": {
         "average_bytes": 80
@@ -143,10 +143,10 @@
       "success_count": 5,
       "success_rate": 100.0,
       "response_times": {
-        "average_ms": 3.02,
-        "min_ms": 2.42,
-        "max_ms": 3.89,
-        "median_ms": 2.96
+        "average_ms": 2.37,
+        "min_ms": 2.26,
+        "max_ms": 2.44,
+        "median_ms": 2.41
       },
       "content_length": {
         "average_bytes": 80
@@ -164,10 +164,10 @@
       "success_count": 5,
       "success_rate": 100.0,
       "response_times": {
-        "average_ms": 4.65,
-        "min_ms": 3.29,
-        "max_ms": 6.47,
-        "median_ms": 4.31
+        "average_ms": 2.4,
+        "min_ms": 2.24,
+        "max_ms": 2.87,
+        "median_ms": 2.27
       },
       "content_length": {
         "average_bytes": 80
@@ -185,10 +185,10 @@
       "success_count": 5,
       "success_rate": 100.0,
       "response_times": {
-        "average_ms": 2.44,
-        "min_ms": 2.26,
-        "max_ms": 2.74,
-        "median_ms": 2.37
+        "average_ms": 2.36,
+        "min_ms": 2.27,
+        "max_ms": 2.49,
+        "median_ms": 2.35
       },
       "content_length": {
         "average_bytes": 80
@@ -206,10 +206,10 @@
       "success_count": 5,
       "success_rate": 100.0,
       "response_times": {
-        "average_ms": 6.17,
-        "min_ms": 2.44,
-        "max_ms": 18.78,
-        "median_ms": 3.04
+        "average_ms": 4.48,
+        "min_ms": 2.18,
+        "max_ms": 13.15,
+        "median_ms": 2.31
       },
       "content_length": {
         "average_bytes": 80
@@ -221,30 +221,30 @@
     }
   },
   "performance_metrics": {
-    "average_response_time_ms": 4.6,
-    "fastest_endpoint_ms": 2.42,
-    "slowest_endpoint_ms": 8.76,
+    "average_response_time_ms": 2.93,
+    "fastest_endpoint_ms": 2.22,
+    "slowest_endpoint_ms": 4.48,
     "total_endpoints_tested": 10,
     "load_test_results": [
       {
         "endpoint_name": "Root Health Check",
         "concurrent_requests": 10,
-        "total_time_ms": 14.59,
+        "total_time_ms": 15.53,
         "success_count": 10,
         "success_rate": 100.0,
-        "average_response_time_ms": 1.46,
-        "max_response_time_ms": 2.21,
-        "requests_per_second": 685.18
+        "average_response_time_ms": 1.55,
+        "max_response_time_ms": 2.23,
+        "requests_per_second": 643.93
       },
       {
         "endpoint_name": "System Health Check",
         "concurrent_requests": 10,
-        "total_time_ms": 15.73,
+        "total_time_ms": 24.54,
         "success_count": 10,
         "success_rate": 100.0,
-        "average_response_time_ms": 1.57,
-        "max_response_time_ms": 1.91,
-        "requests_per_second": 635.83
+        "average_response_time_ms": 2.45,
+        "max_response_time_ms": 2.79,
+        "requests_per_second": 407.56
       }
     ]
   }

@@ -165,7 +165,7 @@ async def validation_exception_handler(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
             "error": True,
-            "message": "Validation failed",
+            "message": "数据验证失败",
             "details": {"field_errors": errors},
             "type": "ValidationError",
         },

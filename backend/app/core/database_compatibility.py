@@ -185,6 +185,10 @@ class SQLiteEnumValidator:
 
 def get_test_database_url() -> str:
     """获取测试数据库URL"""
+    # 强制使用SQLite时始终使用SQLite
+    if os.getenv("FORCE_SQLITE_TESTS") == "true":
+        return "sqlite+aiosqlite:///./test_attendence.db"
+    
     # 优先级：显式PostgreSQL测试 > CI环境 > 集成测试 > 本地开发
     if os.getenv("POSTGRES_TEST") == "true":
         # 显式要求使用PostgreSQL测试
@@ -212,6 +216,9 @@ def get_test_database_url() -> str:
 
 def should_use_postgresql_tests() -> bool:
     """判断是否应该使用PostgreSQL专属测试"""
+    # 强制SQLite测试时始终返回False
+    if os.getenv("FORCE_SQLITE_TESTS") == "true":
+        return False
     # 只有明确指定PostgreSQL测试时才使用
     return bool(
         os.getenv("POSTGRES_TEST") == "true" or

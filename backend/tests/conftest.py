@@ -4,8 +4,12 @@ Provides database setup, test client, and common fixtures.
 Updated to support dual database testing strategy (SQLite/PostgreSQL).
 """
 
-import asyncio
+# Force SQLite usage for tests to avoid asyncpg event loop issues
+# Set BEFORE imports to ensure it's available during database config loading
 import os
+os.environ["FORCE_SQLITE_TESTS"] = "true"
+
+import asyncio
 from typing import AsyncGenerator, Generator
 
 import pytest
@@ -17,6 +21,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.core.database import get_async_session
 from app.core.security import get_password_hash
 from app.main import app
+# Import models in correct order to avoid forward reference issues  
+import app.models.base  # noqa: F401
+import app.models.member  # noqa: F401
+import app.models.task  # noqa: F401
+import app.models.attendance  # noqa: F401
+
 from app.models.base import Base
 from app.models.member import Member, UserRole
 
@@ -28,6 +38,17 @@ from tests.database_config import (
     sqlite_only,
     test_config,
 )
+
+# Environment variable already set at top of file
+
+@pytest.fixture(scope="session", autouse=True)
+def force_sqlite_for_tests():
+    """Force SQLite usage for all tests to avoid PostgreSQL asyncio issues."""
+    # Environment variable already set at module level
+    yield
+    # Clean up at session end
+    if "FORCE_SQLITE_TESTS" in os.environ:
+        del os.environ["FORCE_SQLITE_TESTS"]
 
 
 # Async test client fixture
