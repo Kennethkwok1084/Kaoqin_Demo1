@@ -23,9 +23,10 @@ from tests.database_config import (
     test_config,
 )
 
-# Force SQLite usage for tests to avoid asyncpg event loop issues
-# Set BEFORE imports to ensure it's available during database config loading
-os.environ["FORCE_SQLITE_TESTS"] = "true"
+# Only force SQLite usage for tests if not in CI environment with explicit PostgreSQL
+# CI environment should respect explicit DATABASE_URL environment variables
+if not (os.getenv("CI") == "true" and os.getenv("DATABASE_URL")):
+    os.environ["FORCE_SQLITE_TESTS"] = "true"
 
 # Import models in correct order to avoid forward reference issues
 import app.models.attendance  # noqa: F401

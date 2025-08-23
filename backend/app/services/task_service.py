@@ -464,6 +464,28 @@ class TaskService:
             logger.error(f"Add task feedback error: {str(e)}")
             raise
 
+    async def add_task_rating(
+        self,
+        task_id: int,
+        rating: int,
+        feedback: Optional[str] = None,
+        operator_id: Optional[int] = None,
+    ) -> RepairTask:
+        """
+        添加任务评分和反馈 (别名方法)
+
+        Args:
+            task_id: 任务ID
+            rating: 评分 (1-5)
+            feedback: 反馈内容
+            operator_id: 操作者ID
+
+        Returns:
+            RepairTask: 更新后的任务
+        """
+        # 这是 add_task_feedback 的别名方法，保持向后兼容
+        return await self.add_task_feedback(task_id, rating, feedback, operator_id)
+
     async def get_member_task_summary(
         self,
         member_id: int,
@@ -968,6 +990,53 @@ class TaskService:
             await self.db.rollback()
             return False
 
+    async def get_repair_task(self, task_id: int) -> Optional[RepairTask]:
+        """
+        获取单个维修任务
+
+        Args:
+            task_id: 任务ID
+
+        Returns:
+            Optional[RepairTask]: 任务对象或None
+        """
+        try:
+            query = (
+                select(RepairTask)
+                .options(selectinload(RepairTask.tags))
+                .where(RepairTask.id == task_id)
+            )
+            result = await self.db.execute(query)
+            return result.scalar_one_or_none()
+
+        except Exception as e:
+            logger.error(f"Get repair task error: {str(e)}")
+            raise
+
+    async def get_tasks_by_member(self, member_id: int) -> List[RepairTask]:
+        """
+        获取成员的任务列表
+
+        Args:
+            member_id: 成员ID
+
+        Returns:
+            List[RepairTask]: 任务列表
+        """
+        try:
+            query = (
+                select(RepairTask)
+                .options(selectinload(RepairTask.tags))
+                .where(RepairTask.member_id == member_id)
+                .order_by(desc(RepairTask.report_time))
+            )
+            result = await self.db.execute(query)
+            return list(result.scalars().all())
+
+        except Exception as e:
+            logger.error(f"Get tasks by member error: {str(e)}")
+            raise
+
     async def get_tasks_by_status(
         self, status: TaskStatus, member_id: Optional[int] = None
     ) -> List[RepairTask]:
@@ -993,6 +1062,32 @@ class TaskService:
         except Exception as e:
             logger.error(f"Get tasks by status error: {str(e)}")
             raise
+
+    async def delete_task(self, task_id: int) -> bool:
+        """
+        删除任务
+
+        Args:
+            task_id: 任务ID
+
+        Returns:
+            bool: 是否删除成功
+        """
+        try:
+            task = await self.get_repair_task(task_id)
+            if not task:
+                return False
+
+            await self.db.delete(task)
+            await self.db.commit()
+            
+            logger.info(f"Task {task_id} deleted successfully")
+            return True
+
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"Delete task error: {str(e)}")
+            return False
 
     async def _recalculate_work_hours_if_needed(self, task: RepairTask) -> None:
         """

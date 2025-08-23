@@ -9,6 +9,7 @@ import sys
 # 检查是否在CI环境中
 if os.getenv("CI") or os.getenv("GITHUB_ACTIONS"):
     # CI环境：使用本地PostgreSQL服务
+    # 注意：这里不覆盖已经设置的环境变量
     if "DATABASE_URL" not in os.environ:
         os.environ["DATABASE_URL"] = (
             "postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence"
@@ -17,6 +18,9 @@ if os.getenv("CI") or os.getenv("GITHUB_ACTIONS"):
         os.environ["DATABASE_URL_SYNC"] = (
             "postgresql://postgres:postgres@localhost:5432/test_attendence"
         )
+    # 确保CI环境标记
+    os.environ["CI"] = "true"
+    os.environ["GITHUB_ACTIONS"] = "true"
 else:
     # 本地开发环境：使用外部数据库
     if "DATABASE_URL" not in os.environ:

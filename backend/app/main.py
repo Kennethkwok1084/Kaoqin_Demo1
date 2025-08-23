@@ -123,10 +123,10 @@ async def custom_exception_handler(
     return JSONResponse(
         status_code=exc.status_code,
         content={
-            "error": True,
+            "success": False,
             "message": exc.message,
             "details": exc.details,
-            "type": exc.__class__.__name__,
+            "error_code": exc.__class__.__name__,
         },
     )
 
@@ -140,10 +140,10 @@ async def http_exception_handler(
     return JSONResponse(
         status_code=exc.status_code,
         content={
-            "error": True,
+            "success": False,
             "message": exc.detail,
             "details": {},
-            "type": "HTTPException",
+            "error_code": "HTTP_ERROR",
         },
     )
 
@@ -164,10 +164,10 @@ async def validation_exception_handler(
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
-            "error": True,
+            "success": False,
             "message": "数据验证失败",
             "details": {"field_errors": errors},
-            "type": "ValidationError",
+            "error_code": "ValidationError",
         },
     )
 
@@ -184,10 +184,10 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
-                "error": True,
+                "success": False,
                 "message": str(exc),
                 "details": {"traceback": traceback.format_exc()},
-                "type": exc.__class__.__name__,
+                "error_code": exc.__class__.__name__,
             },
         )
     else:
@@ -195,10 +195,10 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
-                "error": True,
+                "success": False,
                 "message": "Internal server error",
                 "details": {},
-                "type": "InternalServerError",
+                "error_code": "InternalServerError",
             },
         )
 

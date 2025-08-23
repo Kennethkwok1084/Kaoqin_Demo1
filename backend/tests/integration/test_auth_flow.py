@@ -153,7 +153,7 @@ class TestTokenRefresh:
     def test_refresh_token_success(self, client, test_member_user):
         """测试成功刷新令牌"""
         # 先登录获取令牌
-        login_data = {"student_id": "member001", "password": "member123456"}
+        login_data = {"student_id": test_member_user.student_id, "password": "member123456"}
         login_response = client.post("/api/v1/auth/login", json=login_data)
         assert login_response.status_code == 200
 
@@ -174,7 +174,7 @@ class TestTokenRefresh:
         # 验证新令牌可以正常使用
         new_token = data["access_token"]
         headers = {"Authorization": f"Bearer {new_token}"}
-        profile_response = client.get("/api/auth/profile", headers=headers)
+        profile_response = client.get("/api/v1/auth/me", headers=headers)
         assert profile_response.status_code == 200
 
     def test_refresh_token_invalid(self, client):

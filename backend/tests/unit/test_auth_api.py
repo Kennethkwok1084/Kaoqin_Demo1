@@ -187,15 +187,16 @@ class TestAuthAPI:
             is_active=True,
         )
 
+        # Mock database query result
+        mock_result = AsyncMock()
+        mock_result.scalar_one_or_none.return_value = mock_user
+        mock_db.execute = AsyncMock(return_value=mock_result)
+
         # Mock token verification and user retrieval
         with (
             patch("app.api.v1.auth.verify_token", return_value={"sub": 1}),
-            patch("app.api.v1.auth.get_current_user", return_value=mock_user),
             patch(
                 "app.api.v1.auth.create_access_token", return_value="new_access_token"
-            ),
-            patch(
-                "app.api.v1.auth.create_refresh_token", return_value="new_refresh_token"
             ),
         ):
             refresh_data = RefreshTokenRequest(refresh_token="valid_refresh_token")
@@ -204,7 +205,8 @@ class TestAuthAPI:
 
             assert result["success"] is True
             assert result["data"]["access_token"] == "new_access_token"
-            assert result["data"]["refresh_token"] == "new_refresh_token"
+            assert result["data"]["token_type"] == "bearer"
+            assert "expires_in" in result["data"]
 
     @pytest.mark.asyncio
     async def test_refresh_token_invalid(self):
@@ -239,15 +241,21 @@ class TestAuthAPI:
             is_active=True,
         )
 
+        # Mock verify_password to return True for old password, False for new
+        def mock_verify_password(plain_password, hashed_password):
+            if plain_password == "old_password":
+                return True  # Current password is correct
+            return False  # New password is different from current
+            
         with (
-            patch("app.api.v1.auth.verify_password", return_value=True),
+            patch("app.api.v1.auth.verify_password", side_effect=mock_verify_password),
             patch(
                 "app.api.v1.auth.validate_password_strength", return_value=(True, [])
             ),
             patch("app.api.v1.auth.get_password_hash", return_value="$2b$12$new_hash"),
         ):
             password_data = ChangePasswordRequest(
-                current_password="old_password", new_password="new_strong_password"
+                current_password="old_password", new_password="new_strong_password123"
             )
 
             result = await change_password(

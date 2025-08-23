@@ -55,12 +55,23 @@ class Settings(BaseSettings):
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def assemble_db_connection(cls, v: Optional[str]) -> str:
+        # If explicitly set in environment variables, always use it
         if isinstance(v, str) and v:
             return v
+            
+        # Check for explicit DATABASE_URL environment variable first
+        explicit_db_url = os.getenv("DATABASE_URL")
+        if explicit_db_url:
+            return explicit_db_url
 
-        # Check if we're in any testing/CI environment and use SQLite by default
+        # Check if we're in any testing/CI environment and use appropriate database
         if os.getenv("CI") == "true" or os.getenv("GITHUB_ACTIONS") == "true":
-            return "sqlite+aiosqlite:///./ci_test_attendence.db"
+            # CI environment: only use SQLite if PostgreSQL is not explicitly configured
+            if os.getenv("POSTGRES_TEST") == "false":
+                return "sqlite+aiosqlite:///./ci_test_attendence.db"
+            else:
+                # Default to PostgreSQL service in CI
+                return "postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence"
         elif os.getenv("TESTING") == "true":
             return "sqlite+aiosqlite:///./test_attendence.db"
         elif os.getenv("POSTGRES_TEST") == "true":
@@ -75,12 +86,23 @@ class Settings(BaseSettings):
     @field_validator("DATABASE_URL_SYNC", mode="before")
     @classmethod
     def assemble_db_connection_sync(cls, v: Optional[str]) -> str:
+        # If explicitly set in environment variables, always use it
         if isinstance(v, str) and v:
             return v
+            
+        # Check for explicit DATABASE_URL_SYNC environment variable first
+        explicit_db_url = os.getenv("DATABASE_URL_SYNC")
+        if explicit_db_url:
+            return explicit_db_url
 
-        # Check if we're in any testing/CI environment and use SQLite by default
+        # Check if we're in any testing/CI environment and use appropriate database
         if os.getenv("CI") == "true" or os.getenv("GITHUB_ACTIONS") == "true":
-            return "sqlite:///./ci_test_attendence.db"
+            # CI environment: only use SQLite if PostgreSQL is not explicitly configured
+            if os.getenv("POSTGRES_TEST") == "false":
+                return "sqlite:///./ci_test_attendence.db"
+            else:
+                # Default to PostgreSQL service in CI
+                return "postgresql://postgres:postgres@localhost:5432/test_attendence"
         elif os.getenv("TESTING") == "true":
             return "sqlite:///./test_attendence.db"
         elif os.getenv("POSTGRES_TEST") == "true":

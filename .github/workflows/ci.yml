@@ -93,6 +93,11 @@ jobs:
         echo "DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence" >> $GITHUB_ENV
         echo "DATABASE_URL_SYNC=postgresql://postgres:postgres@localhost:5432/test_attendence" >> $GITHUB_ENV
         echo "REDIS_URL=redis://localhost:6379/0" >> $GITHUB_ENV
+        # 启用PostgreSQL测试
+        echo "POSTGRES_TEST=true" >> $GITHUB_ENV
+        # 确保CI环境标记
+        echo "CI=true" >> $GITHUB_ENV
+        echo "GITHUB_ACTIONS=true" >> $GITHUB_ENV
         # JWT密钥
         echo "SECRET_KEY=test_secret_key_for_ci_cd_environment_only" >> $GITHUB_ENV
         echo "ACCESS_TOKEN_EXPIRE_MINUTES=30" >> $GITHUB_ENV
@@ -429,8 +434,13 @@ jobs:
 
     - name: Start backend service
       env:
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_attendence
+        DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence
+        DATABASE_URL_SYNC: postgresql://postgres:postgres@localhost:5432/test_attendence
         REDIS_URL: redis://localhost:6379/0
+        CI: true
+        GITHUB_ACTIONS: true
+        POSTGRES_TEST: true
+        TESTING: true
       run: |
         cd backend
         pip install -r requirements.txt

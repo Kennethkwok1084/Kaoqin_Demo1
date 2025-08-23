@@ -97,6 +97,8 @@ class TaskCreate(TaskBase):
     """创建任务的请求模型"""
 
     assigned_to: Optional[int] = Field(None, description="分配给的成员ID")
+    # Make class_name optional for task creation
+    class_name: Optional[str] = Field(None, max_length=50, description="班级（可选）")
     tag_ids: List[int] = Field(default=[], description="关联的标签ID列表")
     estimated_minutes: Optional[int] = Field(
         None, ge=1, le=999, description="预估工时（分钟）"
@@ -116,6 +118,9 @@ class RepairTaskCreate(TaskCreate):
     task_type: TaskType = Field(
         default=TaskType.OFFLINE, description="任务类型（维修任务默认为离线类型）"
     )
+    
+    # Make assigned_to optional with default None 
+    assigned_to: Optional[int] = Field(None, description="分配给的成员ID（可选）")
 
     # 维修任务特有字段
     fault_description: Optional[str] = Field(

@@ -185,6 +185,11 @@ class SQLiteEnumValidator:
 
 def get_test_database_url() -> str:
     """获取测试数据库URL"""
+    # 首先检查是否有明确的DATABASE_URL环境变量
+    explicit_url = os.getenv("DATABASE_URL")
+    if explicit_url:
+        return explicit_url
+    
     # 强制使用SQLite时始终使用SQLite
     if os.getenv("FORCE_SQLITE_TESTS") == "true":
         return "sqlite+aiosqlite:///./test_attendence.db"
@@ -199,8 +204,17 @@ def get_test_database_url() -> str:
         database = os.getenv("TEST_DB_NAME", "test_attendence")
         return f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{database}"
     elif os.getenv("CI") == "true" or os.getenv("GITHUB_ACTIONS") == "true":
-        # CI环境优先使用SQLite（独立性和速度）
-        return "sqlite+aiosqlite:///./ci_test_attendence.db"
+        # CI环境：检查是否禁用PostgreSQL测试
+        if os.getenv("POSTGRES_TEST") == "false":
+            return "sqlite+aiosqlite:///./ci_test_attendence.db"
+        else:
+            # 默认在CI中使用PostgreSQL服务
+            host = os.getenv("TEST_DB_HOST", "localhost")
+            port = os.getenv("TEST_DB_PORT", "5432")
+            user = os.getenv("TEST_DB_USER", "postgres")
+            password = os.getenv("TEST_DB_PASSWORD", "postgres")
+            database = os.getenv("TEST_DB_NAME", "test_attendence")
+            return f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{database}"
     elif os.getenv("INTEGRATION_TEST") == "true":
         # 集成测试可以选择使用PostgreSQL
         host = os.getenv("TEST_DB_HOST", "localhost")
@@ -216,9 +230,19 @@ def get_test_database_url() -> str:
 
 def should_use_postgresql_tests() -> bool:
     """判断是否应该使用PostgreSQL专属测试"""
+    # 如果有明确的DATABASE_URL且包含postgresql，则使用PostgreSQL
+    explicit_url = os.getenv("DATABASE_URL")
+    if explicit_url and "postgresql" in explicit_url:
+        return True
+    
     # 强制SQLite测试时始终返回False
     if os.getenv("FORCE_SQLITE_TESTS") == "true":
         return False
+    
+    # CI环境下检查配置
+    if os.getenv("CI") == "true" or os.getenv("GITHUB_ACTIONS") == "true":
+        return os.getenv("POSTGRES_TEST") != "false"
+    
     # 只有明确指定PostgreSQL测试时才使用
     return bool(
         os.getenv("POSTGRES_TEST") == "true"
