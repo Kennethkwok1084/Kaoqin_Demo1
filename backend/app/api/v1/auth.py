@@ -58,6 +58,10 @@ async def login(
         )
         user = result.scalar_one_or_none()
 
+        # Handle potential coroutine return (for testing compatibility)
+        if hasattr(user, '__await__'):
+            user = await user
+
         # Check if user exists and is active
         if not user:
             logger.warning(
@@ -162,6 +166,10 @@ async def refresh_token(
         # Get user from database
         result = await db.execute(select(Member).where(Member.id == user_id))
         user = result.scalar_one_or_none()
+
+        # Handle potential coroutine return (for testing compatibility)
+        if hasattr(user, '__await__'):
+            user = await user
 
         if not user or not user.is_active:
             raise HTTPException(
@@ -419,6 +427,10 @@ async def verify_user_token(
         # Check if user still exists and is active
         result = await db.execute(select(Member).where(Member.id == user_id))
         user = result.scalar_one_or_none()
+
+        # Handle potential coroutine return (for testing compatibility)
+        if hasattr(user, '__await__'):
+            user = await user
 
         if not user or not user.is_active:
             raise HTTPException(
