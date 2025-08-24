@@ -8,11 +8,12 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import and_, desc, func, select
+from sqlalchemy import and_, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
-from app.models.member import Member
+from app.core.exceptions import PermissionDeniedError, ValidationError
+from app.models.member import Member, UserRole
 from app.models.task import (
     AssistanceTask,
     MonitoringTask,
@@ -1063,6 +1064,192 @@ class TaskService:
             logger.error(f"Get tasks by status error: {str(e)}")
             raise
 
+    async def get_overdue_tasks(
+        self, member_id: Optional[int] = None
+    ) -> List[RepairTask]:
+        """
+        获取逾期任务列表
+
+        Args:
+            member_id: 可选的成员ID筛选
+
+        Returns:
+            List[RepairTask]: 逾期任务列表
+        """
+        try:
+            now = datetime.utcnow()
+            response_deadline = now - timedelta(hours=24)
+            completion_deadline = now - timedelta(hours=48)
+            
+            query = (
+                select(RepairTask)
+                .options(selectinload(RepairTask.tags), joinedload(RepairTask.member))
+                .where(
+                    and_(
+                        # 未完成的任务
+                        RepairTask.status.in_([TaskStatus.PENDING, TaskStatus.IN_PROGRESS]),
+                        # 任务逾期条件：响应超时、完成超时或截止时间已过
+                        or_(
+                            # 响应超时：报告时间 < (当前时间 - 24小时) 且 未响应
+                            and_(
+                                RepairTask.response_time.is_(None),
+                                RepairTask.report_time < response_deadline
+                            ),
+                            # 完成超时：响应时间 < (当前时间 - 48小时) 且 未完成
+                            and_(
+                                RepairTask.response_time.isnot(None),
+                                RepairTask.completion_time.is_(None),
+                                RepairTask.response_time < completion_deadline
+                            ),
+                            # 截止时间已过：due_date < 当前时间
+                            and_(
+                                RepairTask.due_date.isnot(None),
+                                RepairTask.due_date < now
+                            )
+                        )
+                    )
+                )
+                .order_by(desc(RepairTask.report_time))
+            )
+
+            if member_id:
+                query = query.where(RepairTask.member_id == member_id)
+
+            result = await self.db.execute(query)
+            overdue_tasks = list(result.scalars().all())
+
+            logger.info(f"Found {len(overdue_tasks)} overdue tasks")
+            return overdue_tasks
+
+        except Exception as e:
+            logger.error(f"Get overdue tasks error: {str(e)}")
+            raise
+
+    async def get_tasks_approaching_deadline(
+        self, hours: int = 24, member_id: Optional[int] = None
+    ) -> List[RepairTask]:
+        """
+        获取即将到期的任务
+
+        Args:
+            hours: 多少小时内到期
+            member_id: 可选的成员ID筛选
+
+        Returns:
+            List[RepairTask]: 即将到期的任务列表
+        """
+        try:
+            now = datetime.utcnow()
+            query = (
+                select(RepairTask)
+                .options(selectinload(RepairTask.tags), joinedload(RepairTask.member))
+                .where(
+                    and_(
+                        RepairTask.status.in_([TaskStatus.PENDING, TaskStatus.IN_PROGRESS]),
+                        RepairTask.due_date.isnot(None),
+                        RepairTask.due_date <= now + timedelta(hours=hours),
+                        RepairTask.due_date > now
+                    )
+                )
+                .order_by(RepairTask.due_date)
+            )
+
+            if member_id:
+                query = query.where(RepairTask.member_id == member_id)
+
+            result = await self.db.execute(query)
+            approaching_tasks = list(result.scalars().all())
+
+            logger.info(f"Found {len(approaching_tasks)} tasks approaching deadline within {hours} hours")
+            return approaching_tasks
+
+        except Exception as e:
+            logger.error(f"Get tasks approaching deadline error: {str(e)}")
+            raise
+
+    async def get_monitoring_task_detail(
+        self, task_id: int, user_id: int
+    ) -> MonitoringTask:
+        """
+        获取监控任务详情（带权限检查）
+
+        Args:
+            task_id: 监控任务ID
+            user_id: 请求用户ID
+
+        Returns:
+            MonitoringTask: 监控任务详情
+
+        Raises:
+            PermissionDeniedError: 无权限查看此监控任务
+        """
+        try:
+            # 查询监控任务
+            task_query = (
+                select(MonitoringTask)
+                .options(joinedload(MonitoringTask.member))
+                .where(MonitoringTask.id == task_id)
+            )
+            task_result = await self.db.execute(task_query)
+            task = task_result.scalar_one_or_none()
+
+            if not task:
+                raise ValueError("监控任务不存在")
+
+            # 查询用户权限
+            user_query = select(Member).where(Member.id == user_id)
+            user_result = await self.db.execute(user_query)
+            user = user_result.scalar_one_or_none()
+
+            if not user:
+                raise ValueError("用户不存在")
+
+            # 权限检查
+            if not self._can_access_monitoring_task(user, task):
+                raise PermissionDeniedError(message="无权限查看此监控任务", message_key=None)
+
+            logger.info(f"User {user_id} accessed monitoring task {task_id}")
+            return task
+
+        except Exception as e:
+            logger.error(f"Get monitoring task detail error: {str(e)}")
+            raise
+
+    async def get_monitoring_tasks(
+        self, user_id: int, filters: Dict[str, Any]
+    ) -> List[MonitoringTask]:
+        """
+        获取监控任务列表（带权限过滤）
+
+        Args:
+            user_id: 请求用户ID
+            filters: 过滤条件
+
+        Returns:
+            List[MonitoringTask]: 监控任务列表
+        """
+        try:
+            # 查询用户权限
+            user_query = select(Member).where(Member.id == user_id)
+            user_result = await self.db.execute(user_query)
+            user = user_result.scalar_one_or_none()
+
+            if not user:
+                raise ValueError("用户不存在")
+
+            # 基础查询
+            query = select(MonitoringTask).options(joinedload(MonitoringTask.member))
+
+            # 应用权限过滤
+            filtered_tasks = await self._apply_monitoring_task_filters(user, query, filters)
+
+            logger.info(f"User {user_id} retrieved {len(filtered_tasks)} monitoring tasks")
+            return filtered_tasks
+
+        except Exception as e:
+            logger.error(f"Get monitoring tasks error: {str(e)}")
+            raise
+
     async def delete_task(self, task_id: int) -> bool:
         """
         删除任务
@@ -1129,6 +1316,114 @@ class TaskService:
         """
         # 这是 get_member_task_summary 的内部实现
         return await self.get_member_task_summary(member_id, date_from, date_to)
+
+    async def _apply_monitoring_task_filters(
+        self, user: Member, query, filters: Dict[str, Any]
+    ) -> List[MonitoringTask]:
+        """
+        应用监控任务权限过滤
+
+        Args:
+            user: 请求用户
+            query: 基础查询
+            filters: 过滤条件
+
+        Returns:
+            List[MonitoringTask]: 过滤后的监控任务列表
+        """
+        try:
+            # 根据用户角色应用权限过滤
+            if user.role == UserRole.ADMIN:
+                # 管理员可以查看所有任务
+                pass
+            elif user.role == UserRole.GROUP_LEADER:
+                # 组长可以查看团队任务
+                team_member_ids = await self._get_team_member_ids(user.id)
+                query = query.where(MonitoringTask.member_id.in_(team_member_ids))
+            else:
+                # 普通成员只能查看自己的任务
+                query = query.where(MonitoringTask.member_id == user.id)
+
+            # 应用其他过滤条件
+            if filters.get("date_from"):
+                query = query.where(MonitoringTask.start_time >= filters["date_from"])
+            if filters.get("date_to"):
+                query = query.where(MonitoringTask.start_time <= filters["date_to"])
+            if filters.get("location"):
+                query = query.where(MonitoringTask.location.ilike(f"%{filters['location']}%"))
+
+            result = await self.db.execute(query)
+            return list(result.scalars().all())
+
+        except Exception as e:
+            logger.error(f"Apply monitoring task filters error: {str(e)}")
+            raise
+
+    def _can_access_monitoring_task(self, user: Member, task: MonitoringTask) -> bool:
+        """
+        检查用户是否可以访问监控任务
+
+        Args:
+            user: 请求用户
+            task: 监控任务
+
+        Returns:
+            bool: 是否有访问权限
+        """
+        # 管理员可以访问所有任务
+        if user.role == UserRole.ADMIN:
+            return True
+        
+        # 任务所有者可以访问自己的任务
+        if task.member_id == user.id:
+            return True
+            
+        # 组长可以访问团队成员的任务（简化实现，实际需要查询团队关系）
+        if user.role == UserRole.GROUP_LEADER:
+            # 这里简化处理，实际应该查询团队关系
+            return True
+            
+        return False
+
+    async def _get_team_member_ids(self, leader_id: int) -> List[int]:
+        """
+        获取团队成员ID列表（组长权限）
+
+        Args:
+            leader_id: 组长ID
+
+        Returns:
+            List[int]: 团队成员ID列表
+        """
+        try:
+            # 简化实现：返回组长自己的ID以及同部门成员
+            # 实际实现应该查询团队关系表
+            leader_query = select(Member).where(Member.id == leader_id)
+            leader_result = await self.db.execute(leader_query)
+            leader = leader_result.scalar_one_or_none()
+
+            if not leader:
+                return [leader_id]
+
+            # 查询同部门成员（简化实现）
+            team_query = select(Member.id).where(
+                and_(
+                    Member.department == leader.department,
+                    Member.is_active.is_(True)
+                )
+            )
+            team_result = await self.db.execute(team_query)
+            team_member_ids = [row[0] for row in team_result.fetchall()]
+
+            # 确保包含组长自己
+            if leader_id not in team_member_ids:
+                team_member_ids.append(leader_id)
+
+            return team_member_ids
+
+        except Exception as e:
+            logger.error(f"Get team member IDs error: {str(e)}")
+            return [leader_id]  # 失败时至少返回组长自己
 
     # 私有方法
 

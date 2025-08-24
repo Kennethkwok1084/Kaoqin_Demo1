@@ -68,7 +68,7 @@ AsyncTestClient = AsyncClient
 
 
 # Use new database testing configuration
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="function")
 async def test_engine():
     """Create test database engine using new configuration."""
     engine = await test_config.create_test_engine()
@@ -76,31 +76,47 @@ async def test_engine():
     await engine.dispose()
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="function")
 async def setup_database(test_engine):
     """Setup test database using new configuration."""
     await test_config.setup_test_database(test_engine)
     yield
-    # Cleanup after all tests - only in CI or when explicitly requested
-    import os
-    if os.getenv("CI") == "true" or os.getenv("CLEANUP_TEST_DB") == "true":
+    # Cleanup after each test function
+    try:
+        # Clean up any test data that may have been created
         async with test_engine.begin() as conn:
-            await conn.run_sync(Base.metadata.drop_all)
+            # Only clean up if we're in test mode
+            import os
+            if os.getenv("TESTING") == "true":
+                pass  # Let the transaction rollback handle cleanup
+    except Exception:
+        pass  # Ignore cleanup errors
 
 
 @pytest_asyncio.fixture
 async def async_session(
     test_engine, setup_database
 ) -> AsyncGenerator[AsyncSession, None]:
-    """Create async database session for testing."""
-    async with AsyncSession(test_engine, expire_on_commit=False) as session:
+    """Create async database session for testing with proper isolation."""
+    # Create a new session for each test to ensure isolation
+    async with AsyncSession(
+        test_engine, 
+        expire_on_commit=False,
+        autoflush=False  # Prevent automatic flushing that can cause async issues
+    ) as session:
         try:
             yield session
-            # Commit changes so they are visible to other sessions
-            await session.commit()
+            # Only commit if session is still valid and has pending changes
+            if session.in_transaction():
+                await session.commit()
         except Exception:
-            await session.rollback()
+            # Always rollback on exception to prevent transaction leaks
+            if session.in_transaction():
+                await session.rollback()
             raise
+        finally:
+            # Ensure session is properly closed
+            await session.close()
 
 
 @pytest.fixture
@@ -266,12 +282,35 @@ def sample_weak_password_change():
 
 
 # Event loop configuration for async tests
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def event_loop():
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
+    """Create a new event loop for each test function to ensure isolation."""
+    policy = asyncio.get_event_loop_policy()
+    loop = policy.new_event_loop()
+    
+    try:
+        yield loop
+    finally:
+        # Clean up the loop after each test
+        try:
+            # Cancel all pending tasks
+            pending = asyncio.all_tasks(loop)
+            for task in pending:
+                task.cancel()
+            
+            # Wait for all tasks to complete cancellation if there are any
+            if pending:
+                try:
+                    loop.run_until_complete(
+                        asyncio.gather(*pending, return_exceptions=True)
+                    )
+                except Exception:
+                    pass  # Ignore task cleanup errors
+                
+        except Exception:
+            pass  # Ignore cleanup errors
+        finally:
+            loop.close()
 
 
 # Test configuration

@@ -4,11 +4,13 @@ Generated to improve test coverage to 90%+
 """
 
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, patch, MagicMock
 
 import pytest
+import asyncio
 
 from app.models.member import Member, UserRole
+from tests.async_helpers import ensure_fresh_loop, safe_async_mock
 from app.models.task import (
     RepairTask,
     TaskCategory,
@@ -263,10 +265,12 @@ class TestTaskService:
             assert len(tasks) == 2
             assert all(task.status == TaskStatus.PENDING for task in tasks)
 
+    @ensure_fresh_loop
     async def test_assign_task_to_member(self, async_session, sample_member):
         """Test assigning task to member"""
         service = TaskService(async_session)
 
+        # Create a proper mock task
         task = RepairTask(
             id=1, 
             task_id="T001", 
@@ -276,15 +280,38 @@ class TestTaskService:
         )
         task.member_id = None
 
-        with patch.object(service, "get_repair_task", return_value=task):
+        # Mock the member lookup as well
+        mock_member = Member(
+            id=sample_member.id,
+            username="testmember",
+            name="Test Member",
+            class_name="Test Class"
+        )
+
+        # Use proper async context for database operations
+        with patch.object(async_session, "execute") as mock_execute:
+            # Mock task query result (first call)
+            mock_task_result = Mock()
+            mock_task_result.scalar_one_or_none.return_value = task
+            
+            # Mock member query result (second call)
+            mock_member_result = Mock()
+            mock_member_result.scalar_one_or_none.return_value = mock_member
+            
+            # Configure execute to return different results for different calls
+            mock_execute.side_effect = [mock_task_result, mock_member_result]
+            
+            # Mock commit and refresh without await issues
             async_session.commit = AsyncMock()
+            async_session.refresh = AsyncMock()
 
             updated_task = await service.assign_task(
                 task_id=1, member_id=sample_member.id, operator_id=1
             )
 
             assert updated_task.member_id == sample_member.id
-            await async_session.commit.assert_called_once()
+            async_session.commit.assert_called_once()
+            async_session.refresh.assert_called_once()
 
     async def test_add_task_rating_positive(self, async_session):
         """Test adding positive rating to task"""

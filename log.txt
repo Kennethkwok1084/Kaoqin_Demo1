@@ -1,3 +1,4 @@
+运行单元测试...
 ============================= test session starts ==============================
 platform linux -- Python 3.13.7, pytest-8.4.1, pluggy-1.6.0 -- /opt/hostedtoolcache/Python/3.13.7/x64/bin/python
 cachedir: .pytest_cache
@@ -7,186 +8,43 @@ rootdir: /home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend
 configfile: pytest.ini
 plugins: json-report-1.5.0, Faker-37.5.3, cov-6.2.1, mock-3.14.1, asyncio-1.1.0, metadata-3.1.1, anyio-4.10.0, html-4.1.1, benchmark-5.1.0
 asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=session, asyncio_default_test_loop_scope=function
-collecting ... collected 245 items
-
+collecting ... collected 330 items
 tests/unit/test_auth_api.py::TestAuthAPI::test_login_success 
 -------------------------------- live log call ---------------------------------
-2025-08-23 05:14:38 [    INFO] Successful login for user: TEST001
+2025-08-24 12:49:26 [    INFO] Successful login for user: TEST001
 PASSED                                                                   [  0%]
 tests/unit/test_auth_api.py::TestAuthAPI::test_login_user_not_found 
 -------------------------------- live log call ---------------------------------
-2025-08-23 05:14:38 [ WARNING] Login attempt with non-existent student_id: NONEXISTENT
-2025-08-23 05:14:38 [ WARNING] HTTP exception during login for NONEXISTENT: 用户名或密码错误
-ERROR tests/unit/test_task_service_coverage.py::TestTaskService::test_get_overdue_tasks - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage.py::TestTaskService::test_delete_task - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage.py::TestTaskService::test_delete_task_not_found - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage.py::TestTaskService::test_generate_task_id - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage.py::TestTaskService::test_base_work_minutes_calculation[TaskType.ONLINE-40] - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage.py::TestTaskService::test_base_work_minutes_calculation[TaskType.OFFLINE-100] - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage.py::TestTaskService::test_error_handling_invalid_task_data - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage.py::TestTaskService::test_bulk_task_operations - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_service_initialization - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_create_repair_task_basic - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_create_repair_task_with_tags - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_create_monitoring_task_success - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_create_monitoring_task_invalid_time_range - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_create_assistance_task_success - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_update_task_status_success - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_update_task_status_not_found - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_assign_task_success - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_assign_task_member_not_found - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_add_task_feedback_positive - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_get_member_task_summary - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_batch_mark_rush_tasks - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_get_rush_tasks_list - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_get_rush_tasks_statistics - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_remove_rush_task_marking - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_base_work_minutes_calculation[TaskType.ONLINE-40] - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_base_work_minutes_calculation[TaskType.OFFLINE-100] - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_error_handling_database_error - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
-ERROR tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_create_assistance_task_invalid_duration - sqlalchemy.exc.ObjectNotExecutableError: Not an executable object: "\n            DO $$ BEGIN\n                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');\n            EXCEPTION\n                WHEN duplicate_object THEN null;\n            END $$;\n            "
+2025-08-24 12:49:26 [ WARNING] Login attempt with non-existent student_id: NONEXISTENT
+2025-08-24 12:49:26 [ WARNING] HTTP exception during login for NONEXISTENT: 用户名或密码错误
+PASSED                                                                   [  0%]
+FAILED tests/unit/test_monitoring_permissions.py::TestMonitoringTaskAccessControl::test_member_can_only_view_own_monitoring_tasks - AttributeError: <app.services.task_service.TaskService object at 0x7fc1e775a4b0> does not have the attribute '_apply_monitoring_task_filters'
+FAILED tests/unit/test_monitoring_permissions.py::TestMonitoringTaskAccessControl::test_detailed_monitoring_task_access_control - AttributeError: 'TaskService' object has no attribute 'get_monitoring_task_detail'
+FAILED tests/unit/test_monthly_statistics.py::TestMonthlyWorkHoursSummary::test_calculate_monthly_work_hours_empty_data - TypeError: float() argument must be a string or a real number, not 'Mock'
+FAILED tests/unit/test_monthly_statistics.py::TestMonthlyWorkHoursSummary::test_calculate_monthly_work_hours_full_attendance - StopAsyncIteration
+FAILED tests/unit/test_monthly_statistics.py::TestMonthlyWorkHoursSummary::test_batch_update_monthly_summaries - KeyError: 'year'
+FAILED tests/unit/test_monthly_statistics.py::TestBoundaryConditions::test_monthly_statistics_cross_year - TypeError: float() argument must be a string or a real number, not 'Mock'
+FAILED tests/unit/test_monthly_statistics.py::TestBoundaryConditions::test_leap_year_february_calculation - TypeError: float() argument must be a string or a real number, not 'Mock'
+FAILED tests/unit/test_monthly_statistics.py::TestBoundaryConditions::test_extreme_work_hours_calculation - StopAsyncIteration
+FAILED tests/unit/test_monthly_statistics.py::TestBoundaryConditions::test_invalid_member_id - TypeError: float() argument must be a string or a real number, not 'Mock'
+FAILED tests/unit/test_task_service_coverage.py::TestTaskService::test_assign_task_to_member - RuntimeError: Task <Task pending name='Task-1054' coro=<TestTaskService.test_assign_task_to_member() running at /home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend/tests/unit/test_task_service_coverage.py:282> cb=[_run_until_complete_cb() at /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py:181]> got Future <Future pending cb=[BaseProtocol._on_waiter_completed()]> attached to a different loop
+FAILED tests/unit/test_task_service_coverage.py::TestTaskService::test_get_overdue_tasks - AttributeError: 'TaskService' object has no attribute 'get_overdue_tasks'
+FAILED tests/unit/test_task_service_coverage.py::TestTaskService::test_delete_task - assert False is True
+FAILED tests/unit/test_task_service_coverage.py::TestTaskService::test_generate_task_id - AssertionError: assert False
+ +  where False = <built-in method startswith of str object at 0x7fc1e4d1b170>('T')
+ +    where <built-in method startswith of str object at 0x7fc1e4d1b170> = 'R202508240006'.startswith
+FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_create_repair_task_basic - AssertionError: Expected 'mock' to have been called once. Called 0 times.
+FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_create_monitoring_task_invalid_time_range - TypeError: object NoneType can't be used in 'await' expression
+FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_update_task_status_success - TypeError: TaskService.update_task_status() got an unexpected keyword argument 'note'
+FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_assign_task_success - sqlalchemy.exc.InvalidRequestError: Instance '<RepairTask at 0x7fc1e76dd950>' is not persistent within this Session
+FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_add_task_feedback_positive - KeyError: 'tasks'
+FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_get_member_task_summary - RuntimeError: Task <Task pending name='Task-1188' coro=<TestTaskServiceFixed.test_get_member_task_summary() running at /home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend/tests/unit/test_task_service_coverage_fixed.py:351> cb=[_run_until_complete_cb() at /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py:181]> got Future <Future pending cb=[BaseProtocol._on_waiter_completed()]> attached to a different loop
+FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_batch_mark_rush_tasks - TypeError: TaskService.batch_mark_rush_tasks() got an unexpected keyword argument 'operator_id'
+FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_get_rush_tasks_list - TypeError: TaskService.get_rush_tasks_list() got an unexpected keyword argument 'status'
+FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_get_rush_tasks_statistics - TypeError: TaskService.get_rush_tasks_statistics() got an unexpected keyword argument 'year'
+FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_remove_rush_task_marking - TypeError: TaskService.remove_rush_task_marking() got an unexpected keyword argument 'task_id'. Did you mean 'task_ids'?
+FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_create_assistance_task_invalid_duration - TypeError: object NoneType can't be used in 'await' expression
 FAILED tests/unit/test_tasks_api.py::TestTasksAPI::test_get_work_time_detail_success - fastapi.exceptions.HTTPException: 403: 无权限查看该任务工时详情
-============ 1 failed, 179 passed, 5 warnings, 65 errors in 24.63s =============
+======= 75 failed, 254 passed, 9 warnings, 1 error in 113.32s (0:01:53) ========
 单元测试失败，但继续集成测试
 单元测试覆盖率报告已生成
-============================= test session starts ==============================
-platform linux -- Python 3.13.7, pytest-8.4.1, pluggy-1.6.0 -- /opt/hostedtoolcache/Python/3.13.7/x64/bin/python
-cachedir: .pytest_cache
-metadata: {'Python': '3.13.7', 'Platform': 'Linux-6.11.0-1018-azure-x86_64-with-glibc2.39', 'Packages': {'pytest': '8.4.1', 'pluggy': '1.6.0'}, 'Plugins': {'json-report': '1.5.0', 'Faker': '37.5.3', 'cov': '6.2.1', 'mock': '3.14.1', 'asyncio': '1.1.0', 'metadata': '3.1.1', 'anyio': '4.10.0', 'html': '4.1.1', 'benchmark': '5.1.0'}, 'CI': 'true', 'JAVA_HOME': '/usr/lib/jvm/temurin-17-jdk-amd64'}
-benchmark: 5.1.0 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
-rootdir: /home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend
-configfile: pytest.ini
-plugins: json-report-1.5.0, Faker-37.5.3, cov-6.2.1, mock-3.14.1, asyncio-1.1.0, metadata-3.1.1, anyio-4.10.0, html-4.1.1, benchmark-5.1.0
-asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=session, asyncio_default_test_loop_scope=function
-collecting ... collected 15 items
-
-tests/perf/test_api_performance.py::TestAPIPerformance::test_tasks_list_performance 
--------------------------------- live log call ---------------------------------
-2025-08-23 05:16:59 [    INFO] HTTP Request: GET http://testserver/api/v1/tasks/ "HTTP/1.1 400 Bad Request"
-FAILED                                                                   [  6%]
-tests/perf/test_api_performance.py::TestAPIPerformance::test_work_time_detail_performance 
--------------------------------- live log call ---------------------------------
-2025-08-23 05:16:59 [    INFO] HTTP Request: GET http://testserver/api/v1/tasks/work-time-detail/1 "HTTP/1.1 400 Bad Request"
-PASSED                                                                   [ 13%]
-tests/perf/test_api_performance.py::TestAPIPerformance::test_field_mapping_performance 
--------------------------------- live log call ---------------------------------
-    return _ConnectionFairy._checkout(self)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages/sqlalchemy/pool/base.py:1264: in _checkout
-    fairy = _ConnectionRecord.checkout(pool)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages/sqlalchemy/pool/base.py:711: in checkout
-    rec = pool._do_get()
-          ^^^^^^^^^^^^^^
-/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages/sqlalchemy/pool/impl.py:177: in _do_get
-    with util.safe_reraise():
-         ^^^^^^^^^^^^^^^^^^^
-/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
-    raise exc_value.with_traceback(exc_tb)
-/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages/sqlalchemy/pool/impl.py:175: in _do_get
-    return self._create_connection()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^
-/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages/sqlalchemy/pool/base.py:388: in _create_connection
-    return _ConnectionRecord(self)
-           ^^^^^^^^^^^^^^^^^^^^^^^
-/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages/sqlalchemy/pool/base.py:673: in __init__
-    self.__connect()
-/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages/sqlalchemy/pool/base.py:899: in __connect
-    with util.safe_reraise():
-         ^^^^^^^^^^^^^^^^^^^
-/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
-    raise exc_value.with_traceback(exc_tb)
-/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages/sqlalchemy/pool/base.py:895: in __connect
-    self.dbapi_connection = connection = pool._invoke_creator(self)
-                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
-/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages/sqlalchemy/engine/create.py:661: in connect
-    return dialect.connect(*cargs, **cparams)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages/sqlalchemy/engine/default.py:629: in connect
-    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:964: in connect
-    await_only(creator_fn(*arg, **kw)),
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
-    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
-    value = await result
-            ^^^^^^^^^^^^
-/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages/asyncpg/connection.py:2420: in connect
-    async with compat.timeout(timeout):
-               ^^^^^^^^^^^^^^^^^^^^^^^
-/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/timeouts.py:116: in __aexit__
-    raise TimeoutError from exc_val
-E   TimeoutError
-
----------------------------------------------------------------------------------------------------------- benchmark: 12 tests ----------------------------------------------------------------------------------------------------------
-Name (time in ns)                                  Min                     Max                   Mean                 StdDev                 Median                   IQR            Outliers  OPS (Kops/s)            Rounds  Iterations
------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-test_import_speed                              65.1200 (1.0)        7,568.6900 (15.41)        72.2653 (1.0)          28.7775 (1.0)          66.7200 (1.0)          0.6900 (1.0)    12557;13685   13,837.8908 (1.0)      145709         100
-test_field_mapping_performance                181.0000 (2.78)         631.0000 (1.29)        330.6000 (4.57)        177.3987 (6.16)        300.0000 (4.50)       188.2500 (272.83)        1;0    3,024.8034 (0.22)          5           1
-test_work_time_detail_performance             190.0000 (2.92)         521.0000 (1.06)        316.4000 (4.38)        126.6661 (4.40)        280.0000 (4.20)       151.0000 (218.84)        1;0    3,160.5562 (0.23)          5           1
-test_tasks_list_performance                   200.0000 (3.07)         561.0000 (1.14)        340.4000 (4.71)        139.5539 (4.85)        320.0000 (4.80)       181.0000 (262.32)        2;0    2,937.7205 (0.21)          5           1
-test_async_operation_speed                    271.0000 (4.16)         491.0000 (1.0)         384.8000 (5.32)        105.4618 (3.66)        400.0000 (6.00)       205.0000 (297.10)        2;0    2,598.7526 (0.19)          5           1
-test_import_1000_records_performance          280.0000 (4.30)         752.0000 (1.53)        461.0000 (6.38)        254.5015 (8.84)        351.0000 (5.26)       354.0000 (513.04)        1;0    2,169.1974 (0.16)          3           1
-test_concurrent_api_performance               321.0000 (4.93)         521.0000 (1.06)        407.6667 (5.64)        102.6320 (3.57)        381.0000 (5.71)       150.0000 (217.39)        1;0    2,452.9844 (0.18)          3           1
-test_data_processing_scalability[10]          815.4000 (12.52)     13,459.0000 (27.41)       866.9705 (12.00)       139.1888 (4.84)        853.6000 (12.79)       16.0000 (23.19)   2355;4214    1,153.4418 (0.08)     188680           5
-test_data_processing_scalability[100]       4,428.0000 (68.00)     59,821.0000 (121.84)    4,640.8841 (64.22)       671.7626 (23.34)     4,578.9999 (68.63)       59.0001 (85.51)   1630;3151      215.4762 (0.02)     128469           1
-test_data_processing_scalability[1000]     60,082.0000 (922.64)   127,471.0000 (259.62)   62,230.3863 (861.14)    3,446.9300 (119.78)   61,436.0000 (920.80)     521.0001 (755.07)   838;1061       16.0693 (0.00)      11500           1
-test_string_processing_speed               81,392.0000 (>1000.0)  162,896.0000 (331.76)   83,620.1115 (>1000.0)   4,845.9693 (168.39)   82,515.0000 (>1000.0)    691.2500 (>1000.0)   655;754       11.9588 (0.00)       7025           1
-test_json_processing_speed                 87,895.0000 (>1000.0)  224,200.0000 (456.62)   92,131.6521 (>1000.0)  10,079.3589 (350.25)   89,979.0000 (>1000.0)  1,162.0000 (>1000.0)   216;968       10.8540 (0.00)       7375           1
------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-Legend:
-  Outliers: 1 Standard Deviation from Mean; 1.5 IQR (InterQuartile Range) from 1st Quartile and 3rd Quartile.
-  OPS: Operations Per Second, computed as 1 / Mean
-=========================== short test summary info ============================
-FAILED tests/perf/test_api_performance.py::TestAPIPerformance::test_tasks_list_performance - assert 400 == 200
- +  where 400 = <Response [400 Bad Request]>.status_code
-FAILED tests/perf/test_api_performance.py::TestAPIPerformance::test_concurrent_api_performance - assert 400 == 200
- +  where 400 = <Response [400 Bad Request]>.status_code
-FAILED tests/perf/test_import_performance.py::TestImportPerformance::test_single_work_hour_calculation_performance - TimeoutError
-FAILED tests/perf/test_import_performance.py::TestImportPerformance::test_batch_work_hour_calculation_performance - TimeoutError
-FAILED tests/perf/test_import_performance.py::TestImportPerformance::test_fuzzy_member_matching_performance - TimeoutError
-============ 5 failed, 10 passed, 10 warnings in 309.81s (0:05:09) =============
-性能测试失败，但继续构建
-Run cd backend
-使用本地PostgreSQL数据库进行集成测试...
-[2025-08-23 05:15:04] INFO: 开始运行集成测试套件
-[2025-08-23 05:15:04] INFO: 开始运行pytest集成测试
-[2025-08-23 05:16:55] INFO: 运行自定义集成测试
-[2025-08-23 05:16:55] INFO: 运行 tests/integration/simple_api_check.py
-[2025-08-23 05:16:57] INFO: PASS tests/integration/simple_api_check.py 通过
-[2025-08-23 05:16:57] WARNING: 测试文件不存在: tests/integration/quick_api_verification.py
-[2025-08-23 05:16:57] INFO: 运行API验证测试
-[2025-08-23 05:16:57] WARNING: API验证脚本不存在，跳过
-[2025-08-23 05:16:57] INFO: 测试结果已保存到: integration_test_results.json
-[2025-08-23 05:16:57] INFO: 测试报告已保存到: integration_test_report.txt
-==================================================
-集成测试报告
-==================================================
-开始时间: 2025-08-23 05:15:04
-结束时间: 2025-08-23 05:16:57
-总耗时: 112.61秒
-
-测试概览:
-  总测试数: 3
-  通过: 2
-  失败: 1
-  错误: 1
-  成功率: 66.7%
-
-pytest_integration: FAIL 失败
-  退出码: 1
-
-tests/integration/simple_api_check.py: PASS 通过
-  退出码: 0
-
-api_verification: PASS 通过
-  退出码: 0
-
-==================================================
-[2025-08-23 05:16:57] ERROR: FAILED 1/3 测试失败
-集成测试失败，但继续构建
-使用本地PostgreSQL数据库测试，环境独立可靠

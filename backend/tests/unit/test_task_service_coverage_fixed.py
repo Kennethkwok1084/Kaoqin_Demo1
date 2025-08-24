@@ -3,12 +3,14 @@ Comprehensive tests for TaskService (Fixed Version)
 Improved test coverage targeting actual TaskService methods
 """
 
-from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, Mock, patch
+from datetime import datetime, timedelta, date
+from unittest.mock import AsyncMock, Mock, patch, MagicMock
 
 import pytest
+import asyncio
 
 from app.models.member import Member, UserRole
+from tests.async_helpers import ensure_fresh_loop, safe_async_mock
 from app.models.task import (
     MonitoringTask,
     RepairTask,
@@ -229,7 +231,7 @@ class TestTaskServiceFixed:
                 task_id=1,
                 new_status=TaskStatus.IN_PROGRESS,
                 operator_id=1,
-                note="开始处理任务",
+                completion_note="开始处理任务",
             )
 
             assert updated_task.status == TaskStatus.IN_PROGRESS
@@ -328,6 +330,7 @@ class TestTaskServiceFixed:
             assert updated_task.feedback == "Excellent service!"
             async_session.commit.assert_called_once()
 
+    @ensure_fresh_loop
     async def test_get_member_task_summary(self, async_session):
         """Test getting member task summary"""
         service = TaskService(async_session)
@@ -336,6 +339,11 @@ class TestTaskServiceFixed:
         year = 2025
         month = 1
 
+        # Create proper date objects for the summary
+        from datetime import date
+        date_from = date(year, month, 1)
+        date_to = date(year, month, 28)  # End of month
+
         # Mock database query results
         mock_summary_data = {
             "total_tasks": 10,
@@ -343,79 +351,164 @@ class TestTaskServiceFixed:
             "pending_tasks": 2,
             "total_work_hours": 15.5,
             "average_completion_time": 2.3,
+            "period": {
+                "from": date_from.isoformat(),
+                "to": date_to.isoformat(),
+            }
         }
 
-        with patch.object(
-            service, "_calculate_member_summary", return_value=mock_summary_data
-        ):
-            summary = await service.get_member_task_summary(member_id, year, month)
+        # Mock the database operations
+        with patch.object(async_session, "execute") as mock_execute:
+            # Mock the database query results - empty task list
+            mock_result = Mock()
+            mock_result.scalars.return_value.all.return_value = []
+            mock_execute.return_value = mock_result
+            
+            # Call with proper datetime objects (not date objects)
+            from datetime import datetime
+            date_from_dt = datetime(year, month, 1)
+            date_to_dt = datetime(year, month, 28)
+            
+            summary = await service.get_member_task_summary(
+                member_id=member_id, 
+                date_from=date_from_dt,
+                date_to=date_to_dt
+            )
 
-            assert summary["total_tasks"] == 10
-            assert summary["completed_tasks"] == 8
-            assert summary["total_work_hours"] == 15.5
+            # Assert the structure of the returned summary matches actual implementation
+            assert "member_id" in summary
+            assert "period" in summary
+            assert "task_counts" in summary
+            assert "work_hours" in summary
+            assert summary["member_id"] == member_id
 
     async def test_batch_mark_rush_tasks(self, async_session):
         """Test batch marking tasks as rush orders"""
         service = TaskService(async_session)
 
+        from datetime import datetime
+        date_from = datetime(2025, 1, 1)
+        date_to = datetime(2025, 1, 31)
         task_ids = [1, 2, 3]
 
-        with patch.object(
-            service.rush_task_service, "batch_mark_rush_tasks", return_value=3
-        ) as mock_batch:
-            result = await service.batch_mark_rush_tasks(task_ids, operator_id=1)
+        expected_result = {
+            "success": True,
+            "marked_count": 3,
+            "updated_count": 0,
+            "total_count": 3,
+            "period": {"from": date_from.isoformat(), "to": date_to.isoformat()},
+            "marked_by": 1,
+        }
 
-            assert result == 3
-            mock_batch.assert_called_once_with(task_ids, operator_id=1)
+        with patch.object(
+            service.rush_task_service, "mark_rush_tasks_by_date", return_value={"marked": 3, "total": 3}
+        ) as mock_batch:
+            result = await service.batch_mark_rush_tasks(
+                date_from, date_to, task_ids, marker_id=1
+            )
+
+            assert result["success"] is True
+            assert result["marked_count"] == 3
+            mock_batch.assert_called_once_with(date_from.date(), date_to.date(), task_ids, 1)
 
     async def test_get_rush_tasks_list(self, async_session):
         """Test getting rush tasks list"""
         service = TaskService(async_session)
 
-        # Mock rush tasks
-        mock_tasks = [
-            RepairTask(id=1, task_id="T001", title="Rush Task 1", is_rush_order=True),
-            RepairTask(id=2, task_id="T002", title="Rush Task 2", is_rush_order=True),
-        ]
+        # Mock the database query for rush tasks
+        from unittest.mock import MagicMock
+        from app.models.member import Member
+        from app.models.task import TaskType, TaskStatus
+        from datetime import datetime
+        
+        # Create mock members
+        mock_member1 = Member(id=1, name="John Doe")
+        mock_member2 = Member(id=2, name="Jane Smith")
+        
+        # Create mock tasks with member relationship
+        mock_task1 = RepairTask(id=1, task_id="T001", title="Rush Task 1", is_rush_order=True, work_minutes=60)
+        mock_task1.member = mock_member1
+        mock_task1.task_type = TaskType.ONLINE
+        mock_task1.status = TaskStatus.COMPLETED
+        mock_task1.report_time = datetime.now()
+        
+        mock_task2 = RepairTask(id=2, task_id="T002", title="Rush Task 2", is_rush_order=True, work_minutes=120)
+        mock_task2.member = mock_member2
+        mock_task2.task_type = TaskType.OFFLINE
+        mock_task2.status = TaskStatus.PENDING
+        mock_task2.report_time = datetime.now()
+        
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = [mock_task1, mock_task2]
+        
+        mock_count_result = MagicMock()
+        mock_count_result.scalar.return_value = 2
+        
+        async_session.execute = AsyncMock(side_effect=[mock_count_result, mock_result])
 
-        with patch.object(
-            service.rush_task_service, "get_rush_tasks_list", return_value=mock_tasks
-        ):
-            tasks = await service.get_rush_tasks_list(status=TaskStatus.PENDING)
+        result = await service.get_rush_tasks_list(page=1, page_size=10)
 
-            assert len(tasks) == 2
-            assert all(task.is_rush_order for task in tasks)
+        assert result["pagination"]["total"] == 2
+        assert len(result["tasks"]) == 2
+        assert result["statistics"]["total_rush_tasks"] == 2
 
     async def test_get_rush_tasks_statistics(self, async_session):
         """Test getting rush tasks statistics"""
         service = TaskService(async_session)
 
-        mock_stats = {
-            "total_rush_tasks": 25,
-            "pending_rush_tasks": 5,
-            "completed_rush_tasks": 20,
-            "average_completion_time": 1.5,
-        }
+        # Mock the database query for rush task statistics
+        from unittest.mock import MagicMock
+        from app.models.task import TaskStatus, TaskType
+        from app.models.member import Member
+        
+        # Create mock members
+        mock_member1 = Member(id=1, name="John Doe")
+        mock_member2 = Member(id=2, name="Jane Smith")
+        
+        mock_task1 = RepairTask(id=1, task_id="T001", title="Rush Task 1", is_rush_order=True, 
+                              status=TaskStatus.COMPLETED, task_type=TaskType.ONLINE, work_minutes=60)
+        mock_task1.member = mock_member1
+        
+        mock_task2 = RepairTask(id=2, task_id="T002", title="Rush Task 2", is_rush_order=True, 
+                              status=TaskStatus.PENDING, task_type=TaskType.OFFLINE, work_minutes=120)
+        mock_task2.member = mock_member2
+        
+        mock_tasks = [mock_task1, mock_task2]
+        
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = mock_tasks
+        
+        async_session.execute = AsyncMock(return_value=mock_result)
 
-        with patch.object(
-            service.rush_task_service, "get_statistics", return_value=mock_stats
-        ):
-            stats = await service.get_rush_tasks_statistics(year=2025, month=1)
+        stats = await service.get_rush_tasks_statistics()
 
-            assert stats["total_rush_tasks"] == 25
-            assert stats["pending_rush_tasks"] == 5
+        assert stats["summary"]["total_tasks"] == 2
+        assert stats["summary"]["total_work_hours"] == 3.0
 
     async def test_remove_rush_task_marking(self, async_session):
         """Test removing rush task marking"""
         service = TaskService(async_session)
 
-        with patch.object(
-            service.rush_task_service, "remove_rush_marking", return_value=True
-        ) as mock_remove:
-            result = await service.remove_rush_task_marking(task_id=1, operator_id=1)
+        # Mock the database query for tasks to remove marking
+        from unittest.mock import MagicMock
+        mock_tasks = [
+            RepairTask(id=1, task_id="T001", title="Rush Task 1", is_rush_order=True, tags=[]),
+        ]
+        
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = mock_tasks
+        
+        mock_tag_result = MagicMock()
+        mock_tag_result.scalar_one_or_none.return_value = None
+        
+        async_session.execute = AsyncMock(side_effect=[mock_result, mock_tag_result])
 
-            assert result is True
-            mock_remove.assert_called_once_with(task_id=1, operator_id=1)
+        result = await service.remove_rush_task_marking(task_ids=[1], remover_id=1)
+
+        assert result["success"] is True
+        assert result["removed_count"] == 1
+        assert result["total_count"] == 1
+        assert result["removed_by"] == 1
 
     @pytest.mark.parametrize(
         "task_type,expected_minutes", [(TaskType.ONLINE, 40), (TaskType.OFFLINE, 100)]
