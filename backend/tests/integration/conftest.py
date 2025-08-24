@@ -12,59 +12,65 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from app.core.config import settings
 from app.core.database import get_async_session, get_sync_session
 from app.core.security import get_password_hash
 from app.main import app
 from app.models import Base, Member, UserRole
+from app.core.database_compatibility import get_test_database_url, should_use_postgresql_tests
 
 # Set testing environment before importing app
 os.environ["TESTING"] = "1"
-os.environ["DATABASE_URL"] = os.getenv(
-    "DATABASE_URL",
-    "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev",
-)
-os.environ["DATABASE_URL_SYNC"] = os.getenv(
-    "DATABASE_URL_SYNC", "postgresql://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev"
-)
 os.environ["REDIS_URL"] = "redis://localhost:6379/1"
 
 # Override settings for testing
 settings.TESTING = True
-settings.DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev",
-)
-settings.DATABASE_URL_SYNC = os.getenv(
-    "DATABASE_URL_SYNC", "postgresql://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev"
-)
 
-# 测试数据库配置
-TEST_DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+asyncpg://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev",
-)
-TEST_DATABASE_URL_SYNC = os.getenv(
-    "DATABASE_URL_SYNC", "postgresql://kwok:Onjuju1084@8.138.233.54:5432/attendence_dev"
-)
+# Use unified database configuration
+TEST_DATABASE_URL = get_test_database_url()
+TEST_DATABASE_URL_SYNC = TEST_DATABASE_URL.replace("+asyncpg", "").replace("+aiosqlite", "")
 
-# 创建测试引擎
-test_async_engine = create_async_engine(
-    TEST_DATABASE_URL,
-    echo=False,
-    pool_size=1,  # Single connection for remote database
-    max_overflow=0,
-    pool_pre_ping=True,
-)
+# Update environment variables to match
+os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+os.environ["DATABASE_URL_SYNC"] = TEST_DATABASE_URL_SYNC
+settings.DATABASE_URL = TEST_DATABASE_URL
+settings.DATABASE_URL_SYNC = TEST_DATABASE_URL_SYNC
 
-test_sync_engine = create_engine(
-    TEST_DATABASE_URL_SYNC,
-    echo=False,
-    pool_size=1,  # Single connection for remote database
-    max_overflow=0,
-    pool_pre_ping=True,
-)
+# 创建测试引擎 - 根据数据库类型选择配置
+if should_use_postgresql_tests():
+    # PostgreSQL配置
+    test_async_engine = create_async_engine(
+        TEST_DATABASE_URL,
+        echo=False,
+        pool_size=1,  # Single connection for remote database
+        max_overflow=0,
+        pool_pre_ping=True,
+    )
+    
+    test_sync_engine = create_engine(
+        TEST_DATABASE_URL_SYNC,
+        echo=False,
+        pool_size=1,  # Single connection for remote database
+        max_overflow=0,
+        pool_pre_ping=True,
+    )
+else:
+    # SQLite配置
+    test_async_engine = create_async_engine(
+        TEST_DATABASE_URL,
+        echo=False,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    
+    test_sync_engine = create_engine(
+        TEST_DATABASE_URL_SYNC,
+        echo=False,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
 
 TestingSessionLocal = sessionmaker(test_sync_engine, expire_on_commit=False)
 
@@ -124,6 +130,9 @@ def override_get_sync_session():
 @pytest.fixture
 def client(setup_test_database):
     """测试客户端"""
+    # Store original overrides and restore after test
+    original_overrides = app.dependency_overrides.copy()
+    
     # 重写依赖
     app.dependency_overrides[get_async_session] = override_get_async_session
     app.dependency_overrides[get_sync_session] = override_get_sync_session
@@ -131,8 +140,9 @@ def client(setup_test_database):
     with TestClient(app) as test_client:
         yield test_client
 
-    # 清理依赖重写
+    # 恢复原始依赖而不是清理所有
     app.dependency_overrides.clear()
+    app.dependency_overrides.update(original_overrides)
 
 
 @pytest_asyncio.fixture

@@ -235,55 +235,45 @@ class Member(BaseModel):
         """检查是否为管理员"""
         try:
             role = self.role
+            return bool(role is not None and role == UserRole.ADMIN)
         except Exception:
             return False
-        if role is None:
-            return False
-        return bool(role == UserRole.ADMIN)
 
     @property
     def is_group_leader(self) -> bool:
         """检查是否为组长"""
         try:
             role = self.role
+            return bool(role is not None and role == UserRole.GROUP_LEADER)
         except Exception:
             return False
-        if role is None:
-            return False
-        return bool(role == UserRole.GROUP_LEADER)
 
     @property
     def can_manage_group(self) -> bool:
         """检查是否可以管理组员"""
         try:
             role = self.role
+            return bool(role is not None and role in [UserRole.ADMIN, UserRole.GROUP_LEADER])
         except Exception:
             return False
-        if role is None:
-            return False
-        return bool(role in [UserRole.ADMIN, UserRole.GROUP_LEADER])
 
     @property
     def can_import_data(self) -> bool:
         """检查是否可以导入数据"""
         try:
             role = self.role
+            return bool(role is not None and role == UserRole.ADMIN)
         except Exception:
             return False
-        if role is None:
-            return False
-        return bool(role == UserRole.ADMIN)
 
     @property
     def can_mark_rush_tasks(self) -> bool:
         """检查是否可以标记紧急任务"""
         try:
             role = self.role
+            return bool(role is not None and role == UserRole.ADMIN)
         except Exception:
             return False
-        if role is None:
-            return False
-        return bool(role == UserRole.ADMIN)
 
     @property
     def status_display(self) -> str:

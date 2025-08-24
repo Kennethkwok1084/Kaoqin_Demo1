@@ -790,6 +790,7 @@ def upgrade() -> None:
                 "NETWORK_REPAIR",
                 "HARDWARE_REPAIR",
                 "SOFTWARE_SUPPORT",
+                "SOFTWARE_ISSUE",
                 "MONITORING",
                 "ASSISTANCE",
                 "OTHER",
@@ -819,7 +820,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "task_type",
-            postgresql.ENUM("ONLINE", "OFFLINE", name="tasktype"),
+            postgresql.ENUM("ONLINE", "OFFLINE", "REPAIR", name="tasktype"),
             nullable=False,
             comment="Task type (online/offline)",
         ),

@@ -238,7 +238,7 @@ class RepairTask(BaseModel):
     Core entity for work hour calculation and attendance tracking.
     """
     
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         """Initialize RepairTask with required field defaults."""
         # Provide defaults for required fields if not provided
         if 'task_id' not in kwargs:

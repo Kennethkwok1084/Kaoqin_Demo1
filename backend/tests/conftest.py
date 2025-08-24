@@ -16,17 +16,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_async_session
 from app.core.security import get_password_hash
-from app.main import app
+from app.main import app as fastapi_app
 from app.models.base import Base
 from app.models.member import Member, UserRole
 from tests.database_config import (
     test_config,
 )
 
-# Only force SQLite usage for tests if not in CI environment with explicit PostgreSQL
-# CI environment should respect explicit DATABASE_URL environment variables
-if not (os.getenv("CI") == "true" and os.getenv("DATABASE_URL")):
+# Force SQLite usage for tests unless explicitly configured otherwise
+# This ensures consistent test database configuration across all test types
+if not os.getenv("DATABASE_URL") and not os.getenv("POSTGRES_TEST"):
     os.environ["FORCE_SQLITE_TESTS"] = "true"
+
+# Set the test database URL early, before app import
+os.environ["DATABASE_URL"] = test_config.test_database_url
 
 # Import models in correct order to avoid forward reference issues
 import app.models.attendance  # noqa: F401
@@ -55,7 +58,7 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
     """Create async test client."""
     from httpx import ASGITransport
 
-    transport = ASGITransport(app=app)
+    transport = ASGITransport(app=fastapi_app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
         yield client
 
@@ -78,9 +81,11 @@ async def setup_database(test_engine):
     """Setup test database using new configuration."""
     await test_config.setup_test_database(test_engine)
     yield
-    # Cleanup after all tests
-    async with test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+    # Cleanup after all tests - only in CI or when explicitly requested
+    import os
+    if os.getenv("CI") == "true" or os.getenv("CLEANUP_TEST_DB") == "true":
+        async with test_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
 
 
 @pytest_asyncio.fixture
@@ -88,17 +93,20 @@ async def async_session(
     test_engine, setup_database
 ) -> AsyncGenerator[AsyncSession, None]:
     """Create async database session for testing."""
-    async with AsyncSession(test_engine) as session:
+    async with AsyncSession(test_engine, expire_on_commit=False) as session:
         try:
             yield session
-        finally:
+            # Commit changes so they are visible to other sessions
+            await session.commit()
+        except Exception:
             await session.rollback()
+            raise
 
 
 @pytest.fixture
 def client() -> Generator[TestClient, None, None]:
     """Create test client."""
-    with TestClient(app) as test_client:
+    with TestClient(fastapi_app) as test_client:
         yield test_client
 
 
@@ -111,35 +119,51 @@ async def client_with_db(
     async def override_get_async_session():
         yield async_session
 
-    app.dependency_overrides[get_async_session] = override_get_async_session
+    # Store original overrides and restore after test
+    original_overrides = fastapi_app.dependency_overrides.copy()
+    fastapi_app.dependency_overrides[get_async_session] = override_get_async_session
 
-    with TestClient(app) as test_client:
+    with TestClient(fastapi_app) as test_client:
         yield test_client
 
-    app.dependency_overrides.clear()
+    # Restore original overrides instead of clearing all
+    fastapi_app.dependency_overrides.clear()
+    fastapi_app.dependency_overrides.update(original_overrides)
 
 
 @pytest_asyncio.fixture
-async def test_user(async_session: AsyncSession) -> Member:
-    """Create a test user."""
-    user = Member(
-        username="test_user",  # 添加username字段
-        name="测试用户",
-        student_id="2021001001",
-        group_id=1,
-        class_name="计算机科学与技术2101",
-        email="test@example.com",
-        password_hash=get_password_hash("TestPassword123!"),
-        role=UserRole.MEMBER,
-        is_active=True,
-        is_verified=True,
-    )
+async def test_user() -> Member:
+    """Create a test user directly using the test engine."""
+    from tests.database_config import test_config
+    
+    # Create the test user in the same database that the API will use
+    engine = await test_config.create_test_engine()
+    
+    async with AsyncSession(engine, expire_on_commit=False) as session:
+        user = Member(
+            username="test_user",
+            name="测试用户",
+            student_id="2021001001",
+            group_id=1,
+            class_name="计算机科学与技术2101",
+            email="test@example.com",
+            password_hash=get_password_hash("TestPassword123!"),
+            role=UserRole.MEMBER,
+            is_active=True,
+            is_verified=True,
+        )
 
-    async_session.add(user)
-    await async_session.commit()
-    await async_session.refresh(user)
-
-    return user
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
+        
+        yield user
+        
+        # Cleanup - delete the user after test
+        await session.delete(user)
+        await session.commit()
+    
+    await engine.dispose()
 
 
 @pytest_asyncio.fixture

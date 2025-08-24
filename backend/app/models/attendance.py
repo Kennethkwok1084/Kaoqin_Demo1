@@ -5,7 +5,7 @@ Includes attendance records, exceptions, and related enums.
 
 from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Any
 
 from sqlalchemy import (
     Boolean,
@@ -68,7 +68,7 @@ class AttendanceRecord(BaseModel):
     # Calculated work hours
     work_hours = Column(Float, default=0.0, comment="Total work hours")
     
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         # Handle work_hours type conversion
         if 'work_hours' in kwargs:
             work_hours_val = kwargs['work_hours']

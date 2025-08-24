@@ -60,7 +60,7 @@ async def login(
 
         # Handle potential coroutine return (for testing compatibility)
         if hasattr(user, '__await__'):
-            user = await user
+            user = await user  # type: ignore
 
         # Check if user exists and is active
         if not user:
@@ -169,7 +169,7 @@ async def refresh_token(
 
         # Handle potential coroutine return (for testing compatibility)
         if hasattr(user, '__await__'):
-            user = await user
+            user = await user  # type: ignore
 
         if not user or not user.is_active:
             raise HTTPException(
@@ -430,7 +430,7 @@ async def verify_user_token(
 
         # Handle potential coroutine return (for testing compatibility)
         if hasattr(user, '__await__'):
-            user = await user
+            user = await user  # type: ignore
 
         if not user or not user.is_active:
             raise HTTPException(

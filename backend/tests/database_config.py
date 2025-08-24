@@ -8,6 +8,7 @@ import asyncio
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
+from sqlalchemy import text
 
 import app.models  # noqa: F401
 import app.models.attendance  # noqa: F401
@@ -63,66 +64,6 @@ class DatabaseTestConfig:
             # 创建所有表
             await conn.run_sync(Base.metadata.create_all)
 
-            # 如果是PostgreSQL，创建ENUM类型
-            if self.use_postgresql:
-                await self._create_postgresql_enums(conn)
-
-    async def _create_postgresql_enums(self, conn):
-        """创建PostgreSQL ENUM类型"""
-        enum_sqls = [
-            """
-            DO $$ BEGIN
-                CREATE TYPE userrole AS ENUM ('ADMIN', 'GROUP_LEADER', 'MEMBER', 'GUEST');
-            EXCEPTION
-                WHEN duplicate_object THEN null;
-            END $$;
-            """,
-            """
-            DO $$ BEGIN
-                CREATE TYPE taskstatus AS ENUM ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ON_HOLD');
-            EXCEPTION
-                WHEN duplicate_object THEN null;
-            END $$;
-            """,
-            """
-            DO $$ BEGIN
-                CREATE TYPE taskcategory AS ENUM ('NETWORK_REPAIR', 'HARDWARE_MAINTENANCE', 'SOFTWARE_SUPPORT', 'SYSTEM_MONITORING');
-            EXCEPTION
-                WHEN duplicate_object THEN null;
-            END $$;
-            """,
-            """
-            DO $$ BEGIN
-                CREATE TYPE taskpriority AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');
-            EXCEPTION
-                WHEN duplicate_object THEN null;
-            END $$;
-            """,
-            """
-            DO $$ BEGIN
-                CREATE TYPE tasktype AS ENUM ('ONLINE', 'OFFLINE');
-            EXCEPTION
-                WHEN duplicate_object THEN null;
-            END $$;
-            """,
-            """
-            DO $$ BEGIN
-                CREATE TYPE tasktagtype AS ENUM ('rush_order', 'non_default_rating', 'timeout_response', 'timeout_processing', 'bad_rating', 'bonus', 'penalty', 'category');
-            EXCEPTION
-                WHEN duplicate_object THEN null;
-            END $$;
-            """,
-            """
-            DO $$ BEGIN
-                CREATE TYPE attendanceexceptionstatus AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
-            EXCEPTION
-                WHEN duplicate_object THEN null;
-            END $$;
-            """,
-        ]
-
-        for sql in enum_sqls:
-            await conn.execute(sql)
 
 
 # 全局测试配置
