@@ -397,6 +397,172 @@ def handle_validation_error(error: Exception) -> ValidationError:
     return ValidationError(str(error))
 
 
+# Permission and Access Control Exceptions
+class PermissionDeniedError(BaseCustomException):
+    """Raised when user doesn't have permission to perform action."""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        message_key: str = "AUTH_ERROR_PERMISSION_DENIED",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            message=message,
+            message_key=message_key,
+            status_code=status.HTTP_403_FORBIDDEN,
+            **kwargs,
+        )
+
+
+# Data Consistency Exceptions
+class DataConsistencyError(BaseCustomException):
+    """Raised when data consistency checks fail."""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        message_key: str = "DATA_ERROR_CONSISTENCY_CHECK",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            message=message,
+            message_key=message_key,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            **kwargs,
+        )
+
+
+class ServiceIntegrationError(BaseCustomException):
+    """Raised when service integration fails."""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        message_key: str = "SERVICE_ERROR_INTEGRATION_FAILED",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            message=message,
+            message_key=message_key,
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            **kwargs,
+        )
+
+
+# Concurrency and Resource Management Exceptions
+class ConcurrencyConflictError(BaseCustomException):
+    """Raised when concurrent operations conflict."""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        message_key: str = "CONCURRENCY_ERROR_CONFLICT",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            message=message,
+            message_key=message_key,
+            status_code=status.HTTP_409_CONFLICT,
+            **kwargs,
+        )
+
+
+class ResourceLockError(BaseCustomException):
+    """Raised when resource locking fails."""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        message_key: str = "RESOURCE_ERROR_LOCK_FAILED",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            message=message,
+            message_key=message_key,
+            status_code=status.HTTP_423_LOCKED,
+            **kwargs,
+        )
+
+
+# Bulk Operations Exceptions
+class BulkOperationError(BaseCustomException):
+    """Raised when bulk operations fail."""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        message_key: str = "BULK_ERROR_OPERATION_FAILED",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            message=message,
+            message_key=message_key,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            **kwargs,
+        )
+
+
+class BatchSizeExceededError(BulkOperationError):
+    """Raised when batch size exceeds limits."""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        message_key: str = "BULK_ERROR_BATCH_SIZE_EXCEEDED",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(message=message, message_key=message_key, **kwargs)
+
+
+# Performance and Monitoring Exceptions
+class PerformanceDegradationError(BaseCustomException):
+    """Raised when performance degrades beyond acceptable limits."""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        message_key: str = "PERFORMANCE_ERROR_DEGRADATION",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            message=message,
+            message_key=message_key,
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            **kwargs,
+        )
+
+
+class TimeoutError(BaseCustomException):
+    """Raised when operations timeout."""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        message_key: str = "OPERATION_ERROR_TIMEOUT",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            message=message,
+            message_key=message_key,
+            status_code=status.HTTP_408_REQUEST_TIMEOUT,
+            **kwargs,
+        )
+
+
+# Operation Timeout specific exception (alias for compatibility)
+class OperationTimeoutError(TimeoutError):
+    """Raised when specific operations timeout."""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        message_key: str = "OPERATION_ERROR_TIMEOUT",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(message=message, message_key=message_key, **kwargs)
+
+
 # Utility functions
 def get_error_response(exc: BaseCustomException) -> Dict[str, Any]:
     """Get error response dictionary."""
