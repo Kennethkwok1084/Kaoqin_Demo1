@@ -888,6 +888,128 @@ class WorkHoursCalculationService:
 
         await self.db.commit()
 
+    async def bulk_recalculate_work_hours(
+        self, 
+        member_ids: List[int], 
+        year: int, 
+        month: int,
+        timeout: Optional[float] = None
+    ) -> Dict[str, Any]:
+        """
+        批量重新计算成员工时
+        
+        Args:
+            member_ids: 成员ID列表
+            year: 年份
+            month: 月份
+            timeout: 超时时间（秒）
+            
+        Returns:
+            Dict: 操作结果统计
+        """
+        try:
+            import asyncio
+            from app.core.exceptions import OperationTimeoutError
+            
+            success_count = 0
+            failed_count = 0
+            errors = []
+            updated_summaries = 0
+            
+            async def recalculate_member_hours(member_id: int) -> Dict[str, Any]:
+                """重新计算单个成员的工时"""
+                try:
+                    # 计算月度工时
+                    work_hours_data = await self.calculate_monthly_work_hours(
+                        member_id, year, month
+                    )
+                    
+                    # 更新月度汇总
+                    await self.update_monthly_summary(member_id, year, month)
+                    
+                    return {
+                        "member_id": member_id,
+                        "success": True,
+                        "total_hours": work_hours_data.get("total_hours", 0.0)
+                    }
+                    
+                except Exception as e:
+                    return {
+                        "member_id": member_id,
+                        "success": False,
+                        "error": str(e)
+                    }
+            
+            # 批量处理成员工时计算
+            if timeout:
+                # 使用超时控制
+                tasks = [
+                    asyncio.wait_for(
+                        recalculate_member_hours(member_id),
+                        timeout=timeout / len(member_ids)
+                    )
+                    for member_id in member_ids
+                ]
+                try:
+                    results = await asyncio.gather(*tasks, return_exceptions=True)
+                except asyncio.TimeoutError:
+                    raise OperationTimeoutError("批量操作超时")
+                
+                # 检查结果中是否有超时异常
+                for result in results:
+                    if isinstance(result, asyncio.TimeoutError):
+                        raise OperationTimeoutError("批量操作超时")
+            else:
+                # 正常批量处理
+                tasks = [
+                    recalculate_member_hours(member_id)
+                    for member_id in member_ids
+                ]
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            # 处理结果
+            for result in results:
+                if isinstance(result, Exception):
+                    failed_count += 1
+                    errors.append(f"处理失败: {str(result)}")
+                elif isinstance(result, dict):
+                    if result.get("success"):
+                        success_count += 1
+                        updated_summaries += 1
+                    else:
+                        failed_count += 1
+                        member_id = result.get("member_id", "未知")
+                        error = result.get("error", "未知错误")
+                        errors.append(f"成员{member_id}处理失败: {error}")
+            
+            await self.db.commit()
+            
+            logger.info(
+                f"Bulk recalculate work hours completed: {success_count} success, "
+                f"{failed_count} failed for period {year}-{month:02d}"
+            )
+            
+            return {
+                "success": success_count,
+                "failed": failed_count,
+                "updated_summaries": updated_summaries,
+                "total_members": len(member_ids),
+                "errors": errors[:10],  # 只返回前10个错误
+                "period": f"{year}-{month:02d}"
+            }
+            
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"Bulk recalculate work hours error: {str(e)}")
+            return {
+                "success": 0,
+                "failed": len(member_ids),
+                "updated_summaries": 0,
+                "total_members": len(member_ids),
+                "errors": [f"批量操作失败: {str(e)}"],
+                "period": f"{year}-{month:02d}"
+            }
+
 
 class RushTaskMarkingService:
     """爆单标记服务"""
@@ -1471,3 +1593,4 @@ class RushTaskMarkingService:
             await self.db.rollback()
             logger.error(f"Remove rush task marking error: {str(e)}")
             raise
+

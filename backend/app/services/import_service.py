@@ -996,6 +996,39 @@ class DataImportService:
         # 默认为待处理
         return TaskStatus.PENDING
 
+    def validate_import_data(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Public validation method for testing compatibility"""
+        validation_result = self._validate_import_data(data)
+        
+        # Convert to expected format for tests
+        return {
+            "valid_count": len(data) - len(validation_result.get("errors", [])),
+            "invalid_count": len(validation_result.get("errors", [])),
+            "errors": validation_result.get("errors", []),
+            "duplicates": validation_result.get("duplicates", [])
+        }
+    
+    async def process_repair_tasks_import(self, task_data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Process repair tasks import - alias for bulk_import_repair_tasks"""
+        result = await self.bulk_import_repair_tasks(task_data_list, 1)
+        
+        # Convert to expected format for tests
+        if hasattr(result, 'to_dict'):
+            result_dict = result.to_dict()
+            return {
+                "imported": result_dict["summary"]["created_tasks"],
+                "failed": result_dict["summary"]["skipped_rows"],
+                "errors": result_dict["errors"],
+                "total_processed": result_dict["summary"]["processed_rows"]
+            }
+        else:
+            return {
+                "imported": 0,
+                "failed": len(task_data_list),
+                "errors": ["处理失败"],
+                "total_processed": len(task_data_list)
+            }
+    
     def _validate_import_data(self, data: List[Dict[str, Any]]) -> Dict[str, List[str]]:
         """验证导入数据"""
         errors: List[str] = []
@@ -1645,11 +1678,253 @@ class DataImportService:
         Returns:
             ImportResult: 导入结果
         """
-        # 这是 bulk_import_tasks 的别名方法，保持向后兼容
-        return await self.bulk_import_tasks(
-            file=None,
-            task_data_list=task_data_list,
-            import_batch_id=None,
-            importer_id=importer_id,
-            import_options=import_options
-        )
+        # 这是原始的导入方法实现，避免与新的bulk_import_tasks方法产生循环调用
+        if import_options is None:
+            import_options = {}
+            
+        try:
+            result = ImportResult()
+            result.total_rows = len(task_data_list)
+            
+            batch_id = f"bulk_import_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{importer_id}"
+            
+            logger.info(f"Starting bulk import of {len(task_data_list)} tasks")
+            
+            for i, task_data in enumerate(task_data_list):
+                try:
+                    # 检查必要字段
+                    if not task_data.get("title") or not task_data.get("reporter_name"):
+                        result.errors.append(f"第{i+1}行：缺少必要字段（标题或报告人）")
+                        result.skipped_rows += 1
+                        continue
+                        
+                    # 检查是否已存在相同任务
+                    existing_query = select(RepairTask).where(
+                        and_(
+                            RepairTask.title == task_data["title"],
+                            RepairTask.reporter_name == task_data["reporter_name"],
+                            RepairTask.reporter_contact == task_data.get("reporter_contact", "")
+                        )
+                    )
+                    existing_result = await self.db.execute(existing_query)
+                    existing_task = existing_result.scalar_one_or_none()
+                    
+                    if existing_task:
+                        if import_options.get("update_existing", False):
+                            self._update_existing_task(existing_task, task_data)
+                            result.updated_tasks += 1
+                        else:
+                            result.skipped_rows += 1
+                    else:
+                        # 创建新任务
+                        task_data["import_batch_id"] = batch_id
+                        await self._create_repair_task_from_import_data(task_data, importer_id)
+                        result.created_tasks += 1
+                        
+                except Exception as e:
+                    error_msg = f"第{i+1}行导入失败: {str(e)}"
+                    result.errors.append(error_msg)
+                    result.skipped_rows += 1
+                    logger.warning(error_msg)
+                    
+            await self.db.commit()
+            
+            result.processed_rows = result.created_tasks + result.updated_tasks
+            result.success = len(result.errors) == 0
+            
+            logger.info(f"Bulk import completed: {result.to_dict()}")
+            return result
+            
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"Bulk import tasks error: {str(e)}")
+            result = ImportResult()
+            result.errors.append(f"导入失败: {str(e)}")
+            return result
+
+    async def _process_import_batch(
+        self, 
+        batch_data: List[Dict[str, Any]], 
+        batch_size: int = 1000,
+        import_options: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        处理导入数据批次的内部方法
+        
+        Args:
+            batch_data: 批次数据列表
+            batch_size: 批次大小
+            import_options: 导入选项
+            
+        Returns:
+            Dict: 批次处理结果
+        """
+        try:
+            imported_count = 0
+            failed_count = 0
+            errors = []
+            
+            # 分批处理以优化内存使用
+            for i in range(0, len(batch_data), batch_size):
+                batch = batch_data[i:i + batch_size]
+                
+                try:
+                    # 处理当前批次 - 直接调用原始导入方法避免循环
+                    batch_result = await self.bulk_import_repair_tasks(
+                        batch,
+                        1,  # 默认导入者ID
+                        import_options
+                    )
+                    
+                    imported_count += batch_result.created_tasks
+                    failed_count += batch_result.skipped_rows
+                    errors.extend(batch_result.errors)
+                    
+                except Exception as e:
+                    error_msg = f"批次 {i//batch_size + 1} 处理失败: {str(e)}"
+                    errors.append(error_msg)
+                    failed_count += len(batch)
+                    logger.warning(error_msg)
+            
+            return {
+                "imported": imported_count,
+                "failed": failed_count,
+                "errors": errors,
+                "total_batches": (len(batch_data) + batch_size - 1) // batch_size,
+                "batch_size": batch_size
+            }
+            
+        except Exception as e:
+            logger.error(f"Process import batch error: {str(e)}")
+            return {
+                "imported": 0,
+                "failed": len(batch_data),
+                "errors": [f"批次处理失败: {str(e)}"],
+                "total_batches": 0,
+                "batch_size": batch_size
+            }
+
+    async def bulk_import_tasks(
+        self, 
+        data_or_file=None,
+        task_data_list: Optional[List[Dict[str, Any]]] = None, 
+        import_batch_id: Optional[str] = None,
+        importer_id: int = 1,
+        import_options: Optional[Dict[str, Any]] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        批量导入任务 - 重构版本，支持返回字典格式
+        
+        Args:
+            data_or_file: 数据列表或上传文件
+            task_data_list: 可选的任务数据列表
+            import_batch_id: 可选的导入批次ID
+            importer_id: 导入者ID
+            import_options: 导入选项
+            
+        Returns:
+            Dict: 导入结果 (用于测试兼容性)
+        """
+        # 处理不同的调用方式
+        if isinstance(data_or_file, list):
+            # 直接传递数据列表: bulk_import_tasks(data_list)
+            task_data_list = data_or_file
+            file = None
+        elif hasattr(data_or_file, 'filename'):
+            # 传递文件对象: bulk_import_tasks(file=upload_file)
+            file = data_or_file
+        else:
+            file = data_or_file
+            
+        # 如果提供了文件，则使用文件导入
+        if file and hasattr(file, 'filename'):
+            result = await self.import_excel_file(file, import_options)
+            if hasattr(result, 'to_dict'):
+                result_dict = result.to_dict()
+                return {
+                    "total_processed": result_dict["summary"]["processed_rows"],
+                    "imported": result_dict["summary"]["created_tasks"], 
+                    "failed": result_dict["summary"]["skipped_rows"],
+                    "errors": result_dict["errors"],
+                    "validation": {
+                        "valid_count": result_dict["summary"]["created_tasks"],
+                        "invalid_count": result_dict["summary"]["skipped_rows"],
+                        "errors": result_dict["errors"],
+                        "duplicates": []
+                    }
+                }
+        
+        # 否则使用任务数据列表导入
+        if not task_data_list:
+            return {
+                "total_processed": 0,
+                "imported": 0,
+                "failed": 0,
+                "errors": ["没有提供文件或任务数据列表"],
+                "validation": {
+                    "valid_count": 0,
+                    "invalid_count": 0,
+                    "errors": ["没有提供文件或任务数据列表"],
+                    "duplicates": []
+                }
+            }
+        
+        # 首先进行数据验证
+        validation_result = self.validate_import_data(task_data_list)
+        
+        # 对于大数据集，使用批处理优化内存使用
+        batch_size = 1000
+        if len(task_data_list) > batch_size:
+            # 大数据集使用批处理
+            total_imported = 0
+            total_failed = 0
+            all_errors = []
+            
+            for i in range(0, len(task_data_list), batch_size):
+                batch = task_data_list[i:i + batch_size]
+                batch_result = await self._process_import_batch(
+                    batch, batch_size, import_options
+                )
+                total_imported += batch_result["imported"]
+                total_failed += batch_result["failed"]
+                all_errors.extend(batch_result["errors"])
+            
+            return {
+                "total_processed": len(task_data_list),
+                "imported": total_imported,
+                "failed": total_failed,
+                "errors": all_errors,
+                "validation": {
+                    "valid_count": validation_result.get("valid_count", total_imported),
+                    "invalid_count": validation_result.get("invalid_count", total_failed),
+                    "errors": validation_result.get("errors", all_errors),
+                    "duplicates": validation_result.get("duplicates", [])
+                }
+            }
+        else:
+            # 小数据集直接处理
+            result = await self.bulk_import_repair_tasks(
+                task_data_list,
+                importer_id,
+                import_options
+            )
+            
+            # 转换为字典格式以兼容测试
+            if hasattr(result, 'to_dict'):
+                result_dict = result.to_dict()
+                return {
+                    "total_processed": result_dict["summary"]["processed_rows"],
+                    "imported": result_dict["summary"]["created_tasks"], 
+                    "failed": result_dict["summary"]["skipped_rows"],
+                    "errors": result_dict["errors"],
+                    "validation": {
+                        "valid_count": validation_result.get("valid_count", result_dict["summary"]["created_tasks"]),
+                        "invalid_count": validation_result.get("invalid_count", result_dict["summary"]["skipped_rows"]),
+                        "errors": validation_result.get("errors", result_dict["errors"]),
+                        "duplicates": validation_result.get("duplicates", [])
+                    }
+                }
+            else:
+                # 如果不是ImportResult对象，直接返回
+                return result
