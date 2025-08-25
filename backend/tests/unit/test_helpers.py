@@ -195,34 +195,47 @@ class MockMemberBuilder:
     @staticmethod
     def admin(id: int = 1, **kwargs) -> Mock:
         """Create a mock admin member."""
+        # Extract potentially conflicting parameters from kwargs to avoid conflicts
+        username = kwargs.pop('username', f"admin_{id}")
+        name = kwargs.pop('name', "管理员")
+        role = kwargs.pop('role', UserRole.ADMIN)
         return MockMemberBuilder.member(
             id=id,
-            username=f"admin_{id}",
-            name="管理员",
-            role=UserRole.ADMIN,
+            username=username,
+            name=name,
+            role=role,
             **kwargs
         )
     
     @staticmethod
     def group_leader(id: int = 2, **kwargs) -> Mock:
         """Create a mock group leader member."""
+        # Extract potentially conflicting parameters from kwargs to avoid conflicts
+        username = kwargs.pop('username', f"leader_{id}")
+        name = kwargs.pop('name', "组长")
+        role = kwargs.pop('role', UserRole.GROUP_LEADER)
         return MockMemberBuilder.member(
             id=id,
-            username=f"leader_{id}",
-            name="组长",
-            role=UserRole.GROUP_LEADER,
+            username=username,
+            name=name,
+            role=role,
             **kwargs
         )
     
     @staticmethod
     def inactive_member(id: int = 3, **kwargs) -> Mock:
         """Create a mock inactive member."""
+        # Extract potentially conflicting parameters from kwargs to avoid conflicts
+        username = kwargs.pop('username', f"inactive_{id}")
+        name = kwargs.pop('name', "已停用成员")
+        role = kwargs.pop('role', UserRole.MEMBER)
+        is_active = kwargs.pop('is_active', False)
         return MockMemberBuilder.member(
             id=id,
-            username=f"inactive_{id}",
-            name="已停用成员",
-            role=UserRole.MEMBER,
-            is_active=False,
+            username=username,
+            name=name,
+            role=role,
+            is_active=is_active,
             **kwargs
         )
 

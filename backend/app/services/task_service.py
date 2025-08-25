@@ -2204,6 +2204,134 @@ class TaskService:
         
         return await self.create_repair_task(task_data, creator_id)
 
+    async def get_tasks_by_date(
+        self, member_id: int, target_date: datetime.date
+    ) -> List[RepairTask]:
+        """
+        根据指定日期获取成员的任务列表
+        
+        Args:
+            member_id: 成员ID
+            target_date: 目标日期
+            
+        Returns:
+            List[RepairTask]: 任务列表
+        """
+        try:
+            from datetime import datetime, time
+            
+            # 构建日期范围
+            start_datetime = datetime.combine(target_date, time.min)
+            end_datetime = datetime.combine(target_date, time.max)
+            
+            query = (
+                select(RepairTask)
+                .options(selectinload(RepairTask.tags))
+                .where(
+                    and_(
+                        RepairTask.member_id == member_id,
+                        RepairTask.report_time >= start_datetime,
+                        RepairTask.report_time <= end_datetime,
+                    )
+                )
+                .order_by(desc(RepairTask.report_time))
+            )
+            
+            result = await self.db.execute(query)
+            tasks = result.scalars().all()
+            
+            logger.debug(
+                f"Found {len(tasks)} tasks for member {member_id} on {target_date}"
+            )
+            return list(tasks)
+            
+        except Exception as e:
+            logger.error(f"Get tasks by date error: {str(e)}")
+            raise
+
+    async def get_tasks_by_period(
+        self, member_id: int, start_date: datetime, end_date: datetime
+    ) -> List[RepairTask]:
+        """
+        根据时间段获取成员的任务列表
+        
+        Args:
+            member_id: 成员ID
+            start_date: 开始时间
+            end_date: 结束时间
+            
+        Returns:
+            List[RepairTask]: 任务列表
+        """
+        try:
+            query = (
+                select(RepairTask)
+                .options(
+                    selectinload(RepairTask.tags),
+                    joinedload(RepairTask.member)
+                )
+                .where(
+                    and_(
+                        RepairTask.member_id == member_id,
+                        RepairTask.report_time >= start_date,
+                        RepairTask.report_time <= end_date,
+                    )
+                )
+                .order_by(desc(RepairTask.report_time))
+            )
+            
+            result = await self.db.execute(query)
+            tasks = result.scalars().all()
+            
+            logger.debug(
+                f"Found {len(tasks)} tasks for member {member_id} "
+                f"between {start_date} and {end_date}"
+            )
+            return list(tasks)
+            
+        except Exception as e:
+            logger.error(f"Get tasks by period error: {str(e)}")
+            raise
+
+    async def get_member_tasks(
+        self, member_id: int, limit: Optional[int] = None
+    ) -> List[RepairTask]:
+        """
+        获取指定成员的任务列表
+        
+        Args:
+            member_id: 成员ID
+            limit: 限制返回数量
+            
+        Returns:
+            List[RepairTask]: 任务列表
+        """
+        try:
+            query = (
+                select(RepairTask)
+                .options(
+                    selectinload(RepairTask.tags),
+                    joinedload(RepairTask.member)
+                )
+                .where(RepairTask.member_id == member_id)
+                .order_by(desc(RepairTask.report_time))
+            )
+            
+            if limit:
+                query = query.limit(limit)
+            
+            result = await self.db.execute(query)
+            tasks = result.scalars().all()
+            
+            logger.debug(
+                f"Found {len(tasks)} tasks for member {member_id}"
+                + (f" (limited to {limit})" if limit else "")
+            )
+            return list(tasks)
+            
+        except Exception as e:
+            logger.error(f"Get member tasks error: {str(e)}")
+            raise
 
 
 class MonitoringTaskService:

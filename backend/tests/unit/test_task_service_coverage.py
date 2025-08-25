@@ -50,20 +50,32 @@ class TestTaskService:
                 "reporter_contact": "test@example.com",
             }
 
-            # Mock flush and add methods
+            # Mock all database operations to avoid session persistence issues
             async_session.add = Mock()
             async_session.flush = AsyncMock()
+            async_session.commit = AsyncMock()
+            async_session.refresh = AsyncMock()
+            async_session.rollback = AsyncMock()
 
-            task = await service.create_repair_task(task_data, creator_id=1)
+            # Mock the private methods that are called
+            with (
+                patch.object(service, "_add_tags_to_task", return_value=None),
+                patch.object(service, "_add_rush_tag", return_value=None),
+                patch.object(service, "_auto_add_penalty_tags", return_value=None),
+                patch.object(service, "_auto_add_bonus_tags", return_value=None),
+            ):
+                task = await service.create_repair_task(task_data, creator_id=1)
 
-            assert task.title == "Network repair test"
-            assert task.task_id == "T202501270001"
-            assert task.category == TaskCategory.NETWORK_REPAIR
-            assert task.priority == TaskPriority.HIGH
-            assert task.task_type == TaskType.ONLINE
-            assert task.member_id == sample_member.id
-            assert async_session.add.called
-            async_session.flush.assert_called_once()
+                assert task.title == "Network repair test"
+                assert task.task_id == "T202501270001"
+                assert task.category == TaskCategory.NETWORK_REPAIR
+                assert task.priority == TaskPriority.HIGH
+                assert task.task_type == TaskType.ONLINE
+                assert task.member_id == sample_member.id
+                assert async_session.add.called
+                async_session.flush.assert_called_once()
+                async_session.commit.assert_called_once()
+                async_session.refresh.assert_called_once()
 
     async def test_create_repair_task_with_tags(self, async_session, sample_member):
         """Test repair task creation with tags"""
@@ -82,12 +94,22 @@ class TestTaskService:
                 "tag_ids": [1, 2, 3],
             }
 
+            # Mock all database operations to avoid session persistence issues
             async_session.add = Mock()
             async_session.flush = AsyncMock()
+            async_session.commit = AsyncMock()
+            async_session.refresh = AsyncMock()
+            async_session.rollback = AsyncMock()
 
-            await service.create_repair_task(task_data, creator_id=1)
+            # Mock the other private methods
+            with (
+                patch.object(service, "_add_rush_tag", return_value=None),
+                patch.object(service, "_auto_add_penalty_tags", return_value=None),
+                patch.object(service, "_auto_add_bonus_tags", return_value=None),
+            ):
+                await service.create_repair_task(task_data, creator_id=1)
 
-            mock_add_tags.assert_called_once()
+                mock_add_tags.assert_called_once()
 
     async def test_create_repair_task_rush_order(self, async_session, sample_member):
         """Test rush order task creation"""
@@ -104,25 +126,35 @@ class TestTaskService:
                 "is_rush_order": True,
             }
 
+            # Mock all database operations to avoid session persistence issues
             async_session.add = Mock()
             async_session.flush = AsyncMock()
+            async_session.commit = AsyncMock()
+            async_session.refresh = AsyncMock()
+            async_session.rollback = AsyncMock()
 
-            await service.create_repair_task(task_data, creator_id=1)
+            # Mock the other private methods
+            with (
+                patch.object(service, "_add_tags_to_task", return_value=None),
+                patch.object(service, "_auto_add_penalty_tags", return_value=None),
+                patch.object(service, "_auto_add_bonus_tags", return_value=None),
+            ):
+                await service.create_repair_task(task_data, creator_id=1)
 
-            mock_rush_tag.assert_called_once()
+                mock_rush_tag.assert_called_once()
 
     async def test_get_repair_task_existing(self, async_session):
         """Test getting existing repair task"""
         service = TaskService(async_session)
 
-        # Mock database query
-        mock_task = RepairTask(
-            id=1, 
-            task_id="T001", 
-            title="Test Task",
-            reporter_name="Test Reporter",
-            reporter_contact="123456789"
-        )
+        # Create a proper mock task instead of real RepairTask instance
+        mock_task = Mock()
+        mock_task.id = 1
+        mock_task.task_id = "T001"
+        mock_task.title = "Test Task"
+        mock_task.reporter_name = "Test Reporter"
+        mock_task.reporter_contact = "123456789"
+        
         mock_result = Mock()
         mock_result.scalar_one_or_none.return_value = mock_task
 
@@ -149,20 +181,19 @@ class TestTaskService:
         """Test updating task status to in progress"""
         service = TaskService(async_session)
 
-        # Create a mock task with required fields
-        task = RepairTask(
-            id=1, 
-            task_id="T001", 
-            title="Test Task",
-            reporter_name="Test Reporter",
-            reporter_contact="123456789"
-        )
-        # Set enum value after creation
-        task.status = TaskStatus.PENDING
+        # Create a proper mock task instead of real RepairTask instance
+        mock_task = Mock()
+        mock_task.id = 1
+        mock_task.task_id = "T001"
+        mock_task.title = "Test Task"
+        mock_task.reporter_name = "Test Reporter"
+        mock_task.reporter_contact = "123456789"
+        mock_task.status = TaskStatus.PENDING
+        mock_task.response_time = None
 
         # Mock the database query result
         mock_result = Mock()
-        mock_result.scalar_one_or_none.return_value = task
+        mock_result.scalar_one_or_none.return_value = mock_task
         
         with (
             patch.object(async_session, "execute", return_value=mock_result),
@@ -171,6 +202,7 @@ class TestTaskService:
         ):
             async_session.commit = AsyncMock()
             async_session.refresh = AsyncMock()
+            async_session.rollback = AsyncMock()
 
             updated_task = await service.update_task_status(
                 task_id=1, new_status=TaskStatus.IN_PROGRESS, operator_id=1
@@ -184,19 +216,19 @@ class TestTaskService:
         """Test updating task status to completed"""
         service = TaskService(async_session)
 
-        task = RepairTask(
-            id=1, 
-            task_id="T001", 
-            title="Test Task",
-            reporter_name="Test Reporter",
-            reporter_contact="123456789"
-        )
-        # Set enum value after creation
-        task.status = TaskStatus.IN_PROGRESS
+        # Create a proper mock task instead of real RepairTask instance
+        mock_task = Mock()
+        mock_task.id = 1
+        mock_task.task_id = "T001"
+        mock_task.title = "Test Task"
+        mock_task.reporter_name = "Test Reporter"
+        mock_task.reporter_contact = "123456789"
+        mock_task.status = TaskStatus.IN_PROGRESS
+        mock_task.completion_time = None
 
         # Mock the database query result
         mock_result = Mock()
-        mock_result.scalar_one_or_none.return_value = task
+        mock_result.scalar_one_or_none.return_value = mock_task
         
         with (
             patch.object(async_session, "execute", return_value=mock_result),
@@ -206,6 +238,7 @@ class TestTaskService:
         ):
             async_session.commit = AsyncMock()
             async_session.refresh = AsyncMock()
+            async_session.rollback = AsyncMock()
 
             updated_task = await service.update_task_status(
                 task_id=1, new_status=TaskStatus.COMPLETED, operator_id=1
@@ -219,17 +252,17 @@ class TestTaskService:
         """Test getting tasks by member"""
         service = TaskService(async_session)
 
+        # Create proper mock tasks instead of real RepairTask instances
         mock_tasks = []
         for i in range(1, 3):
-            task = RepairTask(
-                id=i, 
-                task_id=f"T00{i}", 
-                title=f"Task {i}",
-                reporter_name="Test Reporter",
-                reporter_contact="123456789"
-            )
-            task.member_id = 1
-            mock_tasks.append(task)
+            mock_task = Mock()
+            mock_task.id = i
+            mock_task.task_id = f"T00{i}"
+            mock_task.title = f"Task {i}"
+            mock_task.reporter_name = "Test Reporter"
+            mock_task.reporter_contact = "123456789"
+            mock_task.member_id = 1
+            mock_tasks.append(mock_task)
 
         mock_result = Mock()
         mock_result.scalars.return_value.all.return_value = mock_tasks
@@ -244,17 +277,17 @@ class TestTaskService:
         """Test getting tasks by status"""
         service = TaskService(async_session)
 
+        # Create proper mock tasks instead of real RepairTask instances
         mock_tasks = []
         for i in range(1, 3):
-            task = RepairTask(
-                id=i, 
-                task_id=f"T00{i}", 
-                title=f"Task {i}",
-                reporter_name="Test Reporter",
-                reporter_contact="123456789"
-            )
-            task.status = TaskStatus.PENDING
-            mock_tasks.append(task)
+            mock_task = Mock()
+            mock_task.id = i
+            mock_task.task_id = f"T00{i}"
+            mock_task.title = f"Task {i}"
+            mock_task.reporter_name = "Test Reporter"
+            mock_task.reporter_contact = "123456789"
+            mock_task.status = TaskStatus.PENDING
+            mock_tasks.append(mock_task)
 
         mock_result = Mock()
         mock_result.scalars.return_value.all.return_value = mock_tasks
@@ -270,29 +303,27 @@ class TestTaskService:
         """Test assigning task to member"""
         service = TaskService(async_session)
 
-        # Create a proper mock task
-        task = RepairTask(
-            id=1, 
-            task_id="T001", 
-            title="Test Task",
-            reporter_name="Test Reporter",
-            reporter_contact="123456789"
-        )
-        task.member_id = None
+        # Create a proper mock task instead of real RepairTask instance
+        mock_task = Mock()
+        mock_task.id = 1
+        mock_task.task_id = "T001"
+        mock_task.title = "Test Task"
+        mock_task.reporter_name = "Test Reporter"
+        mock_task.reporter_contact = "123456789"
+        mock_task.member_id = None
 
         # Mock the member lookup as well
-        mock_member = Member(
-            id=sample_member.id,
-            username="testmember",
-            name="Test Member",
-            class_name="Test Class"
-        )
+        mock_member = Mock()
+        mock_member.id = sample_member.id
+        mock_member.username = "testmember"
+        mock_member.name = "Test Member"
+        mock_member.class_name = "Test Class"
 
         # Use proper async context for database operations
         with patch.object(async_session, "execute") as mock_execute:
             # Mock task query result (first call)
             mock_task_result = Mock()
-            mock_task_result.scalar_one_or_none.return_value = task
+            mock_task_result.scalar_one_or_none.return_value = mock_task
             
             # Mock member query result (second call)
             mock_member_result = Mock()
@@ -304,6 +335,7 @@ class TestTaskService:
             # Mock commit and refresh without await issues
             async_session.commit = AsyncMock()
             async_session.refresh = AsyncMock()
+            async_session.rollback = AsyncMock()
 
             updated_task = await service.assign_task(
                 task_id=1, member_id=sample_member.id, operator_id=1
@@ -317,24 +349,19 @@ class TestTaskService:
         """Test adding positive rating to task"""
         service = TaskService(async_session)
 
-        task = RepairTask(
-            id=1,
-            task_id="T001",
-            title="Test Task",
-            reporter_name="Test Reporter",
-            reporter_contact="123456789"
-        )
-        # Set enum values after creation
-        task.status = TaskStatus.COMPLETED
-        task.rating = None
+        # Create a proper mock task instead of real RepairTask instance
+        mock_task = Mock()
+        mock_task.id = 1
+        mock_task.task_id = "T001"
+        mock_task.title = "Test Task"
+        mock_task.reporter_name = "Test Reporter"
+        mock_task.reporter_contact = "123456789"
+        mock_task.status = TaskStatus.COMPLETED
+        mock_task.rating = 5
+        mock_task.feedback = "Great service!"
 
         # Mock the add_task_feedback method directly since add_task_rating is an alias
-        with patch.object(service, "add_task_feedback", return_value=task) as mock_feedback:
-            # Set the expected values on the task
-            task.rating = 5
-            task.feedback = "Great service!"
-            mock_feedback.return_value = task
-            
+        with patch.object(service, "add_task_feedback", return_value=mock_task) as mock_feedback:
             updated_task = await service.add_task_rating(
                 task_id=1, rating=5, feedback="Great service!"
             )
@@ -347,24 +374,19 @@ class TestTaskService:
         """Test adding negative rating to task"""
         service = TaskService(async_session)
 
-        task = RepairTask(
-            id=1,
-            task_id="T001",
-            title="Test Task",
-            reporter_name="Test Reporter",
-            reporter_contact="123456789"
-        )
-        # Set enum values after creation  
-        task.status = TaskStatus.COMPLETED
-        task.rating = None
+        # Create a proper mock task instead of real RepairTask instance
+        mock_task = Mock()
+        mock_task.id = 1
+        mock_task.task_id = "T001"
+        mock_task.title = "Test Task"
+        mock_task.reporter_name = "Test Reporter"
+        mock_task.reporter_contact = "123456789"
+        mock_task.status = TaskStatus.COMPLETED
+        mock_task.rating = 2
+        mock_task.feedback = "Poor service"
 
         # Mock the add_task_feedback method directly
-        with patch.object(service, "add_task_feedback", return_value=task) as mock_feedback:
-            # Set the expected values on the task
-            task.rating = 2
-            task.feedback = "Poor service"
-            mock_feedback.return_value = task
-            
+        with patch.object(service, "add_task_feedback", return_value=mock_task) as mock_feedback:
             updated_task = await service.add_task_rating(
                 task_id=1, rating=2, feedback="Poor service"
             )
@@ -377,25 +399,25 @@ class TestTaskService:
         """Test getting overdue tasks"""
         service = TaskService(async_session)
 
-        # Create overdue tasks (older than 24 hours for response, 48 hours for
-        # completion)
+        # Create proper mock overdue tasks instead of real RepairTask instances
         old_time = datetime.utcnow() - timedelta(hours=25)
-        mock_tasks = [
-            RepairTask(
-                id=1,
-                task_id="T001",
-                title="Overdue Task 1",
-                status=TaskStatus.PENDING,
-                report_time=old_time,
-            ),
-            RepairTask(
-                id=2,
-                task_id="T002",
-                title="Overdue Task 2",
-                status=TaskStatus.IN_PROGRESS,
-                response_time=old_time,
-            ),
-        ]
+        mock_tasks = []
+        
+        mock_task1 = Mock()
+        mock_task1.id = 1
+        mock_task1.task_id = "T001"
+        mock_task1.title = "Overdue Task 1"
+        mock_task1.status = TaskStatus.PENDING
+        mock_task1.report_time = old_time
+        mock_tasks.append(mock_task1)
+        
+        mock_task2 = Mock()
+        mock_task2.id = 2
+        mock_task2.task_id = "T002"
+        mock_task2.title = "Overdue Task 2"
+        mock_task2.status = TaskStatus.IN_PROGRESS
+        mock_task2.response_time = old_time
+        mock_tasks.append(mock_task2)
 
         mock_result = Mock()
         mock_result.scalars.return_value.all.return_value = mock_tasks
@@ -409,23 +431,24 @@ class TestTaskService:
         """Test deleting a task"""
         service = TaskService(async_session)
 
-        task = RepairTask(
-            id=1, 
-            task_id="T001", 
-            title="Test Task",
-            reporter_name="Test Reporter",
-            reporter_contact="123456789"
-        )
+        # Create a proper mock task instead of real RepairTask instance
+        mock_task = Mock()
+        mock_task.id = 1
+        mock_task.task_id = "T001"
+        mock_task.title = "Test Task"
+        mock_task.reporter_name = "Test Reporter"
+        mock_task.reporter_contact = "123456789"
 
-        with patch.object(service, "get_repair_task", return_value=task):
-            async_session.delete = Mock()
+        with patch.object(service, "get_repair_task", return_value=mock_task):
+            async_session.delete = AsyncMock()
             async_session.commit = AsyncMock()
+            async_session.rollback = AsyncMock()
 
             result = await service.delete_task(task_id=1)
 
             assert result is True
-            async_session.delete.assert_called_once_with(task)
-            await async_session.commit.assert_called_once()
+            async_session.delete.assert_called_once_with(mock_task)
+            async_session.commit.assert_called_once()
 
     async def test_delete_task_not_found(self, async_session):
         """Test deleting non-existent task"""
@@ -465,12 +488,23 @@ class TestTaskService:
         task_data = {"title": "Test task", "task_type": task_type}
 
         with patch.object(service, "_generate_task_id", return_value="T202501270001"):
+            # Mock all database operations to avoid session persistence issues
             async_session.add = Mock()
             async_session.flush = AsyncMock()
+            async_session.commit = AsyncMock()
+            async_session.refresh = AsyncMock()
+            async_session.rollback = AsyncMock()
 
-            task = await service.create_repair_task(task_data, creator_id=1)
+            # Mock the private methods that are called
+            with (
+                patch.object(service, "_add_tags_to_task", return_value=None),
+                patch.object(service, "_add_rush_tag", return_value=None),
+                patch.object(service, "_auto_add_penalty_tags", return_value=None),
+                patch.object(service, "_auto_add_bonus_tags", return_value=None),
+            ):
+                task = await service.create_repair_task(task_data, creator_id=1)
 
-            assert task.base_work_minutes == expected_minutes
+                assert task.base_work_minutes == expected_minutes
 
     async def test_error_handling_invalid_task_data(self, async_session):
         """Test error handling for invalid task data"""
@@ -486,19 +520,17 @@ class TestTaskService:
         """Test bulk operations on multiple tasks"""
         service = TaskService(async_session)
 
-        # Create mock tasks with proper initialization
+        # Create proper mock tasks instead of real RepairTask instances
         mock_tasks = []
         for i in range(1, 4):
-            task = RepairTask(
-                id=i, 
-                task_id=f"T00{i}", 
-                title=f"Task {i}",
-                reporter_name="Test Reporter",
-                reporter_contact="123456789"
-            )
-            # Set enum value after creation
-            task.status = TaskStatus.PENDING
-            mock_tasks.append(task)
+            mock_task = Mock()
+            mock_task.id = i
+            mock_task.task_id = f"T00{i}"
+            mock_task.title = f"Task {i}"
+            mock_task.reporter_name = "Test Reporter"
+            mock_task.reporter_contact = "123456789"
+            mock_task.status = TaskStatus.PENDING
+            mock_tasks.append(mock_task)
 
         # Test getting tasks by status instead of non-existent bulk_update_status
         with patch.object(service, "get_tasks_by_status", return_value=mock_tasks) as mock_get_tasks:

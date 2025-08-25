@@ -1010,6 +1010,118 @@ class WorkHoursCalculationService:
                 "period": f"{year}-{month:02d}"
             }
 
+    async def get_team_monthly_summary(
+        self, year: int, month: int
+    ) -> Dict[str, Any]:
+        """
+        获取团队月度汇总
+        
+        Args:
+            year: 年份
+            month: 月份
+            
+        Returns:
+            Dict: 团队月度汇总数据
+        """
+        try:
+            # 获取所有活跃成员
+            members_query = select(Member).where(Member.is_active.is_(True))
+            members_result = await self.db.execute(members_query)
+            active_members = members_result.scalars().all()
+            
+            total_hours = 0.0
+            total_tasks = 0
+            member_summaries = []
+            
+            for member in active_members:
+                try:
+                    # 计算每个成员的月度工时
+                    member_work_hours = await self.calculate_monthly_work_hours(
+                        member.id, year, month
+                    )
+                    
+                    member_summary = {
+                        "member_id": member.id,
+                        "member_name": member.name,
+                        "total_hours": member_work_hours["total_hours"],
+                        "repair_task_hours": member_work_hours["repair_task_hours"],
+                        "monitoring_hours": member_work_hours["monitoring_hours"],
+                        "assistance_hours": member_work_hours["assistance_hours"],
+                        "task_count": member_work_hours["repair_task_count"],
+                        "is_full_attendance": member_work_hours["is_full_attendance"]
+                    }
+                    
+                    member_summaries.append(member_summary)
+                    total_hours += member_work_hours["total_hours"]
+                    total_tasks += member_work_hours["repair_task_count"]
+                    
+                except Exception as e:
+                    logger.warning(f"Failed to calculate hours for member {member.id}: {str(e)}")
+            
+            return {
+                "year": year,
+                "month": month,
+                "total_members": len(active_members),
+                "active_members": len(member_summaries),
+                "total_hours": round(total_hours, 2),
+                "average_hours_per_member": round(total_hours / len(member_summaries), 2) if member_summaries else 0,
+                "total_tasks": total_tasks,
+                "average_tasks_per_member": round(total_tasks / len(member_summaries), 2) if member_summaries else 0,
+                "member_summaries": member_summaries,
+                "full_attendance_count": len([m for m in member_summaries if m["is_full_attendance"]]),
+                "full_attendance_rate": round(
+                    len([m for m in member_summaries if m["is_full_attendance"]]) / len(member_summaries) * 100, 2
+                ) if member_summaries else 0
+            }
+            
+        except Exception as e:
+            logger.error(f"Get team monthly summary error: {str(e)}")
+            raise
+
+    async def recalculate_member_hours(
+        self, member_id: int, year: int, month: int
+    ) -> Dict[str, Any]:
+        """
+        重新计算特定成员的工时
+        
+        Args:
+            member_id: 成员ID
+            year: 年份  
+            month: 月份
+            
+        Returns:
+            Dict: 重新计算后的工时数据
+        """
+        try:
+            # 重新计算工时
+            work_hours_data = await self.calculate_monthly_work_hours(
+                member_id, year, month
+            )
+            
+            # 更新月度汇总
+            updated_summary = await self.update_monthly_summary(
+                member_id, year, month
+            )
+            
+            logger.info(
+                f"Recalculated work hours for member {member_id}, "
+                f"{year}-{month:02d}: {work_hours_data['total_hours']} hours"
+            )
+            
+            return {
+                "member_id": member_id,
+                "year": year,
+                "month": month,
+                "recalculated_at": datetime.utcnow().isoformat(),
+                "work_hours_data": work_hours_data,
+                "summary_updated": True,
+                "summary_id": updated_summary.id if updated_summary else None
+            }
+            
+        except Exception as e:
+            logger.error(f"Recalculate member hours error: {str(e)}")
+            raise
+
 
 class RushTaskMarkingService:
     """爆单标记服务"""
