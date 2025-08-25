@@ -29,6 +29,7 @@ class TestTasksAPI:
         # Mock dependencies
         mock_db = AsyncMock()
         mock_user = Member(
+            id=1,  # Set user ID to match task member_id
             username="test_user",
             name="测试用户",
             class_name="测试班级",

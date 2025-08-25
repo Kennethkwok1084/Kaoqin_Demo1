@@ -45,19 +45,31 @@ class TaskService:
         self.rush_task_service: RushTaskMarkingService = RushTaskMarkingService(db)
 
     async def create_repair_task(
-        self, task_data: Dict[str, Any], creator_id: int
+        self, task_data: Optional[Dict[str, Any]] = None, creator_id: Optional[int] = None, **kwargs
     ) -> RepairTask:
         """
-        创建维修任务
+        创建维修任务 - 支持多种调用方式
 
         Args:
-            task_data: 任务数据
-            creator_id: 创建者ID
+            task_data: 任务数据字典（可选）
+            creator_id: 创建者ID（可选）
+            **kwargs: 直接作为任务参数的关键字参数
 
         Returns:
             RepairTask: 创建的任务
         """
         try:
+            # 处理不同的调用方式
+            if task_data is None and kwargs:
+                # 关键字参数调用方式：create_repair_task(title="...", description="...")
+                task_data = dict(kwargs)
+                creator_id = task_data.pop("creator_id", 1)
+            elif task_data is not None:
+                # 传统调用方式：create_repair_task(task_data, creator_id)
+                if creator_id is None:
+                    creator_id = 1
+            else:
+                raise ValueError("Must provide either task_data or keyword arguments")
             # 生成任务编号
             task_id = await self._generate_task_id()
 
@@ -111,8 +123,7 @@ class TaskService:
             # 工时计算将在后续操作中进行
 
             await self.db.commit()
-            # Remove refresh to avoid session persistence issues
-            # The task object is already populated with the correct data
+            await self.db.refresh(task)
 
             logger.info(f"Repair task created: {task.task_id}")
             return task
@@ -350,6 +361,7 @@ class TaskService:
         member_id: int,
         operator_id: int,
         assignment_note: Optional[str] = None,
+        assigned_by: Optional[int] = None,
     ) -> RepairTask:
         """
         分配任务
@@ -359,6 +371,7 @@ class TaskService:
             member_id: 分配给的成员ID
             operator_id: 分配者ID
             assignment_note: 分配备注
+            assigned_by: 分配者ID (别名，兼容性参数)
 
         Returns:
             RepairTask: 更新后的任务
@@ -1432,11 +1445,11 @@ class TaskService:
         today = datetime.now().strftime("%Y%m%d")
 
         # 查询今天已有的任务数量
-        count_query = select(func.count()).where(RepairTask.task_id.like(f"R{today}%"))
+        count_query = select(func.count()).where(RepairTask.task_id.like(f"T{today}%"))
         count_result = await self.db.execute(count_query)
         count = count_result.scalar() or 0
 
-        return f"R{today}{str(count + 1).zfill(4)}"
+        return f"T{today}{str(count + 1).zfill(4)}"
 
     async def _add_tags_to_task(self, task: RepairTask, tag_ids: List[int]) -> None:
         """为任务添加标签"""
@@ -1635,6 +1648,377 @@ class TaskService:
             logger.warning(
                 f"Error adding standard tag {tag_name} to task {task.id}: {str(e)}"
             )
+
+    async def complete_task(
+        self, 
+        task_id: int, 
+        completion_data: Dict[str, Any],
+        operator_id: Optional[int] = None
+    ) -> RepairTask:
+        """
+        完成任务
+        
+        Args:
+            task_id: 任务ID
+            completion_data: 完成数据（包含 rating、feedback 等）
+            operator_id: 操作者ID
+            
+        Returns:
+            RepairTask: 完成的任务
+        """
+        try:
+            # 更新任务状态为完成
+            task = await self.update_task_status(
+                task_id, 
+                TaskStatus.COMPLETED, 
+                operator_id or 1,
+                completion_data.get("completion_note"),
+                completion_data.get("actual_minutes")
+            )
+            
+            # 添加评分和反馈
+            if completion_data.get("rating") is not None or completion_data.get("feedback"):
+                task = await self.add_task_feedback(
+                    task_id,
+                    completion_data.get("rating", 5),
+                    completion_data.get("feedback"),
+                    operator_id
+                )
+                
+            logger.info(f"Task {task_id} completed by operator {operator_id}")
+            return task
+            
+        except Exception as e:
+            logger.error(f"Complete task error: {str(e)}")
+            raise
+            
+    async def _create_monitoring_task_internal(
+        self, 
+        task_data: Dict[str, Any], 
+        creator_id: int
+    ) -> MonitoringTask:
+        """
+        内部方法：创建监控任务
+        
+        Args:
+            task_data: 任务数据
+            creator_id: 创建者ID
+            
+        Returns:
+            MonitoringTask: 创建的监控任务
+        """
+        # 调用公共方法
+        return await self.create_monitoring_task(task_data, creator_id)
+        
+    async def _update_monitoring_task_internal(
+        self, 
+        task_id: int, 
+        update_data: Dict[str, Any],
+        operator_id: int
+    ) -> MonitoringTask:
+        """
+        内部方法：更新监控任务
+        
+        Args:
+            task_id: 任务ID
+            update_data: 更新数据
+            operator_id: 操作者ID
+            
+        Returns:
+            MonitoringTask: 更新后的监控任务
+        """
+        try:
+            # 查询监控任务
+            query = select(MonitoringTask).where(MonitoringTask.id == task_id)
+            result = await self.db.execute(query)
+            task = result.scalar_one_or_none()
+            
+            if not task:
+                raise ValueError("监控任务不存在")
+                
+            # 更新字段
+            if "title" in update_data:
+                task.title = update_data["title"]
+            if "description" in update_data:
+                task.description = update_data["description"]
+            if "location" in update_data:
+                task.location = update_data["location"]
+            if "monitoring_type" in update_data:
+                task.monitoring_type = update_data["monitoring_type"]
+            if "start_time" in update_data:
+                task.start_time = update_data["start_time"]
+            if "end_time" in update_data:
+                task.end_time = update_data["end_time"]
+                
+            # 重新计算工时
+            if "start_time" in update_data or "end_time" in update_data:
+                duration = task.end_time - task.start_time
+                task.work_minutes = int(duration.total_seconds() / 60)
+                
+            task.updated_at = datetime.utcnow()
+            
+            await self.db.commit()
+            await self.db.refresh(task)
+            
+            logger.info(f"Monitoring task {task_id} updated by operator {operator_id}")
+            return task
+            
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"Update monitoring task internal error: {str(e)}")
+            raise
+
+    async def _check_team_permission(self, user_id: int, target_member_id: int) -> bool:
+        """
+        检查用户是否有团队权限
+        
+        Args:
+            user_id: 用户ID
+            target_member_id: 目标成员ID
+            
+        Returns:
+            bool: 是否有权限
+        """
+        try:
+            # 查询用户信息
+            user_query = select(Member).where(Member.id == user_id)
+            user_result = await self.db.execute(user_query)
+            user = user_result.scalar_one_or_none()
+            
+            if not user:
+                return False
+                
+            # 管理员有所有权限
+            if user.role == UserRole.ADMIN:
+                return True
+                
+            # 用户可以操作自己
+            if user_id == target_member_id:
+                return True
+                
+            # 组长可以操作团队成员
+            if user.role == UserRole.GROUP_LEADER:
+                team_member_ids = await self._get_team_member_ids(user_id)
+                return target_member_id in team_member_ids
+                
+            return False
+            
+        except Exception as e:
+            logger.error(f"Check team permission error: {str(e)}")
+            return False
+            
+    async def update_monitoring_task(
+        self, 
+        task_id: int, 
+        update_data: Dict[str, Any],
+        operator_id: int
+    ) -> MonitoringTask:
+        """
+        更新监控任务（公共接口）
+        
+        Args:
+            task_id: 任务ID
+            update_data: 更新数据
+            operator_id: 操作者ID
+            
+        Returns:
+            MonitoringTask: 更新后的监控任务
+        """
+        try:
+            # 查询监控任务获取成员ID
+            query = select(MonitoringTask).where(MonitoringTask.id == task_id)
+            result = await self.db.execute(query)
+            task = result.scalar_one_or_none()
+            
+            if not task:
+                raise ValueError("监控任务不存在")
+                
+            # 权限检查
+            if not await self._check_team_permission(operator_id, task.member_id):
+                raise PermissionDeniedError(
+                    message="无权限更新此监控任务",
+                    message_key=None
+                )
+                
+            # 调用内部方法完成更新
+            return await self._update_monitoring_task_internal(task_id, update_data, operator_id)
+            
+        except Exception as e:
+            logger.error(f"Update monitoring task error: {str(e)}")
+            raise
+
+    async def get_pending_tasks_by_priority(
+        self, 
+        member_id: Optional[int] = None, 
+        limit: Optional[int] = None
+    ) -> List[RepairTask]:
+        """
+        获取按优先级排序的待处理任务
+        
+        Args:
+            member_id: 可选的成员ID筛选
+            limit: 可选的结果限制
+            
+        Returns:
+            List[RepairTask]: 按优先级排序的待处理任务列表
+        """
+        try:
+            # 定义优先级排序：URGENT > HIGH > MEDIUM > LOW
+            priority_order = {
+                TaskPriority.URGENT: 1,
+                TaskPriority.HIGH: 2, 
+                TaskPriority.MEDIUM: 3,
+                TaskPriority.LOW: 4
+            }
+            
+            query = (
+                select(RepairTask)
+                .options(selectinload(RepairTask.tags), joinedload(RepairTask.member))
+                .where(RepairTask.status == TaskStatus.PENDING)
+            )
+            
+            if member_id:
+                query = query.where(RepairTask.member_id == member_id)
+                
+            # 按优先级和报告时间排序
+            query = query.order_by(
+                # 优先级排序 (通过case语句)
+                func.case(
+                    (RepairTask.priority == TaskPriority.URGENT, 1),
+                    (RepairTask.priority == TaskPriority.HIGH, 2),
+                    (RepairTask.priority == TaskPriority.MEDIUM, 3),
+                    else_=4
+                ),
+                desc(RepairTask.report_time)  # 同优先级按时间倒序
+            )
+            
+            if limit:
+                query = query.limit(limit)
+                
+            result = await self.db.execute(query)
+            tasks = list(result.scalars().all())
+            
+            logger.info(f"Retrieved {len(tasks)} pending tasks by priority")
+            return tasks
+            
+        except Exception as e:
+            logger.error(f"Get pending tasks by priority error: {str(e)}")
+            raise
+
+    async def bulk_update_task_status(
+        self, 
+        task_ids: List[int], 
+        new_status: TaskStatus,
+        operator_id: Optional[int] = None,
+        note: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        批量更新任务状态
+        
+        Args:
+            task_ids: 任务ID列表
+            new_status: 新状态
+            operator_id: 操作者ID
+            note: 操作备注
+            
+        Returns:
+            Dict: 批量更新结果
+        """
+        try:
+            if not task_ids:
+                return {"updated": 0, "failed": 0, "errors": []}
+                
+            # 查询任务
+            query = (
+                select(RepairTask)
+                .options(selectinload(RepairTask.tags))
+                .where(RepairTask.id.in_(task_ids))
+            )
+            result = await self.db.execute(query)
+            tasks = list(result.scalars().all())
+            
+            updated_count = 0
+            failed_count = 0
+            errors = []
+            
+            for task in tasks:
+                try:
+                    # 验证状态转换
+                    if not self._is_valid_status_transition(task.status, new_status):
+                        error_msg = f"Task {task.id}: Invalid status transition from {task.status.value} to {new_status.value}"
+                        errors.append(error_msg)
+                        failed_count += 1
+                        continue
+                    
+                    old_status = task.status
+                    task.status = new_status
+                    
+                    # 更新时间戳
+                    if new_status == TaskStatus.IN_PROGRESS and not task.response_time:
+                        task.response_time = datetime.utcnow()
+                    elif new_status == TaskStatus.COMPLETED and not task.completion_time:
+                        task.completion_time = datetime.utcnow()
+                    
+                    # 添加操作备注
+                    if note:
+                        operation_log = f"\n\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - 批量操作: {note}"
+                        if task.description:
+                            task.description += operation_log
+                        else:
+                            task.description = f"批量操作: {note}"
+                    
+                    # 重新计算工时
+                    task.update_work_minutes()
+                    
+                    updated_count += 1
+                    logger.info(f"Task {task.id} status updated from {old_status.value} to {new_status.value}")
+                    
+                except Exception as e:
+                    error_msg = f"Task {task.id}: {str(e)}"
+                    errors.append(error_msg)
+                    failed_count += 1
+                    logger.warning(f"Failed to update task {task.id}: {str(e)}")
+            
+            await self.db.commit()
+            
+            result = {
+                "updated": updated_count,
+                "failed": failed_count,
+                "total": len(task_ids),
+                "errors": errors,
+                "operator_id": operator_id
+            }
+            
+            logger.info(f"Bulk status update completed: {result}")
+            return result
+            
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"Bulk update task status error: {str(e)}")
+            raise
+
+    async def create_repair_task_flexible(self, **kwargs) -> RepairTask:
+        """
+        灵活创建维修任务（支持关键字参数）
+        
+        Args:
+            **kwargs: 任务参数，包括 title, description, location 等
+            
+        Returns:
+            RepairTask: 创建的任务
+        """
+        # 提取创建者ID，默认为1
+        creator_id = kwargs.pop("creator_id", 1)
+        
+        # 构建任务数据字典
+        task_data = dict(kwargs)
+        
+        # 如果没有指定 assigned_to，使用 member_id
+        if "member_id" in kwargs and "assigned_to" not in kwargs:
+            task_data["assigned_to"] = kwargs["member_id"]
+        
+        return await self.create_repair_task(task_data, creator_id)
+
 
 
 class MonitoringTaskService:

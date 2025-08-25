@@ -383,8 +383,8 @@ class TestTaskAssignmentWorkflow:
         old_task = RepairTask(
             task_id="ESCALATE_001",
             title="需要升级的任务",
-            task_type=TaskType.HIGH,
-            priority=TaskPriority.MEDIUM,
+            task_type=TaskType.OFFLINE,
+            priority=TaskPriority.HIGH,
             status=TaskStatus.PENDING,
             member_id=member.id,
             report_time=datetime.utcnow() - timedelta(hours=48),  # 48小时前

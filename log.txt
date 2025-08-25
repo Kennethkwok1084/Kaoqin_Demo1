@@ -1,4 +1,3 @@
-运行单元测试...
 ============================= test session starts ==============================
 platform linux -- Python 3.13.7, pytest-8.4.1, pluggy-1.6.0 -- /opt/hostedtoolcache/Python/3.13.7/x64/bin/python
 cachedir: .pytest_cache
@@ -7,44 +6,54 @@ benchmark: 5.1.0 (defaults: timer=time.perf_counter disable_gc=False min_rounds=
 rootdir: /home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend
 configfile: pytest.ini
 plugins: json-report-1.5.0, Faker-37.5.3, cov-6.2.1, mock-3.14.1, asyncio-1.1.0, metadata-3.1.1, anyio-4.10.0, html-4.1.1, benchmark-5.1.0
-asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=session, asyncio_default_test_loop_scope=function
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
 collecting ... collected 330 items
+
 tests/unit/test_auth_api.py::TestAuthAPI::test_login_success 
 -------------------------------- live log call ---------------------------------
-2025-08-24 12:49:26 [    INFO] Successful login for user: TEST001
+2025-08-24 13:34:13 [    INFO] Successful login for user: TEST001
 PASSED                                                                   [  0%]
 tests/unit/test_auth_api.py::TestAuthAPI::test_login_user_not_found 
 -------------------------------- live log call ---------------------------------
-2025-08-24 12:49:26 [ WARNING] Login attempt with non-existent student_id: NONEXISTENT
-2025-08-24 12:49:26 [ WARNING] HTTP exception during login for NONEXISTENT: 用户名或密码错误
-PASSED                                                                   [  0%]
-FAILED tests/unit/test_monitoring_permissions.py::TestMonitoringTaskAccessControl::test_member_can_only_view_own_monitoring_tasks - AttributeError: <app.services.task_service.TaskService object at 0x7fc1e775a4b0> does not have the attribute '_apply_monitoring_task_filters'
-FAILED tests/unit/test_monitoring_permissions.py::TestMonitoringTaskAccessControl::test_detailed_monitoring_task_access_control - AttributeError: 'TaskService' object has no attribute 'get_monitoring_task_detail'
-FAILED tests/unit/test_monthly_statistics.py::TestMonthlyWorkHoursSummary::test_calculate_monthly_work_hours_empty_data - TypeError: float() argument must be a string or a real number, not 'Mock'
-FAILED tests/unit/test_monthly_statistics.py::TestMonthlyWorkHoursSummary::test_calculate_monthly_work_hours_full_attendance - StopAsyncIteration
-FAILED tests/unit/test_monthly_statistics.py::TestMonthlyWorkHoursSummary::test_batch_update_monthly_summaries - KeyError: 'year'
-FAILED tests/unit/test_monthly_statistics.py::TestBoundaryConditions::test_monthly_statistics_cross_year - TypeError: float() argument must be a string or a real number, not 'Mock'
-FAILED tests/unit/test_monthly_statistics.py::TestBoundaryConditions::test_leap_year_february_calculation - TypeError: float() argument must be a string or a real number, not 'Mock'
-FAILED tests/unit/test_monthly_statistics.py::TestBoundaryConditions::test_extreme_work_hours_calculation - StopAsyncIteration
-FAILED tests/unit/test_monthly_statistics.py::TestBoundaryConditions::test_invalid_member_id - TypeError: float() argument must be a string or a real number, not 'Mock'
-FAILED tests/unit/test_task_service_coverage.py::TestTaskService::test_assign_task_to_member - RuntimeError: Task <Task pending name='Task-1054' coro=<TestTaskService.test_assign_task_to_member() running at /home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend/tests/unit/test_task_service_coverage.py:282> cb=[_run_until_complete_cb() at /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py:181]> got Future <Future pending cb=[BaseProtocol._on_waiter_completed()]> attached to a different loop
-FAILED tests/unit/test_task_service_coverage.py::TestTaskService::test_get_overdue_tasks - AttributeError: 'TaskService' object has no attribute 'get_overdue_tasks'
+2025-08-24 13:34:13 [ WARNING] Login attempt with non-existent student_id: NONEXISTENT
+2025-08-24 13:34:13 [ WARNING] HTTP exception during login for NONEXISTENT: 用户名或密码错误
+FAILED tests/unit/test_import_service_coverage.py::TestDataImportService::test_update_existing_task - AttributeError: 'DataImportService' object has no attribute '_update_existing_task'
+FAILED tests/unit/test_import_service_coverage.py::TestDataImportService::test_bulk_import_tasks - AttributeError: 'DataImportService' object has no attribute 'bulk_import_tasks'
+FAILED tests/unit/test_import_service_coverage.py::TestDataImportService::test_import_with_ab_table_matching - AttributeError: <app.services.ab_table_matching_service.ABTableMatchingService object at 0x7f46402e8360> does not have the attribute 'match_tables'
+FAILED tests/unit/test_import_service_coverage.py::TestDataImportService::test_error_handling_database_error - AttributeError: 'dict' object has no attribute 'success'
+FAILED tests/unit/test_import_service_coverage.py::TestDataImportService::test_file_format_validation[.csv-False] - assert False
+ +  where False = any(<generator object TestDataImportService.test_file_format_validation.<locals>.<genexpr> at 0x7f4640fe82b0>)
+FAILED tests/unit/test_import_service_coverage.py::TestDataImportService::test_file_format_validation[.txt-False] - assert False
+ +  where False = any(<generator object TestDataImportService.test_file_format_validation.<locals>.<genexpr> at 0x7f463d6be670>)
+FAILED tests/unit/test_import_service_coverage.py::TestDataImportService::test_file_format_validation[.pdf-False] - assert False
+ +  where False = any(<generator object TestDataImportService.test_file_format_validation.<locals>.<genexpr> at 0x7f463d6da740>)
+FAILED tests/unit/test_integration_scenarios.py::TestEndToEndBusinessFlows::test_complete_task_lifecycle - AttributeError: <app.services.task_service.TaskService object at 0x7f4640454110> does not have the attribute 'complete_task'
+FAILED tests/unit/test_integration_scenarios.py::TestServiceInteractionIntegration::test_attendance_work_hours_integration - AttributeError: <app.services.attendance_service.AttendanceService object at 0x7f463fccc180> does not have the attribute 'get_attendance_by_date'
+FAILED tests/unit/test_integration_scenarios.py::TestBusinessRuleIntegrity::test_work_hours_calculation_business_rules - StopAsyncIteration
+FAILED tests/unit/test_integration_scenarios.py::TestErrorHandlingIntegration::test_data_validation_across_services - TypeError: float() argument must be a string or a real number, not 'Mock'
+FAILED tests/unit/test_monitoring_permissions.py::TestMonitoringTaskCreationPermissions::test_admin_can_create_monitoring_task - AttributeError: <app.services.task_service.TaskService object at 0x7f463fccb890> does not have the attribute '_create_monitoring_task_internal'
+FAILED tests/unit/test_monitoring_permissions.py::TestMonitoringTaskCreationPermissions::test_group_leader_can_create_monitoring_task - AttributeError: <app.services.task_service.TaskService object at 0x7f46403a3230> does not have the attribute '_create_monitoring_task_internal'
+FAILED tests/unit/test_monitoring_permissions.py::TestMonitoringTaskCreationPermissions::test_regular_member_cannot_create_monitoring_task - TypeError: 'int' object is not subscriptable
+FAILED tests/unit/test_monitoring_permissions.py::TestMonitoringTaskCreationPermissions::test_inactive_member_cannot_create_monitoring_task - TypeError: 'int' object is not subscriptable
+FAILED tests/unit/test_monitoring_permissions.py::TestMonitoringTaskTimeValidation::test_valid_monitoring_task_duration - AttributeError: <app.services.task_service.TaskService object at 0x7f46405fab70> does not have the attribute '_create_monitoring_task_internal'
+FAILED tests/unit/test_monitoring_permissions.py::TestMonitoringTaskTimeValidation::test_invalid_monitoring_task_duration_too_short - TypeError: 'int' object is not subscriptable
+FAILED tests/unit/test_monitoring_permissions.py::TestMonitoringTaskTimeValidation::test_invalid_monitoring_task_duration_too_long - TypeError: 'int' object is not subscriptable
+FAILED tests/unit/test_monitoring_permissions.py::TestMonitoringTaskTimeValidation::test_time_consistency_validation - TypeError: 'int' object is not subscriptable
+FAILED tests/unit/test_monitoring_permissions.py::TestMonitoringTaskModificationPermissions::test_admin_can_modify_any_monitoring_task - AttributeError: <app.services.task_service.TaskService object at 0x7f463fb4fcb0> does not have the attribute '_update_monitoring_task_internal'
+FAILED tests/unit/test_monitoring_permissions.py::TestMonitoringTaskModificationPermissions::test_group_leader_can_modify_team_monitoring_task - AttributeError: <app.services.task_service.TaskService object at 0x7f463fb7a750> does not have the attribute '_check_team_permission'
+FAILED tests/unit/test_monitoring_permissions.py::TestMonitoringTaskModificationPermissions::test_member_can_only_modify_own_monitoring_task - AttributeError: <app.services.task_service.TaskService object at 0x7f463fb7bf50> does not have the attribute '_update_monitoring_task_internal'
+FAILED tests/unit/test_monitoring_permissions.py::TestMonitoringTaskModificationPermissions::test_member_cannot_modify_others_monitoring_task - AttributeError: 'TaskService' object has no attribute 'update_monitoring_task'. Did you mean: 'create_monitoring_task'?
 FAILED tests/unit/test_task_service_coverage.py::TestTaskService::test_delete_task - assert False is True
 FAILED tests/unit/test_task_service_coverage.py::TestTaskService::test_generate_task_id - AssertionError: assert False
- +  where False = <built-in method startswith of str object at 0x7fc1e4d1b170>('T')
- +    where <built-in method startswith of str object at 0x7fc1e4d1b170> = 'R202508240006'.startswith
+ +  where False = <built-in method startswith of str object at 0x7f463fd05b70>('T')
+ +    where <built-in method startswith of str object at 0x7f463fd05b70> = 'R202508240006'.startswith
 FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_create_repair_task_basic - AssertionError: Expected 'mock' to have been called once. Called 0 times.
 FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_create_monitoring_task_invalid_time_range - TypeError: object NoneType can't be used in 'await' expression
-FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_update_task_status_success - TypeError: TaskService.update_task_status() got an unexpected keyword argument 'note'
-FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_assign_task_success - sqlalchemy.exc.InvalidRequestError: Instance '<RepairTask at 0x7fc1e76dd950>' is not persistent within this Session
+FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_update_task_status_success - sqlalchemy.exc.InvalidRequestError: Instance '<RepairTask at 0x7f463d573ed0>' is not persistent within this Session
+FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_assign_task_success - sqlalchemy.exc.InvalidRequestError: Instance '<RepairTask at 0x7f463d573bb0>' is not persistent within this Session
 FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_add_task_feedback_positive - KeyError: 'tasks'
-FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_get_member_task_summary - RuntimeError: Task <Task pending name='Task-1188' coro=<TestTaskServiceFixed.test_get_member_task_summary() running at /home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend/tests/unit/test_task_service_coverage_fixed.py:351> cb=[_run_until_complete_cb() at /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py:181]> got Future <Future pending cb=[BaseProtocol._on_waiter_completed()]> attached to a different loop
-FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_batch_mark_rush_tasks - TypeError: TaskService.batch_mark_rush_tasks() got an unexpected keyword argument 'operator_id'
-FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_get_rush_tasks_list - TypeError: TaskService.get_rush_tasks_list() got an unexpected keyword argument 'status'
-FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_get_rush_tasks_statistics - TypeError: TaskService.get_rush_tasks_statistics() got an unexpected keyword argument 'year'
-FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_remove_rush_task_marking - TypeError: TaskService.remove_rush_task_marking() got an unexpected keyword argument 'task_id'. Did you mean 'task_ids'?
 FAILED tests/unit/test_task_service_coverage_fixed.py::TestTaskServiceFixed::test_create_assistance_task_invalid_duration - TypeError: object NoneType can't be used in 'await' expression
 FAILED tests/unit/test_tasks_api.py::TestTasksAPI::test_get_work_time_detail_success - fastapi.exceptions.HTTPException: 403: 无权限查看该任务工时详情
-======= 75 failed, 254 passed, 9 warnings, 1 error in 113.32s (0:01:53) ========
+=========== 57 failed, 273 passed, 10 warnings in 130.24s (0:02:10) ============
 单元测试失败，但继续集成测试
 单元测试覆盖率报告已生成
