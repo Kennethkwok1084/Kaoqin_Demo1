@@ -136,7 +136,7 @@ class TestMonitoringTaskCreationPermissions:
         with patch.object(
             task_service, "_create_monitoring_task_internal", return_value=expected_task
         ):
-            result = await task_service.create_monitoring_task(admin_user.id, task_data)
+            result = await task_service.create_monitoring_task(task_data, admin_user.id)
 
             assert result.member_id == admin_user.id
             assert result.location == task_data["location"]
@@ -174,7 +174,7 @@ class TestMonitoringTaskCreationPermissions:
             task_service, "_create_monitoring_task_internal", return_value=expected_task
         ):
             result = await task_service.create_monitoring_task(
-                group_leader_user.id, task_data
+                task_data, group_leader_user.id
             )
 
             assert result.member_id == group_leader_user.id
@@ -208,7 +208,7 @@ class TestMonitoringTaskCreationPermissions:
         ):
             with pytest.raises(PermissionDeniedError):
                 await task_service.create_monitoring_task(
-                    task_data, creator_id=regular_member.id
+                    task_data, regular_member.id
                 )
 
     @pytest.mark.asyncio
@@ -238,7 +238,7 @@ class TestMonitoringTaskCreationPermissions:
         ):
             with pytest.raises(PermissionDeniedError, match="账户已停用"):
                 await task_service.create_monitoring_task(
-                    task_data, creator_id=inactive_member.id
+                    task_data, inactive_member.id
                 )
 
 
@@ -284,7 +284,7 @@ class TestMonitoringTaskTimeValidation:
                 return_value=expected_task,
             ):
                 result = await task_service.create_monitoring_task(
-                    admin_user.id, task_data
+                    task_data, admin_user.id
                 )
                 assert result.work_minutes == duration
 
@@ -325,7 +325,7 @@ class TestMonitoringTaskTimeValidation:
                     ValidationError, match="监控任务时长必须在30-600分钟之间"
                 ):
                     await task_service.create_monitoring_task(
-                        task_data, creator_id=admin_user.id
+                        task_data, admin_user.id
                     )
 
     @pytest.mark.asyncio
@@ -365,7 +365,7 @@ class TestMonitoringTaskTimeValidation:
                     ValidationError, match="监控任务时长必须在30-600分钟之间"
                 ):
                     await task_service.create_monitoring_task(
-                        task_data, creator_id=admin_user.id
+                        task_data, admin_user.id
                     )
 
     @pytest.mark.asyncio
@@ -418,7 +418,7 @@ class TestMonitoringTaskTimeValidation:
             ):
                 with pytest.raises(ValidationError):
                     await task_service.create_monitoring_task(
-                        task_data, creator_id=admin_user.id
+                        task_data, admin_user.id
                     )
 
 

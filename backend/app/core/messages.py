@@ -60,6 +60,7 @@ class Messages:
     AUTH_ERROR_INACTIVE_USER = "用户账户未激活"
     AUTH_ERROR_ADMIN_REQUIRED = "需要管理员权限"
     AUTH_ERROR_GROUP_LEADER_REQUIRED = "需要组长或管理员权限"
+    AUTH_ERROR_PERMISSION_DENIED = "权限不足，无法执行此操作"
 
     AUTH_WARNING_PASSWORD_WEAK = "密码强度不足，建议包含大小写字母、数字和特殊字符"
 
