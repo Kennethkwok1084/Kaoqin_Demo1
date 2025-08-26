@@ -3,21 +3,13 @@ Comprehensive tests for TaskService (Fixed Version)
 Improved test coverage targeting actual TaskService methods
 """
 
-from datetime import datetime, timedelta, date
-from unittest.mock import AsyncMock, Mock, patch, MagicMock
+import asyncio
+from datetime import date, datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
-import asyncio
 
 from app.models.member import Member, UserRole
-from tests.async_helpers import ensure_fresh_loop, safe_async_mock
-from tests.unit.test_helpers import (
-    MockSessionBuilder,
-    MockTaskBuilder,
-    MockMemberBuilder,
-    MockResultBuilder,
-    simulate_task_update
-)
 from app.models.task import (
     MonitoringTask,
     RepairTask,
@@ -27,6 +19,14 @@ from app.models.task import (
     TaskType,
 )
 from app.services.task_service import TaskService
+from tests.async_helpers import ensure_fresh_loop, safe_async_mock
+from tests.unit.test_helpers import (
+    MockMemberBuilder,
+    MockResultBuilder,
+    MockSessionBuilder,
+    MockTaskBuilder,
+    simulate_task_update,
+)
 
 
 @pytest.mark.asyncio
@@ -221,9 +221,9 @@ class TestTaskServiceFixed:
             title="Test Task",
             status=TaskStatus.PENDING,
             member_id=1,
-            description="Initial task description"
+            description="Initial task description",
         )
-        
+
         # Create mock result using helper
         mock_result = MockResultBuilder.single_result(mock_task)
 
@@ -237,10 +237,12 @@ class TestTaskServiceFixed:
             async_session.refresh = AsyncMock()
 
             # Mock the status transition validation
-            with patch.object(service, '_is_valid_status_transition', return_value=True):
+            with patch.object(
+                service, "_is_valid_status_transition", return_value=True
+            ):
                 # Simulate status change in the mock
                 simulate_task_update(mock_task, status=TaskStatus.IN_PROGRESS)
-                
+
                 updated_task = await service.update_task_status(
                     task_id=1,
                     new_status=TaskStatus.IN_PROGRESS,
@@ -274,19 +276,13 @@ class TestTaskServiceFixed:
 
         # Create mocks using helpers
         mock_task = MockTaskBuilder.repair_task(
-            id=1,
-            task_id="T001",
-            title="Test Task",
-            member_id=None
+            id=1, task_id="T001", title="Test Task", member_id=None
         )
-        
+
         mock_member = MockMemberBuilder.member(
-            id=2,
-            username="testuser",
-            name="Test Member",
-            class_name="测试班级"
+            id=2, username="testuser", name="Test Member", class_name="测试班级"
         )
-        
+
         # Create mock results
         mock_task_result = MockResultBuilder.single_result(mock_task)
         mock_member_result = MockResultBuilder.single_result(mock_member)
@@ -296,7 +292,7 @@ class TestTaskServiceFixed:
         ):
             async_session.commit = AsyncMock()
             async_session.refresh = AsyncMock()
-            
+
             # Simulate assignment in the mock
             simulate_task_update(mock_task, member_id=2)
 
@@ -338,9 +334,9 @@ class TestTaskServiceFixed:
             title="Test Task",
             status=TaskStatus.COMPLETED,
             rating=None,
-            feedback=None
+            feedback=None,
         )
-        
+
         mock_result = MockResultBuilder.single_result(mock_task)
 
         with (
@@ -351,7 +347,7 @@ class TestTaskServiceFixed:
         ):
             async_session.commit = AsyncMock()
             async_session.refresh = AsyncMock()
-            
+
             # Simulate feedback update in the mock
             simulate_task_update(mock_task, rating=5, feedback="Excellent service!")
 
@@ -374,6 +370,7 @@ class TestTaskServiceFixed:
 
         # Create proper date objects for the summary
         from datetime import date
+
         date_from = date(year, month, 1)
         date_to = date(year, month, 28)  # End of month
 
@@ -387,7 +384,7 @@ class TestTaskServiceFixed:
             "period": {
                 "from": date_from.isoformat(),
                 "to": date_to.isoformat(),
-            }
+            },
         }
 
         # Mock the database operations
@@ -396,16 +393,15 @@ class TestTaskServiceFixed:
             mock_result = Mock()
             mock_result.scalars.return_value.all.return_value = []
             mock_execute.return_value = mock_result
-            
+
             # Call with proper datetime objects (not date objects)
             from datetime import datetime
+
             date_from_dt = datetime(year, month, 1)
             date_to_dt = datetime(year, month, 28)
-            
+
             summary = await service.get_member_task_summary(
-                member_id=member_id, 
-                date_from=date_from_dt,
-                date_to=date_to_dt
+                member_id=member_id, date_from=date_from_dt, date_to=date_to_dt
             )
 
             # Assert the structure of the returned summary matches actual implementation
@@ -420,6 +416,7 @@ class TestTaskServiceFixed:
         service = TaskService(async_session)
 
         from datetime import datetime
+
         date_from = datetime(2025, 1, 1)
         date_to = datetime(2025, 1, 31)
         task_ids = [1, 2, 3]
@@ -434,7 +431,9 @@ class TestTaskServiceFixed:
         }
 
         with patch.object(
-            service.rush_task_service, "mark_rush_tasks_by_date", return_value={"marked": 3, "total": 3}
+            service.rush_task_service,
+            "mark_rush_tasks_by_date",
+            return_value={"marked": 3, "total": 3},
         ) as mock_batch:
             result = await service.batch_mark_rush_tasks(
                 date_from, date_to, task_ids, marker_id=1
@@ -442,41 +441,56 @@ class TestTaskServiceFixed:
 
             assert result["success"] is True
             assert result["marked_count"] == 3
-            mock_batch.assert_called_once_with(date_from.date(), date_to.date(), task_ids, 1)
+            mock_batch.assert_called_once_with(
+                date_from.date(), date_to.date(), task_ids, 1
+            )
 
     async def test_get_rush_tasks_list(self, async_session):
         """Test getting rush tasks list"""
         service = TaskService(async_session)
 
         # Mock the database query for rush tasks
-        from unittest.mock import MagicMock
-        from app.models.member import Member
-        from app.models.task import TaskType, TaskStatus
         from datetime import datetime
-        
+        from unittest.mock import MagicMock
+
+        from app.models.member import Member
+        from app.models.task import TaskStatus, TaskType
+
         # Create mock members
         mock_member1 = Member(id=1, name="John Doe")
         mock_member2 = Member(id=2, name="Jane Smith")
-        
+
         # Create mock tasks with member relationship
-        mock_task1 = RepairTask(id=1, task_id="T001", title="Rush Task 1", is_rush_order=True, work_minutes=60)
+        mock_task1 = RepairTask(
+            id=1,
+            task_id="T001",
+            title="Rush Task 1",
+            is_rush_order=True,
+            work_minutes=60,
+        )
         mock_task1.member = mock_member1
         mock_task1.task_type = TaskType.ONLINE
         mock_task1.status = TaskStatus.COMPLETED
         mock_task1.report_time = datetime.now()
-        
-        mock_task2 = RepairTask(id=2, task_id="T002", title="Rush Task 2", is_rush_order=True, work_minutes=120)
+
+        mock_task2 = RepairTask(
+            id=2,
+            task_id="T002",
+            title="Rush Task 2",
+            is_rush_order=True,
+            work_minutes=120,
+        )
         mock_task2.member = mock_member2
         mock_task2.task_type = TaskType.OFFLINE
         mock_task2.status = TaskStatus.PENDING
         mock_task2.report_time = datetime.now()
-        
+
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = [mock_task1, mock_task2]
-        
+
         mock_count_result = MagicMock()
         mock_count_result.scalar.return_value = 2
-        
+
         async_session.execute = AsyncMock(side_effect=[mock_count_result, mock_result])
 
         result = await service.get_rush_tasks_list(page=1, page_size=10)
@@ -491,26 +505,41 @@ class TestTaskServiceFixed:
 
         # Mock the database query for rush task statistics
         from unittest.mock import MagicMock
-        from app.models.task import TaskStatus, TaskType
+
         from app.models.member import Member
-        
+        from app.models.task import TaskStatus, TaskType
+
         # Create mock members
         mock_member1 = Member(id=1, name="John Doe")
         mock_member2 = Member(id=2, name="Jane Smith")
-        
-        mock_task1 = RepairTask(id=1, task_id="T001", title="Rush Task 1", is_rush_order=True, 
-                              status=TaskStatus.COMPLETED, task_type=TaskType.ONLINE, work_minutes=60)
+
+        mock_task1 = RepairTask(
+            id=1,
+            task_id="T001",
+            title="Rush Task 1",
+            is_rush_order=True,
+            status=TaskStatus.COMPLETED,
+            task_type=TaskType.ONLINE,
+            work_minutes=60,
+        )
         mock_task1.member = mock_member1
-        
-        mock_task2 = RepairTask(id=2, task_id="T002", title="Rush Task 2", is_rush_order=True, 
-                              status=TaskStatus.PENDING, task_type=TaskType.OFFLINE, work_minutes=120)
+
+        mock_task2 = RepairTask(
+            id=2,
+            task_id="T002",
+            title="Rush Task 2",
+            is_rush_order=True,
+            status=TaskStatus.PENDING,
+            task_type=TaskType.OFFLINE,
+            work_minutes=120,
+        )
         mock_task2.member = mock_member2
-        
+
         mock_tasks = [mock_task1, mock_task2]
-        
+
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = mock_tasks
-        
+
         async_session.execute = AsyncMock(return_value=mock_result)
 
         stats = await service.get_rush_tasks_statistics()
@@ -524,16 +553,19 @@ class TestTaskServiceFixed:
 
         # Mock the database query for tasks to remove marking
         from unittest.mock import MagicMock
+
         mock_tasks = [
-            RepairTask(id=1, task_id="T001", title="Rush Task 1", is_rush_order=True, tags=[]),
+            RepairTask(
+                id=1, task_id="T001", title="Rush Task 1", is_rush_order=True, tags=[]
+            ),
         ]
-        
+
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = mock_tasks
-        
+
         mock_tag_result = MagicMock()
         mock_tag_result.scalar_one_or_none.return_value = None
-        
+
         async_session.execute = AsyncMock(side_effect=[mock_result, mock_tag_result])
 
         result = await service.remove_rush_task_marking(task_ids=[1], remover_id=1)

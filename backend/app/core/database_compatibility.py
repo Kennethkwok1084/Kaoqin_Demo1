@@ -189,7 +189,7 @@ def get_test_database_url() -> str:
     explicit_url = os.getenv("DATABASE_URL")
     if explicit_url:
         return explicit_url
-    
+
     # 强制使用SQLite时始终使用SQLite
     if os.getenv("FORCE_SQLITE_TESTS") == "true":
         return "sqlite+aiosqlite:///./test_attendence.db"
@@ -234,15 +234,15 @@ def should_use_postgresql_tests() -> bool:
     explicit_url = os.getenv("DATABASE_URL")
     if explicit_url and "postgresql" in explicit_url:
         return True
-    
+
     # 强制SQLite测试时始终返回False
     if os.getenv("FORCE_SQLITE_TESTS") == "true":
         return False
-    
+
     # CI环境下检查配置
     if os.getenv("CI") == "true" or os.getenv("GITHUB_ACTIONS") == "true":
         return os.getenv("POSTGRES_TEST") != "false"
-    
+
     # 只有明确指定PostgreSQL测试时才使用
     return bool(
         os.getenv("POSTGRES_TEST") == "true"

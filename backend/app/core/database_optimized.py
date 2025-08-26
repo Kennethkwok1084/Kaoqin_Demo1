@@ -80,29 +80,35 @@ def _get_optimized_connect_args() -> Dict[str, Any]:
             "application_name": f"kaoqin_backend_{os.getenv('ENVIRONMENT', 'dev')}",
         },
     }
-    
+
     if _is_ci_environment():
         # CI environment: aggressive timeouts
-        base_args.update({
-            "command_timeout": 30,  # 30 seconds for CI
-            "connect_timeout": 10,  # 10 seconds connection timeout
-            "keepalives_idle": 600,  # 10 minutes
-            "keepalives_interval": 30,
-            "keepalives_count": 3,
-        })
+        base_args.update(
+            {
+                "command_timeout": 30,  # 30 seconds for CI
+                "connect_timeout": 10,  # 10 seconds connection timeout
+                "keepalives_idle": 600,  # 10 minutes
+                "keepalives_interval": 30,
+                "keepalives_count": 3,
+            }
+        )
     elif _is_testing_environment():
         # Testing environment: moderate timeouts
-        base_args.update({
-            "command_timeout": 60,  # 1 minute for tests
-            "connect_timeout": 5,  # 5 seconds connection timeout
-        })
+        base_args.update(
+            {
+                "command_timeout": 60,  # 1 minute for tests
+                "connect_timeout": 5,  # 5 seconds connection timeout
+            }
+        )
     else:
         # Production environment: generous timeouts
-        base_args.update({
-            "command_timeout": 300,  # 5 minutes for large data operations
-            "connect_timeout": 30,  # 30 seconds connection timeout
-        })
-    
+        base_args.update(
+            {
+                "command_timeout": 300,  # 5 minutes for large data operations
+                "connect_timeout": 30,  # 30 seconds connection timeout
+            }
+        )
+
     return base_args
 
 
@@ -110,7 +116,7 @@ def _get_optimized_connect_args() -> Dict[str, Any]:
 def _get_async_engine_args() -> Dict[str, Any]:
     """Get engine arguments based on database type and environment."""
     db_url = get_database_url()
-    
+
     # Base arguments for all environments
     base_args = {
         "echo": settings.DEBUG and not _is_ci_environment(),  # Disable echo in CI
@@ -133,12 +139,14 @@ def _get_async_engine_args() -> Dict[str, Any]:
         # PostgreSQL-specific configuration with optimizations
         pool_config = _get_optimized_pool_config()
         connect_args = _get_optimized_connect_args()
-        
-        base_args.update({
-            **pool_config,
-            "connect_args": connect_args,
-        })
-    
+
+        base_args.update(
+            {
+                **pool_config,
+                "connect_args": connect_args,
+            }
+        )
+
     return base_args
 
 
@@ -158,7 +166,7 @@ AsyncSessionLocal = async_sessionmaker(
 def _get_sync_engine_args() -> Dict[str, Any]:
     """Get sync engine arguments based on database type and environment."""
     db_url = get_database_url_sync()
-    
+
     base_args: Dict[str, Any] = {
         "echo": settings.DEBUG and not _is_ci_environment(),  # Disable echo in CI
         "future": True,
@@ -178,11 +186,13 @@ def _get_sync_engine_args() -> Dict[str, Any]:
     else:
         # PostgreSQL-specific configuration with optimizations
         pool_config = _get_optimized_pool_config()
-        
+
         # Remove async-specific options for sync engine
-        sync_pool_config = {k: v for k, v in pool_config.items() if k != "pool_pre_ping"}
+        sync_pool_config = {
+            k: v for k, v in pool_config.items() if k != "pool_pre_ping"
+        }
         base_args.update(sync_pool_config)
-    
+
     return base_args
 
 
@@ -258,6 +268,7 @@ async def check_database_health(timeout_seconds: int = 5) -> bool:
     Optimized with configurable timeout.
     """
     import asyncio
+
     from sqlalchemy import text
 
     try:
@@ -265,8 +276,7 @@ async def check_database_health(timeout_seconds: int = 5) -> bool:
         async with AsyncSessionLocal() as session:
             # Use asyncio.wait_for to enforce timeout
             await asyncio.wait_for(
-                session.execute(text("SELECT 1")),
-                timeout=timeout_seconds
+                session.execute(text("SELECT 1")), timeout=timeout_seconds
             )
             return True
     except asyncio.TimeoutError:
@@ -298,13 +308,13 @@ async def close_database() -> None:
         logger.info("Async database engine disposed")
     except Exception as e:
         logger.error(f"Error disposing async engine: {e}")
-    
+
     try:
         sync_engine.dispose()
         logger.info("Sync database engine disposed")
     except Exception as e:
         logger.error(f"Error disposing sync engine: {e}")
-    
+
     logger.info("Database connections closed")
 
 
@@ -326,21 +336,21 @@ class DatabaseTransaction:
         exc_tb: Optional[Any],
     ) -> None:
         import asyncio
-        
+
         try:
             if exc_type is not None:
                 await asyncio.wait_for(
-                    self.session.rollback(),
-                    timeout=self.timeout_seconds
+                    self.session.rollback(), timeout=self.timeout_seconds
                 )
                 logger.error(f"Transaction rolled back due to: {exc_val}")
             else:
                 await asyncio.wait_for(
-                    self.session.commit(),
-                    timeout=self.timeout_seconds
+                    self.session.commit(), timeout=self.timeout_seconds
                 )
         except asyncio.TimeoutError:
-            logger.error(f"Transaction operation timed out after {self.timeout_seconds}s")
+            logger.error(
+                f"Transaction operation timed out after {self.timeout_seconds}s"
+            )
             try:
                 await self.session.rollback()
             except Exception:
@@ -361,39 +371,35 @@ class BulkOperations:
 
     @staticmethod
     async def bulk_insert(
-        session: AsyncSession, 
-        instances: List[Any], 
-        batch_size: Optional[int] = None
+        session: AsyncSession, instances: List[Any], batch_size: Optional[int] = None
     ) -> None:
         """Bulk insert instances with optimized batch size."""
         if not instances:
             return
-            
+
         # Optimize batch size for environment
         if batch_size is None:
             batch_size = 100 if _is_ci_environment() else 500
-            
+
         for i in range(0, len(instances), batch_size):
-            batch = instances[i:i + batch_size]
+            batch = instances[i : i + batch_size]
             session.add_all(batch)
             await session.flush()
 
     @staticmethod
     async def bulk_update(
-        session: AsyncSession, 
-        mappings: List[Any], 
-        batch_size: Optional[int] = None
+        session: AsyncSession, mappings: List[Any], batch_size: Optional[int] = None
     ) -> None:
         """Bulk update instances with optimized batch size."""
         if not mappings:
             return
-            
+
         # Optimize batch size for environment
         if batch_size is None:
             batch_size = 50 if _is_ci_environment() else 200
-            
+
         for i in range(0, len(mappings), batch_size):
-            batch = mappings[i:i + batch_size]
+            batch = mappings[i : i + batch_size]
             for mapping in batch:
                 await session.merge(mapping)
             await session.flush()
@@ -425,7 +431,11 @@ async def get_pool_status() -> Dict[str, Any]:
             "checked_out": getattr(pool, "checkedout", lambda: 0)(),
             "overflow": getattr(pool, "overflow", lambda: 0)(),
             "invalid": getattr(pool, "invalid", lambda: 0)(),
-            "environment": "ci" if _is_ci_environment() else "testing" if _is_testing_environment() else "production",
+            "environment": (
+                "ci"
+                if _is_ci_environment()
+                else "testing" if _is_testing_environment() else "production"
+            ),
         }
     except Exception as e:
         logger.error(f"Failed to get pool status: {e}")
@@ -434,6 +444,7 @@ async def get_pool_status() -> Dict[str, Any]:
 
 # Database Event Listeners (optimized for CI/CD)
 if not _is_ci_environment():  # Skip event listeners in CI to reduce overhead
+
     @event.listens_for(async_engine.sync_engine, "before_cursor_execute")
     def receive_before_cursor_execute(
         conn: Any,
@@ -471,7 +482,9 @@ def get_environment_info() -> Dict[str, Any]:
     return {
         "is_ci": _is_ci_environment(),
         "is_testing": _is_testing_environment(),
-        "database_url": get_database_url().split("@")[-1] if "@" in get_database_url() else "sqlite",
+        "database_url": (
+            get_database_url().split("@")[-1] if "@" in get_database_url() else "sqlite"
+        ),
         "pool_config": _get_optimized_pool_config(),
         "debug_mode": settings.DEBUG,
     }

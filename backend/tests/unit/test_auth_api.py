@@ -246,7 +246,7 @@ class TestAuthAPI:
             if plain_password == "old_password":
                 return True  # Current password is correct
             return False  # New password is different from current
-            
+
         with (
             patch("app.api.v1.auth.verify_password", side_effect=mock_verify_password),
             patch(

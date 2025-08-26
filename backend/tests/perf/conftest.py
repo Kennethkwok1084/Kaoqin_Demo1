@@ -5,14 +5,18 @@ OPTIMIZED VERSION FOR CI/CD PERFORMANCE
 
 import asyncio
 import os
+
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
+from app.core.database_compatibility import (
+    get_test_database_url,
+    should_use_postgresql_tests,
+)
 from app.main import app
-from app.core.database_compatibility import get_test_database_url, should_use_postgresql_tests
 
 
 def _is_ci_environment() -> bool:
@@ -35,7 +39,7 @@ def _get_optimized_engine_config():
                 "server_settings": {
                     "application_name": "perf_test_ci",
                 },
-            }
+            },
         }
     else:
         return {
@@ -50,7 +54,7 @@ def _get_optimized_engine_config():
                 "server_settings": {
                     "application_name": "perf_test_local",
                 },
-            }
+            },
         }
 
 
@@ -61,7 +65,7 @@ async def async_client() -> AsyncClient:
 
     transport = ASGITransport(app=app)
     client = AsyncClient(transport=transport, base_url="http://testserver")
-    
+
     try:
         yield client
     finally:
@@ -73,7 +77,7 @@ async def test_engine():
     """Create optimized test database engine for performance testing."""
     # Use unified test database configuration
     db_url = get_test_database_url()
-    
+
     if should_use_postgresql_tests():
         engine_config = _get_optimized_engine_config()
         # Create engine with optimized settings for PostgreSQL
@@ -81,7 +85,7 @@ async def test_engine():
             db_url,
             echo=False,  # Always disable echo in performance tests
             future=True,
-            **engine_config
+            **engine_config,
         )
     else:
         # SQLite configuration for performance tests
@@ -92,7 +96,7 @@ async def test_engine():
             poolclass=StaticPool,
             future=True,
         )
-    
+
     try:
         yield engine
     finally:
@@ -103,9 +107,7 @@ async def test_engine():
 async def db_session(test_engine):
     """Create optimized database session for performance testing."""
     async_session_maker = async_sessionmaker(
-        bind=test_engine, 
-        class_=AsyncSession, 
-        expire_on_commit=False
+        bind=test_engine, class_=AsyncSession, expire_on_commit=False
     )
 
     async with async_session_maker() as session:
@@ -148,9 +150,9 @@ async def setup_performance_test():
         original_event_loop = asyncio.get_running_loop()
     except RuntimeError:
         pass
-    
+
     yield
-    
+
     # Teardown - ensure event loop is properly managed
     try:
         if original_event_loop and not original_event_loop.is_closed():
@@ -166,16 +168,16 @@ async def setup_performance_test():
 # Performance monitoring utilities
 class PerformanceMonitor:
     """Monitor performance metrics during tests."""
-    
+
     def __init__(self):
         self.metrics = {}
-    
+
     def record_metric(self, name: str, value: float, unit: str = "seconds"):
         """Record a performance metric."""
         if name not in self.metrics:
             self.metrics[name] = []
         self.metrics[name].append({"value": value, "unit": unit})
-    
+
     def get_summary(self) -> dict:
         """Get performance summary."""
         summary = {}
@@ -187,7 +189,7 @@ class PerformanceMonitor:
                     "mean": sum(numeric_values) / len(numeric_values),
                     "min": min(numeric_values),
                     "max": max(numeric_values),
-                    "unit": values[0]["unit"] if values else "unknown"
+                    "unit": values[0]["unit"] if values else "unknown",
                 }
         return summary
 
@@ -201,28 +203,26 @@ def performance_monitor():
 # Timeout decorator for performance tests
 def timeout_test(seconds: int = 30):
     """Decorator to add timeout to performance tests."""
+
     def decorator(func):
         async def wrapper(*args, **kwargs):
             try:
                 return await asyncio.wait_for(func(*args, **kwargs), timeout=seconds)
             except asyncio.TimeoutError:
                 pytest.fail(f"Performance test timed out after {seconds} seconds")
+
         return wrapper
+
     return decorator
 
 
 # CI-specific test markers
 ci_skip_slow = pytest.mark.skipif(
-    _is_ci_environment(), 
-    reason="Slow test skipped in CI environment"
+    _is_ci_environment(), reason="Slow test skipped in CI environment"
 )
 
-ci_only = pytest.mark.skipif(
-    not _is_ci_environment(), 
-    reason="CI-specific test"
-)
+ci_only = pytest.mark.skipif(not _is_ci_environment(), reason="CI-specific test")
 
 local_only = pytest.mark.skipif(
-    _is_ci_environment(), 
-    reason="Local development test only"
+    _is_ci_environment(), reason="Local development test only"
 )

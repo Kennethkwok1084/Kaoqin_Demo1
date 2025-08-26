@@ -216,8 +216,12 @@ def sample_attendance_records():
             id=1,
             member_id=1,
             attendance_date=base_date,
-            checkin_time=datetime.combine(base_date, datetime.min.time().replace(hour=8)),
-            checkout_time=datetime.combine(base_date, datetime.min.time().replace(hour=17)),
+            checkin_time=datetime.combine(
+                base_date, datetime.min.time().replace(hour=8)
+            ),
+            checkout_time=datetime.combine(
+                base_date, datetime.min.time().replace(hour=17)
+            ),
             work_hours=8.0,
             is_late_checkin=False,
             is_early_checkout=False,
@@ -227,8 +231,13 @@ def sample_attendance_records():
             id=2,
             member_id=1,
             attendance_date=base_date + timedelta(days=1),
-            checkin_time=datetime.combine(base_date + timedelta(days=1), datetime.min.time().replace(hour=8, minute=30)),
-            checkout_time=datetime.combine(base_date + timedelta(days=1), datetime.min.time().replace(hour=17)),
+            checkin_time=datetime.combine(
+                base_date + timedelta(days=1),
+                datetime.min.time().replace(hour=8, minute=30),
+            ),
+            checkout_time=datetime.combine(
+                base_date + timedelta(days=1), datetime.min.time().replace(hour=17)
+            ),
             work_hours=7.5,
             is_late_checkin=True,
             is_early_checkout=False,
@@ -238,8 +247,12 @@ def sample_attendance_records():
             id=3,
             member_id=2,
             attendance_date=base_date,
-            checkin_time=datetime.combine(base_date, datetime.min.time().replace(hour=8)),
-            checkout_time=datetime.combine(base_date, datetime.min.time().replace(hour=16, minute=30)),
+            checkin_time=datetime.combine(
+                base_date, datetime.min.time().replace(hour=8)
+            ),
+            checkout_time=datetime.combine(
+                base_date, datetime.min.time().replace(hour=16, minute=30)
+            ),
             work_hours=7.5,
             is_late_checkin=False,
             is_early_checkout=True,
@@ -252,13 +265,13 @@ class TestMonthlyWorkHoursSummary:
 
     @pytest.mark.asyncio
     async def test_calculate_monthly_work_hours_basic(
-        self, 
+        self,
         work_hours_service,
         mock_db,
         sample_members,
         sample_repair_tasks,
         sample_monitoring_tasks,
-        sample_assistance_tasks
+        sample_assistance_tasks,
     ):
         """测试基本的月度工时计算"""
         member = sample_members[0]  # 张三
@@ -267,7 +280,7 @@ class TestMonthlyWorkHoursSummary:
         # Mock member validation query first
         mock_member_result = Mock()
         mock_member_result.scalar_one_or_none.return_value = member
-        
+
         # Mock repair tasks query
         mock_repair_result = Mock()
         mock_repair_result.scalars.return_value.all.return_value = [
@@ -285,18 +298,18 @@ class TestMonthlyWorkHoursSummary:
         mock_assistance_result.scalars.return_value.all.return_value = [
             task for task in sample_assistance_tasks if task.member_id == member.id
         ]
-        
+
         # Mock previous month summary query (no previous summary)
         mock_prev_summary_result = Mock()
         mock_prev_summary_result.scalar_one_or_none.return_value = None
 
         # Configure side_effect for database calls in expected order
         mock_db.execute.side_effect = [
-            mock_member_result,      # Member validation
-            mock_repair_result,      # Repair tasks
-            mock_monitoring_result,  # Monitoring tasks  
+            mock_member_result,  # Member validation
+            mock_repair_result,  # Repair tasks
+            mock_monitoring_result,  # Monitoring tasks
             mock_assistance_result,  # Assistance tasks
-            mock_prev_summary_result # Previous summary
+            mock_prev_summary_result,  # Previous summary
         ]
 
         result = await work_hours_service.calculate_monthly_work_hours(
@@ -308,7 +321,7 @@ class TestMonthlyWorkHoursSummary:
         assert "monitoring_hours" in result
         assert "assistance_hours" in result
         assert "total_hours" in result
-        
+
         # 验证数据类型和合理范围
         assert isinstance(result["total_hours"], (int, float))
         assert isinstance(result["repair_task_hours"], (int, float))
@@ -329,22 +342,22 @@ class TestMonthlyWorkHoursSummary:
         # Mock member validation
         mock_member_result = Mock()
         mock_member_result.scalar_one_or_none.return_value = member
-        
+
         # Mock empty task results
         mock_empty_result = Mock()
         mock_empty_result.scalars.return_value.all.return_value = []
-        
+
         # Mock previous summary result (no previous summary)
         mock_prev_summary_result = Mock()
         mock_prev_summary_result.scalar_one_or_none.return_value = None
-        
+
         # Configure database calls
         mock_db.execute.side_effect = [
-            mock_member_result,       # Member validation
-            mock_empty_result,        # Repair tasks
-            mock_empty_result,        # Monitoring tasks
-            mock_empty_result,        # Assistance tasks
-            mock_prev_summary_result  # Previous summary
+            mock_member_result,  # Member validation
+            mock_empty_result,  # Repair tasks
+            mock_empty_result,  # Monitoring tasks
+            mock_empty_result,  # Assistance tasks
+            mock_prev_summary_result,  # Previous summary
         ]
 
         result = await work_hours_service.calculate_monthly_work_hours(
@@ -353,7 +366,7 @@ class TestMonthlyWorkHoursSummary:
 
         # 验证空数据处理
         assert "repair_task_hours" in result
-        assert "monitoring_hours" in result  
+        assert "monitoring_hours" in result
         assert "assistance_hours" in result
         assert "total_hours" in result
         assert result["repair_task_hours"] == 0.0
@@ -389,23 +402,23 @@ class TestMonthlyWorkHoursSummary:
         # Mock member validation
         mock_member_result = Mock()
         mock_member_result.scalar_one_or_none.return_value = member
-        
+
         mock_repair_result = Mock()
         mock_repair_result.scalars.return_value.all.return_value = high_work_tasks
 
         mock_empty_result = Mock()
         mock_empty_result.scalars.return_value.all.return_value = []
-        
+
         # Mock previous summary result (no previous summary)
         mock_prev_summary_result = Mock()
         mock_prev_summary_result.scalar_one_or_none.return_value = None
 
         mock_db.execute.side_effect = [
-            mock_member_result,       # Member validation
-            mock_repair_result,       # Repair tasks
-            mock_empty_result,        # Monitoring tasks
-            mock_empty_result,        # Assistance tasks
-            mock_prev_summary_result  # Previous summary
+            mock_member_result,  # Member validation
+            mock_repair_result,  # Repair tasks
+            mock_empty_result,  # Monitoring tasks
+            mock_empty_result,  # Assistance tasks
+            mock_prev_summary_result,  # Previous summary
         ]
 
         result = await work_hours_service.calculate_monthly_work_hours(
@@ -431,18 +444,18 @@ class TestMonthlyWorkHoursSummary:
         # Mock 工时计算结果
         with patch.object(
             work_hours_service,
-            'calculate_monthly_work_hours',
+            "calculate_monthly_work_hours",
             return_value={
-                'member_id': 1,
-                'total_hours': 25.5,
-                'repair_task_hours': 20.0,
-                'monitoring_hours': 3.0,
-                'assistance_hours': 2.5,
-                'penalty_hours': 0.0,
-                'rush_task_hours': 0.0,
-                'positive_review_hours': 0.0,
-                'is_full_attendance': False
-            }
+                "member_id": 1,
+                "total_hours": 25.5,
+                "repair_task_hours": 20.0,
+                "monitoring_hours": 3.0,
+                "assistance_hours": 2.5,
+                "penalty_hours": 0.0,
+                "rush_task_hours": 0.0,
+                "positive_review_hours": 0.0,
+                "is_full_attendance": False,
+            },
         ):
             # Mock 现有汇总查询（假设不存在）
             mock_existing_result = Mock()
@@ -486,7 +499,7 @@ class TestMonthlyAttendanceStatistics:
         mock_attendance_stats.early_count = 1
         mock_attendance_stats.avg_work_hours = 7.67
         mock_attendance_stats.total_work_hours = 23.0
-        
+
         mock_result = Mock()
         mock_result.first.return_value = mock_attendance_stats
         mock_db.execute.return_value = mock_result
@@ -506,9 +519,7 @@ class TestMonthlyAttendanceStatistics:
         assert result["total_work_hours"] == 23.0
 
     @pytest.mark.asyncio
-    async def test_get_attendance_statistics_no_data(
-        self, stats_service, mock_db
-    ):
+    async def test_get_attendance_statistics_no_data(self, stats_service, mock_db):
         """测试无考勤数据的情况"""
         date_from = datetime(2024, 3, 1)
         date_to = datetime(2024, 3, 31)
@@ -566,7 +577,9 @@ class TestPerformanceEvaluation:
         date_to = datetime(2024, 3, 31)
 
         # 计算预期的统计值
-        completed_tasks = [t for t in sample_repair_tasks if t.status == TaskStatus.COMPLETED]
+        completed_tasks = [
+            t for t in sample_repair_tasks if t.status == TaskStatus.COMPLETED
+        ]
         rated_tasks = [t for t in completed_tasks if t.rating is not None]
         avg_rating = sum(t.rating for t in rated_tasks) / len(rated_tasks)
         good_rating_count = len([t for t in rated_tasks if t.rating >= 4])
@@ -579,7 +592,7 @@ class TestPerformanceEvaluation:
         mock_perf_stats.total_tasks = len(completed_tasks)
         mock_perf_stats.good_rating_count = good_rating_count
         mock_perf_stats.poor_rating_count = poor_rating_count
-        
+
         mock_result = Mock()
         mock_result.first.return_value = mock_perf_stats
         mock_db.execute.return_value = mock_result
@@ -591,11 +604,17 @@ class TestPerformanceEvaluation:
         # 验证绩效统计结果
         assert result["overall_rating"] == round(avg_rating, 2)
         assert result["rated_count"] == len(rated_tasks)
-        assert result["rating_rate"] == round(len(rated_tasks) / len(completed_tasks) * 100, 2)
+        assert result["rating_rate"] == round(
+            len(rated_tasks) / len(completed_tasks) * 100, 2
+        )
         assert result["good_rating_count"] == good_rating_count
         assert result["poor_rating_count"] == poor_rating_count
-        assert result["good_rating_rate"] == round(good_rating_count / len(rated_tasks) * 100, 2)
-        assert result["poor_rating_rate"] == round(poor_rating_count / len(rated_tasks) * 100, 2)
+        assert result["good_rating_rate"] == round(
+            good_rating_count / len(rated_tasks) * 100, 2
+        )
+        assert result["poor_rating_rate"] == round(
+            poor_rating_count / len(rated_tasks) * 100, 2
+        )
 
     @pytest.mark.asyncio
     async def test_member_quality_statistics(
@@ -644,9 +663,9 @@ class TestPerformanceEvaluation:
 
         # Mock ranking query results (by work hours descending)
         ranking_data = [
-            (2, "李四", 3000.0),      # 李四第1名，50小时
-            (1, "张三", 1800.0),      # 张三第2名，30小时  
-            (3, "王五", 1200.0),      # 王五第3名，20小时
+            (2, "李四", 3000.0),  # 李四第1名，50小时
+            (1, "张三", 1800.0),  # 张三第2名，30小时
+            (3, "王五", 1200.0),  # 王五第3名，20小时
         ]
 
         mock_result = Mock()
@@ -672,28 +691,28 @@ class TestBoundaryConditions:
     ):
         """测试跨年份的月度统计"""
         member = sample_members[0]
-        
+
         # 测试12月到1月的跨年情况
         year, month = 2024, 12
-        
+
         # Mock member validation
         mock_member_result = Mock()
         mock_member_result.scalar_one_or_none.return_value = member
-        
+
         # Mock empty results (cross-year boundary cases usually have less data)
         mock_empty_result = Mock()
         mock_empty_result.scalars.return_value.all.return_value = []
-        
+
         # Mock previous summary result
         mock_prev_summary_result = Mock()
         mock_prev_summary_result.scalar_one_or_none.return_value = None
-        
+
         mock_db.execute.side_effect = [
             mock_member_result,
             mock_empty_result,
-            mock_empty_result, 
             mock_empty_result,
-            mock_prev_summary_result
+            mock_empty_result,
+            mock_prev_summary_result,
         ]
 
         result = await work_hours_service.calculate_monthly_work_hours(
@@ -719,20 +738,20 @@ class TestBoundaryConditions:
         # Mock member validation
         mock_member_result = Mock()
         mock_member_result.scalar_one_or_none.return_value = member
-        
+
         mock_empty_result = Mock()
         mock_empty_result.scalars.return_value.all.return_value = []
-        
+
         # Mock previous summary result
         mock_prev_summary_result = Mock()
         mock_prev_summary_result.scalar_one_or_none.return_value = None
-        
+
         mock_db.execute.side_effect = [
             mock_member_result,
             mock_empty_result,
-            mock_empty_result, 
             mock_empty_result,
-            mock_prev_summary_result
+            mock_empty_result,
+            mock_prev_summary_result,
         ]
 
         result = await work_hours_service.calculate_monthly_work_hours(
@@ -742,7 +761,7 @@ class TestBoundaryConditions:
         # 验证闰年处理
         assert "total_hours" in result
         assert isinstance(result["total_hours"], (int, float))
-        
+
     @pytest.mark.asyncio
     async def test_extreme_work_hours_calculation(
         self, work_hours_service, mock_db, sample_members
@@ -771,23 +790,23 @@ class TestBoundaryConditions:
         # Mock member validation
         mock_member_result = Mock()
         mock_member_result.scalar_one_or_none.return_value = member
-        
+
         mock_repair_result = Mock()
         mock_repair_result.scalars.return_value.all.return_value = extreme_tasks
 
         mock_empty_result = Mock()
         mock_empty_result.scalars.return_value.all.return_value = []
-        
+
         # Mock previous summary result
         mock_prev_summary_result = Mock()
         mock_prev_summary_result.scalar_one_or_none.return_value = None
 
         mock_db.execute.side_effect = [
-            mock_member_result,       # Member validation
-            mock_repair_result,       # Repair tasks
-            mock_empty_result,        # Monitoring tasks
-            mock_empty_result,        # Assistance tasks
-            mock_prev_summary_result  # Previous summary
+            mock_member_result,  # Member validation
+            mock_repair_result,  # Repair tasks
+            mock_empty_result,  # Monitoring tasks
+            mock_empty_result,  # Assistance tasks
+            mock_prev_summary_result,  # Previous summary
         ]
 
         result = await work_hours_service.calculate_monthly_work_hours(
@@ -803,17 +822,15 @@ class TestBoundaryConditions:
         assert result["repair_task_hours"] > 0  # Should have repair task hours
 
     @pytest.mark.asyncio
-    async def test_invalid_member_id(
-        self, work_hours_service, mock_db
-    ):
+    async def test_invalid_member_id(self, work_hours_service, mock_db):
         """测试无效成员ID的处理"""
         invalid_member_id = 99999
         year, month = 2024, 3
 
         # Mock member validation (member not found)
-        mock_member_result = Mock() 
+        mock_member_result = Mock()
         mock_member_result.scalar_one_or_none.return_value = None
-        
+
         mock_db.execute.return_value = mock_member_result
 
         # 验证无效ID处理 - should raise ValueError
@@ -849,15 +866,15 @@ class TestBoundaryConditions:
         task1 = Mock()
         task1.status = TaskStatus.COMPLETED
         task1.work_minutes = 100
-        
+
         task2 = Mock()
-        task2.status = TaskStatus.COMPLETED  
+        task2.status = TaskStatus.COMPLETED
         task2.work_minutes = 150
-        
+
         task3 = Mock()
         task3.status = TaskStatus.PENDING
         task3.work_minutes = 0
-        
+
         mock_result = Mock()
         mock_result.scalars.return_value.all.return_value = [task1, task2, task3]
         mock_db.execute.return_value = mock_result
@@ -866,9 +883,7 @@ class TestBoundaryConditions:
         _, last_day = monthrange(year, month)
         end_date = datetime(year, month, last_day, 23, 59, 59)
 
-        result = await stats_service._get_monthly_statistics(
-            start_date, end_date
-        )
+        result = await stats_service._get_monthly_statistics(start_date, end_date)
 
         # 验证数据一致性
         assert result["total_tasks"] == 3
@@ -877,9 +892,7 @@ class TestBoundaryConditions:
         assert result["completion_rate"] == round(2 / 3 * 100, 2)  # 66.67%
 
     @pytest.mark.asyncio
-    async def test_performance_metrics_boundary_values(
-        self, stats_service, mock_db
-    ):
+    async def test_performance_metrics_boundary_values(self, stats_service, mock_db):
         """测试绩效指标边界值处理"""
         date_from = datetime(2024, 3, 1)
         date_to = datetime(2024, 3, 31)
@@ -909,7 +922,7 @@ class TestBoundaryConditions:
                 "poor_rating_count": 0,
                 "rated_count": 0,
                 "total_tasks": 5,
-            }
+            },
         ]
 
         for case in test_cases:
@@ -919,7 +932,7 @@ class TestBoundaryConditions:
             mock_perf_case.poor_rating_count = case["poor_rating_count"]
             mock_perf_case.rated_count = case["rated_count"]
             mock_perf_case.total_tasks = case["total_tasks"]
-            
+
             mock_result = Mock()
             mock_result.first.return_value = mock_perf_case
             mock_db.execute.return_value = mock_result
@@ -951,49 +964,52 @@ class TestIntegrationScenarios:
     ):
         """测试完整的月度报表生成流程"""
         year, month = 2024, 3
-        
+
         # Mock 综合统计服务调用
-        with patch.object(
-            stats_service,
-            '_get_member_task_statistics',
-            return_value={
-                'total_tasks': 2,
-                'completed_tasks': 2,
-                'completion_rate': 100.0
-            }
-        ), patch.object(
-            stats_service,
-            '_get_member_work_hour_statistics', 
-            return_value={
-                'total_hours': 25.5,
-                'repair_hours': 20.0,
-                'monitoring_hours': 3.0,
-                'assistance_hours': 2.5
-            }
-        ), patch.object(
-            stats_service,
-            '_get_member_quality_statistics',
-            return_value={
-                'avg_rating': 4.2,
-                'positive_rate': 85.0,
-                'overdue_response': 1,
-                'overdue_completion': 0
-            }
-        ), patch.object(
-            stats_service,
-            '_get_member_ranking',
-            return_value={
-                'work_hour_rank': 2,
-                'total_members': 3,
-                'percentile': 66.7
-            }
-        ), patch.object(
-            stats_service,
-            '_get_member_trend_analysis',
-            return_value={
-                'change_rate': 15.5,
-                'trend_direction': 'up'
-            }
+        with (
+            patch.object(
+                stats_service,
+                "_get_member_task_statistics",
+                return_value={
+                    "total_tasks": 2,
+                    "completed_tasks": 2,
+                    "completion_rate": 100.0,
+                },
+            ),
+            patch.object(
+                stats_service,
+                "_get_member_work_hour_statistics",
+                return_value={
+                    "total_hours": 25.5,
+                    "repair_hours": 20.0,
+                    "monitoring_hours": 3.0,
+                    "assistance_hours": 2.5,
+                },
+            ),
+            patch.object(
+                stats_service,
+                "_get_member_quality_statistics",
+                return_value={
+                    "avg_rating": 4.2,
+                    "positive_rate": 85.0,
+                    "overdue_response": 1,
+                    "overdue_completion": 0,
+                },
+            ),
+            patch.object(
+                stats_service,
+                "_get_member_ranking",
+                return_value={
+                    "work_hour_rank": 2,
+                    "total_members": 3,
+                    "percentile": 66.7,
+                },
+            ),
+            patch.object(
+                stats_service,
+                "_get_member_trend_analysis",
+                return_value={"change_rate": 15.5, "trend_direction": "up"},
+            ),
         ):
             # Mock 成员查询
             mock_result = Mock()
@@ -1024,27 +1040,27 @@ class TestIntegrationScenarios:
         self, stats_service, mock_db, sample_members
     ):
         """测试团队对比报告（混合绩效场景）"""
-        
+
         # 模拟不同绩效水平的成员数据
         performance_data = [
             # 张三 - 高绩效
             {
-                'work_hours': {'total_hours': 35.5},
-                'tasks': {'total_tasks': 15, 'completed_tasks': 15},
-                'quality': {'avg_rating': 4.8, 'positive_rate': 95.0}
+                "work_hours": {"total_hours": 35.5},
+                "tasks": {"total_tasks": 15, "completed_tasks": 15},
+                "quality": {"avg_rating": 4.8, "positive_rate": 95.0},
             },
-            # 李四 - 中等绩效  
+            # 李四 - 中等绩效
             {
-                'work_hours': {'total_hours': 28.2},
-                'tasks': {'total_tasks': 12, 'completed_tasks': 11}, 
-                'quality': {'avg_rating': 3.9, 'positive_rate': 75.0}
+                "work_hours": {"total_hours": 28.2},
+                "tasks": {"total_tasks": 12, "completed_tasks": 11},
+                "quality": {"avg_rating": 3.9, "positive_rate": 75.0},
             },
             # 王五 - 较低绩效
             {
-                'work_hours': {'total_hours': 18.7},
-                'tasks': {'total_tasks': 8, 'completed_tasks': 6},
-                'quality': {'avg_rating': 3.2, 'positive_rate': 60.0}
-            }
+                "work_hours": {"total_hours": 18.7},
+                "tasks": {"total_tasks": 8, "completed_tasks": 6},
+                "quality": {"avg_rating": 3.2, "positive_rate": 60.0},
+            },
         ]
 
         # Mock 成员查询
@@ -1052,21 +1068,24 @@ class TestIntegrationScenarios:
         mock_result.scalars.return_value.all.return_value = sample_members
         mock_db.execute.return_value = mock_result
 
-        with patch.object(
-            stats_service,
-            '_get_member_comparison_stats',
-            side_effect=performance_data
-        ), patch.object(
-            stats_service,
-            '_calculate_team_summary',
-            return_value={
-                'total_members': 3,
-                'total_hours': 82.4,  # 35.5 + 28.2 + 18.7
-                'total_tasks': 35,
-                'total_completed': 32,
-                'team_completion_rate': 91.43,
-                'team_avg_rating': 3.97
-            }
+        with (
+            patch.object(
+                stats_service,
+                "_get_member_comparison_stats",
+                side_effect=performance_data,
+            ),
+            patch.object(
+                stats_service,
+                "_calculate_team_summary",
+                return_value={
+                    "total_members": 3,
+                    "total_hours": 82.4,  # 35.5 + 28.2 + 18.7
+                    "total_tasks": 35,
+                    "total_completed": 32,
+                    "team_completion_rate": 91.43,
+                    "team_avg_rating": 3.97,
+                },
+            ),
         ):
             result = await stats_service.get_team_comparison_report()
 
@@ -1074,9 +1093,15 @@ class TestIntegrationScenarios:
             assert result["team_summary"]["total_members"] == 3
             assert result["team_summary"]["total_hours"] == 82.4
             assert result["team_summary"]["team_completion_rate"] == 91.43
-            
+
             # 验证成员排名（按工时排序）
             rankings = result["member_rankings"]
             assert len(rankings) == 3
-            assert rankings[0]["work_hours"]["total_hours"] >= rankings[1]["work_hours"]["total_hours"]
-            assert rankings[1]["work_hours"]["total_hours"] >= rankings[2]["work_hours"]["total_hours"]
+            assert (
+                rankings[0]["work_hours"]["total_hours"]
+                >= rankings[1]["work_hours"]["total_hours"]
+            )
+            assert (
+                rankings[1]["work_hours"]["total_hours"]
+                >= rankings[2]["work_hours"]["total_hours"]
+            )

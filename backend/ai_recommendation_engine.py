@@ -280,8 +280,8 @@ class HybridRecommendationEngine:
         if self.enable_ai:
             try:
                 if self.llm_service is not None:
-                    ai_recommendations = await self.llm_service.generate_recommendations(
-                        context
+                    ai_recommendations = (
+                        await self.llm_service.generate_recommendations(context)
                     )
                 result["metadata"]["ai_analysis_success"] = True
             except Exception as e:

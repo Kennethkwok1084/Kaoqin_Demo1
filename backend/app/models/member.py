@@ -253,7 +253,9 @@ class Member(BaseModel):
         """检查是否可以管理组员"""
         try:
             role = self.role
-            return bool(role is not None and role in [UserRole.ADMIN, UserRole.GROUP_LEADER])
+            return bool(
+                role is not None and role in [UserRole.ADMIN, UserRole.GROUP_LEADER]
+            )
         except Exception:
             return False
 

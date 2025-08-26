@@ -166,7 +166,8 @@ class APIPerformanceTester:
         params = endpoint_config.get("params", {})
 
         print(
-            f"Load testing {endpoint_name} with {concurrent_requests} concurrent requests...")
+            f"Load testing {endpoint_name} with {concurrent_requests} concurrent requests..."
+        )
 
         start_time = time.time()
         results = []

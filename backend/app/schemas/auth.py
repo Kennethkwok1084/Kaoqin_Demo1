@@ -65,10 +65,10 @@ class UserProfileUpdate(BaseModel):
     email: Optional[str] = Field(None, description="Email address")
     phone: Optional[str] = Field(None, max_length=11, description="Phone number")
     class_name: Optional[str] = Field(None, max_length=50, description="Class name")
-    
+
     # Ensure all fields can be None for partial updates
-    @model_validator(mode='after')
-    def validate_at_least_one_field(self) -> 'UserProfileUpdate':
+    @model_validator(mode="after")
+    def validate_at_least_one_field(self) -> "UserProfileUpdate":
         """Ensure at least one field is provided for update or allow empty updates."""
         # Allow empty updates - validation will be handled at API level
         return self

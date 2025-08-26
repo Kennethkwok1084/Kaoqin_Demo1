@@ -118,8 +118,8 @@ class RepairTaskCreate(TaskCreate):
     task_type: TaskType = Field(
         default=TaskType.OFFLINE, description="任务类型（维修任务默认为离线类型）"
     )
-    
-    # Make assigned_to optional with default None 
+
+    # Make assigned_to optional with default None
     assigned_to: Optional[int] = Field(None, description="分配给的成员ID（可选）")
 
     # 维修任务特有字段

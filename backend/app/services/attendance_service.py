@@ -889,36 +889,38 @@ class AttendanceService:
         return work_days
 
     async def get_attendance_by_date(
-        self, 
-        attendance_date: date, 
-        member_id: Optional[int] = None
+        self, attendance_date: date, member_id: Optional[int] = None
     ) -> List[AttendanceRecord]:
         """
         根据日期获取考勤记录
-        
+
         Args:
             attendance_date: 考勤日期
             member_id: 可选的成员ID筛选
-            
+
         Returns:
             List[AttendanceRecord]: 考勤记录列表
         """
         try:
-            query = select(AttendanceRecord).options(
-                joinedload(AttendanceRecord.member)
-            ).where(AttendanceRecord.attendance_date == attendance_date)
-            
+            query = (
+                select(AttendanceRecord)
+                .options(joinedload(AttendanceRecord.member))
+                .where(AttendanceRecord.attendance_date == attendance_date)
+            )
+
             if member_id:
                 query = query.where(AttendanceRecord.member_id == member_id)
-                
+
             query = query.order_by(AttendanceRecord.member_id)
-            
+
             result = await self.db.execute(query)
             records = list(result.scalars().all())
-            
-            logger.info(f"Retrieved {len(records)} attendance records for date {attendance_date}")
+
+            logger.info(
+                f"Retrieved {len(records)} attendance records for date {attendance_date}"
+            )
             return records
-            
+
         except Exception as e:
             logger.error(f"Get attendance by date error: {str(e)}")
             raise

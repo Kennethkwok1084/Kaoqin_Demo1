@@ -24,12 +24,12 @@ class TestFixtureDebug:
         print(f"test_user.name: {test_user.name}")
         print(f"sample_login_data: {sample_login_data}")
         print(f"client_with_db: {client_with_db}")
-        
+
         # Try to make a simple request first
         print(f"\n=== Making login request ===")
         response = client_with_db.post("/api/v1/auth/login", json=sample_login_data)
         print(f"Response status: {response.status_code}")
         print(f"Response body: {response.text}")
-        
+
         # This should work now
         assert test_user is not None

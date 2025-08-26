@@ -563,56 +563,9 @@ class OperationTimeoutError(TimeoutError):
         super().__init__(message=message, message_key=message_key, **kwargs)
 
 
-# Additional exception classes needed for testing
-class DataConsistencyError(BaseCustomException):
-    """数据一致性错误"""
-
-    def __init__(
-        self,
-        message: Optional[str] = None,
-        message_key: str = "DATA_ERROR_CONSISTENCY",
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(
-            message=message,
-            message_key=message_key,
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            **kwargs,
-        )
-
-
-class ServiceIntegrationError(BaseCustomException):
-    """服务集成错误"""
-
-    def __init__(
-        self,
-        message: Optional[str] = None,
-        message_key: str = "SERVICE_ERROR_INTEGRATION",
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(
-            message=message,
-            message_key=message_key,
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            **kwargs,
-        )
-
-
-class PermissionDeniedError(BaseCustomException):
-    """权限拒绝错误"""
-
-    def __init__(
-        self,
-        message: Optional[str] = None,
-        message_key: str = "AUTH_ERROR_PERMISSION_DENIED",
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(
-            message=message,
-            message_key=message_key,
-            status_code=status.HTTP_403_FORBIDDEN,
-            **kwargs,
-        )
+# Note: Removed duplicate exception class definitions
+# DataConsistencyError, ServiceIntegrationError, PermissionDeniedError
+# are already defined above with proper typing and message handling
 
 
 # Utility functions

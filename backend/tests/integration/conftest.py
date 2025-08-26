@@ -16,10 +16,13 @@ from sqlalchemy.pool import StaticPool
 
 from app.core.config import settings
 from app.core.database import get_async_session, get_sync_session
+from app.core.database_compatibility import (
+    get_test_database_url,
+    should_use_postgresql_tests,
+)
 from app.core.security import get_password_hash
 from app.main import app
 from app.models import Base, Member, UserRole
-from app.core.database_compatibility import get_test_database_url, should_use_postgresql_tests
 
 # Set testing environment before importing app
 os.environ["TESTING"] = "1"
@@ -30,7 +33,9 @@ settings.TESTING = True
 
 # Use unified database configuration
 TEST_DATABASE_URL = get_test_database_url()
-TEST_DATABASE_URL_SYNC = TEST_DATABASE_URL.replace("+asyncpg", "").replace("+aiosqlite", "")
+TEST_DATABASE_URL_SYNC = TEST_DATABASE_URL.replace("+asyncpg", "").replace(
+    "+aiosqlite", ""
+)
 
 # Update environment variables to match
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
@@ -48,7 +53,7 @@ if should_use_postgresql_tests():
         max_overflow=0,
         pool_pre_ping=True,
     )
-    
+
     test_sync_engine = create_engine(
         TEST_DATABASE_URL_SYNC,
         echo=False,
@@ -64,7 +69,7 @@ else:
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    
+
     test_sync_engine = create_engine(
         TEST_DATABASE_URL_SYNC,
         echo=False,
@@ -132,7 +137,7 @@ def client(setup_test_database):
     """测试客户端"""
     # Store original overrides and restore after test
     original_overrides = app.dependency_overrides.copy()
-    
+
     # 重写依赖
     app.dependency_overrides[get_async_session] = override_get_async_session
     app.dependency_overrides[get_sync_session] = override_get_sync_session

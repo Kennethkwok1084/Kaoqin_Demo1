@@ -84,14 +84,20 @@ class TestDataImportService:
         mock_file = Mock(spec=UploadFile)
         mock_file.filename = "test.xlsx"
         mock_file.read = AsyncMock(return_value=b"fake excel content")
-        
+
         # Mock pandas.read_excel to return proper data
         import io
+
         mock_excel_content = io.BytesIO(b"fake excel content")
 
         with (
-            patch("app.services.import_service.pd.read_excel", return_value=mock_excel_data) as mock_read_excel,
-            patch.object(service, "_save_temp_file", return_value="/tmp/test.xlsx") as mock_save,
+            patch(
+                "app.services.import_service.pd.read_excel",
+                return_value=mock_excel_data,
+            ) as mock_read_excel,
+            patch.object(
+                service, "_save_temp_file", return_value="/tmp/test.xlsx"
+            ) as mock_save,
             patch("os.path.exists", return_value=True),
             patch("os.unlink") as mock_unlink,
         ):
@@ -99,7 +105,7 @@ class TestDataImportService:
             import_options = {
                 "table_type": "task_table",
                 "dry_run": True,  # Skip actual task creation
-                "enable_ab_matching": False  # Disable A/B matching to simplify test
+                "enable_ab_matching": False,  # Disable A/B matching to simplify test
             }
 
             result = await service.import_excel_file(
@@ -135,7 +141,10 @@ class TestDataImportService:
         mock_file.read = AsyncMock(return_value=b"invalid excel content")
 
         with (
-            patch("app.services.import_service.pd.read_excel", side_effect=Exception("Cannot read Excel")),
+            patch(
+                "app.services.import_service.pd.read_excel",
+                side_effect=Exception("Cannot read Excel"),
+            ),
             patch.object(service, "_save_temp_file", return_value="/tmp/test.xlsx"),
             patch("os.path.exists", return_value=True),
             patch("os.unlink") as mock_unlink,
@@ -269,9 +278,9 @@ class TestDataImportService:
         }
 
         member = Member(
-            username="john", 
-            name="John", 
-            class_name="测试班级", 
+            username="john",
+            name="John",
+            class_name="测试班级",
             student_id="001",
             password_hash="hashed_password",  # Required field
             department="信息化建设处",  # Required field with default
@@ -282,7 +291,9 @@ class TestDataImportService:
             patch.object(
                 service,
                 "_create_repair_task_from_import_data",
-                return_value=RepairTask(id=1, task_id="R202508250001", title="Network Issue"),
+                return_value=RepairTask(
+                    id=1, task_id="R202508250001", title="Network Issue"
+                ),
             ) as mock_create,
         ):
 
@@ -306,9 +317,9 @@ class TestDataImportService:
 
         existing_task = RepairTask(id=1, task_id="T001", title="Network Issue")
         member = Member(
-            username="john", 
-            name="John", 
-            class_name="测试班级", 
+            username="john",
+            name="John",
+            class_name="测试班级",
             student_id="001",
             password_hash="hashed_password",  # Required field
             department="信息化建设处",  # Required field with default
@@ -417,17 +428,17 @@ class TestDataImportService:
 
         mock_members = [
             Member(
-                username="john", 
-                name="John", 
-                class_name="测试班级", 
+                username="john",
+                name="John",
+                class_name="测试班级",
                 student_id="001",
                 password_hash="hashed_password",
                 department="信息化建设处",
             ),
             Member(
-                username="jane", 
-                name="Jane", 
-                class_name="测试班级", 
+                username="jane",
+                name="Jane",
+                class_name="测试班级",
                 student_id="002",
                 password_hash="hashed_password",
                 department="信息化建设处",
@@ -517,7 +528,9 @@ class TestDataImportService:
         ]
 
         # Test with task data list instead of file
-        with patch.object(service, "_create_repair_task_from_import_data") as mock_create:
+        with patch.object(
+            service, "_create_repair_task_from_import_data"
+        ) as mock_create:
             mock_create.return_value = Mock()
 
             result = await service.bulk_import_tasks(
@@ -550,7 +563,9 @@ class TestDataImportService:
 
         with (
             patch("pandas.read_excel", side_effect=[a_table_data, b_table_data]),
-            patch.object(service, "_save_temp_file", side_effect=["/tmp/a.xlsx", "/tmp/b.xlsx"]),
+            patch.object(
+                service, "_save_temp_file", side_effect=["/tmp/a.xlsx", "/tmp/b.xlsx"]
+            ),
             patch.object(service, "import_excel_file") as mock_import,
         ):
 

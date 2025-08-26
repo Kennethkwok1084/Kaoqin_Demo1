@@ -237,20 +237,21 @@ class RepairTask(BaseModel):
     Represents wireless/network repair tasks submitted by users.
     Core entity for work hour calculation and attendance tracking.
     """
-    
+
     def __init__(self, **kwargs: Any) -> None:
         """Initialize RepairTask with required field defaults."""
         # Provide defaults for required fields if not provided
-        if 'task_id' not in kwargs:
-            kwargs['task_id'] = f'TEST_{id(self)}'  # Generate unique ID for tests
-        if 'member_id' not in kwargs:
-            kwargs['member_id'] = 1  # Default member ID for tests
-        if 'title' not in kwargs:
-            kwargs['title'] = 'Test Task'
-        if 'report_time' not in kwargs:
+        if "task_id" not in kwargs:
+            kwargs["task_id"] = f"TEST_{id(self)}"  # Generate unique ID for tests
+        if "member_id" not in kwargs:
+            kwargs["member_id"] = 1  # Default member ID for tests
+        if "title" not in kwargs:
+            kwargs["title"] = "Test Task"
+        if "report_time" not in kwargs:
             from datetime import datetime
-            kwargs['report_time'] = datetime.utcnow()
-        
+
+            kwargs["report_time"] = datetime.utcnow()
+
         super().__init__(**kwargs)
 
     __tablename__ = "repair_tasks"
@@ -412,7 +413,7 @@ class RepairTask(BaseModel):
         except Exception:
             # Handle case when accessing outside session context
             return False
-            
+
         if response_time or status != TaskStatus.PENDING:
             return False
 
@@ -430,7 +431,7 @@ class RepairTask(BaseModel):
         except Exception:
             # Handle case when accessing outside session context
             return False
-            
+
         if completion_time or not response_time:
             return False
 
@@ -464,7 +465,7 @@ class RepairTask(BaseModel):
             feedback = self.feedback
         except Exception:
             return False
-            
+
         if not self.is_positive_review or not feedback:
             return False
 
@@ -476,13 +477,13 @@ class RepairTask(BaseModel):
     def get_base_work_minutes(self) -> int:
         """Get base work minutes based on task type."""
         from app.core.config import settings
-        
+
         # Handle case when accessing outside session context (e.g., in tests)
         try:
             task_type = self.task_type
         except Exception:
             # Check if we have a direct attribute value first
-            if hasattr(self, '_task_type'):
+            if hasattr(self, "_task_type"):
                 task_type = self._task_type
             else:
                 # Default to online for safety in tests
@@ -503,12 +504,12 @@ class RepairTask(BaseModel):
         # Handle accessing attributes safely in test context
         try:
             is_rush_order = self.is_rush_order
-            tags = list(self.tags) if hasattr(self, 'tags') else []
+            tags = list(self.tags) if hasattr(self, "tags") else []
         except Exception:
             # Default values for test context
             is_rush_order = False
             tags = []
-            
+
         # 爆单任务独立计算
         if is_rush_order:
             rush_minutes = 15  # 爆单任务固定15分钟
@@ -518,7 +519,12 @@ class RepairTask(BaseModel):
 
             # 应用异常扣时标签
             for tag in tags:
-                if hasattr(tag, 'is_active') and hasattr(tag, 'is_penalty_tag') and tag.is_active and tag.is_penalty_tag():
+                if (
+                    hasattr(tag, "is_active")
+                    and hasattr(tag, "is_penalty_tag")
+                    and tag.is_active
+                    and tag.is_penalty_tag()
+                ):
                     penalty_minutes += abs(
                         tag.work_minutes_modifier or 0
                     )  # 扣时标签为负数，这里取绝对值
@@ -547,7 +553,11 @@ class RepairTask(BaseModel):
 
         # Apply tag modifiers
         for tag in tags:
-            if hasattr(tag, 'is_active') and hasattr(tag, 'work_minutes_modifier') and tag.is_active:
+            if (
+                hasattr(tag, "is_active")
+                and hasattr(tag, "work_minutes_modifier")
+                and tag.is_active
+            ):
                 total_minutes += tag.work_minutes_modifier or 0
 
         # Apply time-based penalties

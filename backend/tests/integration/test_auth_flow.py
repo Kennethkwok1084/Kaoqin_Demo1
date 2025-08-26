@@ -153,7 +153,10 @@ class TestTokenRefresh:
     def test_refresh_token_success(self, client, test_member_user):
         """测试成功刷新令牌"""
         # 先登录获取令牌
-        login_data = {"student_id": test_member_user.student_id, "password": "member123456"}
+        login_data = {
+            "student_id": test_member_user.student_id,
+            "password": "member123456",
+        }
         login_response = client.post("/api/v1/auth/login", json=login_data)
         assert login_response.status_code == 200
 

@@ -3,21 +3,30 @@ Test helpers for unit tests.
 Provides utilities for creating proper mocks that avoid SQLAlchemy session issues.
 """
 
-from unittest.mock import Mock, AsyncMock
 from typing import Any, Dict, Optional
+from unittest.mock import AsyncMock, Mock
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.task import RepairTask, MonitoringTask, AssistanceTask, TaskStatus, TaskType, TaskCategory, TaskPriority
 from app.models.member import Member, UserRole
+from app.models.task import (
+    AssistanceTask,
+    MonitoringTask,
+    RepairTask,
+    TaskCategory,
+    TaskPriority,
+    TaskStatus,
+    TaskType,
+)
 
 
 class MockSessionBuilder:
     """Builder for creating properly configured mock AsyncSession objects."""
-    
+
     def __init__(self):
         self.session = AsyncMock(spec=AsyncSession)
         self._setup_basic_methods()
-    
+
     def _setup_basic_methods(self):
         """Setup basic AsyncSession methods."""
         # Core async methods
@@ -27,30 +36,30 @@ class MockSessionBuilder:
         self.session.flush = AsyncMock()
         self.session.close = AsyncMock()
         self.session.execute = AsyncMock()
-        
+
         # Synchronous methods
         self.session.add = Mock()
         self.session.delete = Mock()
         self.session.merge = Mock()
-        
+
         # Transaction state
         self.session.in_transaction = Mock(return_value=True)
-        
+
         # Session state properties
         self.session.identity_map = {}
         self.session._new = set()
         self.session._dirty = set()
-        
+
     def with_query_result(self, mock_result):
         """Configure session.execute to return a specific result."""
         self.session.execute.return_value = mock_result
         return self
-    
+
     def with_query_results(self, mock_results):
         """Configure session.execute to return multiple results in sequence."""
         self.session.execute.side_effect = mock_results
         return self
-        
+
     def build(self) -> AsyncMock:
         """Build the configured mock session."""
         return self.session
@@ -58,7 +67,7 @@ class MockSessionBuilder:
 
 class MockTaskBuilder:
     """Builder for creating properly configured task mocks."""
-    
+
     @staticmethod
     def repair_task(
         id: int = 1,
@@ -66,100 +75,94 @@ class MockTaskBuilder:
         title: str = "Test Repair Task",
         status: TaskStatus = TaskStatus.PENDING,
         member_id: Optional[int] = None,
-        **kwargs
+        **kwargs,
     ) -> Mock:
         """Create a mock RepairTask that avoids session persistence issues."""
         mock_task = Mock(spec=RepairTask)
-        
+
         # Set basic attributes
         mock_task.id = id
         mock_task.task_id = task_id
         mock_task.title = title
         mock_task.status = status
         mock_task.member_id = member_id
-        
+
         # Set additional attributes from kwargs
         for key, value in kwargs.items():
             setattr(mock_task, key, value)
-            
+
         # Set defaults for common attributes if not provided
-        if not hasattr(mock_task, 'category'):
+        if not hasattr(mock_task, "category"):
             mock_task.category = TaskCategory.NETWORK_REPAIR
-        if not hasattr(mock_task, 'priority'):
+        if not hasattr(mock_task, "priority"):
             mock_task.priority = TaskPriority.MEDIUM
-        if not hasattr(mock_task, 'task_type'):
+        if not hasattr(mock_task, "task_type"):
             mock_task.task_type = TaskType.ONLINE
-        if not hasattr(mock_task, 'base_work_minutes'):
+        if not hasattr(mock_task, "base_work_minutes"):
             mock_task.base_work_minutes = 40
-        if not hasattr(mock_task, 'work_minutes'):
+        if not hasattr(mock_task, "work_minutes"):
             mock_task.work_minutes = 40
-        if not hasattr(mock_task, 'rating'):
+        if not hasattr(mock_task, "rating"):
             mock_task.rating = None
-        if not hasattr(mock_task, 'feedback'):
+        if not hasattr(mock_task, "feedback"):
             mock_task.feedback = None
-        if not hasattr(mock_task, 'description'):
+        if not hasattr(mock_task, "description"):
             mock_task.description = "Default task description"
-        if not hasattr(mock_task, 'tags'):
+        if not hasattr(mock_task, "tags"):
             mock_task.tags = []
-            
+
         return mock_task
-    
+
     @staticmethod
     def monitoring_task(
-        id: int = 1,
-        member_id: int = 1,
-        title: str = "Test Monitoring Task",
-        **kwargs
+        id: int = 1, member_id: int = 1, title: str = "Test Monitoring Task", **kwargs
     ) -> Mock:
         """Create a mock MonitoringTask."""
         mock_task = Mock(spec=MonitoringTask)
-        
+
         mock_task.id = id
         mock_task.member_id = member_id
         mock_task.title = title
-        
+
         # Set additional attributes from kwargs
         for key, value in kwargs.items():
             setattr(mock_task, key, value)
-            
+
         # Set defaults
-        if not hasattr(mock_task, 'status'):
+        if not hasattr(mock_task, "status"):
             mock_task.status = TaskStatus.COMPLETED
-        if not hasattr(mock_task, 'work_minutes'):
+        if not hasattr(mock_task, "work_minutes"):
             mock_task.work_minutes = 120
-            
+
         return mock_task
-    
+
     @staticmethod
     def assistance_task(
-        id: int = 1,
-        member_id: int = 1,
-        title: str = "Test Assistance Task",
-        **kwargs
+        id: int = 1, member_id: int = 1, title: str = "Test Assistance Task", **kwargs
     ) -> Mock:
         """Create a mock AssistanceTask."""
         mock_task = Mock(spec=AssistanceTask)
-        
+
         mock_task.id = id
         mock_task.member_id = member_id
         mock_task.title = title
-        
+
         # Set additional attributes from kwargs
         for key, value in kwargs.items():
             setattr(mock_task, key, value)
-            
+
         # Set defaults
-        if not hasattr(mock_task, 'status'):
+        if not hasattr(mock_task, "status"):
             mock_task.status = TaskStatus.COMPLETED
-        if not hasattr(mock_task, 'work_minutes'):
+        if not hasattr(mock_task, "work_minutes"):
             mock_task.work_minutes = 180
-            
+
         return mock_task
 
 
 class MockMemberBuilder:
     """Builder for creating properly configured member mocks."""
-    
+
     @staticmethod
     def member(
         id: int = 1,
@@ -167,82 +170,74 @@ class MockMemberBuilder:
         name: str = "Test User",
         role: UserRole = UserRole.MEMBER,
         is_active: bool = True,
-        **kwargs
+        **kwargs,
     ) -> Mock:
         """Create a mock Member."""
         mock_member = Mock(spec=Member)
-        
+
         mock_member.id = id
         mock_member.username = username
         mock_member.name = name
         mock_member.role = role
         mock_member.is_active = is_active
-        
+
         # Set additional attributes from kwargs
         for key, value in kwargs.items():
             setattr(mock_member, key, value)
-            
+
         # Set defaults
-        if not hasattr(mock_member, 'student_id'):
+        if not hasattr(mock_member, "student_id"):
             mock_member.student_id = f"202500{id:04d}"
-        if not hasattr(mock_member, 'class_name'):
+        if not hasattr(mock_member, "class_name"):
             mock_member.class_name = "测试班级"
-        if not hasattr(mock_member, 'email'):
+        if not hasattr(mock_member, "email"):
             mock_member.email = f"{username}@example.com"
-            
+
         return mock_member
-    
+
     @staticmethod
     def admin(id: int = 1, **kwargs) -> Mock:
         """Create a mock admin member."""
         # Extract potentially conflicting parameters from kwargs to avoid conflicts
-        username = kwargs.pop('username', f"admin_{id}")
-        name = kwargs.pop('name', "管理员")
-        role = kwargs.pop('role', UserRole.ADMIN)
+        username = kwargs.pop("username", f"admin_{id}")
+        name = kwargs.pop("name", "管理员")
+        role = kwargs.pop("role", UserRole.ADMIN)
         return MockMemberBuilder.member(
-            id=id,
-            username=username,
-            name=name,
-            role=role,
-            **kwargs
+            id=id, username=username, name=name, role=role, **kwargs
         )
-    
+
     @staticmethod
     def group_leader(id: int = 2, **kwargs) -> Mock:
         """Create a mock group leader member."""
         # Extract potentially conflicting parameters from kwargs to avoid conflicts
-        username = kwargs.pop('username', f"leader_{id}")
-        name = kwargs.pop('name', "组长")
-        role = kwargs.pop('role', UserRole.GROUP_LEADER)
+        username = kwargs.pop("username", f"leader_{id}")
+        name = kwargs.pop("name", "组长")
+        role = kwargs.pop("role", UserRole.GROUP_LEADER)
         return MockMemberBuilder.member(
-            id=id,
-            username=username,
-            name=name,
-            role=role,
-            **kwargs
+            id=id, username=username, name=name, role=role, **kwargs
         )
-    
+
     @staticmethod
     def inactive_member(id: int = 3, **kwargs) -> Mock:
         """Create a mock inactive member."""
         # Extract potentially conflicting parameters from kwargs to avoid conflicts
-        username = kwargs.pop('username', f"inactive_{id}")
-        name = kwargs.pop('name', "已停用成员")
-        role = kwargs.pop('role', UserRole.MEMBER)
-        is_active = kwargs.pop('is_active', False)
+        username = kwargs.pop("username", f"inactive_{id}")
+        name = kwargs.pop("name", "已停用成员")
+        role = kwargs.pop("role", UserRole.MEMBER)
+        is_active = kwargs.pop("is_active", False)
         return MockMemberBuilder.member(
             id=id,
             username=username,
             name=name,
             role=role,
             is_active=is_active,
-            **kwargs
+            **kwargs,
         )
 
 
 class MockResultBuilder:
     """Builder for creating mock database query results."""
-    
+
     @staticmethod
     def single_result(obj: Any) -> Mock:
         """Create a mock result that returns a single object."""
@@ -250,7 +245,7 @@ class MockResultBuilder:
         mock_result.scalar_one_or_none.return_value = obj
         mock_result.scalar.return_value = obj
         return mock_result
-    
+
     @staticmethod
     def list_result(objects: list) -> Mock:
         """Create a mock result that returns a list of objects."""
@@ -260,7 +255,7 @@ class MockResultBuilder:
         mock_scalars.first.return_value = objects[0] if objects else None
         mock_result.scalars.return_value = mock_scalars
         return mock_result
-    
+
     @staticmethod
     def empty_result() -> Mock:
         """Create a mock result that returns None/empty."""

@@ -804,18 +804,18 @@ class ABTableMatchingService:
         b_table_data: Optional[List[Dict[str, Any]]] = None,
         strategies: Optional[List[MatchingStrategy]] = None,
         batch_size: int = 100,
-        timeout_seconds: int = 240
+        timeout_seconds: int = 240,
     ) -> List[MatchResult]:
         """
         匹配表格数据（别名方法，兼容现有调用）
-        
+
         Args:
             a_table_data: A表数据
             b_table_data: B表数据（可选）
             strategies: 匹配策略列表
             batch_size: 批处理大小
             timeout_seconds: 超时时间（秒）
-            
+
         Returns:
             List[MatchResult]: 匹配结果列表
         """
@@ -825,5 +825,5 @@ class ABTableMatchingService:
             b_table_data=b_table_data,
             strategies=strategies,
             batch_size=batch_size,
-            timeout_seconds=timeout_seconds
+            timeout_seconds=timeout_seconds,
         )

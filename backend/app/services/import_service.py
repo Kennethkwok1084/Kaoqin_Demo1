@@ -72,7 +72,7 @@ class ImportResult:
 class DataImportService:
     """数据导入服务"""
 
-    def __init__(self, db: Optional[AsyncSession]):
+    def __init__(self, db: Optional[AsyncSession]) -> None:
         if db is None:
             raise ValueError("Database session is required")
         self.db = db
@@ -999,36 +999,38 @@ class DataImportService:
     def validate_import_data(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Public validation method for testing compatibility"""
         validation_result = self._validate_import_data(data)
-        
+
         # Convert to expected format for tests
         return {
             "valid_count": len(data) - len(validation_result.get("errors", [])),
             "invalid_count": len(validation_result.get("errors", [])),
             "errors": validation_result.get("errors", []),
-            "duplicates": validation_result.get("duplicates", [])
+            "duplicates": validation_result.get("duplicates", []),
         }
-    
-    async def process_repair_tasks_import(self, task_data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
+
+    async def process_repair_tasks_import(
+        self, task_data_list: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Process repair tasks import - alias for bulk_import_repair_tasks"""
         result = await self.bulk_import_repair_tasks(task_data_list, 1)
-        
+
         # Convert to expected format for tests
-        if hasattr(result, 'to_dict'):
+        if hasattr(result, "to_dict"):
             result_dict = result.to_dict()
             return {
                 "imported": result_dict["summary"]["created_tasks"],
                 "failed": result_dict["summary"]["skipped_rows"],
                 "errors": result_dict["errors"],
-                "total_processed": result_dict["summary"]["processed_rows"]
+                "total_processed": result_dict["summary"]["processed_rows"],
             }
         else:
             return {
                 "imported": 0,
                 "failed": len(task_data_list),
                 "errors": ["处理失败"],
-                "total_processed": len(task_data_list)
+                "total_processed": len(task_data_list),
             }
-    
+
     def _validate_import_data(self, data: List[Dict[str, Any]]) -> Dict[str, List[str]]:
         """验证导入数据"""
         errors: List[str] = []
@@ -1107,16 +1109,17 @@ class DataImportService:
                     if not row.get("assigned_to"):
                         # 尝试根据reporter信息查找或创建成员
                         matched_member = await self._find_member_by_reporter_info(
-                            row.get("reporter_name"),
-                            row.get("reporter_contact")
+                            row.get("reporter_name"), row.get("reporter_contact")
                         )
                         if matched_member:
                             row["assigned_to"] = matched_member.id
                         else:
                             # 获取或创建默认成员
                             default_member = await self._get_or_create_default_member()
-                            row["assigned_to"] = default_member.id if default_member else 1
-                    
+                            row["assigned_to"] = (
+                                default_member.id if default_member else 1
+                            )
+
                     _ = await self._create_repair_task_from_import_data(row, creator_id)
                     created_count += 1
 
@@ -1231,7 +1234,7 @@ class DataImportService:
         """标准化列名"""
         table_type = import_options.get("table_type", "task_table")
         column_mappings = self.column_mappings.get(table_type, {})
-        
+
         # 创建列名映射
         rename_mapping = {}
         for standard_col, possible_names in column_mappings.items():
@@ -1239,101 +1242,103 @@ class DataImportService:
                 if col_name in possible_names:
                     rename_mapping[col_name] = standard_col
                     break
-        
+
         # 重命名列
         return df.rename(columns=rename_mapping)
-    
+
     def _validate_required_columns(
         self, df: pd.DataFrame, import_options: Dict[str, Any]
     ) -> List[str]:
         """验证必需列"""
         errors = []
         table_type = import_options.get("table_type", "task_table")
-        
+
         required_columns = []
         if table_type == "task_table":
             required_columns = ["task_id", "title", "reporter_name"]
-        
+
         missing_columns = [col for col in required_columns if col not in df.columns]
-        
+
         if missing_columns:
             errors.append(f"缺少必需列: {', '.join(missing_columns)}")
-            
+
         return errors
-        
-    def _clean_row_data(self, row: pd.Series, row_index: int) -> tuple[Dict[str, Any], bool]:
+
+    def _clean_row_data(
+        self, row: pd.Series, row_index: int
+    ) -> tuple[Dict[str, Any], bool]:
         """清理行数据"""
         try:
-            cleaned_data = {}
-            
+            cleaned_data: Dict[str, Any] = {}
+
             for key, value in row.items():
                 if pd.isna(value):
-                    cleaned_data[key] = None
+                    cleaned_data[key] = ""  # 使用空字符串而不是None
                 else:
                     # 清理字符串值
                     if isinstance(value, str):
                         cleaned_data[key] = value.strip()
                     else:
                         cleaned_data[key] = value
-            
+
             # 验证必需字段
             if not cleaned_data.get("title") or not cleaned_data.get("reporter_name"):
                 return cleaned_data, False
-                
+
             return cleaned_data, True
-            
+
         except Exception as e:
             logger.warning(f"Error cleaning row {row_index}: {str(e)}")
             return {}, False
-            
+
     async def _create_or_update_task(
-        self, 
-        task_data: Dict[str, Any], 
-        member: Any, 
-        import_batch_id: str
+        self, task_data: Dict[str, Any], member: Any, import_batch_id: str
     ) -> tuple[bool, bool]:
         """创建或更新任务"""
         try:
             # 检查任务是否已存在
             if await self._task_exists(task_data.get("task_id", "")):
-                existing_task = await self._get_task_by_task_id(task_data.get("task_id", ""))
+                existing_task = await self._get_task_by_task_id(
+                    task_data.get("task_id", "")
+                )
                 if existing_task:
                     self._update_existing_task(existing_task, task_data)
                     await self.db.commit()
                     return False, True  # created=False, updated=True
-            
+
             # 确保member_id被正确设置
-            if member and hasattr(member, 'id'):
+            if member and hasattr(member, "id"):
                 task_data["assigned_to"] = member.id
             elif not task_data.get("assigned_to"):
                 # 如果没有匹配的成员且task_data中也没有assigned_to，尝试根据reporter信息查找成员
                 matched_member = await self._find_member_by_reporter_info(
-                    task_data.get("reporter_name"),
-                    task_data.get("reporter_contact")
+                    task_data.get("reporter_name"), task_data.get("reporter_contact")
                 )
                 if matched_member:
                     task_data["assigned_to"] = matched_member.id
                 else:
                     # 如果仍然找不到成员，创建一个默认成员或使用系统默认成员
                     default_member = await self._get_or_create_default_member()
-                    task_data["assigned_to"] = default_member.id if default_member else 1  # 使用系统默认成员ID
-            
+                    task_data["assigned_to"] = (
+                        default_member.id if default_member else 1
+                    )  # 使用系统默认成员ID
+
             task_data["import_batch_id"] = import_batch_id
-            
+
             await self._create_repair_task_from_import_data(task_data, 1)
             await self.db.commit()
             return True, False  # created=True, updated=False
-            
+
         except Exception as e:
             logger.error(f"Create or update task error: {str(e)}")
             raise
-            
+
     async def _task_exists(self, task_id: str) -> bool:
         """检查任务是否存在"""
         try:
             if not task_id:
                 return False
-                
+
             count_query = select(func.count()).where(RepairTask.task_id == task_id)
             result = await self.db.execute(count_query)
             count = result.scalar()
@@ -1341,13 +1346,13 @@ class DataImportService:
         except Exception as e:
             logger.warning(f"Error checking task existence: {str(e)}")
             return False
-        
+
     async def _get_task_by_task_id(self, task_id: str) -> Optional[RepairTask]:
         """根据任务ID获取任务"""
         try:
             if not task_id:
                 return None
-                
+
             task_query = select(RepairTask).where(RepairTask.task_id == task_id)
             result = await self.db.execute(task_query)
             return result.scalar_one_or_none()
@@ -1356,46 +1361,38 @@ class DataImportService:
             return None
 
     async def _find_member_by_reporter_info(
-        self, 
-        reporter_name: Optional[str], 
-        reporter_contact: Optional[str]
+        self, reporter_name: Optional[str], reporter_contact: Optional[str]
     ) -> Optional[Member]:
         """根据报告人信息查找成员"""
         try:
             if not reporter_name and not reporter_contact:
                 return None
-                
+
             # 优先根据联系方式匹配（更精确）
             if reporter_contact:
                 # 清理联系方式
                 clean_contact = self._clean_contact_info(reporter_contact)
                 if clean_contact:
                     contact_query = select(Member).where(
-                        and_(
-                            Member.is_active == True,
-                            Member.phone == clean_contact
-                        )
+                        and_(Member.is_active == True, Member.phone == clean_contact)
                     )
                     result = await self.db.execute(contact_query)
                     member = result.scalar_one_or_none()
                     if member:
                         return member
-            
+
             # 根据姓名匹配
             if reporter_name:
                 name_query = select(Member).where(
-                    and_(
-                        Member.is_active == True,
-                        Member.name == reporter_name.strip()
-                    )
+                    and_(Member.is_active == True, Member.name == reporter_name.strip())
                 )
                 result = await self.db.execute(name_query)
                 member = result.scalar_one_or_none()
                 if member:
                     return member
-            
+
             return None
-            
+
         except Exception as e:
             logger.warning(f"Error finding member by reporter info: {str(e)}")
             return None
@@ -1405,17 +1402,14 @@ class DataImportService:
         try:
             # 查找现有的系统默认成员
             default_query = select(Member).where(
-                and_(
-                    Member.username == "system_default",
-                    Member.is_active == True
-                )
+                and_(Member.username == "system_default", Member.is_active == True)
             )
             result = await self.db.execute(default_query)
             existing_member = result.scalar_one_or_none()
-            
+
             if existing_member:
                 return existing_member
-                
+
             # 创建默认成员
             default_member = Member(
                 username="system_default",
@@ -1425,15 +1419,15 @@ class DataImportService:
                 password_hash="$2b$12$default_hash_for_system_member",  # 不能登录的默认hash
                 department="信息化建设处",
                 phone="00000000000",
-                is_active=True
+                is_active=True,
             )
-            
+
             self.db.add(default_member)
             await self.db.flush()  # 获取ID
-            
+
             logger.info("Created system default member for imports")
             return default_member
-            
+
         except Exception as e:
             logger.error(f"Error getting or creating default member: {str(e)}")
             return None
@@ -1494,7 +1488,7 @@ class DataImportService:
                 # 尝试根据reporter信息查找成员
                 matched_member = await self._find_member_by_reporter_info(
                     import_data.get("reporter_name"),
-                    import_data.get("reporter_contact")
+                    import_data.get("reporter_contact"),
                 )
                 if matched_member:
                     member_id = matched_member.id
@@ -1502,11 +1496,11 @@ class DataImportService:
                     # 获取或创建默认成员
                     default_member = await self._get_or_create_default_member()
                     member_id = default_member.id if default_member else 1
-            
+
             # 确保member_id是有效的
             if member_id is None:
                 member_id = 1  # 最后的安全网，使用系统默认ID
-                
+
             logger.info(f"Creating task with member_id: {member_id}")
 
             # 创建基础任务对象
@@ -1531,7 +1525,8 @@ class DataImportService:
                 repair_form=import_data.get("repair_form"),
                 # 导入跟踪字段
                 is_matched=import_data.get("is_matched", False),
-                import_batch_id=import_data.get("import_batch_id") or (
+                import_batch_id=import_data.get("import_batch_id")
+                or (
                     f"import_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{creator_id}"
                 ),
             )
@@ -1672,11 +1667,11 @@ class DataImportService:
     ) -> RepairTask:
         """
         更新现有任务
-        
+
         Args:
             existing_task: 现有任务对象
             update_data: 更新数据
-            
+
         Returns:
             RepairTask: 更新后的任务
         """
@@ -1698,65 +1693,68 @@ class DataImportService:
                 existing_task.feedback = update_data["feedback"]
             if update_data.get("rating") is not None:
                 existing_task.rating = update_data["rating"]
-                
+
             # 更新扩展字段
             if update_data.get("repair_form"):
                 existing_task.repair_form = update_data["repair_form"]
             if update_data.get("work_order_status"):
                 existing_task.work_order_status = update_data["work_order_status"]
-                
+
             # 重新计算工时
             existing_task.update_work_minutes()
-            
+
             logger.info(f"Updated existing task: {existing_task.task_id}")
             return existing_task
-            
+
         except Exception as e:
             logger.error(f"Update existing task error: {str(e)}")
             raise
 
     async def bulk_import_tasks(
-        self, 
+        self,
         file: Optional[UploadFile] = None,
-        task_data_list: Optional[List[Dict[str, Any]]] = None, 
+        task_data_list: Optional[List[Dict[str, Any]]] = None,
         import_batch_id: Optional[str] = None,
         importer_id: int = 1,
-        import_options: Optional[Dict[str, Any]] = None
+        import_options: Optional[Dict[str, Any]] = None,
     ) -> ImportResult:
         """
         批量导入任务
-        
+
         Args:
             file: 可选的上传文件
             task_data_list: 可选的任务数据列表
             import_batch_id: 可选的导入批次ID
             importer_id: 导入者ID
             import_options: 导入选项
-            
+
         Returns:
             ImportResult: 导入结果
         """
         if import_options is None:
             import_options = {}
-            
+
         try:
             # 如果提供了文件，则使用文件导入
             if file:
                 return await self.import_excel_file(file, import_options)
-            
+
             # 否则使用任务数据列表导入
             if not task_data_list:
                 result = ImportResult()
                 result.errors.append("没有提供文件或任务数据列表")
                 return result
-                
+
             result = ImportResult()
             result.total_rows = len(task_data_list)
-            
-            batch_id = import_batch_id or f"bulk_import_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{importer_id}"
-            
+
+            batch_id = (
+                import_batch_id
+                or f"bulk_import_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{importer_id}"
+            )
+
             logger.info(f"Starting bulk import of {len(task_data_list)} tasks")
-            
+
             for i, task_data in enumerate(task_data_list):
                 try:
                     # 检查必要字段
@@ -1764,18 +1762,19 @@ class DataImportService:
                         result.errors.append(f"第{i+1}行：缺少必要字段（标题或报告人）")
                         result.skipped_rows += 1
                         continue
-                        
+
                     # 检查是否已存在相同任务
                     existing_query = select(RepairTask).where(
                         and_(
                             RepairTask.title == task_data["title"],
                             RepairTask.reporter_name == task_data["reporter_name"],
-                            RepairTask.reporter_contact == task_data.get("reporter_contact", "")
+                            RepairTask.reporter_contact
+                            == task_data.get("reporter_contact", ""),
                         )
                     )
                     existing_result = await self.db.execute(existing_query)
                     existing_task = existing_result.scalar_one_or_none()
-                    
+
                     if existing_task:
                         if import_options.get("update_existing", False):
                             self._update_existing_task(existing_task, task_data)
@@ -1788,33 +1787,39 @@ class DataImportService:
                             # 尝试根据reporter信息查找或创建成员
                             matched_member = await self._find_member_by_reporter_info(
                                 task_data.get("reporter_name"),
-                                task_data.get("reporter_contact")
+                                task_data.get("reporter_contact"),
                             )
                             if matched_member:
                                 task_data["assigned_to"] = matched_member.id
                             else:
                                 # 获取或创建默认成员
-                                default_member = await self._get_or_create_default_member()
-                                task_data["assigned_to"] = default_member.id if default_member else 1
-                        
+                                default_member = (
+                                    await self._get_or_create_default_member()
+                                )
+                                task_data["assigned_to"] = (
+                                    default_member.id if default_member else 1
+                                )
+
                         task_data["import_batch_id"] = batch_id
-                        await self._create_repair_task_from_import_data(task_data, importer_id)
+                        await self._create_repair_task_from_import_data(
+                            task_data, importer_id
+                        )
                         result.created_tasks += 1
-                        
+
                 except Exception as e:
                     error_msg = f"第{i+1}行导入失败: {str(e)}"
                     result.errors.append(error_msg)
                     result.skipped_rows += 1
                     logger.warning(error_msg)
-                    
+
             await self.db.commit()
-            
+
             result.processed_rows = result.created_tasks + result.updated_tasks
             result.success = len(result.errors) == 0
-            
+
             logger.info(f"Bulk import completed: {result.to_dict()}")
             return result
-            
+
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Bulk import tasks error: {str(e)}")
@@ -1823,34 +1828,34 @@ class DataImportService:
             return result
 
     async def bulk_import_repair_tasks(
-        self, 
-        task_data_list: List[Dict[str, Any]], 
+        self,
+        task_data_list: List[Dict[str, Any]],
         importer_id: int = 1,
-        import_options: Optional[Dict[str, Any]] = None
+        import_options: Optional[Dict[str, Any]] = None,
     ) -> ImportResult:
         """
         批量导入维修任务（别名方法，兼容性支持）
-        
+
         Args:
             task_data_list: 任务数据列表
             importer_id: 导入者ID
             import_options: 导入选项
-            
+
         Returns:
             ImportResult: 导入结果
         """
         # 这是原始的导入方法实现，避免与新的bulk_import_tasks方法产生循环调用
         if import_options is None:
             import_options = {}
-            
+
         try:
             result = ImportResult()
             result.total_rows = len(task_data_list)
-            
+
             batch_id = f"bulk_import_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{importer_id}"
-            
+
             logger.info(f"Starting bulk import of {len(task_data_list)} tasks")
-            
+
             for i, task_data in enumerate(task_data_list):
                 try:
                     # 检查必要字段
@@ -1858,18 +1863,19 @@ class DataImportService:
                         result.errors.append(f"第{i+1}行：缺少必要字段（标题或报告人）")
                         result.skipped_rows += 1
                         continue
-                        
+
                     # 检查是否已存在相同任务
                     existing_query = select(RepairTask).where(
                         and_(
                             RepairTask.title == task_data["title"],
                             RepairTask.reporter_name == task_data["reporter_name"],
-                            RepairTask.reporter_contact == task_data.get("reporter_contact", "")
+                            RepairTask.reporter_contact
+                            == task_data.get("reporter_contact", ""),
                         )
                     )
                     existing_result = await self.db.execute(existing_query)
                     existing_task = existing_result.scalar_one_or_none()
-                    
+
                     if existing_task:
                         if import_options.get("update_existing", False):
                             self._update_existing_task(existing_task, task_data)
@@ -1882,33 +1888,39 @@ class DataImportService:
                             # 尝试根据reporter信息查找或创建成员
                             matched_member = await self._find_member_by_reporter_info(
                                 task_data.get("reporter_name"),
-                                task_data.get("reporter_contact")
+                                task_data.get("reporter_contact"),
                             )
                             if matched_member:
                                 task_data["assigned_to"] = matched_member.id
                             else:
                                 # 获取或创建默认成员
-                                default_member = await self._get_or_create_default_member()
-                                task_data["assigned_to"] = default_member.id if default_member else 1
-                        
+                                default_member = (
+                                    await self._get_or_create_default_member()
+                                )
+                                task_data["assigned_to"] = (
+                                    default_member.id if default_member else 1
+                                )
+
                         task_data["import_batch_id"] = batch_id
-                        await self._create_repair_task_from_import_data(task_data, importer_id)
+                        await self._create_repair_task_from_import_data(
+                            task_data, importer_id
+                        )
                         result.created_tasks += 1
-                        
+
                 except Exception as e:
                     error_msg = f"第{i+1}行导入失败: {str(e)}"
                     result.errors.append(error_msg)
                     result.skipped_rows += 1
                     logger.warning(error_msg)
-                    
+
             await self.db.commit()
-            
+
             result.processed_rows = result.created_tasks + result.updated_tasks
             result.success = len(result.errors) == 0
-            
+
             logger.info(f"Bulk import completed: {result.to_dict()}")
             return result
-            
+
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Bulk import tasks error: {str(e)}")
@@ -1917,19 +1929,19 @@ class DataImportService:
             return result
 
     async def _process_import_batch(
-        self, 
-        batch_data: List[Dict[str, Any]], 
+        self,
+        batch_data: List[Dict[str, Any]],
         batch_size: int = 1000,
-        import_options: Optional[Dict[str, Any]] = None
+        import_options: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         处理导入数据批次的内部方法
-        
+
         Args:
             batch_data: 批次数据列表
             batch_size: 批次大小
             import_options: 导入选项
-            
+
         Returns:
             Dict: 批次处理结果
         """
@@ -1937,37 +1949,35 @@ class DataImportService:
             imported_count = 0
             failed_count = 0
             errors = []
-            
+
             # 分批处理以优化内存使用
             for i in range(0, len(batch_data), batch_size):
-                batch = batch_data[i:i + batch_size]
-                
+                batch = batch_data[i : i + batch_size]
+
                 try:
                     # 处理当前批次 - 直接调用原始导入方法避免循环
                     batch_result = await self.bulk_import_repair_tasks(
-                        batch,
-                        1,  # 默认导入者ID
-                        import_options
+                        batch, 1, import_options  # 默认导入者ID
                     )
-                    
+
                     imported_count += batch_result.created_tasks
                     failed_count += batch_result.skipped_rows
                     errors.extend(batch_result.errors)
-                    
+
                 except Exception as e:
                     error_msg = f"批次 {i//batch_size + 1} 处理失败: {str(e)}"
                     errors.append(error_msg)
                     failed_count += len(batch)
                     logger.warning(error_msg)
-            
+
             return {
                 "imported": imported_count,
                 "failed": failed_count,
                 "errors": errors,
                 "total_batches": (len(batch_data) + batch_size - 1) // batch_size,
-                "batch_size": batch_size
+                "batch_size": batch_size,
             }
-            
+
         except Exception as e:
             logger.error(f"Process import batch error: {str(e)}")
             return {
@@ -1975,133 +1985,8 @@ class DataImportService:
                 "failed": len(batch_data),
                 "errors": [f"批次处理失败: {str(e)}"],
                 "total_batches": 0,
-                "batch_size": batch_size
+                "batch_size": batch_size,
             }
-
-    async def bulk_import_tasks(
-        self, 
-        data_or_file=None,
-        task_data_list: Optional[List[Dict[str, Any]]] = None, 
-        import_batch_id: Optional[str] = None,
-        importer_id: int = 1,
-        import_options: Optional[Dict[str, Any]] = None,
-        **kwargs
-    ) -> Dict[str, Any]:
-        """
-        批量导入任务 - 重构版本，支持返回字典格式
-        
-        Args:
-            data_or_file: 数据列表或上传文件
-            task_data_list: 可选的任务数据列表
-            import_batch_id: 可选的导入批次ID
-            importer_id: 导入者ID
-            import_options: 导入选项
-            
-        Returns:
-            Dict: 导入结果 (用于测试兼容性)
-        """
-        # 处理不同的调用方式
-        if isinstance(data_or_file, list):
-            # 直接传递数据列表: bulk_import_tasks(data_list)
-            task_data_list = data_or_file
-            file = None
-        elif hasattr(data_or_file, 'filename'):
-            # 传递文件对象: bulk_import_tasks(file=upload_file)
-            file = data_or_file
-        else:
-            file = data_or_file
-            
-        # 如果提供了文件，则使用文件导入
-        if file and hasattr(file, 'filename'):
-            result = await self.import_excel_file(file, import_options)
-            if hasattr(result, 'to_dict'):
-                result_dict = result.to_dict()
-                return {
-                    "total_processed": result_dict["summary"]["processed_rows"],
-                    "imported": result_dict["summary"]["created_tasks"], 
-                    "failed": result_dict["summary"]["skipped_rows"],
-                    "errors": result_dict["errors"],
-                    "validation": {
-                        "valid_count": result_dict["summary"]["created_tasks"],
-                        "invalid_count": result_dict["summary"]["skipped_rows"],
-                        "errors": result_dict["errors"],
-                        "duplicates": []
-                    }
-                }
-        
-        # 否则使用任务数据列表导入
-        if not task_data_list:
-            return {
-                "total_processed": 0,
-                "imported": 0,
-                "failed": 0,
-                "errors": ["没有提供文件或任务数据列表"],
-                "validation": {
-                    "valid_count": 0,
-                    "invalid_count": 0,
-                    "errors": ["没有提供文件或任务数据列表"],
-                    "duplicates": []
-                }
-            }
-        
-        # 首先进行数据验证
-        validation_result = self.validate_import_data(task_data_list)
-        
-        # 对于大数据集，使用批处理优化内存使用
-        batch_size = 1000
-        if len(task_data_list) > batch_size:
-            # 大数据集使用批处理
-            total_imported = 0
-            total_failed = 0
-            all_errors = []
-            
-            for i in range(0, len(task_data_list), batch_size):
-                batch = task_data_list[i:i + batch_size]
-                batch_result = await self._process_import_batch(
-                    batch, batch_size, import_options
-                )
-                total_imported += batch_result["imported"]
-                total_failed += batch_result["failed"]
-                all_errors.extend(batch_result["errors"])
-            
-            return {
-                "total_processed": len(task_data_list),
-                "imported": total_imported,
-                "failed": total_failed,
-                "errors": all_errors,
-                "validation": {
-                    "valid_count": validation_result.get("valid_count", total_imported),
-                    "invalid_count": validation_result.get("invalid_count", total_failed),
-                    "errors": validation_result.get("errors", all_errors),
-                    "duplicates": validation_result.get("duplicates", [])
-                }
-            }
-        else:
-            # 小数据集直接处理
-            result = await self.bulk_import_repair_tasks(
-                task_data_list,
-                importer_id,
-                import_options
-            )
-            
-            # 转换为字典格式以兼容测试
-            if hasattr(result, 'to_dict'):
-                result_dict = result.to_dict()
-                return {
-                    "total_processed": result_dict["summary"]["processed_rows"],
-                    "imported": result_dict["summary"]["created_tasks"], 
-                    "failed": result_dict["summary"]["skipped_rows"],
-                    "errors": result_dict["errors"],
-                    "validation": {
-                        "valid_count": validation_result.get("valid_count", result_dict["summary"]["created_tasks"]),
-                        "invalid_count": validation_result.get("invalid_count", result_dict["summary"]["skipped_rows"]),
-                        "errors": validation_result.get("errors", result_dict["errors"]),
-                        "duplicates": validation_result.get("duplicates", [])
-                    }
-                }
-            else:
-                # 如果不是ImportResult对象，直接返回
-                return result
 
     async def _get_all_members(self) -> List[Member]:
         """获取所有成员（用于匹配）"""
@@ -2114,68 +1999,73 @@ class DataImportService:
             return []
 
     def _match_member(
-        self, 
-        reporter_name: str, 
-        reporter_contact: str, 
-        all_members: List[Member]
+        self, reporter_name: str, reporter_contact: str, all_members: List[Member]
     ) -> Optional[Member]:
         """匹配成员（与测试兼容的同步方法）"""
         if not reporter_name and not reporter_contact:
             return None
-        
+
         # 精确匹配
         for member in all_members:
-            if hasattr(member, 'name') and hasattr(member, 'phone'):
-                if (member.name == reporter_name and 
-                    getattr(member, 'phone', '') == reporter_contact):
+            if hasattr(member, "name") and hasattr(member, "phone"):
+                if (
+                    member.name == reporter_name
+                    and getattr(member, "phone", "") == reporter_contact
+                ):
                     return member
-        
+
         # 如果精确匹配失败，尝试部分匹配
         for member in all_members:
-            if hasattr(member, 'name'):
+            if hasattr(member, "name"):
                 # 姓名匹配
                 if member.name == reporter_name:
                     return member
-        
+
         # 联系方式匹配
         for member in all_members:
-            if hasattr(member, 'phone'):
-                if getattr(member, 'phone', '') == reporter_contact:
+            if hasattr(member, "phone"):
+                if getattr(member, "phone", "") == reporter_contact:
                     return member
-        
+
         return None
 
     async def import_with_ab_matching(
         self,
         a_table_file: UploadFile,
-        b_table_file: UploadFile, 
+        b_table_file: UploadFile,
         import_batch_id: str,
-        import_options: Optional[Dict[str, Any]] = None
+        import_options: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """导入A/B表匹配数据（兼容性方法）"""
         try:
             # 解析A表
             a_temp_path = await self._save_temp_file(a_table_file)
             a_data = await self._parse_excel_data(a_temp_path)
-            
-            # 解析B表  
+
+            # 解析B表
             b_temp_path = await self._save_temp_file(b_table_file)
             b_data = await self._parse_excel_data(b_temp_path)
-            
+
             # 简化的匹配逻辑用于测试
             result = await self.import_excel_file(a_table_file, import_options or {})
-            
+
             return {
-                "success": result.success if hasattr(result, 'success') else True,
-                "matched_count": len(result.matched_data) if hasattr(result, 'matched_data') else 0,
-                "unmatched_count": len(result.unmatched_data) if hasattr(result, 'unmatched_data') else 0
+                "success": result.success if hasattr(result, "success") else True,
+                "matched_count": (
+                    len(result.matched_data) if hasattr(result, "matched_data") else 0
+                ),
+                "unmatched_count": (
+                    len(result.unmatched_data)
+                    if hasattr(result, "unmatched_data")
+                    else 0
+                ),
             }
-            
+
         except Exception as e:
             logger.error(f"A/B table matching error: {str(e)}")
             return {
                 "success": False,
                 "error": str(e),
                 "matched_count": 0,
-                "unmatched_count": 0
+                "unmatched_count": 0,
             }

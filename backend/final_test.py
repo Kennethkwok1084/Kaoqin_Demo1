@@ -48,7 +48,9 @@ def test_basic_algorithms() -> None:
     def calculate_rush_hours(penalties_minutes: list[int]) -> int:
         return max(0, 15 - sum(abs(p) for p in penalties_minutes))
 
-    def calculate_normal_hours(base_minutes: int, bonuses: list[int], penalties: list[int]) -> int:
+    def calculate_normal_hours(
+        base_minutes: int, bonuses: list[int], penalties: list[int]
+    ) -> int:
         return max(0, base_minutes + sum(bonuses) - sum(abs(p) for p in penalties))
 
     assert calculate_rush_hours([]) == 15, "Rush order base calculation failed"
@@ -103,7 +105,9 @@ def test_integration_scenarios() -> None:
     print("Testing integration scenarios...")
 
     # Scenario 1: Rush order task processing
-    def process_rush_order_task(base_minutes: int, has_timeout_response: bool, has_bad_rating: bool) -> dict[str, object]:
+    def process_rush_order_task(
+        base_minutes: int, has_timeout_response: bool, has_bad_rating: bool
+    ) -> dict[str, object]:
         penalties = []
         if has_timeout_response:
             penalties.append(-30)
@@ -132,7 +136,9 @@ def test_integration_scenarios() -> None:
     print("  ✓ Rush order processing scenarios working")
 
     # Scenario 2: Normal task processing
-    def process_normal_task(base_minutes: int, has_good_rating: bool, has_timeout: bool) -> dict[str, object]:
+    def process_normal_task(
+        base_minutes: int, has_good_rating: bool, has_timeout: bool
+    ) -> dict[str, object]:
         bonuses = []
         penalties = []
 
@@ -167,10 +173,14 @@ def test_integration_scenarios() -> None:
     print("  ✓ Normal task processing scenarios working")
 
     # Scenario 3: A/B table matching simulation
-    def simulate_ab_matching(a_record: dict[str, str], b_records: list[dict[str, str]]) -> dict[str, object]:
+    def simulate_ab_matching(
+        a_record: dict[str, str], b_records: list[dict[str, str]]
+    ) -> dict[str, object]:
         """Simulate finding best match from B table for A record"""
 
-        def calculate_similarity(name1: str, phone1: str, name2: str, phone2: str) -> float:
+        def calculate_similarity(
+            name1: str, phone1: str, name2: str, phone2: str
+        ) -> float:
             # Simple similarity calculation
             name_sim = (
                 1.0

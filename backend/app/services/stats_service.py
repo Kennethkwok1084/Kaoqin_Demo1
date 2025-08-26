@@ -1420,12 +1420,12 @@ class StatisticsService:
     ) -> Dict[str, Any]:
         """
         获取成员工时统计
-        
+
         Args:
-            member_id: 成员ID  
+            member_id: 成员ID
             year: 年份
             month: 月份
-            
+
         Returns:
             Dict: 成员工时统计数据
         """
@@ -1433,25 +1433,23 @@ class StatisticsService:
             # 计算月份范围
             start_date = datetime(year, month, 1)
             from calendar import monthrange
+
             _, last_day = monthrange(year, month)
             end_date = datetime(year, month, last_day, 23, 59, 59)
-            
+
             # 使用现有方法计算统计
             work_hour_stats = await self._get_member_work_hour_statistics(
                 member_id, start_date, end_date
             )
-            
+
             return {
                 "member_id": member_id,
                 "year": year,
                 "month": month,
-                "period": {
-                    "from": start_date.isoformat(),
-                    "to": end_date.isoformat()
-                },
-                **work_hour_stats
+                "period": {"from": start_date.isoformat(), "to": end_date.isoformat()},
+                **work_hour_stats,
             }
-            
+
         except Exception as e:
             logger.error(f"Get member work hour statistics error: {str(e)}")
             raise
@@ -1461,27 +1459,27 @@ class StatisticsService:
     ) -> Dict[str, Any]:
         """
         生成综合系统报告
-        
+
         Args:
             start_date: 开始时间
             end_date: 结束时间
-            
+
         Returns:
             Dict: 综合报告数据
         """
         try:
             import asyncio
-            
+
             # 并行获取各类统计数据
             overview_task = asyncio.create_task(
                 self.get_overview_statistics(start_date, end_date)
             )
-            
+
             # 获取活跃成员列表
             members_query = select(Member).where(Member.is_active.is_(True))
             members_result = await self.db.execute(members_query)
             active_members = members_result.scalars().all()
-            
+
             # 生成成员绩效报告
             member_reports = []
             for member in active_members[:50]:  # 限制前50名成员
@@ -1491,26 +1489,25 @@ class StatisticsService:
                     )
                     member_reports.append(member_report)
                 except Exception as e:
-                    logger.warning(f"Failed to get report for member {member.id}: {str(e)}")
-            
+                    logger.warning(
+                        f"Failed to get report for member {member.id}: {str(e)}"
+                    )
+
             # 团队对比分析
             team_comparison = await self.get_team_comparison_report(
                 None, start_date, end_date, limit=20
             )
-            
-            # 月度趋势分析  
+
+            # 月度趋势分析
             trends = await self.get_monthly_trends(months=6)
-            
+
             # 等待总览统计完成
             overview_stats = await overview_task
-            
+
             return {
                 "report_type": "comprehensive",
                 "generated_at": datetime.now().isoformat(),
-                "period": {
-                    "from": start_date.isoformat(),
-                    "to": end_date.isoformat()
-                },
+                "period": {"from": start_date.isoformat(), "to": end_date.isoformat()},
                 "overview": overview_stats,
                 "member_reports": member_reports,
                 "team_comparison": team_comparison,
@@ -1518,10 +1515,14 @@ class StatisticsService:
                 "summary": {
                     "total_members_analyzed": len(member_reports),
                     "total_active_members": len(active_members),
-                    "analysis_completeness": len(member_reports) / len(active_members) if active_members else 0
-                }
+                    "analysis_completeness": (
+                        len(member_reports) / len(active_members)
+                        if active_members
+                        else 0
+                    ),
+                },
             }
-            
+
         except Exception as e:
             logger.error(f"Get comprehensive report error: {str(e)}")
             raise
@@ -1531,47 +1532,54 @@ class StatisticsService:
     ) -> Dict[str, Any]:
         """
         获取团队统计汇总
-        
+
         Args:
             start_date: 开始时间
             end_date: 结束时间
-            
+
         Returns:
             Dict: 团队统计汇总数据
         """
         try:
             # 获取概览统计
             overview = await self.get_overview_statistics(start_date, end_date)
-            
+
             # 获取活跃成员数量
-            members_query = select(func.count(Member.id)).where(Member.is_active.is_(True))
+            members_query = select(func.count(Member.id)).where(
+                Member.is_active.is_(True)
+            )
             members_result = await self.db.execute(members_query)
             team_size = members_result.scalar() or 0
-            
+
             # 从概览统计中提取关键数据
             summary = overview.get("summary", {})
             work_hours_data = overview.get("work_hours", {})
             tasks_data = overview.get("tasks", {})
             performance_data = overview.get("performance", {})
-            
+
             total_work_hours = float(work_hours_data.get("total_hours", 0))
             total_completed_tasks = int(tasks_data.get("completed_count", 0))
-            
+
             return {
-                "period": {
-                    "from": start_date.isoformat(),
-                    "to": end_date.isoformat()
-                },
+                "period": {"from": start_date.isoformat(), "to": end_date.isoformat()},
                 "team_size": team_size,
                 "total_work_hours": total_work_hours,
-                "avg_work_hours": round(total_work_hours / team_size, 2) if team_size > 0 else 0,
+                "avg_work_hours": (
+                    round(total_work_hours / team_size, 2) if team_size > 0 else 0
+                ),
                 "total_completed_tasks": total_completed_tasks,
-                "avg_tasks_per_member": round(total_completed_tasks / team_size, 2) if team_size > 0 else 0,
-                "team_efficiency": round(performance_data.get("overall_rating", 0) * 20, 1),  # Convert 5-scale to 100-scale
-                "completion_rate": tasks_data.get("repair_tasks", {}).get("completion_rate", 0),
-                "generated_at": datetime.now().isoformat()
+                "avg_tasks_per_member": (
+                    round(total_completed_tasks / team_size, 2) if team_size > 0 else 0
+                ),
+                "team_efficiency": round(
+                    performance_data.get("overall_rating", 0) * 20, 1
+                ),  # Convert 5-scale to 100-scale
+                "completion_rate": tasks_data.get("repair_tasks", {}).get(
+                    "completion_rate", 0
+                ),
+                "generated_at": datetime.now().isoformat(),
             }
-            
+
         except Exception as e:
             logger.error(f"Get team statistics summary error: {str(e)}")
             raise
@@ -1579,35 +1587,37 @@ class StatisticsService:
     async def invalidate_member_cache(self, member_id: int) -> Dict[str, Any]:
         """
         清除成员相关的缓存
-        
+
         Args:
             member_id: 成员ID
-            
+
         Returns:
             Dict: 缓存清除结果
         """
         try:
             # 清除成员相关的统计缓存
             cache_keys_cleared = []
-            
+
             # 如果有缓存系统，这里会清除相关缓存键
             # 目前返回模拟的结果
             cache_keys_cleared = [
                 f"member:{member_id}:work_hours",
                 f"member:{member_id}:tasks",
                 f"member:{member_id}:performance",
-                f"member:{member_id}:statistics"
+                f"member:{member_id}:statistics",
             ]
-            
-            logger.info(f"Invalidated cache for member {member_id}, keys: {cache_keys_cleared}")
-            
+
+            logger.info(
+                f"Invalidated cache for member {member_id}, keys: {cache_keys_cleared}"
+            )
+
             return {
                 "cache_cleared": True,
                 "member_id": member_id,
                 "keys_cleared": cache_keys_cleared,
-                "cleared_at": datetime.now().isoformat()
+                "cleared_at": datetime.now().isoformat(),
             }
-            
+
         except Exception as e:
             logger.error(f"Invalidate member cache error: {str(e)}")
             raise

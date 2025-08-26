@@ -7,10 +7,10 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import get_password_hash, verify_password
-from app.models.member import Member, UserRole
-from app.main import app as fastapi_app
 from app.core.database import get_async_session
+from app.core.security import get_password_hash, verify_password
+from app.main import app as fastapi_app
+from app.models.member import Member, UserRole
 
 
 class TestSimpleAuth:
@@ -41,20 +41,21 @@ class TestSimpleAuth:
             is_active=True,
             is_verified=True,
         )
-        
+
         async_session.add(user)
         await async_session.commit()
         await async_session.refresh(user)
-        
+
         print(f"Created user: {user.id}, {user.student_id}, {user.name}")
-        
+
         # Find user by student_id
         from sqlalchemy import select
+
         result = await async_session.execute(
             select(Member).where(Member.student_id == "SIMPLE001")
         )
         found_user = result.scalar_one_or_none()
-        
+
         assert found_user is not None
         assert found_user.student_id == "SIMPLE001"
         assert found_user.name == "Simple Test User"
@@ -65,11 +66,11 @@ class TestSimpleAuth:
         # Create a simple test client
         with TestClient(fastapi_app) as client:
             # Try to login with a user that definitely doesn't exist
-            response = client.post("/api/v1/auth/login", json={
-                "student_id": "NONEXISTENT999",
-                "password": "TestPassword123!"
-            })
-            
+            response = client.post(
+                "/api/v1/auth/login",
+                json={"student_id": "NONEXISTENT999", "password": "TestPassword123!"},
+            )
+
             # Should get 401 because user doesn't exist
             assert response.status_code == 401
             data = response.json()

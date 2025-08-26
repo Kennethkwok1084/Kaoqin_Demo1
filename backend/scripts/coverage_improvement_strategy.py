@@ -481,7 +481,8 @@ async def main():
         ai_recommendations = await ai_system.analyze_and_recommend(test_results)
         print(
             f"Generated {
-                ai_recommendations['metadata']['total_recommendations']} AI recommendations")
+                ai_recommendations['metadata']['total_recommendations']} AI recommendations"
+        )
     else:
         print("\nAI recommendations skipped (OpenAI dependency not available)")
         ai_recommendations = {"metadata": {"total_recommendations": 0}}

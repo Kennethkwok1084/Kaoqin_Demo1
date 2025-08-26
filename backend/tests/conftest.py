@@ -87,6 +87,7 @@ async def setup_database(test_engine):
         async with test_engine.begin() as conn:
             # Only clean up if we're in test mode
             import os
+
             if os.getenv("TESTING") == "true":
                 pass  # Let the transaction rollback handle cleanup
     except Exception:
@@ -100,9 +101,9 @@ async def async_session(
     """Create async database session for testing with proper isolation."""
     # Create a new session for each test to ensure isolation
     async with AsyncSession(
-        test_engine, 
+        test_engine,
         expire_on_commit=False,
-        autoflush=False  # Prevent automatic flushing that can cause async issues
+        autoflush=False,  # Prevent automatic flushing that can cause async issues
     ) as session:
         try:
             yield session
@@ -151,10 +152,10 @@ async def client_with_db(
 async def test_user() -> Member:
     """Create a test user directly using the test engine."""
     from tests.database_config import test_config
-    
+
     # Create the test user in the same database that the API will use
     engine = await test_config.create_test_engine()
-    
+
     async with AsyncSession(engine, expire_on_commit=False) as session:
         user = Member(
             username="test_user",
@@ -172,13 +173,13 @@ async def test_user() -> Member:
         session.add(user)
         await session.commit()
         await session.refresh(user)
-        
+
         yield user
-        
+
         # Cleanup - delete the user after test
         await session.delete(user)
         await session.commit()
-    
+
     await engine.dispose()
 
 
@@ -287,7 +288,7 @@ def event_loop():
     """Create a new event loop for each test function to ensure isolation."""
     policy = asyncio.get_event_loop_policy()
     loop = policy.new_event_loop()
-    
+
     try:
         yield loop
     finally:
@@ -297,7 +298,7 @@ def event_loop():
             pending = asyncio.all_tasks(loop)
             for task in pending:
                 task.cancel()
-            
+
             # Wait for all tasks to complete cancellation if there are any
             if pending:
                 try:
@@ -306,7 +307,7 @@ def event_loop():
                     )
                 except Exception:
                     pass  # Ignore task cleanup errors
-                
+
         except Exception:
             pass  # Ignore cleanup errors
         finally:

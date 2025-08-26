@@ -58,7 +58,7 @@ class Settings(BaseSettings):
         # If explicitly set in environment variables, always use it
         if isinstance(v, str) and v:
             return v
-            
+
         # Check for explicit DATABASE_URL environment variable first
         explicit_db_url = os.getenv("DATABASE_URL")
         if explicit_db_url:
@@ -89,7 +89,7 @@ class Settings(BaseSettings):
         # If explicitly set in environment variables, always use it
         if isinstance(v, str) and v:
             return v
-            
+
         # Check for explicit DATABASE_URL_SYNC environment variable first
         explicit_db_url = os.getenv("DATABASE_URL_SYNC")
         if explicit_db_url:

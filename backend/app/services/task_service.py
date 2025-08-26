@@ -5,7 +5,7 @@
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import and_, desc, func, or_, select
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 class TaskService:
     """任务管理服务"""
 
-    def __init__(self, db: Optional[AsyncSession]):
+    def __init__(self, db: Optional[AsyncSession]) -> None:
         if db is None:
             raise ValueError("Database session is required")
         self.db: AsyncSession = db
@@ -45,7 +45,10 @@ class TaskService:
         self.rush_task_service: RushTaskMarkingService = RushTaskMarkingService(db)
 
     async def create_repair_task(
-        self, task_data: Optional[Dict[str, Any]] = None, creator_id: Optional[int] = None, **kwargs
+        self,
+        task_data: Optional[Dict[str, Any]] = None,
+        creator_id: Optional[int] = None,
+        **kwargs: Any,
     ) -> RepairTask:
         """
         创建维修任务 - 支持多种调用方式
@@ -1009,11 +1012,11 @@ class TaskService:
     ) -> Dict[str, Any]:
         """
         批量为任务添加爆单标签的内部方法
-        
+
         Args:
             tasks: 任务列表
             marker_id: 标记者ID
-            
+
         Returns:
             Dict: 操作结果统计
         """
@@ -1021,50 +1024,53 @@ class TaskService:
             success_count = 0
             failed_count = 0
             errors = []
-            
+
             # 获取或创建爆单标签
             rush_tag = await self._get_or_create_rush_tag()
-            
+
             for task in tasks:
                 try:
                     # 检查任务状态是否允许标记爆单
-                    if task.status not in [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS]:
+                    if task.status not in [
+                        TaskStatus.COMPLETED,
+                        TaskStatus.IN_PROGRESS,
+                    ]:
                         errors.append(f"任务{task.id}状态不允许标记爆单")
                         failed_count += 1
                         continue
-                    
+
                     # 检查是否已经标记为爆单
                     if task.is_rush_order:
                         errors.append(f"任务{task.id}已被标记为爆单")
                         failed_count += 1
                         continue
-                    
+
                     # 添加爆单标签
                     task.is_rush_order = True
                     if rush_tag not in task.tags:
                         task.tags.append(rush_tag)
-                    
+
                     # 重新计算工时
                     task.update_work_minutes()
-                    
+
                     success_count += 1
-                    
+
                 except Exception as e:
                     error_msg = f"任务{task.id}标记失败: {str(e)}"
                     errors.append(error_msg)
                     failed_count += 1
                     logger.warning(error_msg)
-            
+
             # 提交数据库更改
             await self.db.commit()
-            
+
             return {
                 "success": success_count,
                 "failed": failed_count,
                 "errors": errors,
-                "total": len(tasks)
+                "total": len(tasks),
             }
-            
+
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Bulk add rush tags error: {str(e)}")
@@ -1072,7 +1078,7 @@ class TaskService:
                 "success": 0,
                 "failed": len(tasks),
                 "errors": [f"批量操作失败: {str(e)}"],
-                "total": len(tasks)
+                "total": len(tasks),
             }
 
     async def _get_or_create_rush_tag(self) -> TaskTag:
@@ -1082,21 +1088,21 @@ class TaskService:
             tag_query = select(TaskTag).where(
                 and_(
                     TaskTag.name == "爆单任务",
-                    TaskTag.tag_type == TaskTagType.RUSH_ORDER
+                    TaskTag.tag_type == TaskTagType.RUSH_ORDER,
                 )
             )
             result = await self.db.execute(tag_query)
             tag = result.scalar_one_or_none()
-            
+
             if tag:
                 return tag
-            
+
             # 创建新的爆单标签
             tag = TaskTag.create_rush_order_tag()
             self.db.add(tag)
             await self.db.flush()
             return tag
-            
+
         except Exception as e:
             logger.error(f"Get or create rush tag error: {str(e)}")
             raise
@@ -1105,16 +1111,16 @@ class TaskService:
         self,
         task_ids: List[int],
         marker_id: int,
-        options: Optional[Dict[str, Any]] = None
+        options: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         批量标记爆单任务
-        
+
         Args:
             task_ids: 任务ID列表
             marker_id: 标记者ID
             options: 可选参数
-            
+
         Returns:
             Dict: 操作结果统计
         """
@@ -1123,23 +1129,23 @@ class TaskService:
             user_query = select(Member).where(Member.id == marker_id)
             user_result = await self.db.execute(user_query)
             user = user_result.scalar_one_or_none()
-            
+
             if not user:
                 return {
                     "success": 0,
                     "failed": len(task_ids),
                     "errors": ["用户不存在"],
-                    "total": len(task_ids)
+                    "total": len(task_ids),
                 }
-            
+
             if user.role not in [UserRole.ADMIN, UserRole.GROUP_LEADER]:
                 return {
                     "success": 0,
                     "failed": len(task_ids),
                     "errors": ["权限不足，只有管理员和组长可以标记爆单任务"],
-                    "total": len(task_ids)
+                    "total": len(task_ids),
                 }
-            
+
             # 查询任务
             tasks_query = (
                 select(RepairTask)
@@ -1148,20 +1154,20 @@ class TaskService:
             )
             tasks_result = await self.db.execute(tasks_query)
             tasks = list(tasks_result.scalars().all())
-            
+
             # 检查任务是否存在
             found_task_ids = {task.id for task in tasks}
             missing_task_ids = set(task_ids) - found_task_ids
-            
+
             # 使用内部方法进行批量标记
             result = await self._bulk_add_rush_tags(tasks, marker_id)
-            
+
             # 添加缺失任务的错误信息（如果内部方法还没有处理）
             if missing_task_ids:
                 # 检查是否内部方法已经处理了缺失任务的错误
                 current_error_count = len(result["errors"])
                 expected_error_count = result["failed"]
-                
+
                 # 如果错误数量和失败数量已经匹配（说明mock已经处理了），则不重复添加
                 if current_error_count < expected_error_count:
                     for missing_id in missing_task_ids:
@@ -1172,21 +1178,21 @@ class TaskService:
                     for missing_id in missing_task_ids:
                         result["errors"].append(f"任务{missing_id}不存在")
                     result["failed"] += len(missing_task_ids)
-            
+
             logger.info(
                 f"Bulk mark rush tasks completed: {result['success']} success, "
                 f"{result['failed']} failed by user {marker_id}"
             )
-            
+
             return result
-            
+
         except Exception as e:
             logger.error(f"Bulk mark rush tasks error: {str(e)}")
             return {
                 "success": 0,
                 "failed": len(task_ids),
                 "errors": [f"批量标记失败: {str(e)}"],
-                "total": len(task_ids)
+                "total": len(task_ids),
             }
 
     async def get_repair_task(self, task_id: int) -> Optional[RepairTask]:
@@ -1278,33 +1284,35 @@ class TaskService:
             now = datetime.utcnow()
             response_deadline = now - timedelta(hours=24)
             completion_deadline = now - timedelta(hours=48)
-            
+
             query = (
                 select(RepairTask)
                 .options(selectinload(RepairTask.tags), joinedload(RepairTask.member))
                 .where(
                     and_(
                         # 未完成的任务
-                        RepairTask.status.in_([TaskStatus.PENDING, TaskStatus.IN_PROGRESS]),
+                        RepairTask.status.in_(
+                            [TaskStatus.PENDING, TaskStatus.IN_PROGRESS]
+                        ),
                         # 任务逾期条件：响应超时、完成超时或截止时间已过
                         or_(
                             # 响应超时：报告时间 < (当前时间 - 24小时) 且 未响应
                             and_(
                                 RepairTask.response_time.is_(None),
-                                RepairTask.report_time < response_deadline
+                                RepairTask.report_time < response_deadline,
                             ),
                             # 完成超时：响应时间 < (当前时间 - 48小时) 且 未完成
                             and_(
                                 RepairTask.response_time.isnot(None),
                                 RepairTask.completion_time.is_(None),
-                                RepairTask.response_time < completion_deadline
+                                RepairTask.response_time < completion_deadline,
                             ),
                             # 截止时间已过：due_date < 当前时间
                             and_(
                                 RepairTask.due_date.isnot(None),
-                                RepairTask.due_date < now
-                            )
-                        )
+                                RepairTask.due_date < now,
+                            ),
+                        ),
                     )
                 )
                 .order_by(desc(RepairTask.report_time))
@@ -1343,10 +1351,12 @@ class TaskService:
                 .options(selectinload(RepairTask.tags), joinedload(RepairTask.member))
                 .where(
                     and_(
-                        RepairTask.status.in_([TaskStatus.PENDING, TaskStatus.IN_PROGRESS]),
+                        RepairTask.status.in_(
+                            [TaskStatus.PENDING, TaskStatus.IN_PROGRESS]
+                        ),
                         RepairTask.due_date.isnot(None),
                         RepairTask.due_date <= now + timedelta(hours=hours),
-                        RepairTask.due_date > now
+                        RepairTask.due_date > now,
                     )
                 )
                 .order_by(RepairTask.due_date)
@@ -1358,7 +1368,9 @@ class TaskService:
             result = await self.db.execute(query)
             approaching_tasks = list(result.scalars().all())
 
-            logger.info(f"Found {len(approaching_tasks)} tasks approaching deadline within {hours} hours")
+            logger.info(
+                f"Found {len(approaching_tasks)} tasks approaching deadline within {hours} hours"
+            )
             return approaching_tasks
 
         except Exception as e:
@@ -1404,7 +1416,7 @@ class TaskService:
 
             # 权限检查
             if not self._can_access_monitoring_task(user, task):
-                raise PermissionDeniedError(message="无权限查看此监控任务", message_key=None)
+                raise PermissionDeniedError(message="无权限查看此监控任务")
 
             logger.info(f"User {user_id} accessed monitoring task {task_id}")
             return task
@@ -1439,9 +1451,13 @@ class TaskService:
             query = select(MonitoringTask).options(joinedload(MonitoringTask.member))
 
             # 应用权限过滤
-            filtered_tasks = await self._apply_monitoring_task_filters(user, query, filters)
+            filtered_tasks = await self._apply_monitoring_task_filters(
+                user, query, filters
+            )
 
-            logger.info(f"User {user_id} retrieved {len(filtered_tasks)} monitoring tasks")
+            logger.info(
+                f"User {user_id} retrieved {len(filtered_tasks)} monitoring tasks"
+            )
             return filtered_tasks
 
         except Exception as e:
@@ -1465,7 +1481,7 @@ class TaskService:
 
             await self.db.delete(task)
             await self.db.commit()
-            
+
             logger.info(f"Task {task_id} deleted successfully")
             return True
 
@@ -1516,7 +1532,7 @@ class TaskService:
         return await self.get_member_task_summary(member_id, date_from, date_to)
 
     async def _apply_monitoring_task_filters(
-        self, user: Member, query, filters: Dict[str, Any]
+        self, user: Member, query: Any, filters: Dict[str, Any]
     ) -> List[MonitoringTask]:
         """
         应用监控任务权限过滤
@@ -1548,7 +1564,9 @@ class TaskService:
             if filters.get("date_to"):
                 query = query.where(MonitoringTask.start_time <= filters["date_to"])
             if filters.get("location"):
-                query = query.where(MonitoringTask.location.ilike(f"%{filters['location']}%"))
+                query = query.where(
+                    MonitoringTask.location.ilike(f"%{filters['location']}%")
+                )
 
             result = await self.db.execute(query)
             return list(result.scalars().all())
@@ -1571,16 +1589,16 @@ class TaskService:
         # 管理员可以访问所有任务
         if user.role == UserRole.ADMIN:
             return True
-        
+
         # 任务所有者可以访问自己的任务
         if task.member_id == user.id:
             return True
-            
+
         # 组长可以访问团队成员的任务（简化实现，实际需要查询团队关系）
         if user.role == UserRole.GROUP_LEADER:
             # 这里简化处理，实际应该查询团队关系
             return True
-            
+
         return False
 
     async def _get_team_member_ids(self, leader_id: int) -> List[int]:
@@ -1605,10 +1623,7 @@ class TaskService:
 
             # 查询同部门成员（简化实现）
             team_query = select(Member.id).where(
-                and_(
-                    Member.department == leader.department,
-                    Member.is_active.is_(True)
-                )
+                and_(Member.department == leader.department, Member.is_active.is_(True))
             )
             team_result = await self.db.execute(team_query)
             team_member_ids = [row[0] for row in team_result.fetchall()]
@@ -1835,80 +1850,77 @@ class TaskService:
             )
 
     async def complete_task(
-        self, 
-        task_id: int, 
+        self,
+        task_id: int,
         completion_data: Dict[str, Any],
-        operator_id: Optional[int] = None
+        operator_id: Optional[int] = None,
     ) -> RepairTask:
         """
         完成任务
-        
+
         Args:
             task_id: 任务ID
             completion_data: 完成数据（包含 rating、feedback 等）
             operator_id: 操作者ID
-            
+
         Returns:
             RepairTask: 完成的任务
         """
         try:
             # 更新任务状态为完成
             task = await self.update_task_status(
-                task_id, 
-                TaskStatus.COMPLETED, 
+                task_id,
+                TaskStatus.COMPLETED,
                 operator_id or 1,
                 completion_data.get("completion_note"),
-                completion_data.get("actual_minutes")
+                completion_data.get("actual_minutes"),
             )
-            
+
             # 添加评分和反馈
-            if completion_data.get("rating") is not None or completion_data.get("feedback"):
+            if completion_data.get("rating") is not None or completion_data.get(
+                "feedback"
+            ):
                 task = await self.add_task_feedback(
                     task_id,
                     completion_data.get("rating", 5),
                     completion_data.get("feedback"),
-                    operator_id
+                    operator_id,
                 )
-                
+
             logger.info(f"Task {task_id} completed by operator {operator_id}")
             return task
-            
+
         except Exception as e:
             logger.error(f"Complete task error: {str(e)}")
             raise
-            
+
     async def _create_monitoring_task_internal(
-        self, 
-        task_data: Dict[str, Any], 
-        creator_id: int
+        self, task_data: Dict[str, Any], creator_id: int
     ) -> MonitoringTask:
         """
         内部方法：创建监控任务
-        
+
         Args:
             task_data: 任务数据
             creator_id: 创建者ID
-            
+
         Returns:
             MonitoringTask: 创建的监控任务
         """
         # 调用公共方法
         return await self.create_monitoring_task(task_data, creator_id)
-        
+
     async def _update_monitoring_task_internal(
-        self, 
-        task_id: int, 
-        update_data: Dict[str, Any],
-        operator_id: int
+        self, task_id: int, update_data: Dict[str, Any], operator_id: int
     ) -> MonitoringTask:
         """
         内部方法：更新监控任务
-        
+
         Args:
             task_id: 任务ID
             update_data: 更新数据
             operator_id: 操作者ID
-            
+
         Returns:
             MonitoringTask: 更新后的监控任务
         """
@@ -1917,10 +1929,10 @@ class TaskService:
             query = select(MonitoringTask).where(MonitoringTask.id == task_id)
             result = await self.db.execute(query)
             task = result.scalar_one_or_none()
-            
+
             if not task:
                 raise ValueError("监控任务不存在")
-                
+
             # 更新字段
             if "title" in update_data:
                 task.title = update_data["title"]
@@ -1934,20 +1946,23 @@ class TaskService:
                 task.start_time = update_data["start_time"]
             if "end_time" in update_data:
                 task.end_time = update_data["end_time"]
-                
+
             # 重新计算工时
             if "start_time" in update_data or "end_time" in update_data:
-                duration = task.end_time - task.start_time
-                task.work_minutes = int(duration.total_seconds() / 60)
-                
+                if task.end_time and task.start_time:
+                    duration = task.end_time - task.start_time
+                    task.work_minutes = int(duration.total_seconds() / 60)
+                else:
+                    task.work_minutes = 0
+
             task.updated_at = datetime.utcnow()
-            
+
             await self.db.commit()
             await self.db.refresh(task)
-            
+
             logger.info(f"Monitoring task {task_id} updated by operator {operator_id}")
             return task
-            
+
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Update monitoring task internal error: {str(e)}")
@@ -1956,11 +1971,11 @@ class TaskService:
     async def _check_team_permission(self, user_id: int, target_member_id: int) -> bool:
         """
         检查用户是否有团队权限
-        
+
         Args:
             user_id: 用户ID
             target_member_id: 目标成员ID
-            
+
         Returns:
             bool: 是否有权限
         """
@@ -1969,43 +1984,40 @@ class TaskService:
             user_query = select(Member).where(Member.id == user_id)
             user_result = await self.db.execute(user_query)
             user = user_result.scalar_one_or_none()
-            
+
             if not user:
                 return False
-                
+
             # 管理员有所有权限
             if user.role == UserRole.ADMIN:
                 return True
-                
+
             # 用户可以操作自己
             if user_id == target_member_id:
                 return True
-                
+
             # 组长可以操作团队成员
             if user.role == UserRole.GROUP_LEADER:
                 team_member_ids = await self._get_team_member_ids(user_id)
                 return target_member_id in team_member_ids
-                
+
             return False
-            
+
         except Exception as e:
             logger.error(f"Check team permission error: {str(e)}")
             return False
-            
+
     async def update_monitoring_task(
-        self, 
-        task_id: int, 
-        update_data: Dict[str, Any],
-        operator_id: int
+        self, task_id: int, update_data: Dict[str, Any], operator_id: int
     ) -> MonitoringTask:
         """
         更新监控任务（公共接口）
-        
+
         Args:
             task_id: 任务ID
             update_data: 更新数据
             operator_id: 操作者ID
-            
+
         Returns:
             MonitoringTask: 更新后的监控任务
         """
@@ -2014,36 +2026,35 @@ class TaskService:
             query = select(MonitoringTask).where(MonitoringTask.id == task_id)
             result = await self.db.execute(query)
             task = result.scalar_one_or_none()
-            
+
             if not task:
                 raise ValueError("监控任务不存在")
-                
+
             # 权限检查
-            if not await self._check_team_permission(operator_id, task.member_id):
-                raise PermissionDeniedError(
-                    message="无权限更新此监控任务",
-                    message_key=None
-                )
-                
+            if task.member_id is not None and not await self._check_team_permission(
+                operator_id, task.member_id
+            ):
+                raise PermissionDeniedError(message="无权限更新此监控任务")
+
             # 调用内部方法完成更新
-            return await self._update_monitoring_task_internal(task_id, update_data, operator_id)
-            
+            return await self._update_monitoring_task_internal(
+                task_id, update_data, operator_id
+            )
+
         except Exception as e:
             logger.error(f"Update monitoring task error: {str(e)}")
             raise
 
     async def get_pending_tasks_by_priority(
-        self, 
-        member_id: Optional[int] = None, 
-        limit: Optional[int] = None
+        self, member_id: Optional[int] = None, limit: Optional[int] = None
     ) -> List[RepairTask]:
         """
         获取按优先级排序的待处理任务
-        
+
         Args:
             member_id: 可选的成员ID筛选
             limit: 可选的结果限制
-            
+
         Returns:
             List[RepairTask]: 按优先级排序的待处理任务列表
         """
@@ -2051,20 +2062,20 @@ class TaskService:
             # 定义优先级排序：URGENT > HIGH > MEDIUM > LOW
             priority_order = {
                 TaskPriority.URGENT: 1,
-                TaskPriority.HIGH: 2, 
+                TaskPriority.HIGH: 2,
                 TaskPriority.MEDIUM: 3,
-                TaskPriority.LOW: 4
+                TaskPriority.LOW: 4,
             }
-            
+
             query = (
                 select(RepairTask)
                 .options(selectinload(RepairTask.tags), joinedload(RepairTask.member))
                 .where(RepairTask.status == TaskStatus.PENDING)
             )
-            
+
             if member_id:
                 query = query.where(RepairTask.member_id == member_id)
-                
+
             # 按优先级和报告时间排序
             query = query.order_by(
                 # 优先级排序 (通过case语句)
@@ -2072,60 +2083,60 @@ class TaskService:
                     (RepairTask.priority == TaskPriority.URGENT, 1),
                     (RepairTask.priority == TaskPriority.HIGH, 2),
                     (RepairTask.priority == TaskPriority.MEDIUM, 3),
-                    else_=4
+                    else_=4,
                 ),
-                desc(RepairTask.report_time)  # 同优先级按时间倒序
+                desc(RepairTask.report_time),  # 同优先级按时间倒序
             )
-            
+
             if limit:
                 query = query.limit(limit)
-                
+
             result = await self.db.execute(query)
             tasks = list(result.scalars().all())
-            
+
             logger.info(f"Retrieved {len(tasks)} pending tasks by priority")
             return tasks
-            
+
         except Exception as e:
             logger.error(f"Get pending tasks by priority error: {str(e)}")
             raise
 
     async def bulk_update_task_status(
-        self, 
-        task_ids: List[int], 
+        self,
+        task_ids: List[int],
         new_status: TaskStatus,
         operator_id: Optional[int] = None,
-        note: Optional[str] = None
+        note: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         批量更新任务状态
-        
+
         Args:
             task_ids: 任务ID列表
             new_status: 新状态
             operator_id: 操作者ID
             note: 操作备注
-            
+
         Returns:
             Dict: 批量更新结果
         """
         try:
             if not task_ids:
                 return {"updated": 0, "failed": 0, "errors": []}
-                
+
             # 查询任务
             query = (
                 select(RepairTask)
                 .options(selectinload(RepairTask.tags))
                 .where(RepairTask.id.in_(task_ids))
             )
-            result = await self.db.execute(query)
-            tasks = list(result.scalars().all())
-            
+            query_result = await self.db.execute(query)
+            tasks = list(query_result.scalars().all())
+
             updated_count = 0
             failed_count = 0
             errors = []
-            
+
             for task in tasks:
                 try:
                     # 验证状态转换
@@ -2134,16 +2145,18 @@ class TaskService:
                         errors.append(error_msg)
                         failed_count += 1
                         continue
-                    
+
                     old_status = task.status
                     task.status = new_status
-                    
+
                     # 更新时间戳
                     if new_status == TaskStatus.IN_PROGRESS and not task.response_time:
                         task.response_time = datetime.utcnow()
-                    elif new_status == TaskStatus.COMPLETED and not task.completion_time:
+                    elif (
+                        new_status == TaskStatus.COMPLETED and not task.completion_time
+                    ):
                         task.completion_time = datetime.utcnow()
-                    
+
                     # 添加操作备注
                     if note:
                         operation_log = f"\n\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - 批量操作: {note}"
@@ -2151,79 +2164,81 @@ class TaskService:
                             task.description += operation_log
                         else:
                             task.description = f"批量操作: {note}"
-                    
+
                     # 重新计算工时
                     task.update_work_minutes()
-                    
+
                     updated_count += 1
-                    logger.info(f"Task {task.id} status updated from {old_status.value} to {new_status.value}")
-                    
+                    logger.info(
+                        f"Task {task.id} status updated from {old_status.value} to {new_status.value}"
+                    )
+
                 except Exception as e:
                     error_msg = f"Task {task.id}: {str(e)}"
                     errors.append(error_msg)
                     failed_count += 1
                     logger.warning(f"Failed to update task {task.id}: {str(e)}")
-            
+
             await self.db.commit()
-            
+
             result = {
                 "updated": updated_count,
                 "failed": failed_count,
                 "total": len(task_ids),
                 "errors": errors,
-                "operator_id": operator_id
+                "operator_id": operator_id,
             }
-            
+
             logger.info(f"Bulk status update completed: {result}")
             return result
-            
+
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Bulk update task status error: {str(e)}")
             raise
 
-    async def create_repair_task_flexible(self, **kwargs) -> RepairTask:
+    async def create_repair_task_flexible(self, **kwargs: Any) -> RepairTask:
         """
         灵活创建维修任务（支持关键字参数）
-        
+
         Args:
             **kwargs: 任务参数，包括 title, description, location 等
-            
+
         Returns:
             RepairTask: 创建的任务
         """
         # 提取创建者ID，默认为1
         creator_id = kwargs.pop("creator_id", 1)
-        
+
         # 构建任务数据字典
         task_data = dict(kwargs)
-        
+
         # 如果没有指定 assigned_to，使用 member_id
         if "member_id" in kwargs and "assigned_to" not in kwargs:
             task_data["assigned_to"] = kwargs["member_id"]
-        
+
         return await self.create_repair_task(task_data, creator_id)
 
     async def get_tasks_by_date(
-        self, member_id: int, target_date: datetime.date
+        self, member_id: int, target_date: date
     ) -> List[RepairTask]:
         """
         根据指定日期获取成员的任务列表
-        
+
         Args:
             member_id: 成员ID
             target_date: 目标日期
-            
+
         Returns:
             List[RepairTask]: 任务列表
         """
         try:
             from datetime import datetime, time
-            
+
             # 构建日期范围
             start_datetime = datetime.combine(target_date, time.min)
             end_datetime = datetime.combine(target_date, time.max)
-            
+
             query = (
                 select(RepairTask)
                 .options(selectinload(RepairTask.tags))
@@ -2236,15 +2251,15 @@ class TaskService:
                 )
                 .order_by(desc(RepairTask.report_time))
             )
-            
+
             result = await self.db.execute(query)
             tasks = result.scalars().all()
-            
+
             logger.debug(
                 f"Found {len(tasks)} tasks for member {member_id} on {target_date}"
             )
             return list(tasks)
-            
+
         except Exception as e:
             logger.error(f"Get tasks by date error: {str(e)}")
             raise
@@ -2254,22 +2269,19 @@ class TaskService:
     ) -> List[RepairTask]:
         """
         根据时间段获取成员的任务列表
-        
+
         Args:
             member_id: 成员ID
             start_date: 开始时间
             end_date: 结束时间
-            
+
         Returns:
             List[RepairTask]: 任务列表
         """
         try:
             query = (
                 select(RepairTask)
-                .options(
-                    selectinload(RepairTask.tags),
-                    joinedload(RepairTask.member)
-                )
+                .options(selectinload(RepairTask.tags), joinedload(RepairTask.member))
                 .where(
                     and_(
                         RepairTask.member_id == member_id,
@@ -2279,16 +2291,16 @@ class TaskService:
                 )
                 .order_by(desc(RepairTask.report_time))
             )
-            
+
             result = await self.db.execute(query)
             tasks = result.scalars().all()
-            
+
             logger.debug(
                 f"Found {len(tasks)} tasks for member {member_id} "
                 f"between {start_date} and {end_date}"
             )
             return list(tasks)
-            
+
         except Exception as e:
             logger.error(f"Get tasks by period error: {str(e)}")
             raise
@@ -2298,37 +2310,34 @@ class TaskService:
     ) -> List[RepairTask]:
         """
         获取指定成员的任务列表
-        
+
         Args:
             member_id: 成员ID
             limit: 限制返回数量
-            
+
         Returns:
             List[RepairTask]: 任务列表
         """
         try:
             query = (
                 select(RepairTask)
-                .options(
-                    selectinload(RepairTask.tags),
-                    joinedload(RepairTask.member)
-                )
+                .options(selectinload(RepairTask.tags), joinedload(RepairTask.member))
                 .where(RepairTask.member_id == member_id)
                 .order_by(desc(RepairTask.report_time))
             )
-            
+
             if limit:
                 query = query.limit(limit)
-            
+
             result = await self.db.execute(query)
             tasks = result.scalars().all()
-            
+
             logger.debug(
                 f"Found {len(tasks)} tasks for member {member_id}"
                 + (f" (limited to {limit})" if limit else "")
             )
             return list(tasks)
-            
+
         except Exception as e:
             logger.error(f"Get member tasks error: {str(e)}")
             raise
@@ -2337,7 +2346,7 @@ class TaskService:
 class MonitoringTaskService:
     """监控任务服务"""
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
     async def create_monitoring_task(
@@ -2456,7 +2465,7 @@ class MonitoringTaskService:
 class AssistanceTaskService:
     """协助任务服务"""
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
         # Import needed services to avoid circular imports
         from app.services.work_hours_service import WorkHoursCalculationService
@@ -3111,11 +3120,11 @@ class AssistanceTaskService:
     ) -> Dict[str, Any]:
         """
         批量为任务添加爆单标签的内部方法
-        
+
         Args:
             tasks: 任务列表
             marker_id: 标记者ID
-            
+
         Returns:
             Dict: 操作结果统计
         """
@@ -3123,50 +3132,53 @@ class AssistanceTaskService:
             success_count = 0
             failed_count = 0
             errors = []
-            
+
             # 获取或创建爆单标签
             rush_tag = await self._get_or_create_rush_tag()
-            
+
             for task in tasks:
                 try:
                     # 检查任务状态是否允许标记爆单
-                    if task.status not in [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS]:
+                    if task.status not in [
+                        TaskStatus.COMPLETED,
+                        TaskStatus.IN_PROGRESS,
+                    ]:
                         errors.append(f"任务{task.id}状态不允许标记爆单")
                         failed_count += 1
                         continue
-                    
+
                     # 检查是否已经标记为爆单
                     if task.is_rush_order:
                         errors.append(f"任务{task.id}已被标记为爆单")
                         failed_count += 1
                         continue
-                    
+
                     # 添加爆单标签
                     task.is_rush_order = True
                     if rush_tag not in task.tags:
                         task.tags.append(rush_tag)
-                    
+
                     # 重新计算工时
                     task.update_work_minutes()
-                    
+
                     success_count += 1
-                    
+
                 except Exception as e:
                     error_msg = f"任务{task.id}标记失败: {str(e)}"
                     errors.append(error_msg)
                     failed_count += 1
                     logger.warning(error_msg)
-            
+
             # 提交数据库更改
             await self.db.commit()
-            
+
             return {
                 "success": success_count,
                 "failed": failed_count,
                 "errors": errors,
-                "total": len(tasks)
+                "total": len(tasks),
             }
-            
+
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Bulk add rush tags error: {str(e)}")
@@ -3174,7 +3186,7 @@ class AssistanceTaskService:
                 "success": 0,
                 "failed": len(tasks),
                 "errors": [f"批量操作失败: {str(e)}"],
-                "total": len(tasks)
+                "total": len(tasks),
             }
 
     async def _get_or_create_rush_tag(self) -> TaskTag:
@@ -3184,22 +3196,21 @@ class AssistanceTaskService:
             tag_query = select(TaskTag).where(
                 and_(
                     TaskTag.name == "爆单任务",
-                    TaskTag.tag_type == TaskTagType.RUSH_ORDER
+                    TaskTag.tag_type == TaskTagType.RUSH_ORDER,
                 )
             )
             result = await self.db.execute(tag_query)
             tag = result.scalar_one_or_none()
-            
+
             if tag:
                 return tag
-            
+
             # 创建新的爆单标签
             tag = TaskTag.create_rush_order_tag()
             self.db.add(tag)
             await self.db.flush()
             return tag
-            
+
         except Exception as e:
             logger.error(f"Get or create rush tag error: {str(e)}")
             raise
-

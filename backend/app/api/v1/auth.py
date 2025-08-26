@@ -59,7 +59,7 @@ async def login(
         user = result.scalar_one_or_none()
 
         # Handle potential coroutine return (for testing compatibility)
-        if hasattr(user, '__await__'):
+        if hasattr(user, "__await__"):
             user = await user  # type: ignore
 
         # Check if user exists and is active
@@ -168,7 +168,7 @@ async def refresh_token(
         user = result.scalar_one_or_none()
 
         # Handle potential coroutine return (for testing compatibility)
-        if hasattr(user, '__await__'):
+        if hasattr(user, "__await__"):
             user = await user  # type: ignore
 
         if not user or not user.is_active:
@@ -429,7 +429,7 @@ async def verify_user_token(
         user = result.scalar_one_or_none()
 
         # Handle potential coroutine return (for testing compatibility)
-        if hasattr(user, '__await__'):
+        if hasattr(user, "__await__"):
             user = await user  # type: ignore
 
         if not user or not user.is_active:

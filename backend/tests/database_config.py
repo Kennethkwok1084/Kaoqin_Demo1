@@ -6,9 +6,9 @@
 import asyncio
 
 import pytest
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
-from sqlalchemy import text
 
 import app.models  # noqa: F401
 import app.models.attendance  # noqa: F401
@@ -63,7 +63,6 @@ class DatabaseTestConfig:
             await conn.run_sync(Base.metadata.drop_all)
             # 创建所有表
             await conn.run_sync(Base.metadata.create_all)
-
 
 
 # 全局测试配置

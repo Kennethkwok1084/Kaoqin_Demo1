@@ -6,7 +6,7 @@ Monitoring Task Permissions Tests - 监控任务权限验证测试
 
 覆盖场景：
 1. 权限验证边界测试
-2. 时长有效性验证测试  
+2. 时长有效性验证测试
 3. 监控任务创建权限控制
 4. 监控任务修改权限限制
 5. 跨用户监控任务访问控制
@@ -20,15 +20,15 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import PermissionDeniedError, ValidationError
 from app.models.member import Member, UserRole
 from app.models.task import MonitoringTask, TaskStatus
 from app.services.task_service import TaskService
-from app.core.exceptions import PermissionDeniedError, ValidationError
 from tests.unit.test_helpers import (
+    MockMemberBuilder,
+    MockResultBuilder,
     MockSessionBuilder,
     MockTaskBuilder,
-    MockMemberBuilder,
-    MockResultBuilder
 )
 
 logger = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ def group_leader_user():
     """Create group leader user."""
     return MockMemberBuilder.group_leader(
         id=2,
-        username="leader_user", 
+        username="leader_user",
         name="组长",
         student_id="LEADER001",
         department="信息化建设处",
@@ -79,7 +79,7 @@ def regular_member():
         id=3,
         username="member_user",
         name="普通成员",
-        student_id="MEMBER001", 
+        student_id="MEMBER001",
         role=UserRole.MEMBER,
         is_active=True,
         department="信息化建设处",
@@ -93,7 +93,7 @@ def inactive_member():
     return MockMemberBuilder.inactive_member(
         id=4,
         username="inactive_user",
-        name="已停用成员", 
+        name="已停用成员",
         student_id="INACTIVE001",
         department="信息化建设处",
         class_name="停用班级",
@@ -129,13 +129,15 @@ class TestMonitoringTaskCreationPermissions:
             location=task_data["location"],
             description=task_data["description"],
             start_time=task_data["start_time"],
-            end_time=task_data["end_time"], 
+            end_time=task_data["end_time"],
             work_minutes=task_data["work_minutes"],
         )
 
-        with patch.object(task_service, '_create_monitoring_task_internal', return_value=expected_task):
+        with patch.object(
+            task_service, "_create_monitoring_task_internal", return_value=expected_task
+        ):
             result = await task_service.create_monitoring_task(admin_user.id, task_data)
-            
+
             assert result.member_id == admin_user.id
             assert result.location == task_data["location"]
             assert result.work_minutes == task_data["work_minutes"]
@@ -162,15 +164,19 @@ class TestMonitoringTaskCreationPermissions:
             id=2,
             member_id=group_leader_user.id,
             location=task_data["location"],
-            description=task_data["description"], 
+            description=task_data["description"],
             start_time=task_data["start_time"],
             end_time=task_data["end_time"],
             work_minutes=task_data["work_minutes"],
         )
 
-        with patch.object(task_service, '_create_monitoring_task_internal', return_value=expected_task):
-            result = await task_service.create_monitoring_task(group_leader_user.id, task_data)
-            
+        with patch.object(
+            task_service, "_create_monitoring_task_internal", return_value=expected_task
+        ):
+            result = await task_service.create_monitoring_task(
+                group_leader_user.id, task_data
+            )
+
             assert result.member_id == group_leader_user.id
             assert result.location == task_data["location"]
 
@@ -193,11 +199,17 @@ class TestMonitoringTaskCreationPermissions:
         mock_user_result.scalar_one_or_none.return_value = regular_member
         mock_db.execute.return_value = mock_user_result
 
-        # Since the service doesn't have built-in permission checks, 
+        # Since the service doesn't have built-in permission checks,
         # we'll simulate a permission error by making the service raise it directly
-        with patch.object(task_service, 'create_monitoring_task', side_effect=PermissionDeniedError("权限不足")):
+        with patch.object(
+            task_service,
+            "create_monitoring_task",
+            side_effect=PermissionDeniedError("权限不足"),
+        ):
             with pytest.raises(PermissionDeniedError):
-                await task_service.create_monitoring_task(task_data, creator_id=regular_member.id)
+                await task_service.create_monitoring_task(
+                    task_data, creator_id=regular_member.id
+                )
 
     @pytest.mark.asyncio
     async def test_inactive_member_cannot_create_monitoring_task(
@@ -219,9 +231,15 @@ class TestMonitoringTaskCreationPermissions:
         mock_db.execute.return_value = mock_user_result
 
         # Mock the permission checking that should detect inactive status
-        with patch.object(task_service, 'create_monitoring_task', side_effect=PermissionDeniedError("账户已停用")):
+        with patch.object(
+            task_service,
+            "create_monitoring_task",
+            side_effect=PermissionDeniedError("账户已停用"),
+        ):
             with pytest.raises(PermissionDeniedError, match="账户已停用"):
-                await task_service.create_monitoring_task(task_data, creator_id=inactive_member.id)
+                await task_service.create_monitoring_task(
+                    task_data, creator_id=inactive_member.id
+                )
 
 
 class TestMonitoringTaskTimeValidation:
@@ -233,8 +251,8 @@ class TestMonitoringTaskTimeValidation:
     ):
         """测试有效的监控任务时长"""
         valid_durations = [
-            30,   # 30分钟（最小有效时长）
-            60,   # 1小时（常见时长）
+            30,  # 30分钟（最小有效时长）
+            60,  # 1小时（常见时长）
             120,  # 2小时（标准时长）
             240,  # 4小时（长时监控）
             480,  # 8小时（全日监控）
@@ -260,20 +278,26 @@ class TestMonitoringTaskTimeValidation:
                 work_minutes=duration,
             )
 
-            with patch.object(task_service, '_create_monitoring_task_internal', return_value=expected_task):
-                result = await task_service.create_monitoring_task(admin_user.id, task_data)
+            with patch.object(
+                task_service,
+                "_create_monitoring_task_internal",
+                return_value=expected_task,
+            ):
+                result = await task_service.create_monitoring_task(
+                    admin_user.id, task_data
+                )
                 assert result.work_minutes == duration
 
-    @pytest.mark.asyncio 
+    @pytest.mark.asyncio
     async def test_invalid_monitoring_task_duration_too_short(
         self, task_service, mock_db, admin_user
     ):
         """测试过短的监控任务时长"""
         invalid_short_durations = [
-            0,    # 零时长
+            0,  # 零时长
             -10,  # 负数时长
-            5,    # 5分钟（过短）
-            15,   # 15分钟（过短）
+            5,  # 5分钟（过短）
+            15,  # 15分钟（过短）
         ]
 
         # Fix mock configuration - return the admin user object directly
@@ -292,9 +316,17 @@ class TestMonitoringTaskTimeValidation:
             }
 
             # Mock validation by patching the service method directly
-            with patch.object(task_service, 'create_monitoring_task', side_effect=ValidationError("监控任务时长必须在30-600分钟之间")):
-                with pytest.raises(ValidationError, match="监控任务时长必须在30-600分钟之间"):
-                    await task_service.create_monitoring_task(task_data, creator_id=admin_user.id)
+            with patch.object(
+                task_service,
+                "create_monitoring_task",
+                side_effect=ValidationError("监控任务时长必须在30-600分钟之间"),
+            ):
+                with pytest.raises(
+                    ValidationError, match="监控任务时长必须在30-600分钟之间"
+                ):
+                    await task_service.create_monitoring_task(
+                        task_data, creator_id=admin_user.id
+                    )
 
     @pytest.mark.asyncio
     async def test_invalid_monitoring_task_duration_too_long(
@@ -304,8 +336,8 @@ class TestMonitoringTaskTimeValidation:
         invalid_long_durations = [
             601,  # 刚好超过10小时上限
             720,  # 12小时（过长）
-            1440, # 24小时（过长）
-            9999, # 极端长时间
+            1440,  # 24小时（过长）
+            9999,  # 极端长时间
         ]
 
         # Fix mock configuration - return the admin user object directly
@@ -324,16 +356,22 @@ class TestMonitoringTaskTimeValidation:
             }
 
             # Mock validation by patching the service method directly
-            with patch.object(task_service, 'create_monitoring_task', side_effect=ValidationError("监控任务时长必须在30-600分钟之间")):
-                with pytest.raises(ValidationError, match="监控任务时长必须在30-600分钟之间"):
-                    await task_service.create_monitoring_task(task_data, creator_id=admin_user.id)
+            with patch.object(
+                task_service,
+                "create_monitoring_task",
+                side_effect=ValidationError("监控任务时长必须在30-600分钟之间"),
+            ):
+                with pytest.raises(
+                    ValidationError, match="监控任务时长必须在30-600分钟之间"
+                ):
+                    await task_service.create_monitoring_task(
+                        task_data, creator_id=admin_user.id
+                    )
 
     @pytest.mark.asyncio
-    async def test_time_consistency_validation(
-        self, task_service, mock_db, admin_user
-    ):
+    async def test_time_consistency_validation(self, task_service, mock_db, admin_user):
         """测试时间一致性验证"""
-        # Fix mock configuration - return the admin user object directly  
+        # Fix mock configuration - return the admin user object directly
         mock_user_result = Mock()
         mock_user_result.scalar_one_or_none.return_value = admin_user
         mock_db.execute.return_value = mock_user_result
@@ -346,20 +384,20 @@ class TestMonitoringTaskTimeValidation:
                 "start_time": base_time,
                 "end_time": base_time + timedelta(hours=2),
                 "work_minutes": 60,  # 不匹配的时长（应该是120分钟）
-                "error_msg": "工时与时间段不匹配"
+                "error_msg": "工时与时间段不匹配",
             },
             {
                 "start_time": base_time + timedelta(hours=1),
                 "end_time": base_time,  # 结束时间早于开始时间
                 "work_minutes": 60,
-                "error_msg": "结束时间不能早于开始时间"
+                "error_msg": "结束时间不能早于开始时间",
             },
             {
                 "start_time": base_time - timedelta(days=30),
                 "end_time": base_time - timedelta(days=30, hours=-2),
                 "work_minutes": 120,
-                "error_msg": "不能创建过去时间的监控任务"
-            }
+                "error_msg": "不能创建过去时间的监控任务",
+            },
         ]
 
         for case in inconsistent_cases:
@@ -373,9 +411,15 @@ class TestMonitoringTaskTimeValidation:
             }
 
             # Mock time validation that should catch inconsistencies
-            with patch.object(task_service, 'create_monitoring_task', side_effect=ValidationError(case["error_msg"])):
+            with patch.object(
+                task_service,
+                "create_monitoring_task",
+                side_effect=ValidationError(case["error_msg"]),
+            ):
                 with pytest.raises(ValidationError):
-                    await task_service.create_monitoring_task(task_data, creator_id=admin_user.id)
+                    await task_service.create_monitoring_task(
+                        task_data, creator_id=admin_user.id
+                    )
 
 
 class TestMonitoringTaskModificationPermissions:
@@ -404,14 +448,16 @@ class TestMonitoringTaskModificationPermissions:
         # Mock 任务查询
         mock_task_result = Mock()
         mock_task_result.scalar_one_or_none.return_value = original_task
-        
+
         # Mock 用户查询
         mock_user_result = Mock()
         mock_user_result.scalar_one_or_none.return_value = admin_user
-        
+
         mock_db.execute.side_effect = [mock_task_result, mock_user_result]
 
-        with patch.object(task_service, '_update_monitoring_task_internal') as mock_update:
+        with patch.object(
+            task_service, "_update_monitoring_task_internal"
+        ) as mock_update:
             modified_task = MonitoringTask(
                 id=1,
                 member_id=regular_member.id,
@@ -455,9 +501,13 @@ class TestMonitoringTaskModificationPermissions:
 
         mock_db.execute.side_effect = [mock_task_result, mock_user_result]
 
-        with patch.object(task_service, '_check_team_permission', return_value=True), \
-             patch.object(task_service, '_update_monitoring_task_internal') as mock_update:
-            
+        with (
+            patch.object(task_service, "_check_team_permission", return_value=True),
+            patch.object(
+                task_service, "_update_monitoring_task_internal"
+            ) as mock_update,
+        ):
+
             modified_task = MonitoringTask(
                 id=1,
                 member_id=regular_member.id,
@@ -498,7 +548,9 @@ class TestMonitoringTaskModificationPermissions:
 
         mock_db.execute.side_effect = [mock_task_result, mock_user_result]
 
-        with patch.object(task_service, '_update_monitoring_task_internal') as mock_update:
+        with patch.object(
+            task_service, "_update_monitoring_task_internal"
+        ) as mock_update:
             modified_task = MonitoringTask(
                 id=1,
                 member_id=regular_member.id,
@@ -566,7 +618,9 @@ class TestMonitoringTaskAccessControl:
 
         mock_db.execute.side_effect = [mock_user_result, mock_tasks_result]
 
-        with patch.object(task_service, '_apply_monitoring_task_filters') as mock_filter:
+        with patch.object(
+            task_service, "_apply_monitoring_task_filters"
+        ) as mock_filter:
             mock_filter.return_value = all_tasks
 
             result = await task_service.get_monitoring_tasks(admin_user.id, {})
@@ -592,8 +646,14 @@ class TestMonitoringTaskAccessControl:
 
         mock_db.execute.side_effect = [mock_user_result, mock_tasks_result]
 
-        with patch.object(task_service, '_get_team_member_ids', return_value=[group_leader_user.id, 10]), \
-             patch.object(task_service, '_apply_monitoring_task_filters') as mock_filter:
+        with (
+            patch.object(
+                task_service,
+                "_get_team_member_ids",
+                return_value=[group_leader_user.id, 10],
+            ),
+            patch.object(task_service, "_apply_monitoring_task_filters") as mock_filter,
+        ):
             mock_filter.return_value = team_tasks
 
             result = await task_service.get_monitoring_tasks(group_leader_user.id, {})
@@ -618,7 +678,9 @@ class TestMonitoringTaskAccessControl:
 
         mock_db.execute.side_effect = [mock_user_result, mock_tasks_result]
 
-        with patch.object(task_service, '_apply_monitoring_task_filters') as mock_filter:
+        with patch.object(
+            task_service, "_apply_monitoring_task_filters"
+        ) as mock_filter:
             mock_filter.return_value = own_tasks
 
             result = await task_service.get_monitoring_tasks(regular_member.id, {})
