@@ -134,10 +134,14 @@ class TestMonitoringTaskCreationPermissions:
             work_minutes=task_data["work_minutes"],
         )
 
-        with patch.object(
-            task_service, "_create_monitoring_task_internal", return_value=expected_task
-        ):
-            result = await task_service.create_monitoring_task(task_data, admin_user.id)
+        # Mock work_hours_service.update_monthly_summary
+        with patch.object(task_service, 'work_hours_service') as mock_work_hours:
+            mock_work_hours.update_monthly_summary = AsyncMock()
+            
+            with patch.object(
+                task_service, "_create_monitoring_task_internal", return_value=expected_task
+            ):
+                result = await task_service.create_monitoring_task(task_data, admin_user.id)
 
             assert result.member_id == admin_user.id
             assert result.location == task_data["location"]
@@ -172,12 +176,16 @@ class TestMonitoringTaskCreationPermissions:
             work_minutes=task_data["work_minutes"],
         )
 
-        with patch.object(
-            task_service, "_create_monitoring_task_internal", return_value=expected_task
-        ):
-            result = await task_service.create_monitoring_task(
-                task_data, group_leader_user.id
-            )
+        # Mock work_hours_service.update_monthly_summary
+        with patch.object(task_service, 'work_hours_service') as mock_work_hours:
+            mock_work_hours.update_monthly_summary = AsyncMock()
+            
+            with patch.object(
+                task_service, "_create_monitoring_task_internal", return_value=expected_task
+            ):
+                result = await task_service.create_monitoring_task(
+                    task_data, group_leader_user.id
+                )
 
             assert result.member_id == group_leader_user.id
             assert result.location == task_data["location"]
@@ -283,15 +291,19 @@ class TestMonitoringTaskTimeValidation:
                 work_minutes=duration,
             )
 
-            with patch.object(
-                task_service,
-                "_create_monitoring_task_internal",
-                return_value=expected_task,
-            ):
-                result = await task_service.create_monitoring_task(
-                    task_data, admin_user.id
-                )
-                assert result.work_minutes == duration
+            # Mock work_hours_service.update_monthly_summary
+            with patch.object(task_service, 'work_hours_service') as mock_work_hours:
+                mock_work_hours.update_monthly_summary = AsyncMock()
+                
+                with patch.object(
+                    task_service,
+                    "_create_monitoring_task_internal",
+                    return_value=expected_task,
+                ):
+                    result = await task_service.create_monitoring_task(
+                        task_data, admin_user.id
+                    )
+                    assert result.work_minutes == duration
 
     @pytest.mark.asyncio
     async def test_invalid_monitoring_task_duration_too_short(

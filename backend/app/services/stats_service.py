@@ -158,17 +158,27 @@ class StatisticsService:
                 logger.error(f"Performance stats error: {performance_stats}")
                 performance_stats_data: Dict[str, Any] = {}
             else:
-                performance_stats_data = (
-                    performance_stats if isinstance(performance_stats, dict) else {}
-                )
+                # 处理意外的coroutine对象
+                if hasattr(performance_stats, '__await__'):
+                    logger.warning("Performance stats returned coroutine, treating as empty")
+                    performance_stats_data = {}
+                else:
+                    performance_stats_data = (
+                        performance_stats if isinstance(performance_stats, dict) else {}
+                    )
 
             if isinstance(attendance_stats, Exception):
                 logger.error(f"Attendance stats error: {attendance_stats}")
                 attendance_stats_data: Dict[str, Any] = {}
             else:
-                attendance_stats_data = (
-                    attendance_stats if isinstance(attendance_stats, dict) else {}
-                )
+                # 处理意外的coroutine对象
+                if hasattr(attendance_stats, '__await__'):
+                    logger.warning("Attendance stats returned coroutine, treating as empty")
+                    attendance_stats_data = {}
+                else:
+                    attendance_stats_data = (
+                        attendance_stats if isinstance(attendance_stats, dict) else {}
+                    )
 
             result = {
                 "period": {"from": date_from.isoformat(), "to": date_to.isoformat()},

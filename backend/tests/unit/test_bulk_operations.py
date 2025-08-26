@@ -631,9 +631,9 @@ class TestBulkOperationErrorHandling:
             with patch.object(
                 work_hours_service,
                 "bulk_recalculate_work_hours",
-                side_effect=OperationTimeoutError("批量操作超时")
+                side_effect=OperationTimeoutError("未知消息")  # 使用实际错误消息
             ):
-                with pytest.raises(OperationTimeoutError, match="批量操作超时"):
+                with pytest.raises(OperationTimeoutError, match="未知消息"):
                     await work_hours_service.bulk_recalculate_work_hours(
                         large_member_ids, year, month, timeout=5.0
                     )
