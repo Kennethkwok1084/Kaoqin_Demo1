@@ -346,7 +346,7 @@ class WorkHoursCalculationService:
                 )
             )
             monitoring_result = await self.db.execute(monitoring_tasks_query)
-            monitoring_tasks = monitoring_result.scalars().all()
+            monitoring_tasks = list(monitoring_result.scalars().all())
 
             # 计算监控任务工时
             monitoring_hours = (
@@ -363,7 +363,7 @@ class WorkHoursCalculationService:
                 )
             )
             assistance_result = await self.db.execute(assistance_tasks_query)
-            assistance_tasks = assistance_result.scalars().all()
+            assistance_tasks = list(assistance_result.scalars().all())
 
             # 计算协助任务工时
             assistance_hours = (
@@ -570,7 +570,7 @@ class WorkHoursCalculationService:
                 members_query = select(Member).where(Member.is_active.is_(True))
 
             members_result = await self.db.execute(members_query)
-            members = members_result.scalars().all()
+            members = list(members_result.scalars().all())
 
             updated_count = 0
             failed_count = 0
@@ -642,7 +642,7 @@ class WorkHoursCalculationService:
                 )
             )
             member_result = await self.db.execute(member_query)
-            group_members = member_result.scalars().all()
+            group_members = list(member_result.scalars().all())
 
             affected_member_ids = []
 
@@ -1022,7 +1022,7 @@ class WorkHoursCalculationService:
             # 获取所有活跃成员
             members_query = select(Member).where(Member.is_active.is_(True))
             members_result = await self.db.execute(members_query)
-            active_members = members_result.scalars().all()
+            active_members = list(members_result.scalars().all())
 
             total_hours = 0.0
             total_tasks = 0
@@ -1214,7 +1214,7 @@ class RushTaskMarkingService:
                 query = query.where(RepairTask.id.in_(task_ids))
 
             result = await self.db.execute(query)
-            tasks = result.scalars().all()
+            tasks = list(result.scalars().all())
 
             # 获取或创建爆单标签
             rush_tag = await self._get_or_create_rush_tag()
@@ -1343,7 +1343,7 @@ class RushTaskMarkingService:
                 query = query.where(RepairTask.member_id.in_(member_ids))
 
             result = await self.db.execute(query)
-            tasks = result.scalars().all()
+            tasks = list(result.scalars().all())
 
             recalculated_count = 0
 
@@ -1489,7 +1489,7 @@ class RushTaskMarkingService:
             )
 
             result = await self.db.execute(query)
-            tasks = result.scalars().all()
+            tasks = list(result.scalars().all())
 
             # 转换为字典格式
             task_list = []
@@ -1564,7 +1564,7 @@ class RushTaskMarkingService:
                 base_query = base_query.where(RepairTask.report_time <= date_to)
 
             result = await self.db.execute(base_query)
-            rush_tasks = result.scalars().all()
+            rush_tasks = list(result.scalars().all())
 
             # 总体统计
             total_tasks = len(rush_tasks)
@@ -1670,7 +1670,7 @@ class RushTaskMarkingService:
             )
 
             result = await self.db.execute(query)
-            tasks = result.scalars().all()
+            tasks = list(result.scalars().all())
 
             # 获取爆单标签
             from app.models.task import TaskTagType
