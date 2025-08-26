@@ -538,10 +538,13 @@ class TestDataImportService:
             )
 
             # Check if result is ImportResult object or dict
-            if hasattr(result, 'imported_count'):
+            if hasattr(result, "imported_count"):
                 assert result.imported_count >= 2
             elif isinstance(result, dict):
-                assert result.get("imported", 0) >= 2 or result.get("total_processed", 0) >= 2
+                assert (
+                    result.get("imported", 0) >= 2
+                    or result.get("total_processed", 0) >= 2
+                )
             else:
                 # Fallback: just ensure it's not None
                 assert result is not None

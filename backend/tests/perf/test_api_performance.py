@@ -32,7 +32,7 @@ class TestAPIPerformance:
                 # 添加请求超时
                 response = await asyncio.wait_for(
                     async_client.get("/api/v1/tasks/", headers=auth_headers),
-                    timeout=5.0  # 缩短单个请求超时
+                    timeout=5.0,  # 缩短单个请求超时
                 )
                 return response
             except asyncio.TimeoutError:
@@ -44,7 +44,7 @@ class TestAPIPerformance:
         try:
             response = await asyncio.wait_for(
                 benchmark.pedantic(get_tasks_list, rounds=3),  # 减少测试轮数
-                timeout=15.0  # 缩短基准测试超时
+                timeout=15.0,  # 缩短基准测试超时
             )
         except asyncio.TimeoutError:
             pytest.fail("Performance benchmark timed out after 15 seconds")
@@ -54,14 +54,16 @@ class TestAPIPerformance:
         # Verify response
         assert response is not None, "Response is None"
         print(f"\n🔍 Response status: {response.status_code}")
-        
+
         # 更宽松的状态码检查，允许400以便调试
         if response.status_code == 400:
             print(f"⚠️ API returned 400 Bad Request: {response.text}")
             pytest.skip("API returned 400 Bad Request - skipping performance test")
-        
-        assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
-        
+
+        assert (
+            response.status_code == 200
+        ), f"Expected 200, got {response.status_code}: {response.text}"
+
         data = response.json()
         assert "success" in data
 
@@ -94,9 +96,10 @@ class TestAPIPerformance:
             try:
                 response = await asyncio.wait_for(
                     async_client.get(
-                        f"/api/v1/tasks/work-time-detail/{sample_task_id}", headers=auth_headers
+                        f"/api/v1/tasks/work-time-detail/{sample_task_id}",
+                        headers=auth_headers,
                     ),
-                    timeout=8.0
+                    timeout=8.0,
                 )
                 return response
             except asyncio.TimeoutError:
@@ -107,18 +110,23 @@ class TestAPIPerformance:
         # Run benchmark with timeout
         try:
             response = await asyncio.wait_for(
-                benchmark.pedantic(get_work_time_detail, rounds=5),
-                timeout=25.0
+                benchmark.pedantic(get_work_time_detail, rounds=5), timeout=25.0
             )
         except asyncio.TimeoutError:
-            pytest.fail("Work time detail performance benchmark timed out after 25 seconds")
+            pytest.fail(
+                "Work time detail performance benchmark timed out after 25 seconds"
+            )
         except Exception as e:
             pytest.fail(f"Work time detail performance benchmark failed: {str(e)}")
 
         # 检查响应状态
         if response.status_code >= 400:
-            print(f"⚠️ Work time detail API returned {response.status_code}: {response.text}")
-            pytest.skip(f"API returned {response.status_code} - skipping performance test")
+            print(
+                f"⚠️ Work time detail API returned {response.status_code}: {response.text}"
+            )
+            pytest.skip(
+                f"API returned {response.status_code} - skipping performance test"
+            )
 
         # Performance assertions
         benchmark_result = benchmark.stats
@@ -147,7 +155,7 @@ class TestAPIPerformance:
                     async_client.get(
                         "/api/v1/import/field-mapping", headers=auth_headers
                     ),
-                    timeout=5.0
+                    timeout=5.0,
                 )
                 return response
             except asyncio.TimeoutError:
@@ -158,18 +166,23 @@ class TestAPIPerformance:
         # Run benchmark with timeout
         try:
             response = await asyncio.wait_for(
-                benchmark.pedantic(get_field_mapping, rounds=5),
-                timeout=15.0
+                benchmark.pedantic(get_field_mapping, rounds=5), timeout=15.0
             )
         except asyncio.TimeoutError:
-            pytest.fail("Field mapping performance benchmark timed out after 15 seconds")
+            pytest.fail(
+                "Field mapping performance benchmark timed out after 15 seconds"
+            )
         except Exception as e:
             pytest.fail(f"Field mapping performance benchmark failed: {str(e)}")
 
         # 检查响应状态
         if response.status_code >= 400:
-            print(f"⚠️ Field mapping API returned {response.status_code}: {response.text}")
-            pytest.skip(f"API returned {response.status_code} - skipping performance test")
+            print(
+                f"⚠️ Field mapping API returned {response.status_code}: {response.text}"
+            )
+            pytest.skip(
+                f"API returned {response.status_code} - skipping performance test"
+            )
 
         # Performance assertions
         benchmark_result = benchmark.stats
@@ -198,16 +211,15 @@ class TestAPIPerformance:
                 for i in range(10):
                     task = asyncio.wait_for(
                         async_client.get("/api/v1/tasks/stats", headers=auth_headers),
-                        timeout=10.0
+                        timeout=10.0,
                     )
                     tasks.append(task)
 
                 # Wait for all requests to complete
                 responses = await asyncio.wait_for(
-                    asyncio.gather(*tasks, return_exceptions=True),
-                    timeout=30.0
+                    asyncio.gather(*tasks, return_exceptions=True), timeout=30.0
                 )
-                
+
                 # Check for exceptions
                 valid_responses = []
                 for resp in responses:
@@ -215,12 +227,12 @@ class TestAPIPerformance:
                         print(f"⚠️ Concurrent request failed: {str(resp)}")
                         continue
                     valid_responses.append(resp)
-                
+
                 if not valid_responses:
                     pytest.fail("All concurrent requests failed")
-                    
+
                 return valid_responses
-                
+
             except asyncio.TimeoutError:
                 pytest.fail("Concurrent requests timed out")
             except Exception as e:
@@ -229,8 +241,7 @@ class TestAPIPerformance:
         # Run benchmark with timeout
         try:
             responses = await asyncio.wait_for(
-                benchmark.pedantic(concurrent_requests, rounds=3),
-                timeout=60.0
+                benchmark.pedantic(concurrent_requests, rounds=3), timeout=60.0
             )
         except asyncio.TimeoutError:
             pytest.fail("Concurrent performance benchmark timed out after 60 seconds")
@@ -243,7 +254,9 @@ class TestAPIPerformance:
             if response.status_code < 400:
                 successful_responses += 1
             else:
-                print(f"⚠️ Concurrent request returned {response.status_code}: {response.text}")
+                print(
+                    f"⚠️ Concurrent request returned {response.status_code}: {response.text}"
+                )
 
         if successful_responses == 0:
             pytest.skip("All concurrent requests failed - skipping performance test")
@@ -257,7 +270,9 @@ class TestAPIPerformance:
         print("\n📊 Concurrent API Performance:")
         print(f"   Mean time: {benchmark_result['mean']:.3f}s")
         print(f"   Successful requests: {successful_responses}/{len(responses)}")
-        print(f"   Requests/second: {successful_responses / benchmark_result['mean']:.1f}")
+        print(
+            f"   Requests/second: {successful_responses / benchmark_result['mean']:.1f}"
+        )
 
 
 @pytest_asyncio.fixture
@@ -275,6 +290,7 @@ def auth_headers():
     """Create valid authentication headers for testing."""
     try:
         from app.core.security import create_access_token
+
         # Create a valid JWT token with a test user ID
         access_token = create_access_token(subject=1)
         return {

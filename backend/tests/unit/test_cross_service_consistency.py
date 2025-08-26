@@ -542,7 +542,7 @@ class TestServiceIntegrationErrorHandling:
             # 工时计算依赖任务服务，测试异常处理
             exception_raised = False
             result = None
-            
+
             try:
                 result = await work_hours_service.calculate_monthly_work_hours(
                     member_id, year, month
@@ -557,10 +557,12 @@ class TestServiceIntegrationErrorHandling:
                 # 其他异常也是合理的，说明服务正确感知到了依赖失败
                 exception_raised = True
                 logger.info(f"Service propagated exception: {type(e).__name__}: {e}")
-            
+
             # 无论是降级处理还是异常传播，都是合理的设计选择
             # 关键是服务不应该静默失败
-            assert result is not None or exception_raised, "服务应该有明确的失败处理机制"
+            assert (
+                result is not None or exception_raised
+            ), "服务应该有明确的失败处理机制"
 
         # 模拟统计服务部分失败
         with (
