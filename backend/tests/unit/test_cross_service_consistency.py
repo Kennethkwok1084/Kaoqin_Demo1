@@ -566,12 +566,12 @@ class TestServiceIntegrationErrorHandling:
         with (
             patch.object(
                 stats_service,
-                "get_member_quality_statistics",
+                "_get_member_quality_statistics",
                 side_effect=Exception("质量统计计算失败"),
             ),
             patch.object(
                 stats_service,
-                "get_member_task_statistics",
+                "_get_member_task_statistics",
                 return_value={"total_tasks": 15, "completed_tasks": 14},
             ),
         ):
