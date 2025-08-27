@@ -311,7 +311,8 @@ const beforeUpload = (file: File) => {
   return false // 阻止自动上传
 }
 
-const handleFileChange = (file: any, fileList: any[]) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const handleFileChange = (_file: any, _fileList: any[]) => {
   // 更新文件列表
 }
 

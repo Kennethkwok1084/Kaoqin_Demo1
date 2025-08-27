@@ -205,6 +205,7 @@ import MobileBottomNav from '@/components/mobile/MobileBottomNav.vue'
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const globalStore = useGlobalStore()
 
 // 响应式数据

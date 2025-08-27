@@ -364,7 +364,8 @@ const parseExcelFile = async (file: File) => {
         }
 
         const parsedData = rows
-          .map((row, index) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          .map((row, _index) => {
             const item: any = { _valid: true, _errors: [] }
 
             headers.forEach((header, colIndex) => {

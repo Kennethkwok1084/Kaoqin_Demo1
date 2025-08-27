@@ -276,12 +276,9 @@ import {
   CircleCheck,
   InfoFilled,
   WarningFilled,
-  Plus,
-  View,
-  Edit
+  Plus
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
-import { dashboardApi } from '@/api/dashboard'
 import { statisticsApi } from '@/api/statistics'
 import type {
   DashboardStats,

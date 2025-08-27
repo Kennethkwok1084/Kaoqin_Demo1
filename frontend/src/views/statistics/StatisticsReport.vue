@@ -859,10 +859,11 @@ const handleFilterChange = () => {
 
 const handleQuickFilter = (value: string) => {
   switch (value) {
-    case 'today':
+    case 'today': {
       const today = new Date().toISOString().split('T')[0]
       dateRange.value = [today, today]
       break
+    }
     case 'week':
       dateRange.value = getWeekRange()
       break
@@ -920,7 +921,8 @@ const handleExportChart = async (chartId: string) => {
   }
 }
 
-const handleFullScreen = (chartId: string) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const handleFullScreen = (_chartId: string) => {
   // TODO: 实现全屏查看
   ElMessage.info('全屏功能开发中...')
 }
@@ -963,11 +965,6 @@ const viewAllRankings = () => {
   ElMessage.info('详细排行榜功能开发中...')
 }
 
-const viewDepartmentDetails = () => {
-  // TODO: 跳转到部门详细分析页面
-  ElMessage.info('部门详细分析功能开发中...')
-}
-
 // 工具方法
 const getTrendClass = (value: number) => {
   return value > 0 ? 'positive' : value < 0 ? 'negative' : 'neutral'
@@ -975,13 +972,6 @@ const getTrendClass = (value: number) => {
 
 const getRankChangeClass = (change: number) => {
   return change > 0 ? 'rank-up' : change < 0 ? 'rank-down' : 'rank-same'
-}
-
-const getEfficiencyTagType = (efficiency: number) => {
-  if (efficiency >= 90) return 'success'
-  if (efficiency >= 80) return 'primary'
-  if (efficiency >= 70) return 'warning'
-  return 'danger'
 }
 
 const getAvatarColor = (name: string) => {

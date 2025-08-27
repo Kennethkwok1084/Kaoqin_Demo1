@@ -479,9 +479,6 @@
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Plus,
-  DocumentAdd,
-  Timer,
   Download,
   Refresh,
   User,
@@ -510,7 +507,7 @@ import type {
   AttendanceFilters,
   AttendanceSummary
 } from '@/types/attendance'
-import { formatDate, formatDateShort, formatTime } from '@/utils/date'
+import { formatDateShort, formatTime } from '@/utils/date'
 import AttendanceDetailDialog from '@/components/attendance/AttendanceDetailDialog.vue'
 import AttendanceCalendar from '@/components/attendance/AttendanceCalendar.vue'
 import LeaveApplicationDialog from '@/components/attendance/LeaveApplicationDialog.vue'
@@ -635,14 +632,6 @@ const loadTodayData = async () => {
 
 const refreshTodayData = () => {
   loadTodayData()
-}
-
-const handleQuickCheckIn = () => {
-  if (todayStatus.canCheckIn) {
-    showCheckInDialog.value = true
-  } else {
-    ElMessage.info('今日已签到')
-  }
 }
 
 const handleCheckIn = () => {

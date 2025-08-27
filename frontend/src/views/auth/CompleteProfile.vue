@@ -110,7 +110,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Message, Phone, House } from '@element-plus/icons-vue'
+import { Message, Phone } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { MembersApi } from '@/api/members'
 import type { MemberUpdateRequest } from '@/api/members'

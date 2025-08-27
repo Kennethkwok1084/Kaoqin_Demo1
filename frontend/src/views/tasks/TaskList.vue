@@ -483,7 +483,6 @@ import {
   Warning
 } from '@element-plus/icons-vue'
 import { tasksApi } from '@/api/tasks'
-import { useAuthStore } from '@/stores/auth'
 import type { Task, TaskListParams, TaskStats } from '@/types/task'
 import {
   TASK_TYPE_CONFIG,
@@ -495,7 +494,6 @@ import TaskDetailDialog from '@/components/tasks/TaskDetailDialog.vue'
 import ImportTaskDialog from '@/components/tasks/ImportTaskDialog.vue'
 
 const router = useRouter()
-const authStore = useAuthStore()
 
 // 根据路由确定任务类型
 const taskType = computed(() => {
@@ -612,9 +610,6 @@ const statsCards = [
     className: 'stat-success'
   }
 ]
-
-// 计算属性
-const hasSelectedTasks = computed(() => selectedTasks.value.length > 0)
 
 // 方法
 const loadTasks = async () => {
@@ -857,7 +852,6 @@ const batchAssign = () => {
 }
 
 const batchExport = () => {
-  const ids = selectedTasks.value.map(task => task.id)
   // TODO: 实现批量导出逻辑
   ElMessage.info('批量导出功能开发中...')
 }

@@ -593,7 +593,8 @@ const initializeFieldMappings = () => {
   }))
 }
 
-const updateMapping = (index: number) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const updateMapping = (_index: number) => {
   // 字段映射更新逻辑
 }
 
@@ -630,11 +631,13 @@ const clearMappings = () => {
   })
 }
 
-const showTransformDialog = (mapping: FieldMapping) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const showTransformDialog = (_mapping: FieldMapping) => {
   // 显示数据转换对话框
 }
 
-const showDefaultValueDialog = (mapping: FieldMapping) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const showDefaultValueDialog = (_mapping: FieldMapping) => {
   // 显示默认值设置对话框
 }
 
