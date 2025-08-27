@@ -131,58 +131,42 @@ class StatisticsService:
                 attendance_stats,
             ) = results
 
-            # 处理异常结果 - Initialize with empty dicts and proper type handling
+            # 处理异常结果 - Initialize with empty dicts
+            member_stats_data: Dict[str, Any] = {}
+            task_stats_data: Dict[str, Any] = {}
+            work_hour_stats_data: Dict[str, Any] = {}
+            performance_stats_data: Dict[str, Any] = {}
+            attendance_stats_data: Dict[str, Any] = {}
+
             if isinstance(member_stats, Exception):
                 logger.error(f"Member stats error: {member_stats}")
-                member_stats_data: Dict[str, Any] = {}
+                member_stats_data = {}
             else:
-                member_stats_data = (
-                    member_stats if isinstance(member_stats, dict) else {}
-                )
+                member_stats_data = member_stats
 
             if isinstance(task_stats, Exception):
                 logger.error(f"Task stats error: {task_stats}")
-                task_stats_data: Dict[str, Any] = {}
+                task_stats_data = {}
             else:
-                task_stats_data = task_stats if isinstance(task_stats, dict) else {}
+                task_stats_data = task_stats
 
             if isinstance(work_hour_stats, Exception):
                 logger.error(f"Work hour stats error: {work_hour_stats}")
-                work_hour_stats_data: Dict[str, Any] = {}
+                work_hour_stats_data = {}
             else:
-                work_hour_stats_data = (
-                    work_hour_stats if isinstance(work_hour_stats, dict) else {}
-                )
+                work_hour_stats_data = work_hour_stats
 
             if isinstance(performance_stats, Exception):
                 logger.error(f"Performance stats error: {performance_stats}")
-                performance_stats_data: Dict[str, Any] = {}
+                performance_stats_data = {}
             else:
-                # 处理意外的coroutine对象
-                if hasattr(performance_stats, "__await__"):
-                    logger.warning(
-                        "Performance stats returned coroutine, treating as empty"
-                    )
-                    performance_stats_data = {}
-                else:
-                    performance_stats_data = (
-                        performance_stats if isinstance(performance_stats, dict) else {}
-                    )
+                performance_stats_data = performance_stats
 
             if isinstance(attendance_stats, Exception):
                 logger.error(f"Attendance stats error: {attendance_stats}")
-                attendance_stats_data: Dict[str, Any] = {}
+                attendance_stats_data = {}
             else:
-                # 处理意外的coroutine对象
-                if hasattr(attendance_stats, "__await__"):
-                    logger.warning(
-                        "Attendance stats returned coroutine, treating as empty"
-                    )
-                    attendance_stats_data = {}
-                else:
-                    attendance_stats_data = (
-                        attendance_stats if isinstance(attendance_stats, dict) else {}
-                    )
+                attendance_stats_data = attendance_stats
 
             result = {
                 "period": {"from": date_from.isoformat(), "to": date_to.isoformat()},
@@ -237,12 +221,7 @@ class StatisticsService:
         result = await self.db.execute(member_query)
         stats = result.first()
 
-        if stats is None or hasattr(stats, "__await__"):
-            # 处理None或协程对象的情况
-            if stats is not None and hasattr(stats, "__await__"):
-                logger.warning(
-                    "Member stats query returned coroutine, treating as None"
-                )
+        if stats is None:
             data = {
                 "total_count": 0,
                 "active_count": 0,
@@ -251,24 +230,13 @@ class StatisticsService:
                 "inactive_count": 0,
             }
         else:
-            try:
-                data = {
-                    "total_count": getattr(stats, "total_count", 0) or 0,
-                    "active_count": getattr(stats, "active_count", 0) or 0,
-                    "admin_count": getattr(stats, "admin_count", 0) or 0,
-                    "member_count": getattr(stats, "member_count", 0) or 0,
-                    "inactive_count": (getattr(stats, "total_count", 0) or 0)
-                    - (getattr(stats, "active_count", 0) or 0),
-                }
-            except AttributeError as e:
-                logger.error(f"Failed to access member stats attributes: {e}")
-                data = {
-                    "total_count": 0,
-                    "active_count": 0,
-                    "admin_count": 0,
-                    "member_count": 0,
-                    "inactive_count": 0,
-                }
+            data = {
+                "total_count": stats.total_count or 0,
+                "active_count": stats.active_count or 0,
+                "admin_count": stats.admin_count or 0,
+                "member_count": stats.member_count or 0,
+                "inactive_count": (stats.total_count or 0) - (stats.active_count or 0),
+            }
 
         # 存入缓存（5分钟过期）
         await cache.set_stats_cache("member", data, ttl=300)
@@ -340,77 +308,20 @@ class StatisticsService:
         assistance_result = await self.db.execute(assistance_query)
         assistance_stats = assistance_result.first()
 
-        # 安全地访问 Row 对象属性，处理协程对象
-        try:
-            repair_total = (
-                (getattr(repair_stats, "total_count", 0) or 0)
-                if repair_stats and not hasattr(repair_stats, "__await__")
-                else 0
-            )
-            repair_completed = (
-                (getattr(repair_stats, "completed_count", 0) or 0)
-                if repair_stats and not hasattr(repair_stats, "__await__")
-                else 0
-            )
-            repair_pending = (
-                (getattr(repair_stats, "pending_count", 0) or 0)
-                if repair_stats and not hasattr(repair_stats, "__await__")
-                else 0
-            )
-            repair_in_progress = (
-                (getattr(repair_stats, "in_progress_count", 0) or 0)
-                if repair_stats and not hasattr(repair_stats, "__await__")
-                else 0
-            )
-            repair_online = (
-                (getattr(repair_stats, "online_count", 0) or 0)
-                if repair_stats and not hasattr(repair_stats, "__await__")
-                else 0
-            )
-            repair_offline = (
-                (getattr(repair_stats, "offline_count", 0) or 0)
-                if repair_stats and not hasattr(repair_stats, "__await__")
-                else 0
-            )
-            repair_rating = (
-                (getattr(repair_stats, "avg_rating", 0) or 0)
-                if repair_stats and not hasattr(repair_stats, "__await__")
-                else 0
-            )
-        except AttributeError as e:
-            logger.error(f"Failed to access repair stats attributes: {e}")
-            repair_total = repair_completed = repair_pending = repair_in_progress = 0
-            repair_online = repair_offline = repair_rating = 0
+        # 安全地访问 Row 对象属性
+        repair_total = repair_stats.total_count if repair_stats else 0
+        repair_completed = repair_stats.completed_count if repair_stats else 0
+        repair_pending = repair_stats.pending_count if repair_stats else 0
+        repair_in_progress = repair_stats.in_progress_count if repair_stats else 0
+        repair_online = repair_stats.online_count if repair_stats else 0
+        repair_offline = repair_stats.offline_count if repair_stats else 0
+        repair_rating = repair_stats.avg_rating if repair_stats else 0
 
-        try:
-            monitoring_total = (
-                (getattr(monitoring_stats, "total_count", 0) or 0)
-                if monitoring_stats and not hasattr(monitoring_stats, "__await__")
-                else 0
-            )
-            monitoring_minutes = (
-                (getattr(monitoring_stats, "total_minutes", 0) or 0)
-                if monitoring_stats and not hasattr(monitoring_stats, "__await__")
-                else 0
-            )
-        except AttributeError as e:
-            logger.error(f"Failed to access monitoring stats attributes: {e}")
-            monitoring_total = monitoring_minutes = 0
+        monitoring_total = monitoring_stats.total_count if monitoring_stats else 0
+        monitoring_minutes = monitoring_stats.total_minutes if monitoring_stats else 0
 
-        try:
-            assistance_total = (
-                (getattr(assistance_stats, "total_count", 0) or 0)
-                if assistance_stats and not hasattr(assistance_stats, "__await__")
-                else 0
-            )
-            assistance_minutes = (
-                (getattr(assistance_stats, "total_minutes", 0) or 0)
-                if assistance_stats and not hasattr(assistance_stats, "__await__")
-                else 0
-            )
-        except AttributeError as e:
-            logger.error(f"Failed to access assistance stats attributes: {e}")
-            assistance_total = assistance_minutes = 0
+        assistance_total = assistance_stats.total_count if assistance_stats else 0
+        assistance_minutes = assistance_stats.total_minutes if assistance_stats else 0
 
         data = {
             "repair_tasks": {
@@ -461,70 +372,51 @@ class StatisticsService:
         if cached_data:
             return dict(cached_data["data"])  # Explicit cast to dict
 
-        # 分别查询各表的工时统计（避免无关联表的join错误）
-
-        # 查询维修任务工时
-        repair_query = select(
-            func.sum(RepairTask.work_minutes).label("repair_minutes"),
-            func.avg(RepairTask.work_minutes).label("avg_repair_minutes"),
-            func.count(RepairTask.id).label("repair_count"),
-        ).where(
-            and_(
-                RepairTask.report_time >= date_from,
-                RepairTask.report_time <= date_to,
+        # 查询工时统计
+        work_hour_query = (
+            select(
+                func.sum(RepairTask.work_minutes).label("repair_minutes"),
+                func.sum(MonitoringTask.work_minutes).label("monitoring_minutes"),
+                func.sum(AssistanceTask.work_minutes).label("assistance_minutes"),
+                func.avg(RepairTask.work_minutes).label("avg_repair_minutes"),
+                func.count(RepairTask.id).label("repair_count"),
+            )
+            .select_from(
+                RepairTask.__table__.outerjoin(MonitoringTask.__table__).outerjoin(
+                    AssistanceTask.__table__
+                )
+            )
+            .where(
+                or_(
+                    and_(
+                        RepairTask.report_time >= date_from,
+                        RepairTask.report_time <= date_to,
+                    ),
+                    and_(
+                        MonitoringTask.start_time >= date_from,
+                        MonitoringTask.start_time <= date_to,
+                    ),
+                    and_(
+                        AssistanceTask.start_time >= date_from,
+                        AssistanceTask.start_time <= date_to,
+                    ),
+                )
             )
         )
 
-        # 查询监控任务工时
-        monitoring_query = select(
-            func.sum(MonitoringTask.work_minutes).label("monitoring_minutes"),
-        ).where(
-            and_(
-                MonitoringTask.start_time >= date_from,
-                MonitoringTask.start_time <= date_to,
-            )
-        )
+        result = await self.db.execute(work_hour_query)
+        stats = result.first()
 
-        # 查询协助任务工时
-        assistance_query = select(
-            func.sum(AssistanceTask.work_minutes).label("assistance_minutes"),
-        ).where(
-            and_(
-                AssistanceTask.start_time >= date_from,
-                AssistanceTask.start_time <= date_to,
-            )
-        )
-
-        # 并行执行查询
-        repair_result = await self.db.execute(repair_query)
-        monitoring_result = await self.db.execute(monitoring_query)
-        assistance_result = await self.db.execute(assistance_query)
-
-        repair_stats = repair_result.first()
-        monitoring_stats = monitoring_result.first()
-        assistance_stats = assistance_result.first()
-
-        # 安全地提取数据
-        repair_minutes = (
-            (getattr(repair_stats, "repair_minutes", 0) or 0)
-            if repair_stats and not hasattr(repair_stats, "__await__")
-            else 0
-        )
-        avg_repair_minutes = (
-            (getattr(repair_stats, "avg_repair_minutes", 0) or 0)
-            if repair_stats and not hasattr(repair_stats, "__await__")
-            else 0
-        )
-        monitoring_minutes = (
-            (getattr(monitoring_stats, "monitoring_minutes", 0) or 0)
-            if monitoring_stats and not hasattr(monitoring_stats, "__await__")
-            else 0
-        )
-        assistance_minutes = (
-            (getattr(assistance_stats, "assistance_minutes", 0) or 0)
-            if assistance_stats and not hasattr(assistance_stats, "__await__")
-            else 0
-        )
+        if stats is None:
+            repair_minutes = 0
+            monitoring_minutes = 0
+            assistance_minutes = 0
+            avg_repair_minutes = 0
+        else:
+            repair_minutes = stats.repair_minutes or 0
+            monitoring_minutes = stats.monitoring_minutes or 0
+            assistance_minutes = stats.assistance_minutes or 0
+            avg_repair_minutes = stats.avg_repair_minutes or 0
 
         total_minutes = repair_minutes + monitoring_minutes + assistance_minutes
 
@@ -582,31 +474,18 @@ class StatisticsService:
         result = await self.db.execute(performance_query)
         stats = result.first()
 
-        if stats is None or hasattr(stats, "__await__"):
-            # 处理None或协程对象的情况
-            if stats is not None and hasattr(stats, "__await__"):
-                logger.warning(
-                    "Performance stats query returned coroutine, treating as None"
-                )
+        if stats is None:
             overall_rating = 0
             rated_count = 0
             total_tasks = 0
             good_rating_count = 0
             poor_rating_count = 0
         else:
-            try:
-                overall_rating = getattr(stats, "overall_rating", 0) or 0
-                rated_count = getattr(stats, "rated_count", 0) or 0
-                total_tasks = getattr(stats, "total_tasks", 0) or 0
-                good_rating_count = getattr(stats, "good_rating_count", 0) or 0
-                poor_rating_count = getattr(stats, "poor_rating_count", 0) or 0
-            except AttributeError as e:
-                logger.error(f"Failed to access performance stats attributes: {e}")
-                overall_rating = 0
-                rated_count = 0
-                total_tasks = 0
-                good_rating_count = 0
-                poor_rating_count = 0
+            overall_rating = stats.overall_rating or 0
+            rated_count = stats.rated_count or 0
+            total_tasks = stats.total_tasks or 0
+            good_rating_count = stats.good_rating_count or 0
+            poor_rating_count = stats.poor_rating_count or 0
 
         data = {
             "overall_rating": round(overall_rating, 2),
@@ -667,12 +546,7 @@ class StatisticsService:
             result = await self.db.execute(attendance_query)
             stats = result.first()
 
-            if stats is None or hasattr(stats, "__await__"):
-                # 处理None或协程对象的情况
-                if stats is not None and hasattr(stats, "__await__"):
-                    logger.warning(
-                        "Attendance stats query returned coroutine, treating as None"
-                    )
+            if stats is None:
                 total_records = 0
                 checkin_count = 0
                 checkout_count = 0
@@ -681,23 +555,13 @@ class StatisticsService:
                 avg_work_hours = 0
                 total_work_hours = 0
             else:
-                try:
-                    total_records = getattr(stats, "total_records", 0) or 0
-                    checkin_count = getattr(stats, "checkin_count", 0) or 0
-                    checkout_count = getattr(stats, "checkout_count", 0) or 0
-                    late_count = getattr(stats, "late_count", 0) or 0
-                    early_count = getattr(stats, "early_count", 0) or 0
-                    avg_work_hours = getattr(stats, "avg_work_hours", 0) or 0
-                    total_work_hours = getattr(stats, "total_work_hours", 0) or 0
-                except AttributeError as e:
-                    logger.error(f"Failed to access attendance stats attributes: {e}")
-                    total_records = 0
-                    checkin_count = 0
-                    checkout_count = 0
-                    late_count = 0
-                    early_count = 0
-                    avg_work_hours = 0
-                    total_work_hours = 0
+                total_records = stats.total_records or 0
+                checkin_count = stats.checkin_count or 0
+                checkout_count = stats.checkout_count or 0
+                late_count = stats.late_count or 0
+                early_count = stats.early_count or 0
+                avg_work_hours = stats.avg_work_hours or 0
+                total_work_hours = stats.total_work_hours or 0
 
             data = {
                 "total_records": total_records,
@@ -1193,10 +1057,6 @@ class StatisticsService:
         )
         repair_result = await self.db.execute(repair_query)
         repair_minutes = repair_result.scalar() or 0
-        # 安全处理协程结果
-        if hasattr(repair_minutes, "__await__"):
-            repair_minutes = await repair_minutes
-        repair_minutes = repair_minutes or 0
 
         # 监控任务工时
         monitoring_query = select(func.sum(MonitoringTask.work_minutes)).where(
@@ -1208,10 +1068,6 @@ class StatisticsService:
         )
         monitoring_result = await self.db.execute(monitoring_query)
         monitoring_minutes = monitoring_result.scalar() or 0
-        # 安全处理协程结果
-        if hasattr(monitoring_minutes, "__await__"):
-            monitoring_minutes = await monitoring_minutes
-        monitoring_minutes = monitoring_minutes or 0
 
         # 协助任务工时
         assistance_query = select(func.sum(AssistanceTask.work_minutes)).where(
@@ -1223,10 +1079,6 @@ class StatisticsService:
         )
         assistance_result = await self.db.execute(assistance_query)
         assistance_minutes = assistance_result.scalar() or 0
-        # 安全处理协程结果
-        if hasattr(assistance_minutes, "__await__"):
-            assistance_minutes = await assistance_minutes
-        assistance_minutes = assistance_minutes or 0
 
         total_minutes = repair_minutes + monitoring_minutes + assistance_minutes
         total_hours = round(total_minutes / 60.0, 2)
@@ -1560,210 +1412,3 @@ class StatisticsService:
             "data": comparison_report,
             "export_time": datetime.now().isoformat(),
         }
-
-    async def get_member_work_hour_statistics(
-        self, member_id: int, year: int, month: int
-    ) -> Dict[str, Any]:
-        """
-        获取成员工时统计
-
-        Args:
-            member_id: 成员ID
-            year: 年份
-            month: 月份
-
-        Returns:
-            Dict: 成员工时统计数据
-        """
-        try:
-            # 计算月份范围
-            start_date = datetime(year, month, 1)
-            from calendar import monthrange
-
-            _, last_day = monthrange(year, month)
-            end_date = datetime(year, month, last_day, 23, 59, 59)
-
-            # 使用现有方法计算统计
-            work_hour_stats = await self._get_member_work_hour_statistics(
-                member_id, start_date, end_date
-            )
-
-            return {
-                "member_id": member_id,
-                "year": year,
-                "month": month,
-                "period": {"from": start_date.isoformat(), "to": end_date.isoformat()},
-                **work_hour_stats,
-            }
-
-        except Exception as e:
-            logger.error(f"Get member work hour statistics error: {str(e)}")
-            raise
-
-    async def get_comprehensive_report(
-        self, start_date: datetime, end_date: datetime
-    ) -> Dict[str, Any]:
-        """
-        生成综合系统报告
-
-        Args:
-            start_date: 开始时间
-            end_date: 结束时间
-
-        Returns:
-            Dict: 综合报告数据
-        """
-        try:
-            import asyncio
-
-            # 并行获取各类统计数据
-            overview_task = asyncio.create_task(
-                self.get_overview_statistics(start_date, end_date)
-            )
-
-            # 获取活跃成员列表
-            members_query = select(Member).where(Member.is_active.is_(True))
-            members_result = await self.db.execute(members_query)
-            active_members = members_result.scalars().all()
-
-            # 生成成员绩效报告
-            member_reports = []
-            for member in active_members[:50]:  # 限制前50名成员
-                try:
-                    member_report = await self.get_member_performance_report(
-                        member.id, start_date.year, start_date.month
-                    )
-                    member_reports.append(member_report)
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to get report for member {member.id}: {str(e)}"
-                    )
-
-            # 团队对比分析
-            team_comparison = await self.get_team_comparison_report(
-                None, start_date, end_date, limit=20
-            )
-
-            # 月度趋势分析
-            trends = await self.get_monthly_trends(months=6)
-
-            # 等待总览统计完成
-            overview_stats = await overview_task
-
-            return {
-                "report_type": "comprehensive",
-                "generated_at": datetime.now().isoformat(),
-                "period": {"from": start_date.isoformat(), "to": end_date.isoformat()},
-                "overview": overview_stats,
-                "member_reports": member_reports,
-                "team_comparison": team_comparison,
-                "trends": trends,
-                "summary": {
-                    "total_members_analyzed": len(member_reports),
-                    "total_active_members": len(active_members),
-                    "analysis_completeness": (
-                        len(member_reports) / len(active_members)
-                        if active_members
-                        else 0
-                    ),
-                },
-            }
-
-        except Exception as e:
-            logger.error(f"Get comprehensive report error: {str(e)}")
-            raise
-
-    async def get_team_statistics_summary(
-        self, start_date: datetime, end_date: datetime
-    ) -> Dict[str, Any]:
-        """
-        获取团队统计汇总
-
-        Args:
-            start_date: 开始时间
-            end_date: 结束时间
-
-        Returns:
-            Dict: 团队统计汇总数据
-        """
-        try:
-            # 获取概览统计
-            overview = await self.get_overview_statistics(start_date, end_date)
-
-            # 获取活跃成员数量
-            members_query = select(func.count(Member.id)).where(
-                Member.is_active.is_(True)
-            )
-            members_result = await self.db.execute(members_query)
-            team_size = members_result.scalar() or 0
-
-            # 从概览统计中提取关键数据
-            summary = overview.get("summary", {})
-            work_hours_data = overview.get("work_hours", {})
-            tasks_data = overview.get("tasks", {})
-            performance_data = overview.get("performance", {})
-
-            total_work_hours = float(work_hours_data.get("total_hours", 0))
-            total_completed_tasks = int(tasks_data.get("completed_count", 0))
-
-            return {
-                "period": {"from": start_date.isoformat(), "to": end_date.isoformat()},
-                "team_size": team_size,
-                "total_work_hours": total_work_hours,
-                "avg_work_hours": (
-                    round(total_work_hours / team_size, 2) if team_size > 0 else 0
-                ),
-                "total_completed_tasks": total_completed_tasks,
-                "avg_tasks_per_member": (
-                    round(total_completed_tasks / team_size, 2) if team_size > 0 else 0
-                ),
-                "team_efficiency": round(
-                    performance_data.get("overall_rating", 0) * 20, 1
-                ),  # Convert 5-scale to 100-scale
-                "completion_rate": tasks_data.get("repair_tasks", {}).get(
-                    "completion_rate", 0
-                ),
-                "generated_at": datetime.now().isoformat(),
-            }
-
-        except Exception as e:
-            logger.error(f"Get team statistics summary error: {str(e)}")
-            raise
-
-    async def invalidate_member_cache(self, member_id: int) -> Dict[str, Any]:
-        """
-        清除成员相关的缓存
-
-        Args:
-            member_id: 成员ID
-
-        Returns:
-            Dict: 缓存清除结果
-        """
-        try:
-            # 清除成员相关的统计缓存
-            cache_keys_cleared = []
-
-            # 如果有缓存系统，这里会清除相关缓存键
-            # 目前返回模拟的结果
-            cache_keys_cleared = [
-                f"member:{member_id}:work_hours",
-                f"member:{member_id}:tasks",
-                f"member:{member_id}:performance",
-                f"member:{member_id}:statistics",
-            ]
-
-            logger.info(
-                f"Invalidated cache for member {member_id}, keys: {cache_keys_cleared}"
-            )
-
-            return {
-                "cache_cleared": True,
-                "member_id": member_id,
-                "keys_cleared": cache_keys_cleared,
-                "cleared_at": datetime.now().isoformat(),
-            }
-
-        except Exception as e:
-            logger.error(f"Invalidate member cache error: {str(e)}")
-            raise
