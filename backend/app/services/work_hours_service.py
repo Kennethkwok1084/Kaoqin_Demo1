@@ -424,21 +424,21 @@ class WorkHoursCalculationService:
                 "total_hours": total_hours,
                 "remaining_hours": remaining_hours,
                 # 详细分类统计
-                "online_repair_hours": repair_stats["online_hours"],
-                "offline_repair_hours": repair_stats["offline_hours"],
-                "rush_task_hours": repair_stats["rush_hours"],
-                "positive_review_hours": repair_stats["positive_review_hours"],
+                "online_repair_hours": safe_float(repair_stats.get("online_hours", 0)),
+                "offline_repair_hours": safe_float(repair_stats.get("offline_hours", 0)),
+                "rush_task_hours": safe_float(repair_stats.get("rush_hours", 0)),
+                "positive_review_hours": safe_float(repair_stats.get("positive_review_hours", 0)),
                 # 惩罚统计
-                "penalty_hours": repair_stats["penalty_hours"],
-                "late_response_penalty_hours": repair_stats[
-                    "late_response_penalty_hours"
-                ],
-                "late_completion_penalty_hours": repair_stats[
-                    "late_completion_penalty_hours"
-                ],
-                "negative_review_penalty_hours": repair_stats[
-                    "negative_review_penalty_hours"
-                ],
+                "penalty_hours": safe_float(repair_stats.get("penalty_hours", 0)),
+                "late_response_penalty_hours": safe_float(
+                    repair_stats.get("late_response_penalty_hours", 0)
+                ),
+                "late_completion_penalty_hours": safe_float(
+                    repair_stats.get("late_completion_penalty_hours", 0)
+                ),
+                "negative_review_penalty_hours": safe_float(
+                    repair_stats.get("negative_review_penalty_hours", 0)
+                ),
                 # 统计数据
                 "repair_task_count": len(repair_tasks),
                 "monitoring_task_count": len(monitoring_tasks),

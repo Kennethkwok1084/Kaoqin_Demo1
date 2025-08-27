@@ -1052,9 +1052,9 @@ class StatisticsService:
 
         return {
             "total_hours": total_hours,
-            "repair_hours": round(repair_minutes / 60.0, 2),
-            "monitoring_hours": round(monitoring_minutes / 60.0, 2),
-            "assistance_hours": round(assistance_minutes / 60.0, 2),
+            "repair_hours": round(safe_numeric_value(repair_minutes) / 60.0, 2),
+            "monitoring_hours": round(safe_numeric_value(monitoring_minutes) / 60.0, 2),
+            "assistance_hours": round(safe_numeric_value(assistance_minutes) / 60.0, 2),
             "by_type": {
                 "repair": repair_minutes,
                 "monitoring": monitoring_minutes,
@@ -1184,9 +1184,9 @@ class StatisticsService:
         return {
             "total_hours": total_hours,
             "total_minutes": total_minutes,
-            "repair_hours": round(repair_minutes / 60.0, 2),
-            "monitoring_hours": round(monitoring_minutes / 60.0, 2),
-            "assistance_hours": round(assistance_minutes / 60.0, 2),
+            "repair_hours": round(safe_numeric_value(repair_minutes) / 60.0, 2),
+            "monitoring_hours": round(safe_numeric_value(monitoring_minutes) / 60.0, 2),
+            "assistance_hours": round(safe_numeric_value(assistance_minutes) / 60.0, 2),
         }
 
     async def _get_member_quality_statistics(

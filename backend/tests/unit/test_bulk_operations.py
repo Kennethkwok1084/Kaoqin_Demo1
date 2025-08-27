@@ -405,25 +405,30 @@ class TestConcurrentBulkOperations:
             for i in range(1, 11)  # 10个相同任务
         ]
 
-        # Mock 数据库查询 - 每次调用返回相同数据
+        # Mock 成员查询
+        mock_member = Mock()
+        mock_member.id = member_id
+        mock_member.is_active = True
+        mock_member_result = Mock()
+        mock_member_result.scalar_one_or_none.return_value = mock_member
+
+        # Mock 任务查询 - 每次调用返回相同数据
         mock_tasks_result = Mock()
         mock_tasks_result.scalars.return_value.all.return_value = same_tasks
 
         mock_empty_result = Mock()
         mock_empty_result.scalars.return_value.all.return_value = []
 
-        # 为多次并发调用准备mock数据
-        mock_db.execute.side_effect = [
-            mock_tasks_result,
-            mock_empty_result,
-            mock_empty_result,  # 第1次调用
-            mock_tasks_result,
-            mock_empty_result,
-            mock_empty_result,  # 第2次调用
-            mock_tasks_result,
-            mock_empty_result,
-            mock_empty_result,  # 第3次调用
-        ] * 10  # 准备足够多的mock数据
+        # 为多次并发调用准备mock数据 - 每次调用需要 成员查询 + 3个任务查询
+        single_call_mocks = [
+            mock_member_result,   # 成员查询
+            mock_tasks_result,    # repair任务查询
+            mock_empty_result,    # monitoring任务查询
+            mock_empty_result,    # assistance任务查询
+        ]
+        
+        # 为5个并发调用准备mock数据
+        mock_db.execute.side_effect = single_call_mocks * 5
 
         # 并发执行多个工时计算
         concurrent_tasks = [
