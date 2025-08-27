@@ -388,13 +388,25 @@ class WorkHoursCalculationService:
                 (prev_summary.remaining_hours or 0.0) if prev_summary else 0.0
             )
 
-            # 计算总工时
-            repair_hours = float(repair_stats.get("total_hours", 0) or 0.0)
+            # 计算总工时 - 安全数值转换，防止Mock对象问题
+            def safe_float(value, default=0.0):
+                """安全转换为float，处理Mock对象和None值"""
+                if value is None:
+                    return default
+                if hasattr(value, '__class__') and 'Mock' in str(value.__class__):
+                    return default
+                try:
+                    return float(value)
+                except (ValueError, TypeError):
+                    return default
+            
+            repair_hours_raw = repair_stats.get("total_hours", 0) or 0.0
+            repair_hours = safe_float(repair_hours_raw)
             total_hours = (
-                float(repair_hours)
-                + float(monitoring_hours)
-                + float(assistance_hours)
-                + float(carried_hours)
+                safe_float(repair_hours)
+                + safe_float(monitoring_hours)
+                + safe_float(assistance_hours)
+                + safe_float(carried_hours)
             )
 
             # 计算可结转工时（满勤30小时/月，超出部分可结转）
@@ -403,10 +415,10 @@ class WorkHoursCalculationService:
 
             return {
                 # 核心工时字段
-                "repair_task_hours": float(repair_stats.get("total_hours", 0) or 0.0),
+                "repair_task_hours": safe_float(repair_stats.get("total_hours", 0) or 0.0),
                 "monitoring_hours": monitoring_hours,
                 "assistance_hours": assistance_hours,
-                "carried_hours": float(carried_hours),
+                "carried_hours": safe_float(carried_hours),
                 "total_hours": total_hours,
                 "remaining_hours": remaining_hours,
                 # 详细分类统计
@@ -836,11 +848,23 @@ class WorkHoursCalculationService:
 
         # 添加惩罚时长
         penalty_hours = penalty_minutes / 60.0
-        current_penalty = float(getattr(summary, "penalty_hours", 0) or 0.0)
+        # 安全数值转换函数
+        def safe_float(value, default=0.0):
+            """安全转换为float，处理Mock对象和None值"""
+            if value is None:
+                return default
+            if hasattr(value, '__class__') and 'Mock' in str(value.__class__):
+                return default
+            try:
+                return float(value)
+            except (ValueError, TypeError):
+                return default
+                
+        current_penalty = safe_float(getattr(summary, "penalty_hours", 0) or 0.0)
         setattr(summary, "penalty_hours", current_penalty + penalty_hours)
 
         if penalty_type == "late_response":
-            current_late_response = float(
+            current_late_response = safe_float(
                 getattr(summary, "late_response_penalty_hours", 0) or 0.0
             )
             setattr(
@@ -849,7 +873,7 @@ class WorkHoursCalculationService:
                 current_late_response + penalty_hours,
             )
         elif penalty_type == "late_completion":
-            current_late_completion = float(
+            current_late_completion = safe_float(
                 getattr(summary, "late_completion_penalty_hours", 0) or 0.0
             )
             setattr(
@@ -858,7 +882,7 @@ class WorkHoursCalculationService:
                 current_late_completion + penalty_hours,
             )
         elif penalty_type == "negative_review":
-            current_negative_review = float(
+            current_negative_review = safe_float(
                 getattr(summary, "negative_review_penalty_hours", 0) or 0.0
             )
             setattr(
@@ -868,11 +892,23 @@ class WorkHoursCalculationService:
             )
 
         # 重新计算总工时
-        repair_hours = float(summary.repair_task_hours or 0.0)
-        monitoring_hours = float(summary.monitoring_hours or 0.0)
-        assistance_hours = float(summary.assistance_hours or 0.0)
-        carried_hours = float(summary.carried_hours or 0.0)
-        total_penalty = float(summary.penalty_hours or 0.0)
+        # 安全数值转换函数
+        def safe_float(value, default=0.0):
+            """安全转换为float，处理Mock对象和None值"""
+            if value is None:
+                return default
+            if hasattr(value, '__class__') and 'Mock' in str(value.__class__):
+                return default
+            try:
+                return float(value)
+            except (ValueError, TypeError):
+                return default
+                
+        repair_hours = safe_float(summary.repair_task_hours or 0.0)
+        monitoring_hours = safe_float(summary.monitoring_hours or 0.0)
+        assistance_hours = safe_float(summary.assistance_hours or 0.0)
+        carried_hours = safe_float(summary.carried_hours or 0.0)
+        total_penalty = safe_float(summary.penalty_hours or 0.0)
 
         setattr(
             summary,

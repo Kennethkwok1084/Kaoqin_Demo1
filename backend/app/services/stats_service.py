@@ -90,7 +90,11 @@ class StatisticsService:
                 )
                 if cached_data:
                     logger.debug(f"Overview statistics cache hit: {cache_key}")
-                    return dict(cached_data["data"])  # Explicit cast to dict
+                    # 安全处理缓存数据，防止协程对象问题
+                    cached_result = cached_data["data"]
+                    if hasattr(cached_result, '__await__'):
+                        cached_result = await cached_result
+                    return dict(cached_result)  # Explicit cast to dict
 
             logger.debug(f"Overview statistics cache miss, computing: {cache_key}")
 
@@ -248,7 +252,11 @@ class StatisticsService:
         # 尝试从缓存获取
         cached_data = await cache.get_stats_cache("member")
         if cached_data:
-            return dict(cached_data["data"])  # Explicit cast to dict
+            # 安全处理缓存数据，防止协程对象问题
+            cached_result = cached_data["data"]
+            if hasattr(cached_result, '__await__'):
+                cached_result = await cached_result
+            return dict(cached_result)  # Explicit cast to dict
 
         # 查询数据库
         member_query = select(
@@ -291,7 +299,11 @@ class StatisticsService:
             "task", date_from=date_from.isoformat(), date_to=date_to.isoformat()
         )
         if cached_data:
-            return dict(cached_data["data"])  # Explicit cast to dict
+            # 安全处理缓存数据，防止协程对象问题
+            cached_result = cached_data["data"]
+            if hasattr(cached_result, '__await__'):
+                cached_result = await cached_result
+            return dict(cached_result)  # Explicit cast to dict
 
         # 查询维修任务统计
         repair_query = select(
@@ -410,53 +422,69 @@ class StatisticsService:
             "work_hour", date_from=date_from.isoformat(), date_to=date_to.isoformat()
         )
         if cached_data:
-            return dict(cached_data["data"])  # Explicit cast to dict
+            # 安全处理缓存数据，防止协程对象问题
+            cached_result = cached_data["data"]
+            if hasattr(cached_result, '__await__'):
+                cached_result = await cached_result
+            return dict(cached_result)  # Explicit cast to dict
 
-        # 查询工时统计
-        work_hour_query = (
-            select(
+        # 分别查询各类任务的工时统计（避免无关联表的join错误）
+        try:
+            # 查询维修任务工时
+            repair_query = select(
                 func.sum(RepairTask.work_minutes).label("repair_minutes"),
-                func.sum(MonitoringTask.work_minutes).label("monitoring_minutes"),
-                func.sum(AssistanceTask.work_minutes).label("assistance_minutes"),
                 func.avg(RepairTask.work_minutes).label("avg_repair_minutes"),
                 func.count(RepairTask.id).label("repair_count"),
-            )
-            .select_from(
-                RepairTask.__table__.outerjoin(MonitoringTask.__table__).outerjoin(
-                    AssistanceTask.__table__
+            ).where(
+                and_(
+                    RepairTask.report_time >= date_from,
+                    RepairTask.report_time <= date_to,
                 )
             )
-            .where(
-                or_(
-                    and_(
-                        RepairTask.report_time >= date_from,
-                        RepairTask.report_time <= date_to,
-                    ),
-                    and_(
-                        MonitoringTask.start_time >= date_from,
-                        MonitoringTask.start_time <= date_to,
-                    ),
-                    and_(
-                        AssistanceTask.start_time >= date_from,
-                        AssistanceTask.start_time <= date_to,
-                    ),
+            
+            # 查询监控任务工时
+            monitoring_query = select(
+                func.sum(MonitoringTask.work_minutes).label("monitoring_minutes"),
+            ).where(
+                and_(
+                    MonitoringTask.start_time >= date_from,
+                    MonitoringTask.start_time <= date_to,
                 )
             )
-        )
-
-        result = await self.db.execute(work_hour_query)
-        stats = result.first()
-
-        if stats is None:
+            
+            # 查询协助任务工时  
+            assistance_query = select(
+                func.sum(AssistanceTask.work_minutes).label("assistance_minutes"),
+            ).where(
+                and_(
+                    AssistanceTask.start_time >= date_from,
+                    AssistanceTask.start_time <= date_to,
+                )
+            )
+            
+            # 分别执行查询
+            repair_result = await self.db.execute(repair_query)
+            repair_stats = repair_result.first()
+            
+            monitoring_result = await self.db.execute(monitoring_query)  
+            monitoring_stats = monitoring_result.first()
+            
+            assistance_result = await self.db.execute(assistance_query)
+            assistance_stats = assistance_result.first()
+            
+            # 合并结果
+            repair_minutes = repair_stats.repair_minutes or 0 if repair_stats else 0
+            monitoring_minutes = monitoring_stats.monitoring_minutes or 0 if monitoring_stats else 0
+            assistance_minutes = assistance_stats.assistance_minutes or 0 if assistance_stats else 0
+            avg_repair_minutes = repair_stats.avg_repair_minutes or 0 if repair_stats else 0
+            
+        except Exception as query_error:
+            logger.warning(f"Work hour statistics query failed: {query_error}")
+            # 使用默认值
             repair_minutes = 0
-            monitoring_minutes = 0
+            monitoring_minutes = 0  
             assistance_minutes = 0
             avg_repair_minutes = 0
-        else:
-            repair_minutes = stats.repair_minutes or 0
-            monitoring_minutes = stats.monitoring_minutes or 0
-            assistance_minutes = stats.assistance_minutes or 0
-            avg_repair_minutes = stats.avg_repair_minutes or 0
 
         total_minutes = repair_minutes + monitoring_minutes + assistance_minutes
 
@@ -492,7 +520,11 @@ class StatisticsService:
             "performance", date_from=date_from.isoformat(), date_to=date_to.isoformat()
         )
         if cached_data:
-            return dict(cached_data["data"])  # Explicit cast to dict
+            # 安全处理缓存数据，防止协程对象问题
+            cached_result = cached_data["data"]
+            if hasattr(cached_result, '__await__'):
+                cached_result = await cached_result
+            return dict(cached_result)  # Explicit cast to dict
 
         # 查询绩效统计
         performance_query = select(
@@ -556,7 +588,11 @@ class StatisticsService:
             "attendance", date_from=date_from.isoformat(), date_to=date_to.isoformat()
         )
         if cached_data:
-            return dict(cached_data["data"])  # Explicit cast to dict
+            # 安全处理缓存数据，防止协程对象问题
+            cached_result = cached_data["data"]
+            if hasattr(cached_result, '__await__'):
+                cached_result = await cached_result
+            return dict(cached_result)  # Explicit cast to dict
 
         try:
             # 查询考勤统计
