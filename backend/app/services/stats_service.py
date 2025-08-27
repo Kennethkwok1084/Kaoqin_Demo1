@@ -142,31 +142,71 @@ class StatisticsService:
                 logger.error(f"Member stats error: {member_stats}")
                 member_stats_data = {}
             else:
-                member_stats_data = member_stats
+                # 安全地处理可能的协程对象
+                if hasattr(member_stats, '__await__'):
+                    try:
+                        member_stats_data = await member_stats
+                    except Exception as e:
+                        logger.error(f"Failed to await member stats: {e}")
+                        member_stats_data = {}
+                else:
+                    member_stats_data = member_stats if member_stats else {}
 
             if isinstance(task_stats, Exception):
                 logger.error(f"Task stats error: {task_stats}")
                 task_stats_data = {}
             else:
-                task_stats_data = task_stats
+                # 安全地处理可能的协程对象
+                if hasattr(task_stats, '__await__'):
+                    try:
+                        task_stats_data = await task_stats
+                    except Exception as e:
+                        logger.error(f"Failed to await task stats: {e}")
+                        task_stats_data = {}
+                else:
+                    task_stats_data = task_stats if task_stats else {}
 
             if isinstance(work_hour_stats, Exception):
                 logger.error(f"Work hour stats error: {work_hour_stats}")
                 work_hour_stats_data = {}
             else:
-                work_hour_stats_data = work_hour_stats
+                # 安全地处理可能的协程对象
+                if hasattr(work_hour_stats, '__await__'):
+                    try:
+                        work_hour_stats_data = await work_hour_stats
+                    except Exception as e:
+                        logger.error(f"Failed to await work hour stats: {e}")
+                        work_hour_stats_data = {}
+                else:
+                    work_hour_stats_data = work_hour_stats if work_hour_stats else {}
 
             if isinstance(performance_stats, Exception):
                 logger.error(f"Performance stats error: {performance_stats}")
                 performance_stats_data = {}
             else:
-                performance_stats_data = performance_stats
+                # 安全地处理可能的协程对象
+                if hasattr(performance_stats, '__await__'):
+                    try:
+                        performance_stats_data = await performance_stats
+                    except Exception as e:
+                        logger.error(f"Failed to await performance stats: {e}")
+                        performance_stats_data = {}
+                else:
+                    performance_stats_data = performance_stats if performance_stats else {}
 
             if isinstance(attendance_stats, Exception):
                 logger.error(f"Attendance stats error: {attendance_stats}")
                 attendance_stats_data = {}
             else:
-                attendance_stats_data = attendance_stats
+                # 安全地处理可能的协程对象
+                if hasattr(attendance_stats, '__await__'):
+                    try:
+                        attendance_stats_data = await attendance_stats
+                    except Exception as e:
+                        logger.error(f"Failed to await attendance stats: {e}")
+                        attendance_stats_data = {}
+                else:
+                    attendance_stats_data = attendance_stats if attendance_stats else {}
 
             result = {
                 "period": {"from": date_from.isoformat(), "to": date_to.isoformat()},

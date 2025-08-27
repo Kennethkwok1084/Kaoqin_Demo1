@@ -284,23 +284,40 @@ class TestConcurrentWorkHoursCalculation:
         mock_empty_result = Mock()
         mock_empty_result.scalars.return_value.all.return_value = []
 
-        # 为多个并发请求准备足够的mock数据
+        # Mock valid member for validation
+        mock_member = Mock()
+        mock_member.id = member_id
+        mock_member.is_active = True
+        mock_member_result = Mock()
+        mock_member_result.scalar_one_or_none.return_value = mock_member
+
+        # 为多个并发请求准备足够的mock数据 (每个请求需要4个查询: member + 3个task类型)
         mock_db.execute.side_effect = [
-            mock_tasks_result,
-            mock_empty_result,
-            mock_empty_result,  # 第1个请求
-            mock_tasks_result,
-            mock_empty_result,
-            mock_empty_result,  # 第2个请求
-            mock_tasks_result,
-            mock_empty_result,
-            mock_empty_result,  # 第3个请求
-            mock_tasks_result,
-            mock_empty_result,
-            mock_empty_result,  # 第4个请求
-            mock_tasks_result,
-            mock_empty_result,
-            mock_empty_result,  # 第5个请求
+            # 第1个请求
+            mock_member_result,  # Member validation
+            mock_tasks_result,   # RepairTask query
+            mock_empty_result,   # MonitoringTask query
+            mock_empty_result,   # AssistanceTask query
+            # 第2个请求
+            mock_member_result,  # Member validation
+            mock_tasks_result,   # RepairTask query
+            mock_empty_result,   # MonitoringTask query
+            mock_empty_result,   # AssistanceTask query
+            # 第3个请求
+            mock_member_result,  # Member validation
+            mock_tasks_result,   # RepairTask query
+            mock_empty_result,   # MonitoringTask query
+            mock_empty_result,   # AssistanceTask query
+            # 第4个请求
+            mock_member_result,  # Member validation
+            mock_tasks_result,   # RepairTask query
+            mock_empty_result,   # MonitoringTask query
+            mock_empty_result,   # AssistanceTask query
+            # 第5个请求
+            mock_member_result,  # Member validation
+            mock_tasks_result,   # RepairTask query
+            mock_empty_result,   # MonitoringTask query
+            mock_empty_result,   # AssistanceTask query
         ]
 
         # 并发执行计算

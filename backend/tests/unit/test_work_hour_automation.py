@@ -377,12 +377,24 @@ class TestWorkHourAutomationService:
     @pytest.mark.asyncio
     async def test_get_automation_statistics(self, automation_service, mock_db):
         """Test automation statistics retrieval."""
-        # Mock database queries for statistics
+        # Mock database queries for statistics with proper numeric return values
+        penalty_mock = Mock()
+        penalty_mock.scalar.return_value = 15  # Tasks with penalty tags
+
+        bonus_mock = Mock()
+        bonus_mock.scalar.return_value = 8  # Tasks with bonus tags
+
+        actions_mock = Mock()
+        actions_mock.scalar.return_value = 23  # Total automated actions
+
+        total_mock = Mock()
+        total_mock.scalar.return_value = 150  # Total tasks processed
+
         mock_db.execute.side_effect = [
-            Mock(scalar=Mock(return_value=15)),  # Tasks with penalty tags
-            Mock(scalar=Mock(return_value=8)),  # Tasks with bonus tags
-            Mock(scalar=Mock(return_value=23)),  # Total automated actions
-            Mock(scalar=Mock(return_value=150)),  # Total tasks processed
+            penalty_mock,
+            bonus_mock,
+            actions_mock,
+            total_mock,
         ]
 
         result = await automation_service.get_automation_statistics()
