@@ -144,7 +144,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { MembersApi } from '@/api/members'
 import type { MemberCreateRequest } from '@/api/members'

@@ -13,13 +13,13 @@ export enum MessageType {
 
 // 消息分类枚举
 export enum MessageCategory {
-  AUTH = 'auth',           // 认证相关
-  MEMBER = 'member',       // 成员管理
-  TASK = 'task',          // 任务管理
-  ATTENDANCE = 'attendance',  // 考勤管理
-  IMPORT = 'import',      // 数据导入
-  SYSTEM = 'system',      // 系统消息
-  VALIDATION = 'validation'  // 数据验证
+  AUTH = 'auth', // 认证相关
+  MEMBER = 'member', // 成员管理
+  TASK = 'task', // 任务管理
+  ATTENDANCE = 'attendance', // 考勤管理
+  IMPORT = 'import', // 数据导入
+  SYSTEM = 'system', // 系统消息
+  VALIDATION = 'validation' // 数据验证
 }
 
 // 统一消息定义
@@ -53,7 +53,8 @@ export const MESSAGES = {
   AUTH_ERROR_ADMIN_REQUIRED: '需要管理员权限',
   AUTH_ERROR_GROUP_LEADER_REQUIRED: '需要组长或管理员权限',
 
-  AUTH_WARNING_PASSWORD_WEAK: '密码强度不足，建议包含大小写字母、数字和特殊字符',
+  AUTH_WARNING_PASSWORD_WEAK:
+    '密码强度不足，建议包含大小写字母、数字和特殊字符',
 
   AUTH_INFO_TOKEN_VALID: '访问令牌有效',
   AUTH_INFO_SERVICE_RUNNING: '认证服务运行正常',
@@ -67,7 +68,8 @@ export const MESSAGES = {
   MEMBER_SUCCESS_PASSWORD_CHANGE: '密码修改成功',
   MEMBER_SUCCESS_PROFILE_COMPLETE: '个人信息完善成功',
   MEMBER_SUCCESS_STATS_RETRIEVE: '成员统计信息获取成功',
-  MEMBER_SUCCESS_IMPORT: '导入完成：成功 {successful} 条，失败 {failed} 条，跳过 {skipped} 条',
+  MEMBER_SUCCESS_IMPORT:
+    '导入完成：成功 {successful} 条，失败 {failed} 条，跳过 {skipped} 条',
 
   MEMBER_ERROR_LIST_RETRIEVE: '获取成员列表失败',
   MEMBER_ERROR_DETAIL_RETRIEVE: '获取成员详情失败',
@@ -130,7 +132,8 @@ export const MESSAGES = {
   ATTENDANCE_ERROR_MEMBER_NOT_FOUND: '成员不存在',
   ATTENDANCE_ERROR_INVALID_MONTH_FORMAT: '月份格式错误，请使用 YYYY-MM 格式',
   ATTENDANCE_ERROR_INVALID_DATE_FORMAT: '日期格式错误，请使用 YYYY-MM-DD 格式',
-  ATTENDANCE_ERROR_INVALID_CHART_TYPE: '图表类型必须是 daily、weekly 或 monthly',
+  ATTENDANCE_ERROR_INVALID_CHART_TYPE:
+    '图表类型必须是 daily、weekly 或 monthly',
   ATTENDANCE_ERROR_EXPORT_FAILED: '导出工时数据失败',
   ATTENDANCE_ERROR_STATS_RETRIEVE_FAILED: '获取工时统计失败',
   ATTENDANCE_ERROR_CHART_RETRIEVE_FAILED: '获取图表数据失败',
@@ -229,7 +232,10 @@ export class MessageFormatter {
    * @param params 格式化参数
    * @returns 格式化后的消息
    */
-  static getMessage(messageKey: keyof typeof MESSAGES, params: Record<string, any> = {}): string {
+  static getMessage(
+    messageKey: keyof typeof MESSAGES,
+    params: Record<string, any> = {}
+  ): string {
     const message = MESSAGES[messageKey] || '未知消息'
     return this.format(message, params)
   }
@@ -240,28 +246,40 @@ export class MessageManager {
   /**
    * 获取成功消息
    */
-  static getSuccessMessage(key: keyof typeof MESSAGES, params?: Record<string, any>): string {
+  static getSuccessMessage(
+    key: keyof typeof MESSAGES,
+    params?: Record<string, any>
+  ): string {
     return MessageFormatter.getMessage(key, params)
   }
 
   /**
    * 获取错误消息
    */
-  static getErrorMessage(key: keyof typeof MESSAGES, params?: Record<string, any>): string {
+  static getErrorMessage(
+    key: keyof typeof MESSAGES,
+    params?: Record<string, any>
+  ): string {
     return MessageFormatter.getMessage(key, params)
   }
 
   /**
    * 获取警告消息
    */
-  static getWarningMessage(key: keyof typeof MESSAGES, params?: Record<string, any>): string {
+  static getWarningMessage(
+    key: keyof typeof MESSAGES,
+    params?: Record<string, any>
+  ): string {
     return MessageFormatter.getMessage(key, params)
   }
 
   /**
    * 获取信息消息
    */
-  static getInfoMessage(key: keyof typeof MESSAGES, params?: Record<string, any>): string {
+  static getInfoMessage(
+    key: keyof typeof MESSAGES,
+    params?: Record<string, any>
+  ): string {
     return MessageFormatter.getMessage(key, params)
   }
 
@@ -283,8 +301,8 @@ export class MessageManager {
     }
 
     const messageKey = statusMessages[status]
-    return messageKey 
-      ? MessageFormatter.getMessage(messageKey) 
+    return messageKey
+      ? MessageFormatter.getMessage(messageKey)
       : defaultMessage || `请求失败 (${status})`
   }
 }

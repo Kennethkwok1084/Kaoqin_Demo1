@@ -4,7 +4,6 @@ import { http } from './client'
 import type {
   WorkHoursRecord,
   WorkHoursListParams,
-  WorkHoursListResponse,
   WorkHoursSummary,
   MonthlyWorkHoursReport,
   WorkHoursStats,

@@ -3,7 +3,7 @@ import axios, {
   type AxiosRequestConfig,
   type AxiosResponse
 } from 'axios'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { getToken, removeToken, isTokenExpired } from '@/utils/auth'
 import router from '@/router'
 
@@ -67,7 +67,7 @@ http.interceptors.response.use(
     return response
   },
   async error => {
-    const { response, config } = error
+    const { response } = error
 
     // 网络错误
     if (!response) {
@@ -102,7 +102,7 @@ http.interceptors.response.use(
         ElMessage.error('请求的资源不存在')
         break
 
-      case 422:
+      case 422: {
         // 验证错误
         const validationErrors = response.data?.detail
         if (Array.isArray(validationErrors)) {
@@ -114,6 +114,7 @@ http.interceptors.response.use(
           ElMessage.error('输入数据格式不正确')
         }
         break
+      }
 
       case 429:
         // 请求频率限制
@@ -132,11 +133,13 @@ http.interceptors.response.use(
         ElMessage.error('服务暂时不可用，请稍后再试')
         break
 
-      default:
+      default: {
         // 其他错误
         const errorMessage =
           response.data?.message || response.data?.detail || '请求失败'
         ElMessage.error(errorMessage)
+        break
+      }
     }
 
     return Promise.reject(error)

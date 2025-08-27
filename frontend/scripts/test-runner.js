@@ -5,7 +5,7 @@
  * 支持不同类型的测试运行和报告生成
  */
 
-const { execSync, spawn } = require('child_process')
+const { spawn } = require('child_process')
 const fs = require('fs')
 const path = require('path')
 const chalk = require('chalk')
@@ -152,7 +152,7 @@ class TestRunner {
   async startDevServer() {
     this.log('启动开发服务器...', 'info')
 
-    const child = spawn('npm', ['run', 'dev'], {
+    spawn('npm', ['run', 'dev'], {
       stdio: 'pipe',
       shell: true,
       detached: true

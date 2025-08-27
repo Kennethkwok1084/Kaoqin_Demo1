@@ -1,7 +1,7 @@
 // 认证相关类型定义
 
 export interface LoginRequest {
-  student_id: string  // 修复：使用student_id与后端保持一致
+  student_id: string // 修复：使用student_id与后端保持一致
   password: string
   remember_me?: boolean
 }

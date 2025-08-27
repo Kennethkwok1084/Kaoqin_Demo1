@@ -4,7 +4,13 @@ export interface Task {
   id: number
   title: string
   description: string
-  type: 'network_repair' | 'hardware_repair' | 'software_support' | 'monitoring' | 'assistance' | 'other'  // 修复：使用后端TaskCategory枚举值
+  type:
+    | 'network_repair'
+    | 'hardware_repair'
+    | 'software_support'
+    | 'monitoring'
+    | 'assistance'
+    | 'other' // 修复：使用后端TaskCategory枚举值
   priority: 'low' | 'medium' | 'high' | 'urgent'
   status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
   assigneeId: number | null
@@ -12,7 +18,7 @@ export interface Task {
   reporterId: number
   reporterName: string
   location: string
-  reporter_contact: string  // 修复：使用reporter_contact与后端保持一致
+  reporter_contact: string // 修复：使用reporter_contact与后端保持一致
   estimatedHours: number
   actualHours: number | null
   startedAt: string | null
@@ -55,11 +61,17 @@ export interface TaskEvaluation {
 export interface CreateTaskRequest {
   title: string
   description: string
-  type: 'network_repair' | 'hardware_repair' | 'software_support' | 'monitoring' | 'assistance' | 'other'  // 修复：使用后端TaskCategory枚举值
+  type:
+    | 'network_repair'
+    | 'hardware_repair'
+    | 'software_support'
+    | 'monitoring'
+    | 'assistance'
+    | 'other' // 修复：使用后端TaskCategory枚举值
   priority: 'low' | 'medium' | 'high' | 'urgent'
   assigneeId?: number
   location: string
-  reporter_contact: string  // 修复：使用reporter_contact与后端保持一致
+  reporter_contact: string // 修复：使用reporter_contact与后端保持一致
   estimatedHours: number
   dueDate: string
   tags?: string[]
@@ -69,7 +81,13 @@ export interface CreateTaskRequest {
 export interface UpdateTaskRequest {
   title?: string
   description?: string
-  type?: 'network_repair' | 'hardware_repair' | 'software_support' | 'monitoring' | 'assistance' | 'other'
+  type?:
+    | 'network_repair'
+    | 'hardware_repair'
+    | 'software_support'
+    | 'monitoring'
+    | 'assistance'
+    | 'other'
   priority?: 'low' | 'medium' | 'high' | 'urgent'
   status?: 'pending' | 'in_progress' | 'completed' | 'cancelled'
   assigneeId?: number
@@ -83,7 +101,14 @@ export interface UpdateTaskRequest {
 
 export interface TaskFilters {
   status?: ('pending' | 'in_progress' | 'completed' | 'cancelled')[]
-  type?: ('network_repair' | 'hardware_repair' | 'software_support' | 'monitoring' | 'assistance' | 'other')[]
+  type?: (
+    | 'network_repair'
+    | 'hardware_repair'
+    | 'software_support'
+    | 'monitoring'
+    | 'assistance'
+    | 'other'
+  )[]
   priority?: ('low' | 'medium' | 'high' | 'urgent')[]
   assigneeId?: number
   reporterId?: number

@@ -258,12 +258,16 @@ export function transformFields<T = any>(
 
   for (const [key, value] of Object.entries(obj)) {
     const mappedKey = mapping[key] || key
-    
+
     if (Array.isArray(value)) {
-      result[mappedKey] = value.map(item => 
+      result[mappedKey] = value.map(item =>
         typeof item === 'object' ? transformFields(item, mapping) : item
       )
-    } else if (value && typeof value === 'object' && value.constructor === Object) {
+    } else if (
+      value &&
+      typeof value === 'object' &&
+      value.constructor === Object
+    ) {
       result[mappedKey] = transformFields(value, mapping)
     } else {
       result[mappedKey] = value
@@ -307,9 +311,10 @@ export function transformEnum(
  * Convert time units (minutes <-> hours)
  */
 export const TimeUnitConverters = {
-  minutesToHours: (minutes: number): number => Math.round((minutes / 60) * 100) / 100,
+  minutesToHours: (minutes: number): number =>
+    Math.round((minutes / 60) * 100) / 100,
   hoursToMinutes: (hours: number): number => Math.round(hours * 60),
-  
+
   // For displaying purposes
   formatMinutes: (minutes: number): string => {
     const hours = Math.floor(minutes / 60)
@@ -353,7 +358,7 @@ export function normalizeApiResponse<T>(response: any): ApiResponse<T> {
   if (isWrappedResponse(response)) {
     return response
   }
-  
+
   // If not wrapped, create wrapper
   return {
     success: true,
@@ -372,13 +377,13 @@ export function validateRequiredFields(
   requiredFields: string[]
 ): { valid: boolean; missing: string[] } {
   const missing: string[] = []
-  
+
   for (const field of requiredFields) {
     if (!(field in obj) || obj[field] === undefined || obj[field] === null) {
       missing.push(field)
     }
   }
-  
+
   return {
     valid: missing.length === 0,
     missing
@@ -393,8 +398,10 @@ export function createFieldTransformer(mapping: {
   toBackend: Record<string, string>
 }) {
   return {
-    toFrontend: <T>(data: any): T => transformBackendToFrontend<T>(data, mapping.toFrontend),
-    toBackend: <T>(data: any): T => transformFrontendToBackend<T>(data, mapping.toBackend)
+    toFrontend: <T>(data: any): T =>
+      transformBackendToFrontend<T>(data, mapping.toFrontend),
+    toBackend: <T>(data: any): T =>
+      transformFrontendToBackend<T>(data, mapping.toBackend)
   }
 }
 
@@ -403,4 +410,6 @@ export function createFieldTransformer(mapping: {
 export const AuthTransformer = createFieldTransformer(AuthFieldMapping)
 export const MemberTransformer = createFieldTransformer(MemberFieldMapping)
 export const TaskTransformer = createFieldTransformer(TaskFieldMapping)
-export const WorkHoursTransformer = createFieldTransformer(WorkHoursFieldMapping)
+export const WorkHoursTransformer = createFieldTransformer(
+  WorkHoursFieldMapping
+)

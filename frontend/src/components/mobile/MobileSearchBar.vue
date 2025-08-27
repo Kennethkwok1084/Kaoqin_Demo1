@@ -132,7 +132,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search, Microphone, Filter } from '@element-plus/icons-vue'
 
@@ -176,14 +176,6 @@ const filters = ref({
   status: [],
   type: [],
   dateRange: null
-})
-
-// 计算属性
-const filteredSuggestions = computed(() => {
-  if (!searchQuery.value) return []
-  return props.suggestions.filter(s =>
-    s.toLowerCase().includes(searchQuery.value.toLowerCase())
-  )
 })
 
 // 监听搜索框值变化

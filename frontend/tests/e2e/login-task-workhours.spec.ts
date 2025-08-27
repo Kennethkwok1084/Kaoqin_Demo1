@@ -153,7 +153,6 @@ test.describe('登录→创建任务→查看工时端到端流程', () => {
     })
 
     // 步骤6: 查看任务详情
-    let taskId: string
     await test.step('查看任务详情', async () => {
       // 找到刚创建的任务行
       const taskRow = page
@@ -164,9 +163,6 @@ test.describe('登录→创建任务→查看工时端到端流程', () => {
         .first()
 
       await expect(taskRow).toBeVisible()
-
-      // 获取任务ID（从表格中读取）
-      taskId = (await taskRow.locator('td:first-child').textContent()) || '1'
 
       // 点击查看详情按钮
       await taskRow.locator('text=查看').click()

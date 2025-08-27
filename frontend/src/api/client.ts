@@ -5,7 +5,7 @@ import axios, {
   type AxiosResponse,
   type AxiosError
 } from 'axios'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { getToken, removeToken } from '@/utils/auth'
 import router from '@/router'
 import { MessageManager, MESSAGES } from '@/constants/messages'
@@ -50,19 +50,25 @@ http.interceptors.response.use(
   (response: AxiosResponse) => {
     // 统一处理API响应格式
     const { data } = response
-    
+
     // 如果是标准API响应格式，直接返回
-    if (data && typeof data === 'object' && 'success' in data && 'message' in data && 'data' in data) {
+    if (
+      data &&
+      typeof data === 'object' &&
+      'success' in data &&
+      'message' in data &&
+      'data' in data
+    ) {
       return response
     }
-    
+
     // 如果不是标准格式，包装成标准格式
     response.data = {
       success: true,
       message: 'Success',
       data: data
     }
-    
+
     return response
   },
   (error: AxiosError) => {

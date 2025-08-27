@@ -103,12 +103,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue'
-import {
-  ElMessage,
-  ElMessageBox,
-  type FormInstance,
-  type FormRules
-} from 'element-plus'
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { statisticsApi } from '@/api/statistics'
 import type { ReportTemplate, Member } from '@/types/statistics'
 

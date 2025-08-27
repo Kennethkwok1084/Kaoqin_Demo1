@@ -9,7 +9,7 @@ import type {
   ConfirmResetPasswordRequest,
   ApiResponse
 } from '@/types/auth'
-import { 
+import {
   AuthTransformer,
   extractResponseData,
   transformEnum,
@@ -26,15 +26,18 @@ export const authApi = {
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     // Transform frontend request to backend format
     const backendRequest = AuthTransformer.toBackend(credentials)
-    
-    const response = await http.post<ApiResponse<any>>('/auth/login', backendRequest)
-    
+
+    const response = await http.post<ApiResponse<any>>(
+      '/auth/login',
+      backendRequest
+    )
+
     // Extract and transform response data
     const responseData = extractResponseData(response.data)
-    
+
     // Transform backend response to frontend format
     const transformedData = AuthTransformer.toFrontend(responseData)
-    
+
     // Transform role enum values
     if (transformedData.user?.role) {
       transformedData.user.role = transformEnum(
@@ -42,7 +45,7 @@ export const authApi = {
         UserRoleMapping.toFrontend
       )
     }
-    
+
     return {
       success: response.data.success,
       message: response.data.message,
@@ -70,11 +73,11 @@ export const authApi = {
    */
   async getUserInfo(): Promise<UserInfo> {
     const response = await http.get<ApiResponse<any>>('/auth/me')
-    
+
     // Extract and transform response data
     const responseData = extractResponseData(response.data)
     const transformedData = AuthTransformer.toFrontend(responseData)
-    
+
     // Transform role enum values
     if (transformedData.role) {
       transformedData.role = transformEnum(
@@ -82,7 +85,7 @@ export const authApi = {
         UserRoleMapping.toFrontend
       )
     }
-    
+
     return transformedData
   },
 

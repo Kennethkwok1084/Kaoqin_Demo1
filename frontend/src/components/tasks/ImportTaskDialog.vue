@@ -599,7 +599,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import {
   Upload,
   Document,
@@ -1110,8 +1110,6 @@ const handleParseBOrSkip = async () => {
     matching.value = false
   }
 }
-
-const handleParseB = handleParseBOrSkip // 保持向后兼容
 
 const handlePrevious = () => {
   if (currentStep.value > 0) {
