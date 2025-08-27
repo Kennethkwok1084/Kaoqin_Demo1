@@ -448,25 +448,15 @@ import {
   validateChartData,
   getDefaultPieChartData,
   getDefaultLineChartData,
-  getDefaultBarChartData,
-  getDefaultDoughnutChartData,
   formatApiResponse
 } from '@/utils/chartDataValidator'
-import { DEPARTMENT_OPTIONS } from '@/types/member'
 import type {
   StatisticsOverview,
-  TaskStatistics,
-  AttendanceStatistics,
   StatisticsFilters,
   MemberRankingItem,
   DepartmentStatsItem
 } from '@/types/statistics'
-import {
-  formatDate,
-  getMonthRange,
-  getWeekRange,
-  getQuarterRange
-} from '@/utils/date'
+import { getMonthRange, getWeekRange, getQuarterRange } from '@/utils/date'
 import ReportGenerateDialog from '@/components/statistics/ReportGenerateDialog.vue'
 import ChartFullScreenDialog from '@/components/statistics/ChartFullScreenDialog.vue'
 import ExportDataDialog from '@/components/statistics/ExportDataDialog.vue'
@@ -476,8 +466,6 @@ const refreshing = ref(false)
 const showReportDialog = ref(false)
 const showFullScreenDialog = ref(false)
 const showExportDialog = ref(false)
-const fullScreenChartData = ref<any>(null)
-const fullScreenChartTitle = ref('')
 const fullScreenChartConfig = ref<any>({
   title: '',
   data: null,
@@ -521,7 +509,6 @@ const filters = reactive<StatisticsFilters>({
   members: []
 })
 
-const departmentOptions = ref(DEPARTMENT_OPTIONS)
 const memberOptions = ref<{ id: number; name: string }[]>([])
 
 // 方法

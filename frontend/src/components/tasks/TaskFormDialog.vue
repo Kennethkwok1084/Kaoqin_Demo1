@@ -256,10 +256,7 @@ import {
   Setting,
   Location,
   Paperclip,
-  UploadFilled,
-  Tools,
-  Monitor,
-  Connection
+  UploadFilled
 } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules, UploadFile } from 'element-plus'
 import type { Task, CreateTaskRequest, UpdateTaskRequest } from '@/types/task'

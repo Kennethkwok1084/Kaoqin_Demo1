@@ -129,15 +129,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  ref,
-  reactive,
-  computed,
-  watch,
-  onMounted,
-  onUnmounted,
-  nextTick
-} from 'vue'
+import { ref, reactive, computed, watch, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElForm } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { attendanceApi } from '@/api/attendance'
