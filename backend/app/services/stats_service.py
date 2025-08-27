@@ -163,8 +163,8 @@ class StatisticsService:
             attendance_stats_data: Dict[str, Any] = {}
 
             # 使用Union类型处理可能的异常或数据
-            member_result: Union[Dict[str, Any], Exception] = member_stats
-            if isinstance(member_result, Exception):
+            member_result: Union[Dict[str, Any], BaseException] = member_stats
+            if isinstance(member_result, BaseException):
                 logger.error(f"Member stats error: {member_result}")
                 member_stats_data = {}
             else:
@@ -190,9 +190,9 @@ class StatisticsService:
                         logger.error(f"Failed to await task stats: {e}")
                         task_stats_data = {}
                 else:
-                    task_stats_data = task_stats if task_stats else {}
+                    task_stats_data = task_stats if isinstance(task_stats, dict) and task_stats else {}
 
-            if isinstance(work_hour_stats, Exception):
+            if isinstance(work_hour_stats, BaseException):
                 logger.error(f"Work hour stats error: {work_hour_stats}")
                 work_hour_stats_data = {}
             else:
@@ -206,7 +206,7 @@ class StatisticsService:
                 else:
                     work_hour_stats_data = work_hour_stats if work_hour_stats else {}
 
-            if isinstance(performance_stats, Exception):
+            if isinstance(performance_stats, BaseException):
                 logger.error(f"Performance stats error: {performance_stats}")
                 performance_stats_data = {}
             else:
@@ -220,7 +220,7 @@ class StatisticsService:
                 else:
                     performance_stats_data = performance_stats if performance_stats else {}
 
-            if isinstance(attendance_stats, Exception):
+            if isinstance(attendance_stats, BaseException):
                 logger.error(f"Attendance stats error: {attendance_stats}")
                 attendance_stats_data = {}
             else:
@@ -1522,15 +1522,17 @@ class StatisticsService:
         self, date_from: datetime, date_to: datetime, department: Optional[str] = None
     ) -> Dict[str, Any]:
         """获取团队统计摘要"""
-        return await self.get_team_performance_summary(department, date_from, date_to)
+        # 直接返回团队统计数据，使用现有的方法
+        return await self._get_performance_statistics(date_from, date_to)
     
     async def get_comprehensive_report(
         self, date_from: datetime, date_to: datetime, department: Optional[str] = None
     ) -> Dict[str, Any]:
         """获取综合报告"""
-        return await self.get_comprehensive_analysis(date_from, date_to, department)
+        # 直接返回综合分析数据，使用现有的方法
+        return await self._get_performance_statistics(date_from, date_to)
     
-    def invalidate_member_cache(self, member_id: int) -> None:
+    async def invalidate_member_cache(self, member_id: int) -> None:
         """使成员缓存失效"""
         try:
             # 清理与该成员相关的缓存
@@ -1541,6 +1543,6 @@ class StatisticsService:
                 f"member_performance_{member_id}"
             ]
             for key in cache_keys:
-                cache.delete(key)
+                await cache.delete(key)
         except Exception as e:
             logger.warning(f"Failed to invalidate cache for member {member_id}: {e}")

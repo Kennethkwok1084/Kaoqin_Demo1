@@ -884,18 +884,6 @@ class WorkHoursCalculationService:
             )
 
         # 重新计算总工时
-        # 安全数值转换函数
-        def safe_float(value, default=0.0):
-            """安全转换为float，处理Mock对象和None值"""
-            if value is None:
-                return default
-            if hasattr(value, '__class__') and 'Mock' in str(value.__class__):
-                return default
-            try:
-                return float(value)
-            except (ValueError, TypeError):
-                return default
-                
         repair_hours = safe_float(summary.repair_task_hours or 0.0)
         monitoring_hours = safe_float(summary.monitoring_hours or 0.0)
         assistance_hours = safe_float(summary.assistance_hours or 0.0)
