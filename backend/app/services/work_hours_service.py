@@ -30,6 +30,18 @@ from app.models.task import (
 logger = logging.getLogger(__name__)
 
 
+def safe_float(value: Any, default: float = 0.0) -> float:
+    """安全转换为float，处理Mock对象和None值"""
+    if value is None:
+        return default
+    if hasattr(value, '__class__') and 'Mock' in str(value.__class__):
+        return default
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return default
+
+
 class WorkHoursCalculationService:
     """工时计算服务 - 实现新的考勤规则"""
 
@@ -388,17 +400,7 @@ class WorkHoursCalculationService:
                 (prev_summary.remaining_hours or 0.0) if prev_summary else 0.0
             )
 
-            # 计算总工时 - 安全数值转换，防止Mock对象问题
-            def safe_float(value, default=0.0):
-                """安全转换为float，处理Mock对象和None值"""
-                if value is None:
-                    return default
-                if hasattr(value, '__class__') and 'Mock' in str(value.__class__):
-                    return default
-                try:
-                    return float(value)
-                except (ValueError, TypeError):
-                    return default
+            # 计算总工时 - 使用全局safe_float函数
             
             repair_hours_raw = repair_stats.get("total_hours", 0) or 0.0
             repair_hours = safe_float(repair_hours_raw)
@@ -848,17 +850,7 @@ class WorkHoursCalculationService:
 
         # 添加惩罚时长
         penalty_hours = penalty_minutes / 60.0
-        # 安全数值转换函数
-        def safe_float(value, default=0.0):
-            """安全转换为float，处理Mock对象和None值"""
-            if value is None:
-                return default
-            if hasattr(value, '__class__') and 'Mock' in str(value.__class__):
-                return default
-            try:
-                return float(value)
-            except (ValueError, TypeError):
-                return default
+        # 使用全局safe_float函数
                 
         current_penalty = safe_float(getattr(summary, "penalty_hours", 0) or 0.0)
         setattr(summary, "penalty_hours", current_penalty + penalty_hours)

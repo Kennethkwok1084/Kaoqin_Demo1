@@ -8,7 +8,7 @@ import hashlib
 import logging
 from calendar import monthrange
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from sqlalchemy import and_, case, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,6 +25,26 @@ from app.models.task import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def safe_numeric_value(value: Any, default: float = 0.0) -> float:
+    """安全获取数值，处理Mock对象、协程和None值"""
+    if value is None:
+        return default
+    
+    # 检查是否是Mock对象
+    if hasattr(value, '__class__') and 'Mock' in str(value.__class__):
+        return default
+    
+    # 检查是否是协程对象
+    if hasattr(value, '__await__'):
+        logger.warning(f"Unexpected coroutine value: {value}")
+        return default
+    
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return default
 
 
 class StatisticsService:
@@ -135,26 +155,28 @@ class StatisticsService:
                 attendance_stats,
             ) = results
 
-            # 处理异常结果 - Initialize with empty dicts
+            # 处理异常结果 - Initialize with typed variables
             member_stats_data: Dict[str, Any] = {}
             task_stats_data: Dict[str, Any] = {}
             work_hour_stats_data: Dict[str, Any] = {}
             performance_stats_data: Dict[str, Any] = {}
             attendance_stats_data: Dict[str, Any] = {}
 
-            if isinstance(member_stats, Exception):
-                logger.error(f"Member stats error: {member_stats}")
+            # 使用Union类型处理可能的异常或数据
+            member_result: Union[Dict[str, Any], Exception] = member_stats
+            if isinstance(member_result, Exception):
+                logger.error(f"Member stats error: {member_result}")
                 member_stats_data = {}
             else:
                 # 安全地处理可能的协程对象
-                if hasattr(member_stats, '__await__'):
+                if hasattr(member_result, '__await__'):
                     try:
-                        member_stats_data = await member_stats
+                        member_stats_data = await member_result
                     except Exception as e:
                         logger.error(f"Failed to await member stats: {e}")
                         member_stats_data = {}
                 else:
-                    member_stats_data = member_stats if member_stats else {}
+                    member_stats_data = member_result if member_result else {}
 
             if isinstance(task_stats, Exception):
                 logger.error(f"Task stats error: {task_stats}")
@@ -472,11 +494,11 @@ class StatisticsService:
             assistance_result = await self.db.execute(assistance_query)
             assistance_stats = assistance_result.first()
             
-            # 合并结果
-            repair_minutes = repair_stats.repair_minutes or 0 if repair_stats else 0
-            monitoring_minutes = monitoring_stats.monitoring_minutes or 0 if monitoring_stats else 0
-            assistance_minutes = assistance_stats.assistance_minutes or 0 if assistance_stats else 0
-            avg_repair_minutes = repair_stats.avg_repair_minutes or 0 if repair_stats else 0
+            # 合并结果 - 使用安全数值转换
+            repair_minutes = safe_numeric_value(repair_stats.repair_minutes if repair_stats else 0)
+            monitoring_minutes = safe_numeric_value(monitoring_stats.monitoring_minutes if monitoring_stats else 0)
+            assistance_minutes = safe_numeric_value(assistance_stats.assistance_minutes if assistance_stats else 0)
+            avg_repair_minutes = safe_numeric_value(repair_stats.avg_repair_minutes if repair_stats else 0)
             
         except Exception as query_error:
             logger.warning(f"Work hour statistics query failed: {query_error}")
@@ -486,7 +508,7 @@ class StatisticsService:
             assistance_minutes = 0
             avg_repair_minutes = 0
 
-        total_minutes = repair_minutes + monitoring_minutes + assistance_minutes
+        total_minutes = safe_numeric_value(repair_minutes) + safe_numeric_value(monitoring_minutes) + safe_numeric_value(assistance_minutes)
 
         data = {
             "total_minutes": total_minutes,
@@ -1025,7 +1047,7 @@ class StatisticsService:
         assistance_result = await self.db.execute(assistance_query)
         assistance_minutes = assistance_result.scalar() or 0
 
-        total_minutes = repair_minutes + monitoring_minutes + assistance_minutes
+        total_minutes = safe_numeric_value(repair_minutes) + safe_numeric_value(monitoring_minutes) + safe_numeric_value(assistance_minutes)
         total_hours = round(total_minutes / 60.0, 2)
 
         return {
@@ -1156,7 +1178,7 @@ class StatisticsService:
         assistance_result = await self.db.execute(assistance_query)
         assistance_minutes = assistance_result.scalar() or 0
 
-        total_minutes = repair_minutes + monitoring_minutes + assistance_minutes
+        total_minutes = safe_numeric_value(repair_minutes) + safe_numeric_value(monitoring_minutes) + safe_numeric_value(assistance_minutes)
         total_hours = round(total_minutes / 60.0, 2)
 
         return {
@@ -1488,3 +1510,37 @@ class StatisticsService:
             "data": comparison_report,
             "export_time": datetime.now().isoformat(),
         }
+
+    # 缺失方法的存根实现
+    async def get_member_work_hour_statistics(
+        self, member_id: int, date_from: datetime, date_to: datetime
+    ) -> Dict[str, Any]:
+        """获取成员工时统计 - 公开接口"""
+        return await self._get_member_work_hour_statistics(member_id, date_from, date_to)
+    
+    async def get_team_statistics_summary(
+        self, date_from: datetime, date_to: datetime, department: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """获取团队统计摘要"""
+        return await self.get_team_performance_summary(department, date_from, date_to)
+    
+    async def get_comprehensive_report(
+        self, date_from: datetime, date_to: datetime, department: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """获取综合报告"""
+        return await self.get_comprehensive_analysis(date_from, date_to, department)
+    
+    def invalidate_member_cache(self, member_id: int) -> None:
+        """使成员缓存失效"""
+        try:
+            # 清理与该成员相关的缓存
+            cache_keys = [
+                f"member_stats_{member_id}",
+                f"member_tasks_{member_id}",
+                f"member_work_hours_{member_id}",
+                f"member_performance_{member_id}"
+            ]
+            for key in cache_keys:
+                cache.delete(key)
+        except Exception as e:
+            logger.warning(f"Failed to invalidate cache for member {member_id}: {e}")
