@@ -2,10 +2,14 @@
 
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
+import duration from 'dayjs/plugin/duration'
+import quarterOfYear from 'dayjs/plugin/quarterOfYear'
 import 'dayjs/locale/zh-cn'
 
 // 配置dayjs
 dayjs.extend(relativeTime)
+dayjs.extend(duration)
+dayjs.extend(quarterOfYear)
 dayjs.locale('zh-cn')
 
 /**
