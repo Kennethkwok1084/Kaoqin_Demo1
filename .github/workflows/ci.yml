@@ -175,6 +175,8 @@ jobs:
         echo "数据库迁移完成"
 
     - name: Run unit tests
+      id: backend_unit_tests
+      continue-on-error: true
       env:
         DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence
         DATABASE_URL_SYNC: postgresql://postgres:postgres@localhost:5432/test_attendence
@@ -185,14 +187,26 @@ jobs:
         cd backend
         # 运行单元测试（使用PostgreSQL数据库）
         echo "运行单元测试..."
-        python -m pytest tests/unit/ -v --tb=short --cov=app --cov-report=xml --cov-report=html --cov-report=term || echo "单元测试失败，但继续集成测试"
+        python -m pytest tests/unit/ -v --tb=short --cov=app --cov-report=xml --cov-report=html --cov-report=term
 
         # 保存覆盖率报告
         if [ -f "coverage.xml" ]; then
           echo "单元测试覆盖率报告已生成"
         fi
+        
+    - name: Backend Unit Tests Results Summary
+      if: always()
+      run: |
+        if [ "${{ steps.backend_unit_tests.outcome }}" == "failure" ]; then
+          echo "❌ 后端单元测试失败，但允许继续执行后续步骤"
+          echo "::warning::后端单元测试存在失败用例，建议修复测试问题"
+        else
+          echo "✅ 后端单元测试通过"
+        fi
 
     - name: Run integration tests
+      id: backend_integration_tests
+      continue-on-error: true
       env:
         DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence
         DATABASE_URL_SYNC: postgresql://postgres:postgres@localhost:5432/test_attendence
@@ -205,13 +219,23 @@ jobs:
 
         # 运行集成测试
         if [ -f "run_integration_tests.py" ]; then
-          python run_integration_tests.py --verbose || echo "集成测试失败，但继续构建"
+          python run_integration_tests.py --verbose
         else
           echo "运行pytest集成测试..."
-          python -m pytest tests/integration/ -v --tb=short || echo "集成测试失败，但继续构建"
+          python -m pytest tests/integration/ -v --tb=short
         fi
 
         echo "使用本地PostgreSQL数据库测试，环境独立可靠"
+        
+    - name: Backend Integration Tests Results Summary
+      if: always()
+      run: |
+        if [ "${{ steps.backend_integration_tests.outcome }}" == "failure" ]; then
+          echo "❌ 后端集成测试失败，但允许继续执行后续步骤"
+          echo "::warning::后端集成测试存在失败用例，建议修复集成测试问题"
+        else
+          echo "✅ 后端集成测试通过"
+        fi
 
     # 性能测试已禁用 - 移至专用环境运行以避免CI阻塞
     # - name: Run performance benchmarks
@@ -261,6 +285,25 @@ jobs:
         file: ./backend/coverage.json
         fail_ci_if_error: true
         token: ${{ secrets.CODECOV_TOKEN }}
+        
+    - name: Backend Overall Test Status
+      if: always()
+      run: |
+        echo "====== 后端测试整体状态汇总 ======"
+        echo "单元测试: ${{ steps.backend_unit_tests.outcome }}"
+        echo "集成测试: ${{ steps.backend_integration_tests.outcome }}"
+        
+        # 统计失败的测试步骤
+        FAILED_STEPS=""
+        [ "${{ steps.backend_unit_tests.outcome }}" == "failure" ] && FAILED_STEPS="$FAILED_STEPS 单元测试"
+        [ "${{ steps.backend_integration_tests.outcome }}" == "failure" ] && FAILED_STEPS="$FAILED_STEPS 集成测试"
+        
+        if [ -n "$FAILED_STEPS" ]; then
+          echo "⚠️ 以下测试步骤失败:$FAILED_STEPS"
+          echo "::notice::后端测试部分失败，但已允许继续执行CI流程"
+        else
+          echo "✅ 后端所有测试步骤均通过"
+        fi
 
   frontend-test:
     name: Frontend Tests
@@ -291,39 +334,85 @@ jobs:
         npm ci
 
     - name: Run ESLint
+      id: eslint_check
+      continue-on-error: true
       run: |
         cd frontend
         echo "===== 运行前端代码检查 (ESLint) ====="
-        npm run lint || {
-          echo "❌ ESLint 代码检查失败，但继续运行其他检查"
-        }
+        npm run lint
+        
+    - name: ESLint Results Summary
+      if: always()
+      run: |
+        if [ "${{ steps.eslint_check.outcome }}" == "failure" ]; then
+          echo "❌ ESLint 代码检查失败，但允许继续执行后续步骤"
+          echo "::warning::ESLint 检查发现代码质量问题，建议修复"
+        else
+          echo "✅ ESLint 代码检查通过"
+        fi
 
     - name: Run type checking
+      id: type_check
+      continue-on-error: true
       run: |
         cd frontend
         echo "===== 运行前端类型检查 (TypeScript) ====="
-        npm run type-check || {
-          echo "❌ TypeScript 类型检查失败，但继续构建"
-        }
+        npm run type-check
+        
+    - name: TypeScript Results Summary
+      if: always()
+      run: |
+        if [ "${{ steps.type_check.outcome }}" == "failure" ]; then
+          echo "❌ TypeScript 类型检查失败，但允许继续执行后续步骤"
+          echo "::warning::TypeScript 类型检查发现问题，建议修复类型错误"
+        else
+          echo "✅ TypeScript 类型检查通过"
+        fi
 
     - name: Run unit tests
+      id: unit_tests
+      continue-on-error: true
       run: |
         cd frontend
         # 检查是否有单元测试文件
         if [ -d "tests/unit" ] && [ "$(find tests/unit -name '*.test.*' | head -1)" ]; then
-          npm run test:unit:coverage || echo "单元测试失败，但继续构建"
+          npm run test:unit:coverage
         else
           echo "没有找到单元测试文件，跳过单元测试"
+          exit 0  # 明确标记为成功
+        fi
+        
+    - name: Unit Tests Results Summary
+      if: always()
+      run: |
+        if [ "${{ steps.unit_tests.outcome }}" == "failure" ]; then
+          echo "❌ 单元测试失败，但允许继续执行后续步骤"
+          echo "::warning::单元测试存在失败用例，建议修复测试问题"
+        else
+          echo "✅ 单元测试通过"
         fi
 
     - name: Run component tests
+      id: component_tests
+      continue-on-error: true
       run: |
         cd frontend
         # 检查是否有组件测试配置
         if [ -f "vitest.config.component.ts" ]; then
-          npm run test:component || echo "组件测试失败，但继续构建"
+          npm run test:component
         else
           echo "没有组件测试配置，跳过组件测试"
+          exit 0  # 明确标记为成功
+        fi
+        
+    - name: Component Tests Results Summary
+      if: always()
+      run: |
+        if [ "${{ steps.component_tests.outcome }}" == "failure" ]; then
+          echo "❌ 组件测试失败，但允许继续执行后续步骤"
+          echo "::warning::组件测试存在失败用例，建议修复组件测试问题"
+        else
+          echo "✅ 组件测试通过"
         fi
 
     - name: Build application
@@ -337,13 +426,26 @@ jobs:
         npx playwright install --with-deps chromium
 
     - name: Run E2E tests
+      id: e2e_tests
+      continue-on-error: true
       run: |
         cd frontend
         # 检查是否有E2E测试文件
         if [ -d "tests/e2e" ] && [ "$(find tests/e2e -name '*.spec.*' | head -1)" ]; then
-          npm run test:e2e || echo "E2E测试失败，但继续构建"
+          npm run test:e2e
         else
           echo "没有找到E2E测试文件，跳过E2E测试"
+          exit 0  # 明确标记为成功
+        fi
+        
+    - name: E2E Tests Results Summary
+      if: always()
+      run: |
+        if [ "${{ steps.e2e_tests.outcome }}" == "failure" ]; then
+          echo "❌ E2E测试失败，但允许继续执行后续步骤"
+          echo "::warning::E2E测试存在失败用例，建议修复端到端测试问题"
+        else
+          echo "✅ E2E测试通过"
         fi
 
     - name: Upload frontend test results
@@ -357,6 +459,31 @@ jobs:
           frontend/test-results/
           frontend/playwright-report/
         retention-days: 30
+        
+    - name: Frontend Overall Test Status
+      if: always()
+      run: |
+        echo "====== 前端测试整体状态汇总 ======"
+        echo "ESLint 检查: ${{ steps.eslint_check.outcome }}"
+        echo "TypeScript 检查: ${{ steps.type_check.outcome }}"
+        echo "单元测试: ${{ steps.unit_tests.outcome }}"
+        echo "组件测试: ${{ steps.component_tests.outcome }}"
+        echo "E2E测试: ${{ steps.e2e_tests.outcome }}"
+        
+        # 统计失败的测试步骤
+        FAILED_STEPS=""
+        [ "${{ steps.eslint_check.outcome }}" == "failure" ] && FAILED_STEPS="$FAILED_STEPS ESLint"
+        [ "${{ steps.type_check.outcome }}" == "failure" ] && FAILED_STEPS="$FAILED_STEPS TypeScript"
+        [ "${{ steps.unit_tests.outcome }}" == "failure" ] && FAILED_STEPS="$FAILED_STEPS 单元测试"
+        [ "${{ steps.component_tests.outcome }}" == "failure" ] && FAILED_STEPS="$FAILED_STEPS 组件测试"
+        [ "${{ steps.e2e_tests.outcome }}" == "failure" ] && FAILED_STEPS="$FAILED_STEPS E2E测试"
+        
+        if [ -n "$FAILED_STEPS" ]; then
+          echo "⚠️ 以下测试步骤失败:$FAILED_STEPS"
+          echo "::notice::前端测试部分失败，但已允许继续执行CI流程"
+        else
+          echo "✅ 前端所有测试步骤均通过"
+        fi
 
   security-scan:
     runs-on: ubuntu-latest
