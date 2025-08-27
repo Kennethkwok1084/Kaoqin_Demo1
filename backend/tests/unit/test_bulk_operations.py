@@ -421,12 +421,12 @@ class TestConcurrentBulkOperations:
 
         # 为多次并发调用准备mock数据 - 每次调用需要 成员查询 + 3个任务查询
         single_call_mocks = [
-            mock_member_result,   # 成员查询
-            mock_tasks_result,    # repair任务查询
-            mock_empty_result,    # monitoring任务查询
-            mock_empty_result,    # assistance任务查询
+            mock_member_result,  # 成员查询
+            mock_tasks_result,  # repair任务查询
+            mock_empty_result,  # monitoring任务查询
+            mock_empty_result,  # assistance任务查询
         ]
-        
+
         # 为5个并发调用准备mock数据
         mock_db.execute.side_effect = single_call_mocks * 5
 

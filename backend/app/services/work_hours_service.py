@@ -34,7 +34,7 @@ def safe_float(value: Any, default: float = 0.0) -> float:
     """安全转换为float，处理Mock对象和None值"""
     if value is None:
         return default
-    if hasattr(value, '__class__') and 'Mock' in str(value.__class__):
+    if hasattr(value, "__class__") and "Mock" in str(value.__class__):
         return default
     try:
         return float(value)
@@ -401,7 +401,7 @@ class WorkHoursCalculationService:
             )
 
             # 计算总工时 - 使用全局safe_float函数
-            
+
             repair_hours_raw = repair_stats.get("total_hours", 0) or 0.0
             repair_hours = safe_float(repair_hours_raw)
             total_hours = (
@@ -417,7 +417,9 @@ class WorkHoursCalculationService:
 
             return {
                 # 核心工时字段
-                "repair_task_hours": safe_float(repair_stats.get("total_hours", 0) or 0.0),
+                "repair_task_hours": safe_float(
+                    repair_stats.get("total_hours", 0) or 0.0
+                ),
                 "monitoring_hours": monitoring_hours,
                 "assistance_hours": assistance_hours,
                 "carried_hours": safe_float(carried_hours),
@@ -425,9 +427,13 @@ class WorkHoursCalculationService:
                 "remaining_hours": remaining_hours,
                 # 详细分类统计
                 "online_repair_hours": safe_float(repair_stats.get("online_hours", 0)),
-                "offline_repair_hours": safe_float(repair_stats.get("offline_hours", 0)),
+                "offline_repair_hours": safe_float(
+                    repair_stats.get("offline_hours", 0)
+                ),
                 "rush_task_hours": safe_float(repair_stats.get("rush_hours", 0)),
-                "positive_review_hours": safe_float(repair_stats.get("positive_review_hours", 0)),
+                "positive_review_hours": safe_float(
+                    repair_stats.get("positive_review_hours", 0)
+                ),
                 # 惩罚统计
                 "penalty_hours": safe_float(repair_stats.get("penalty_hours", 0)),
                 "late_response_penalty_hours": safe_float(
@@ -851,7 +857,7 @@ class WorkHoursCalculationService:
         # 添加惩罚时长
         penalty_hours = penalty_minutes / 60.0
         # 使用全局safe_float函数
-                
+
         current_penalty = safe_float(getattr(summary, "penalty_hours", 0) or 0.0)
         setattr(summary, "penalty_hours", current_penalty + penalty_hours)
 

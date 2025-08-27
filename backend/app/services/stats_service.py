@@ -31,16 +31,16 @@ def safe_numeric_value(value: Any, default: float = 0.0) -> float:
     """安全获取数值，处理Mock对象、协程和None值"""
     if value is None:
         return default
-    
+
     # 检查是否是Mock对象
-    if hasattr(value, '__class__') and 'Mock' in str(value.__class__):
+    if hasattr(value, "__class__") and "Mock" in str(value.__class__):
         return default
-    
+
     # 检查是否是协程对象
-    if hasattr(value, '__await__'):
+    if hasattr(value, "__await__"):
         logger.warning(f"Unexpected coroutine value: {value}")
         return default
-    
+
     try:
         return float(value)
     except (ValueError, TypeError):
@@ -112,7 +112,7 @@ class StatisticsService:
                     logger.debug(f"Overview statistics cache hit: {cache_key}")
                     # 安全处理缓存数据，防止协程对象问题
                     cached_result = cached_data["data"]
-                    if hasattr(cached_result, '__await__'):
+                    if hasattr(cached_result, "__await__"):
                         cached_result = await cached_result
                     return dict(cached_result)  # Explicit cast to dict
 
@@ -169,7 +169,7 @@ class StatisticsService:
                 member_stats_data = {}
             else:
                 # 安全地处理可能的协程对象
-                if hasattr(member_result, '__await__'):
+                if hasattr(member_result, "__await__"):
                     try:
                         member_stats_data = await member_result
                     except Exception as e:
@@ -183,21 +183,25 @@ class StatisticsService:
                 task_stats_data = {}
             else:
                 # 安全地处理可能的协程对象
-                if hasattr(task_stats, '__await__'):
+                if hasattr(task_stats, "__await__"):
                     try:
                         task_stats_data = await task_stats
                     except Exception as e:
                         logger.error(f"Failed to await task stats: {e}")
                         task_stats_data = {}
                 else:
-                    task_stats_data = task_stats if isinstance(task_stats, dict) and task_stats else {}
+                    task_stats_data = (
+                        task_stats
+                        if isinstance(task_stats, dict) and task_stats
+                        else {}
+                    )
 
             if isinstance(work_hour_stats, BaseException):
                 logger.error(f"Work hour stats error: {work_hour_stats}")
                 work_hour_stats_data = {}
             else:
                 # 安全地处理可能的协程对象
-                if hasattr(work_hour_stats, '__await__'):
+                if hasattr(work_hour_stats, "__await__"):
                     try:
                         work_hour_stats_data = await work_hour_stats
                     except Exception as e:
@@ -211,21 +215,23 @@ class StatisticsService:
                 performance_stats_data = {}
             else:
                 # 安全地处理可能的协程对象
-                if hasattr(performance_stats, '__await__'):
+                if hasattr(performance_stats, "__await__"):
                     try:
                         performance_stats_data = await performance_stats
                     except Exception as e:
                         logger.error(f"Failed to await performance stats: {e}")
                         performance_stats_data = {}
                 else:
-                    performance_stats_data = performance_stats if performance_stats else {}
+                    performance_stats_data = (
+                        performance_stats if performance_stats else {}
+                    )
 
             if isinstance(attendance_stats, BaseException):
                 logger.error(f"Attendance stats error: {attendance_stats}")
                 attendance_stats_data = {}
             else:
                 # 安全地处理可能的协程对象
-                if hasattr(attendance_stats, '__await__'):
+                if hasattr(attendance_stats, "__await__"):
                     try:
                         attendance_stats_data = await attendance_stats
                     except Exception as e:
@@ -276,7 +282,7 @@ class StatisticsService:
         if cached_data:
             # 安全处理缓存数据，防止协程对象问题
             cached_result = cached_data["data"]
-            if hasattr(cached_result, '__await__'):
+            if hasattr(cached_result, "__await__"):
                 cached_result = await cached_result
             return dict(cached_result)  # Explicit cast to dict
 
@@ -323,7 +329,7 @@ class StatisticsService:
         if cached_data:
             # 安全处理缓存数据，防止协程对象问题
             cached_result = cached_data["data"]
-            if hasattr(cached_result, '__await__'):
+            if hasattr(cached_result, "__await__"):
                 cached_result = await cached_result
             return dict(cached_result)  # Explicit cast to dict
 
@@ -446,7 +452,7 @@ class StatisticsService:
         if cached_data:
             # 安全处理缓存数据，防止协程对象问题
             cached_result = cached_data["data"]
-            if hasattr(cached_result, '__await__'):
+            if hasattr(cached_result, "__await__"):
                 cached_result = await cached_result
             return dict(cached_result)  # Explicit cast to dict
 
@@ -463,7 +469,7 @@ class StatisticsService:
                     RepairTask.report_time <= date_to,
                 )
             )
-            
+
             # 查询监控任务工时
             monitoring_query = select(
                 func.sum(MonitoringTask.work_minutes).label("monitoring_minutes"),
@@ -473,8 +479,8 @@ class StatisticsService:
                     MonitoringTask.start_time <= date_to,
                 )
             )
-            
-            # 查询协助任务工时  
+
+            # 查询协助任务工时
             assistance_query = select(
                 func.sum(AssistanceTask.work_minutes).label("assistance_minutes"),
             ).where(
@@ -483,32 +489,44 @@ class StatisticsService:
                     AssistanceTask.start_time <= date_to,
                 )
             )
-            
+
             # 分别执行查询
             repair_result = await self.db.execute(repair_query)
             repair_stats = repair_result.first()
-            
-            monitoring_result = await self.db.execute(monitoring_query)  
+
+            monitoring_result = await self.db.execute(monitoring_query)
             monitoring_stats = monitoring_result.first()
-            
+
             assistance_result = await self.db.execute(assistance_query)
             assistance_stats = assistance_result.first()
-            
+
             # 合并结果 - 使用安全数值转换
-            repair_minutes = safe_numeric_value(repair_stats.repair_minutes if repair_stats else 0)
-            monitoring_minutes = safe_numeric_value(monitoring_stats.monitoring_minutes if monitoring_stats else 0)
-            assistance_minutes = safe_numeric_value(assistance_stats.assistance_minutes if assistance_stats else 0)
-            avg_repair_minutes = safe_numeric_value(repair_stats.avg_repair_minutes if repair_stats else 0)
-            
+            repair_minutes = safe_numeric_value(
+                repair_stats.repair_minutes if repair_stats else 0
+            )
+            monitoring_minutes = safe_numeric_value(
+                monitoring_stats.monitoring_minutes if monitoring_stats else 0
+            )
+            assistance_minutes = safe_numeric_value(
+                assistance_stats.assistance_minutes if assistance_stats else 0
+            )
+            avg_repair_minutes = safe_numeric_value(
+                repair_stats.avg_repair_minutes if repair_stats else 0
+            )
+
         except Exception as query_error:
             logger.warning(f"Work hour statistics query failed: {query_error}")
             # 使用默认值
             repair_minutes = 0
-            monitoring_minutes = 0  
+            monitoring_minutes = 0
             assistance_minutes = 0
             avg_repair_minutes = 0
 
-        total_minutes = safe_numeric_value(repair_minutes) + safe_numeric_value(monitoring_minutes) + safe_numeric_value(assistance_minutes)
+        total_minutes = (
+            safe_numeric_value(repair_minutes)
+            + safe_numeric_value(monitoring_minutes)
+            + safe_numeric_value(assistance_minutes)
+        )
 
         data = {
             "total_minutes": total_minutes,
@@ -544,7 +562,7 @@ class StatisticsService:
         if cached_data:
             # 安全处理缓存数据，防止协程对象问题
             cached_result = cached_data["data"]
-            if hasattr(cached_result, '__await__'):
+            if hasattr(cached_result, "__await__"):
                 cached_result = await cached_result
             return dict(cached_result)  # Explicit cast to dict
 
@@ -612,7 +630,7 @@ class StatisticsService:
         if cached_data:
             # 安全处理缓存数据，防止协程对象问题
             cached_result = cached_data["data"]
-            if hasattr(cached_result, '__await__'):
+            if hasattr(cached_result, "__await__"):
                 cached_result = await cached_result
             return dict(cached_result)  # Explicit cast to dict
 
@@ -1047,7 +1065,11 @@ class StatisticsService:
         assistance_result = await self.db.execute(assistance_query)
         assistance_minutes = assistance_result.scalar() or 0
 
-        total_minutes = safe_numeric_value(repair_minutes) + safe_numeric_value(monitoring_minutes) + safe_numeric_value(assistance_minutes)
+        total_minutes = (
+            safe_numeric_value(repair_minutes)
+            + safe_numeric_value(monitoring_minutes)
+            + safe_numeric_value(assistance_minutes)
+        )
         total_hours = round(total_minutes / 60.0, 2)
 
         return {
@@ -1178,7 +1200,11 @@ class StatisticsService:
         assistance_result = await self.db.execute(assistance_query)
         assistance_minutes = assistance_result.scalar() or 0
 
-        total_minutes = safe_numeric_value(repair_minutes) + safe_numeric_value(monitoring_minutes) + safe_numeric_value(assistance_minutes)
+        total_minutes = (
+            safe_numeric_value(repair_minutes)
+            + safe_numeric_value(monitoring_minutes)
+            + safe_numeric_value(assistance_minutes)
+        )
         total_hours = round(total_minutes / 60.0, 2)
 
         return {
@@ -1516,22 +1542,24 @@ class StatisticsService:
         self, member_id: int, date_from: datetime, date_to: datetime
     ) -> Dict[str, Any]:
         """获取成员工时统计 - 公开接口"""
-        return await self._get_member_work_hour_statistics(member_id, date_from, date_to)
-    
+        return await self._get_member_work_hour_statistics(
+            member_id, date_from, date_to
+        )
+
     async def get_team_statistics_summary(
         self, date_from: datetime, date_to: datetime, department: Optional[str] = None
     ) -> Dict[str, Any]:
         """获取团队统计摘要"""
         # 直接返回团队统计数据，使用现有的方法
         return await self._get_performance_statistics(date_from, date_to)
-    
+
     async def get_comprehensive_report(
         self, date_from: datetime, date_to: datetime, department: Optional[str] = None
     ) -> Dict[str, Any]:
         """获取综合报告"""
         # 直接返回综合分析数据，使用现有的方法
         return await self._get_performance_statistics(date_from, date_to)
-    
+
     async def invalidate_member_cache(self, member_id: int) -> None:
         """使成员缓存失效"""
         try:
@@ -1540,7 +1568,7 @@ class StatisticsService:
                 f"member_stats_{member_id}",
                 f"member_tasks_{member_id}",
                 f"member_work_hours_{member_id}",
-                f"member_performance_{member_id}"
+                f"member_performance_{member_id}",
             ]
             for key in cache_keys:
                 await cache.delete(key)
