@@ -1,4 +1,4 @@
-import { http } from './http'
+import { http } from './client'
 import type {
   LoginRequest,
   LoginResponse,
@@ -39,9 +39,9 @@ export const authApi = {
     const transformedData = AuthTransformer.toFrontend(responseData)
 
     // Transform role enum values
-    if (transformedData.user?.role) {
-      transformedData.user.role = transformEnum(
-        transformedData.user.role,
+    if ((transformedData as any)?.user?.role) {
+      (transformedData as any).user.role = transformEnum(
+        (transformedData as any).user.role,
         UserRoleMapping.toFrontend
       )
     }
@@ -49,7 +49,7 @@ export const authApi = {
     return {
       success: response.data.success,
       message: response.data.message,
-      data: transformedData
+      data: transformedData as LoginResponse['data']
     }
   },
 
@@ -79,14 +79,14 @@ export const authApi = {
     const transformedData = AuthTransformer.toFrontend(responseData)
 
     // Transform role enum values
-    if (transformedData.role) {
-      transformedData.role = transformEnum(
-        transformedData.role,
+    if ((transformedData as any)?.role) {
+      (transformedData as any).role = transformEnum(
+        (transformedData as any).role,
         UserRoleMapping.toFrontend
       )
     }
 
-    return transformedData
+    return transformedData as UserInfo
   },
 
   /**

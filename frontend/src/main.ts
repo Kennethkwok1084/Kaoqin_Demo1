@@ -38,7 +38,7 @@ app.use(ElementPlus, {
 app.config.globalProperties.$version = import.meta.env.VITE_APP_VERSION
 
 // 全局错误处理
-app.config.errorHandler = (err, instance, info) => {
+app.config.errorHandler = (err, _instance, info) => {
   console.error('Global error:', err, info)
   // 这里可以集成错误监控服务
 }

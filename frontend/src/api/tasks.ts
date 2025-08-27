@@ -280,7 +280,7 @@ export const tasksApi = {
     attachmentId: number,
     fileName: string
   ): Promise<void> {
-    await http.download(
+    await (http as any).download(
       `/tasks/${taskId}/attachments/${attachmentId}/download`,
       fileName
     )
@@ -293,7 +293,7 @@ export const tasksApi = {
     filters?: any,
     format: 'excel' | 'csv' = 'excel'
   ): Promise<void> {
-    await http.download('/tasks/export', `tasks_export.${format}`, {
+    await (http as any).download('/tasks/export', `tasks_export.${format}`, {
       params: { ...filters, format }
     })
   },
@@ -382,7 +382,7 @@ export const tasksApi = {
   async downloadMaintenanceTemplate(
     type: 'a-table' | 'b-table'
   ): Promise<void> {
-    await http.download(
+    await (http as any).download(
       `/tasks/maintenance-orders/template/${type}`,
       `${type === 'a-table' ? 'A表' : 'B表'}_维护工单模板.xlsx`
     )

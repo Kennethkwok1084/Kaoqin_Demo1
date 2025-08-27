@@ -61,7 +61,7 @@ export function validateChartData(
   // 确保数据长度匹配
   datasets = datasets.map(dataset => ({
     ...dataset,
-    data: labels.map((_, index) => dataset.data[index] ?? 0)
+    data: labels.map((_: any, index: number) => dataset.data[index] ?? 0)
   }))
 
   return {

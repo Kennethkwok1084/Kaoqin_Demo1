@@ -166,7 +166,37 @@ export const api = {
   patch: <T = any>(url: string, data?: any, config?: any) =>
     http.patch<T>(url, data, config),
 
-  delete: <T = any>(url: string, config?: any) => http.delete<T>(url, config)
+  delete: <T = any>(url: string, config?: any) => http.delete<T>(url, config),
+
+  // 文件下载方法
+  download: async (url: string, filename?: string, config?: any) => {
+    try {
+      const response = await http.get(url, {
+        ...config,
+        responseType: 'blob'
+      })
+      
+      // 创建下载链接
+      const blob = new Blob([response.data])
+      const downloadUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = filename || 'download'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(downloadUrl)
+    } catch (error) {
+      console.error('文件下载失败:', error)
+      ElMessage.error('文件下载失败')
+      throw error
+    }
+  }
 }
+
+// 扩展http实例，添加download方法
+Object.assign(http, {
+  download: api.download
+})
 
 export default http

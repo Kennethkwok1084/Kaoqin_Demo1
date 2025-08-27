@@ -102,5 +102,73 @@ export const attendanceApi = {
       '/attendance/health'
     )
     return response.data
+  },
+
+  // 考勤纠正 (占位符实现)
+  async correctAttendance(params: {
+    recordId: number
+    type: string
+    reason: string
+  }): Promise<{ success: boolean; message: string }> {
+    const response = await http.post('/attendance/correct', params)
+    return response.data
+  },
+
+  // 获取签到地点 (占位符实现)
+  async getCheckInLocations(): Promise<Array<{ id: number; name: string; address: string }>> {
+    const response = await http.get('/attendance/check-in-locations')
+    return response.data || []
+  },
+
+  // 签到 (占位符实现)
+  async checkIn(params: {
+    location: string
+    latitude?: number
+    longitude?: number
+  }): Promise<{ success: boolean; message: string }> {
+    const response = await http.post('/attendance/check-in', params)
+    return response.data
+  },
+
+  // 签退 (占位符实现)
+  async checkOut(params: {
+    location: string
+    workSummary?: string
+  }): Promise<{ success: boolean; message: string }> {
+    const response = await http.post('/attendance/check-out', params)
+    return response.data
+  },
+
+  // 获取今日考勤状态 (占位符实现)
+  async getTodayAttendanceStatus(): Promise<{
+    hasCheckedIn: boolean
+    hasCheckedOut: boolean
+    checkInTime?: string
+    checkOutTime?: string
+  }> {
+    const response = await http.get('/attendance/today-status')
+    return response.data
+  },
+
+  // 创建请假申请 (占位符实现)
+  async createLeaveApplication(params: {
+    type: string
+    startDate: string
+    endDate: string
+    reason: string
+  }): Promise<{ success: boolean; message: string }> {
+    const response = await http.post('/attendance/leave-application', params)
+    return response.data
+  },
+
+  // 创建加班申请 (占位符实现)
+  async createOvertimeApplication(params: {
+    date: string
+    startTime: string
+    endTime: string
+    reason: string
+  }): Promise<{ success: boolean; message: string }> {
+    const response = await http.post('/attendance/overtime-application', params)
+    return response.data
   }
 }

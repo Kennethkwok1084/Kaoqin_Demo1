@@ -400,5 +400,25 @@ export const statisticsApi = {
       '/statistics/health'
     )
     return response.data
+  },
+
+  // 预览导出数据 (占位符实现)
+  async previewExportData(config: any): Promise<{
+    headers: string[]
+    rows: any[][]
+    totalRows: number
+  }> {
+    const response = await http.post('/statistics/export/preview', config)
+    return response.data
+  },
+
+  // 导出数据 (占位符实现)
+  async exportData(config: any): Promise<{
+    success: boolean
+    message: string
+    downloadUrl?: string
+  }> {
+    const response = await http.post('/statistics/export', config)
+    return response.data
   }
 }

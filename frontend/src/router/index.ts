@@ -172,7 +172,7 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
-  scrollBehavior(to, from, savedPosition) {
+  scrollBehavior(_to, _from, savedPosition) {
     if (savedPosition) {
       return savedPosition
     } else {
@@ -182,7 +182,7 @@ const router = createRouter({
 })
 
 // 路由守卫
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, _from, next) => {
   // 设置页面标题
   if (to.meta?.title) {
     document.title = `${to.meta.title} - 考勤管理系统`
@@ -228,7 +228,7 @@ router.beforeEach(async (to, from, next) => {
     }
 
     // 检查角色
-    if (to.meta?.roles && !to.meta.roles.includes(authStore.userInfo?.role)) {
+    if (to.meta?.roles && Array.isArray(to.meta.roles) && !to.meta.roles.includes(authStore.userInfo?.role)) {
       next('/403')
       return
     }
