@@ -109,7 +109,7 @@
             <el-option
               v-for="member in members"
               :key="member.id"
-              :label="member.name"
+              :label="member.fullName || member.username"
               :value="member.id"
             />
           </el-select>
@@ -412,7 +412,7 @@ const loadWorkHours = async () => {
 const loadMembers = async () => {
   try {
     const response = await MembersApi.getMembers({ page: 1, page_size: 1000 })
-    members.value = response.data
+    members.value = (response as any).data || response.items || []
   } catch (error) {
     console.error('加载成员列表失败:', error)
   }

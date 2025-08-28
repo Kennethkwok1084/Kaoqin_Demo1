@@ -489,7 +489,7 @@ const handleSubmit = async () => {
         tags: formData.tags
       }
 
-      await tasksApi.updateTask(props.task.id, updateData)
+      await tasksApi.updateTask((props.task as any)?.id || 0, updateData as any)
       ElMessage.success('任务更新成功')
     } else {
       // 创建任务
@@ -507,7 +507,7 @@ const handleSubmit = async () => {
         attachments: formData.attachments
       }
 
-      await tasksApi.createTask(createData)
+      await tasksApi.createTask(createData as any)
       ElMessage.success('任务创建成功')
     }
 

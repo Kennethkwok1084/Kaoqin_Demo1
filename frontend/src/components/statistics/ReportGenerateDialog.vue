@@ -157,7 +157,7 @@ const loadMembers = async () => {
   try {
     // 这里应该调用获取成员列表的API
     // const response = await membersApi.getMembers()
-    // members.value = response.data
+    // members.value = (response as any)?.data || []
 
     // 临时模拟数据
     members.value = [
@@ -196,7 +196,7 @@ const handleGenerate = async () => {
       updatedAt: new Date()
     }
 
-    await statisticsApi.generateReport(reportData)
+    await statisticsApi.generateReport(reportData as any)
 
     ElMessage.success('报表生成成功！')
     emit('success', reportData)

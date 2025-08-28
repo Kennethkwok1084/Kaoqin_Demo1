@@ -36,8 +36,8 @@
             <el-option
               v-for="location in locationOptions"
               :key="location"
-              :label="location"
-              :value="location"
+              :label="location || ''"
+              :value="location || ''"
             />
           </el-select>
         </el-form-item>
@@ -194,7 +194,7 @@ const getCurrentLocation = () => {
 const loadLocationOptions = async () => {
   try {
     const locations = await attendanceApi.getCheckInLocations()
-    locationOptions.value = locations
+    locationOptions.value = (locations as any) || []
   } catch (error) {
     console.error('加载地点选项失败:', error)
   }
@@ -232,7 +232,7 @@ const handleSubmit = async () => {
       submitData.photo = photoList.value[0].raw
     }
 
-    await attendanceApi.checkIn(submitData)
+    await attendanceApi.checkIn(submitData as any)
 
     ElMessage.success('签到成功')
     emit('success')

@@ -582,15 +582,15 @@ const handleImport = async () => {
 
     if (error.response) {
       const status = error.response.status
-      const data = error.response.data
+      const data = (error.response as any)?.data || {}
 
       console.log('详细错误信息:', JSON.stringify(data, null, 2))
 
       if (status === 422) {
-        if (data?.detail) {
-          if (Array.isArray(data.detail)) {
+        if ((data as any)?.detail) {
+          if (Array.isArray((data as any).detail)) {
             // Pydantic 验证错误
-            const validationErrors = data.detail
+            const validationErrors = (data as any).detail || []
               .map((err: any) => {
                 const field = err.loc ? err.loc.join('.') : 'unknown'
                 const input = err.input
@@ -608,7 +608,7 @@ const handleImport = async () => {
             })
             return
           } else {
-            errorMessage = `数据验证失败: ${data.detail}`
+            errorMessage = `数据验证失败: ${(data as any).detail || ''}`
           }
         } else {
           errorMessage = '数据格式不正确，请检查Excel文件格式'
@@ -616,7 +616,7 @@ const handleImport = async () => {
       } else if (status === 500) {
         errorMessage = '服务器内部错误，请联系管理员'
       } else {
-        errorMessage = data?.message || data?.detail || `请求失败 (${status})`
+        errorMessage = (data as any)?.message || (data as any)?.detail || `请求失败 (${status})`
       }
     } else if (error.message) {
       errorMessage = error.message

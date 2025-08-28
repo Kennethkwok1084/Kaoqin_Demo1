@@ -12,14 +12,14 @@
           :size="60"
           :style="{ backgroundColor: getAvatarColor(record.memberName) }"
         >
-          {{ record.memberName?.charAt(0) }}
+          {{ (record.memberName || '').charAt(0) }}
         </el-avatar>
         <div class="member-info">
           <h3>{{ record.memberName }}</h3>
-          <p>{{ record.employeeId }} | {{ record.department }}</p>
+          <p>{{ record.employeeId || '' }} | {{ record.department || '' }}</p>
         </div>
         <el-tag
-          :type="getStatusTagType(record.status) as any"
+          :type="getStatusTagType(record.status || '') as any"
           :color="(ATTENDANCE_STATUS_CONFIG as any)[record.status || '']?.color"
           effect="light"
           size="large"
@@ -33,45 +33,45 @@
           {{ formatDateShort(record.date) }} {{ getWeekday(record.date) }}
         </el-descriptions-item>
         <el-descriptions-item label="工作时长">
-          {{ record.workHours }}小时
+          {{ record.workHours || 0 }}小时
         </el-descriptions-item>
         <el-descriptions-item label="签到时间">
           <span
             v-if="record.checkInTime"
-            :class="{ 'late-time': record.lateMinutes > 0 }"
+            :class="{ 'late-time': (record.lateMinutes || 0) > 0 }"
           >
-            {{ formatTime(record.checkInTime) }}
+            {{ record.checkInTime ? formatTime(record.checkInTime) : '' }}
           </span>
           <span v-else class="no-record">未签到</span>
         </el-descriptions-item>
         <el-descriptions-item label="签退时间">
           <span
             v-if="record.checkOutTime"
-            :class="{ 'early-time': record.earlyLeaveMinutes > 0 }"
+            :class="{ 'early-time': (record.earlyLeaveMinutes || 0) > 0 }"
           >
-            {{ formatTime(record.checkOutTime) }}
+            {{ record.checkOutTime ? formatTime(record.checkOutTime) : '' }}
           </span>
           <span v-else class="no-record">未签退</span>
         </el-descriptions-item>
         <el-descriptions-item label="迟到">
-          <el-tag v-if="record.lateMinutes > 0" type="warning" size="small">
-            {{ record.lateMinutes }}分钟
+          <el-tag v-if="(record.lateMinutes || 0) > 0" type="warning" size="small">
+            {{ record.lateMinutes || 0 }}分钟
           </el-tag>
           <span v-else class="normal-text">无</span>
         </el-descriptions-item>
         <el-descriptions-item label="早退">
           <el-tag
-            v-if="record.earlyLeaveMinutes > 0"
+            v-if="(record.earlyLeaveMinutes || 0) > 0"
             type="danger"
             size="small"
           >
-            {{ record.earlyLeaveMinutes }}分钟
+            {{ record.earlyLeaveMinutes || 0 }}分钟
           </el-tag>
           <span v-else class="normal-text">无</span>
         </el-descriptions-item>
         <el-descriptions-item label="加班">
-          <el-tag v-if="record.overtimeHours > 0" type="info" size="small">
-            {{ record.overtimeHours }}小时
+          <el-tag v-if="(record.overtimeHours || 0) > 0" type="info" size="small">
+            {{ record.overtimeHours || 0 }}小时
           </el-tag>
           <span v-else class="normal-text">无</span>
         </el-descriptions-item>
@@ -94,8 +94,8 @@
 
       <div class="detail-footer">
         <div class="time-info">
-          <span>创建时间：{{ formatDate(record.createdAt) }}</span>
-          <span>更新时间：{{ formatDate(record.updatedAt) }}</span>
+          <span>创建时间：{{ formatDate(record.createdAt || '') }}</span>
+          <span>更新时间：{{ formatDate(record.updatedAt || '') }}</span>
         </div>
       </div>
     </div>

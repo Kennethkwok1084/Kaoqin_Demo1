@@ -8,11 +8,11 @@
   >
     <div v-if="record" class="correction-dialog">
       <div class="record-info">
-        <h4>{{ record.memberName }} - {{ formatDateShort(record.date) }}</h4>
+        <h4>{{ record.memberName || '' }} - {{ formatDateShort(record.date || '') }}</h4>
         <p class="current-status">
           当前状态：
           <el-tag
-            :type="getStatusTagType(record.status) as any"
+            :type="getStatusTagType(record.status || '') as any"
             :color="(ATTENDANCE_STATUS_CONFIG as any)[record.status || '']?.color"
             effect="light"
           >
@@ -199,11 +199,11 @@ watch(
   record => {
     if (record) {
       // 填入当前时间作为默认值
-      formData.checkInTime = record.checkInTime
-        ? formatTime(record.checkInTime)
+      formData.checkInTime = record.checkInTime || ''
+        ? formatTime(record.checkInTime || '')
         : ''
-      formData.checkOutTime = record.checkOutTime
-        ? formatTime(record.checkOutTime)
+      formData.checkOutTime = record.checkOutTime || ''
+        ? formatTime(record.checkOutTime || '')
         : ''
     }
   }
