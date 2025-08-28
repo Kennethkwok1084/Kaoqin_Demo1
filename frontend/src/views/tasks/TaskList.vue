@@ -180,14 +180,14 @@
                   {{ scope.row.title }}
                 </el-link>
                 <div class="task-meta">
-                  <el-tag :type="getTypeTagType(scope.row.type)" size="small">
-                    {{ TASK_TYPE_CONFIG[scope.row.type]?.label }}
+                  <el-tag :type="getTypeTagType(scope.row.type) as any" size="small">
+                    {{ TASK_TYPE_CONFIG[scope.row.type as any]?.label }}
                   </el-tag>
                   <el-tag
-                    :type="getPriorityTagType(scope.row.priority)"
+                    :type="getPriorityTagType(scope.row.priority) as any"
                     size="small"
                   >
-                    {{ TASK_PRIORITY_CONFIG[scope.row.priority]?.label }}
+                    {{ TASK_PRIORITY_CONFIG[scope.row.priority as any]?.label }}
                   </el-tag>
                 </div>
               </div>
@@ -201,8 +201,8 @@
             sortable="custom"
           >
             <template #default="scope">
-              <el-tag :type="getStatusTagType(scope.row.status)">
-                {{ TASK_STATUS_CONFIG[scope.row.status]?.label }}
+              <el-tag :type="getStatusTagType(scope.row.status) as any">
+                {{ TASK_STATUS_CONFIG[scope.row.status as any]?.label }}
               </el-tag>
             </template>
           </el-table-column>
@@ -383,16 +383,16 @@
               <div class="task-card-content">
                 <div class="task-card-meta">
                   <el-tag :type="getTypeTagType(task.type)" size="small">
-                    {{ TASK_TYPE_CONFIG[task.type]?.label }}
+                    {{ (TASK_TYPE_CONFIG as any)[task.type]?.label }}
                   </el-tag>
                   <el-tag
                     :type="getPriorityTagType(task.priority)"
                     size="small"
                   >
-                    {{ TASK_PRIORITY_CONFIG[task.priority]?.label }}
+                    {{ (TASK_PRIORITY_CONFIG as any)[task.priority]?.label }}
                   </el-tag>
                   <el-tag :type="getStatusTagType(task.status)" size="small">
-                    {{ TASK_STATUS_CONFIG[task.status]?.label }}
+                    {{ (TASK_STATUS_CONFIG as any)[task.status]?.label }}
                   </el-tag>
                 </div>
 

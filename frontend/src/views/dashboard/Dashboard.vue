@@ -224,7 +224,7 @@
           align="center"
         >
           <template #default="scope">
-            <el-tag :type="getAttendanceTagType(scope.row.attendanceRate)">
+            <el-tag :type="getAttendanceTagType(scope.row.attendanceRate) as any">
               {{ (scope.row.attendanceRate * 100).toFixed(1) }}%
             </el-tag>
           </template>

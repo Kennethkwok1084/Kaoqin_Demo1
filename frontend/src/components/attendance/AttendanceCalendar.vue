@@ -6,12 +6,12 @@
           <div class="date-number">{{ data.day.split('-').pop() }}</div>
           <div v-if="getDateAttendance(data.day)" class="attendance-status">
             <el-tag
-              :type="getStatusTagType(getDateAttendance(data.day)?.status)"
+              :type="getStatusTagType(getDateAttendance(data.day)?.status) as any"
               size="small"
               effect="plain"
             >
               {{
-                ATTENDANCE_STATUS_CONFIG[getDateAttendance(data.day)?.status]
+                (ATTENDANCE_STATUS_CONFIG as any)[getDateAttendance(data.day)?.status || '']
                   ?.label
               }}
             </el-tag>

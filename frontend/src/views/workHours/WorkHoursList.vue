@@ -187,7 +187,7 @@
 
         <el-table-column prop="taskType" label="任务类型" width="100">
           <template #default="{ row }">
-            <el-tag :type="getTaskTypeColor(row.taskType)">
+            <el-tag :type="getTaskTypeColor(row.taskType) as any">
               {{ getTaskTypeText(row.taskType) }}
             </el-tag>
           </template>
@@ -217,7 +217,7 @@
 
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="getStatusColor(row.status)">
+            <el-tag :type="getStatusColor(row.status) as any">
               {{ getStatusText(row.status) }}
             </el-tag>
           </template>

@@ -19,12 +19,12 @@
           <p>{{ record.employeeId }} | {{ record.department }}</p>
         </div>
         <el-tag
-          :type="getStatusTagType(record.status)"
-          :color="ATTENDANCE_STATUS_CONFIG[record.status]?.color"
+          :type="getStatusTagType(record.status) as any"
+          :color="(ATTENDANCE_STATUS_CONFIG as any)[record.status || '']?.color"
           effect="light"
           size="large"
         >
-          {{ ATTENDANCE_STATUS_CONFIG[record.status]?.label }}
+          {{ (ATTENDANCE_STATUS_CONFIG as any)[record.status || '']?.label }}
         </el-tag>
       </div>
 
