@@ -8,17 +8,31 @@ async function globalSetup(config: FullConfig) {
   const page = await browser.newPage()
 
   try {
+    // 首先检查后端服务是否可用
+    console.log('🔍 Checking backend health...')
+    try {
+      const backendResponse = await page.goto('http://localhost:8000/docs', { timeout: 5000 })
+      if (backendResponse && backendResponse.ok()) {
+        console.log('✅ Backend service is healthy!')
+      } else {
+        console.log('⚠️ Backend service may not be available, proceeding anyway...')
+      }
+    } catch (error) {
+      console.log('⚠️ Backend health check failed, proceeding anyway...')
+    }
+
     // 等待前端应用启动
     const baseURL = config.projects[0].use?.baseURL || 'http://localhost:3000'
     console.log(`📡 Waiting for frontend at ${baseURL}...`)
 
-    // 检查应用是否可访问
+    // 检查应用是否可访问 - 优化等待策略
     let attempts = 0
-    const maxAttempts = 30
+    const maxAttempts = 20  // 减少尝试次数
+    const waitInterval = 3000  // 增加等待间隔
 
     while (attempts < maxAttempts) {
       try {
-        const response = await page.goto(baseURL, { timeout: 5000 })
+        const response = await page.goto(baseURL, { timeout: 8000 })
         if (response && response.ok()) {
           console.log('✅ Frontend is ready!')
           break
@@ -33,7 +47,7 @@ async function globalSetup(config: FullConfig) {
         console.log(
           `⏳ Attempt ${attempts}/${maxAttempts} - Frontend not ready, retrying...`
         )
-        await page.waitForTimeout(2000)
+        await page.waitForTimeout(waitInterval)
       }
     }
 

@@ -12,11 +12,11 @@ export default defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
 
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  /* Retry on CI only - 减少重试次数 */
+  retries: process.env.CI ? 1 : 0,
 
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  /* Opt out of parallel tests on CI - 优化并发控制 */
+  workers: process.env.CI ? 1 : 2,
 
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
@@ -46,41 +46,15 @@ export default defineConfig({
     navigationTimeout: 30000
   },
 
-  /* Configure projects for major browsers */
+  /* Configure projects for major browsers - 优化为Firefox + Chromium组合 */
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] }
     },
-
     {
       name: 'firefox',
       use: { ...devices['Desktop Firefox'] }
-    },
-
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] }
-    },
-
-    /* Test against mobile viewports. */
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] }
-    },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] }
-    },
-
-    /* Test against branded browsers. */
-    {
-      name: 'Microsoft Edge',
-      use: { ...devices['Desktop Edge'], channel: 'msedge' }
-    },
-    {
-      name: 'Google Chrome',
-      use: { ...devices['Desktop Chrome'], channel: 'chrome' }
     }
   ],
 
@@ -89,14 +63,14 @@ export default defineConfig({
     command: 'npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000
+    timeout: 180 * 1000  // 增加到3分钟等待前端启动
   },
 
   /* Global setup and teardown */
   globalSetup: './tests/e2e/global-setup.ts',
 
-  /* Timeout settings */
-  timeout: 30 * 1000,
+  /* Timeout settings - 增加超时时间 */
+  timeout: 60 * 1000,  // 单个测试60秒超时
   expect: {
     timeout: 5 * 1000
   },

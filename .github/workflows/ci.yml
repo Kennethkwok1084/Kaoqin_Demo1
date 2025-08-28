@@ -423,7 +423,43 @@ jobs:
     - name: Install Playwright
       run: |
         cd frontend
-        npx playwright install --with-deps chromium
+        npx playwright install --with-deps chromium firefox
+
+    - name: Start Backend for E2E Tests
+      id: start_backend
+      run: |
+        cd backend
+        echo "===== 为E2E测试启动后端服务 ====="
+        
+        # 安装后端依赖（如果还没安装）
+        pip install -r requirements.txt
+        
+        # 设置测试环境变量
+        export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/test_attendence
+        export REDIS_URL=redis://localhost:6379
+        export ENVIRONMENT=test
+        
+        # 运行数据库迁移
+        alembic upgrade head || echo "迁移失败，使用现有数据库"
+        
+        # 启动后端服务（后台运行）
+        nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+        
+        # 等待服务启动
+        sleep 10
+        
+        # 检查后端健康状态
+        for i in {1..10}; do
+          if curl -f http://localhost:8000/docs > /dev/null 2>&1; then
+            echo "✅ 后端服务启动成功"
+            exit 0
+          fi
+          echo "⏳ 等待后端服务启动... (${i}/10)"
+          sleep 3
+        done
+        
+        echo "❌ 后端服务启动失败"
+        exit 1
 
     - name: Run E2E tests
       id: e2e_tests

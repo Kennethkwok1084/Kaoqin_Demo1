@@ -7,14 +7,22 @@ const REFRESH_TOKEN_KEY = 'refresh_token'
  * 获取token
  */
 export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY)
+  try {
+    return localStorage.getItem(TOKEN_KEY)
+  } catch (error) {
+    return null
+  }
 }
 
 /**
  * 设置token
  */
 export function setToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token)
+  try {
+    localStorage.setItem(TOKEN_KEY, token)
+  } catch (error) {
+    // 忽略localStorage不可用的错误
+  }
 }
 
 /**
@@ -22,6 +30,12 @@ export function setToken(token: string): void {
  */
 export function removeToken(): void {
   localStorage.removeItem(TOKEN_KEY)
+}
+
+/**
+ * 移除刷新token
+ */
+export function removeRefreshToken(): void {
   localStorage.removeItem(REFRESH_TOKEN_KEY)
 }
 
@@ -42,9 +56,12 @@ export function setRefreshToken(refreshToken: string): void {
 /**
  * 检查token是否过期
  */
-export function isTokenExpired(token: string): boolean {
+export function isTokenExpired(token: string | null): boolean {
+  if (!token) return true
+  
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))
+    if (!payload.exp) return true // 如果没有exp字段，认为已过期
     const exp = payload.exp * 1000 // 转换为毫秒
     return Date.now() >= exp
   } catch (error) {
@@ -62,6 +79,35 @@ export function getTokenPayload(token: string): any {
   } catch (error) {
     console.error('Token载荷解析失败:', error)
     return null
+  }
+}
+
+/**
+ * 解析JWT token
+ */
+export function parseJWT(token: string): any {
+  if (!token || typeof token !== 'string') return null
+  
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    
+    const payload = JSON.parse(atob(parts[1]))
+    return payload
+  } catch (error) {
+    return null
+  }
+}
+
+/**
+ * 清除所有认证数据
+ */
+export function clearAuthData(): void {
+  try {
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(REFRESH_TOKEN_KEY)
+  } catch (error) {
+    // 忽略localStorage不可用的错误
   }
 }
 

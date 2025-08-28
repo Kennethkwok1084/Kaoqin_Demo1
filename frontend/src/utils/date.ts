@@ -15,15 +15,33 @@ dayjs.locale('zh-cn')
 /**
  * 格式化日期
  * @param date 日期字符串或Date对象
- * @param format 格式字符串，默认 'YYYY-MM-DD HH:mm:ss'
+ * @param format 格式字符串，默认 'YYYY-MM-DD'
  * @returns 格式化后的日期字符串
  */
 export function formatDate(
   date: string | Date,
+  format = 'YYYY-MM-DD'
+): string {
+  if (!date) return ''
+  const parsed = dayjs(date)
+  if (!parsed.isValid()) return ''
+  return parsed.format(format)
+}
+
+/**
+ * 格式化日期时间
+ * @param date 日期字符串或Date对象
+ * @param format 格式字符串，默认 'YYYY-MM-DD HH:mm:ss'
+ * @returns 格式化后的日期时间字符串
+ */
+export function formatDateTime(
+  date: string | Date,
   format = 'YYYY-MM-DD HH:mm:ss'
 ): string {
   if (!date) return ''
-  return dayjs(date).format(format)
+  const parsed = dayjs(date)
+  if (!parsed.isValid()) return ''
+  return parsed.format(format)
 }
 
 /**
@@ -38,10 +56,11 @@ export function formatDateShort(date: string | Date): string {
 /**
  * 格式化时间
  * @param date 日期字符串或Date对象
- * @returns 格式化后的时间字符串 (HH:mm:ss)
+ * @param format 格式字符串，默认 'HH:mm:ss'
+ * @returns 格式化后的时间字符串
  */
-export function formatTime(date: string | Date): string {
-  return formatDate(date, 'HH:mm:ss')
+export function formatTime(date: string | Date, format = 'HH:mm:ss'): string {
+  return formatDateTime(date, format)
 }
 
 /**
@@ -52,6 +71,46 @@ export function formatTime(date: string | Date): string {
 export function formatFromNow(date: string | Date): string {
   if (!date) return ''
   return dayjs(date).fromNow()
+}
+
+/**
+ * 获取相对时间描述
+ * @param date 日期字符串或Date对象
+ * @returns 相对时间字符串
+ */
+export function getRelativeTime(date: string | Date): string {
+  return formatFromNow(date)
+}
+
+/**
+ * 解析日期字符串为Date对象
+ * @param dateString 日期字符串
+ * @returns Date对象或null
+ */
+export function parseDate(dateString: string | null): Date | null {
+  if (!dateString) return null
+  const parsed = dayjs(dateString)
+  return parsed.isValid() ? parsed.toDate() : null
+}
+
+/**
+ * 日期加减天数
+ * @param date 基础日期
+ * @param days 要添加的天数
+ * @returns 新的Date对象
+ */
+export function addDays(date: string | Date, days: number): Date {
+  return dayjs(date).add(days, 'day').toDate()
+}
+
+/**
+ * 计算两个日期之间的天数
+ * @param startDate 开始日期
+ * @param endDate 结束日期
+ * @returns 天数差（绝对值）
+ */
+export function getDaysBetween(startDate: string | Date, endDate: string | Date): number {
+  return Math.abs(dayjs(endDate).diff(dayjs(startDate), 'day'))
 }
 
 /**
@@ -221,51 +280,51 @@ export function getWorkdays(
 
 /**
  * 格式化持续时间
- * @param duration 持续时间（毫秒）
+ * @param duration 持续时间（分钟）
  * @returns 格式化的持续时间字符串
  */
 export function formatDuration(duration: number): string {
-  if (!duration || duration < 0) return '0秒'
+  if (!duration || duration < 0) return '0分钟'
 
-  const d = dayjs.duration(duration)
+  const hours = Math.floor(duration / 60)
+  const minutes = duration % 60
 
-  if (d.asDays() >= 1) {
-    return `${Math.floor(d.asDays())}天${d.hours()}小时${d.minutes()}分钟`
+  if (hours > 0) {
+    if (minutes > 0) {
+      return `${hours}小时${minutes}分钟`
+    }
+    return `${hours}小时`
   }
 
-  if (d.asHours() >= 1) {
-    return `${d.hours()}小时${d.minutes()}分钟`
-  }
-
-  if (d.asMinutes() >= 1) {
-    return `${d.minutes()}分钟${d.seconds()}秒`
-  }
-
-  return `${d.seconds()}秒`
+  return `${minutes}分钟`
 }
 
 /**
  * 获取月份的开始和结束日期
  * @param date 日期字符串或Date对象，默认为当前日期
- * @returns 月份开始和结束日期
+ * @returns 月份开始和结束日期对象
  */
-export function getMonthRange(date?: string | Date): [string, string] {
+export function getMonthRange(date?: string | Date): { start: Date; end: Date } {
   const target = dayjs(date)
-  const start = target.startOf('month').format('YYYY-MM-DD')
-  const end = target.endOf('month').format('YYYY-MM-DD')
-  return [start, end]
+  return {
+    start: target.startOf('month').toDate(),
+    end: target.endOf('month').toDate()
+  }
 }
 
 /**
  * 获取周的开始和结束日期
  * @param date 日期字符串或Date对象，默认为当前日期
- * @returns 周开始和结束日期
+ * @returns 周开始和结束日期对象
  */
-export function getWeekRange(date?: string | Date): [string, string] {
+export function getWeekRange(date?: string | Date): { start: Date; end: Date } {
   const target = dayjs(date)
-  const start = target.startOf('week').format('YYYY-MM-DD')
-  const end = target.endOf('week').format('YYYY-MM-DD')
-  return [start, end]
+  const start = target.startOf('week')
+  const end = start.add(6, 'day').endOf('day')
+  return {
+    start: start.toDate(),
+    end: end.toDate()
+  }
 }
 
 /**
