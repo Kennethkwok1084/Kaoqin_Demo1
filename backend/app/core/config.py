@@ -101,12 +101,12 @@ class Settings(BaseSettings):
             if os.getenv("POSTGRES_TEST") == "false":
                 return "sqlite:///./ci_test_attendence.db"
             else:
-                # Default to PostgreSQL service in CI
-                return "postgresql://postgres:postgres@localhost:5432/test_attendence"
+                # Default to PostgreSQL service in CI  
+                return "postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence"
         elif os.getenv("TESTING") == "true":
             return "sqlite:///./test_attendence.db"
         elif os.getenv("POSTGRES_TEST") == "true":
-            return "postgresql://postgres:postgres@localhost:5432/test_attendence"
+            return "postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence"
 
         # Default fallback for sync database URL
         return "postgresql://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev"

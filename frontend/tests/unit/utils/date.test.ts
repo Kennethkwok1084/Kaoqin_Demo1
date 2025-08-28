@@ -64,7 +64,9 @@ describe('Date Utils', () => {
 
     it('should format time with custom format', () => {
       expect(formatTime(testDate, 'HH:mm')).toMatch(/\d{2}:\d{2}/)
-      expect(formatTime(testDate, 'hh:mm A')).toMatch(/\d{2}:\d{2} (AM|PM|上午|下午|晚上)/)
+      expect(formatTime(testDate, 'hh:mm A')).toMatch(
+        /\d{2}:\d{2} (AM|PM|上午|下午|晚上)/
+      )
     })
   })
 

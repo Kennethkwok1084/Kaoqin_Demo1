@@ -129,7 +129,9 @@
 
                 <div class="preview-info">
                   <span
-                    >共 {{ (filePreview as any)?.totalRows || 0 }} 行数据，显示前 5 行</span
+                    >共
+                    {{ (filePreview as any)?.totalRows || 0 }} 行数据，显示前 5
+                    行</span
                   >
                 </div>
               </div>
@@ -449,13 +451,15 @@ const previewHeaders = computed(() => {
 const previewData = computed(() => {
   if (!(filePreview.value as any)?.rows) return []
 
-  return ((filePreview.value as any)?.rows || []).slice(0, 5).map((row: any) => {
-    const obj: Record<string, any> = {}
-    row.forEach((cell: any, index: number) => {
-      obj[`col${index}`] = cell
+  return ((filePreview.value as any)?.rows || [])
+    .slice(0, 5)
+    .map((row: any) => {
+      const obj: Record<string, any> = {}
+      row.forEach((cell: any, index: number) => {
+        obj[`col${index}`] = cell
+      })
+      return obj
     })
-    return obj
-  })
 })
 
 watch(

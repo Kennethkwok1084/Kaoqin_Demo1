@@ -22,7 +22,10 @@
           />
           <el-table-column prop="taskType" label="类型" width="80">
             <template #default="{ row }">
-              <el-tag :type="getTaskTypeColor(row.taskType) as any" size="small">
+              <el-tag
+                :type="getTaskTypeColor(row.taskType) as any"
+                size="small"
+              >
                 {{ getTaskTypeText(row.taskType) }}
               </el-tag>
             </template>

@@ -63,14 +63,14 @@ export default defineConfig({
     command: 'npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 180 * 1000  // 增加到3分钟等待前端启动
+    timeout: 180 * 1000 // 增加到3分钟等待前端启动
   },
 
   /* Global setup and teardown */
   globalSetup: './tests/e2e/global-setup.ts',
 
   /* Timeout settings - 增加超时时间 */
-  timeout: 60 * 1000,  // 单个测试60秒超时
+  timeout: 60 * 1000, // 单个测试60秒超时
   expect: {
     timeout: 5 * 1000
   },

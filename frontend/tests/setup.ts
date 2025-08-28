@@ -47,13 +47,13 @@ Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
 
 // Mock localStorage
 const localStorageMock = {
-  getItem: vi.fn((key) => {
+  getItem: vi.fn(key => {
     return localStorageMock._storage[key] || null
   }),
   setItem: vi.fn((key, value) => {
     localStorageMock._storage[key] = String(value)
   }),
-  removeItem: vi.fn((key) => {
+  removeItem: vi.fn(key => {
     delete localStorageMock._storage[key]
   }),
   clear: vi.fn(() => {
@@ -77,7 +77,7 @@ global.fetch = vi.fn()
 
 // Mock CSS导入 - 解决Element Plus CSS导入错误
 vi.mock('element-plus/theme-chalk/base.css', () => ({}))
-vi.mock('element-plus/theme-chalk/el-message.css', () => ({}))  
+vi.mock('element-plus/theme-chalk/el-message.css', () => ({}))
 vi.mock('element-plus/theme-chalk/el-notification.css', () => ({}))
 vi.mock('element-plus/theme-chalk/el-loading.css', () => ({}))
 vi.mock('element-plus/theme-chalk/el-overlay.css', () => ({}))
@@ -190,7 +190,7 @@ vi.mock('vue-router', () => ({
 vi.mock('pinia', () => ({
   createPinia: vi.fn(),
   defineStore: vi.fn(() => vi.fn()),
-  storeToRefs: vi.fn((store) => store),
+  storeToRefs: vi.fn(store => store),
   setActivePinia: vi.fn(),
   getActivePinia: vi.fn(),
   useAuthStore: vi.fn(() => ({

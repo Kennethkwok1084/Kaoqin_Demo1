@@ -11,11 +11,15 @@ async function globalSetup(config: FullConfig) {
     // 首先检查后端服务是否可用
     console.log('🔍 Checking backend health...')
     try {
-      const backendResponse = await page.goto('http://localhost:8000/docs', { timeout: 5000 })
+      const backendResponse = await page.goto('http://localhost:8000/docs', {
+        timeout: 5000
+      })
       if (backendResponse && backendResponse.ok()) {
         console.log('✅ Backend service is healthy!')
       } else {
-        console.log('⚠️ Backend service may not be available, proceeding anyway...')
+        console.log(
+          '⚠️ Backend service may not be available, proceeding anyway...'
+        )
       }
     } catch (error) {
       console.log('⚠️ Backend health check failed, proceeding anyway...')
@@ -27,8 +31,8 @@ async function globalSetup(config: FullConfig) {
 
     // 检查应用是否可访问 - 优化等待策略
     let attempts = 0
-    const maxAttempts = 20  // 减少尝试次数
-    const waitInterval = 3000  // 增加等待间隔
+    const maxAttempts = 20 // 减少尝试次数
+    const waitInterval = 3000 // 增加等待间隔
 
     while (attempts < maxAttempts) {
       try {

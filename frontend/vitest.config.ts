@@ -1,36 +1,9 @@
 import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
-import AutoImport from 'unplugin-auto-import/vite'
-import Components from 'unplugin-vue-components/vite'
-import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 export default defineConfig({
-  plugins: [
-    vue(),
-    AutoImport({
-      resolvers: [ElementPlusResolver()],
-      imports: [
-        'vue',
-        'vue-router',
-        'pinia',
-        'vitest',
-        {
-          'element-plus': [
-            'ElMessage',
-            'ElMessageBox',
-            'ElNotification',
-            'ElLoading'
-          ]
-        }
-      ],
-      dts: true
-    }),
-    Components({
-      resolvers: [ElementPlusResolver()],
-      dts: true
-    })
-  ],
+  plugins: [vue()],
 
   resolve: {
     alias: {
@@ -57,8 +30,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: ['./tests/setup.ts'],
-    css: true,
+    // setupFiles: ['./tests/setup-clean.ts'], // 暂时禁用所有setup文件
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

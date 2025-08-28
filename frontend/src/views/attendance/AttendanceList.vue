@@ -102,12 +102,18 @@
               <el-avatar
                 :src="userInfo?.avatar"
                 :size="40"
-                :style="{ backgroundColor: getAvatarColor((userInfo as any)?.full_name || '') }"
+                :style="{
+                  backgroundColor: getAvatarColor(
+                    (userInfo as any)?.full_name || ''
+                  )
+                }"
               >
                 {{ ((userInfo as any)?.full_name || '').charAt(0) }}
               </el-avatar>
               <div class="status-info">
-                <div class="user-name">{{ (userInfo as any)?.full_name || '' }}</div>
+                <div class="user-name">
+                  {{ (userInfo as any)?.full_name || '' }}
+                </div>
                 <div class="status-text">
                   <template v-if="todayStatus.record">
                     <span

@@ -180,7 +180,10 @@
                   {{ scope.row.title }}
                 </el-link>
                 <div class="task-meta">
-                  <el-tag :type="getTypeTagType(scope.row.type) as any" size="small">
+                  <el-tag
+                    :type="getTypeTagType(scope.row.type) as any"
+                    size="small"
+                  >
                     {{ TASK_TYPE_CONFIG[scope.row.type as any]?.label }}
                   </el-tag>
                   <el-tag

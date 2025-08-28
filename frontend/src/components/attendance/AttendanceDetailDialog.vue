@@ -54,7 +54,11 @@
           <span v-else class="no-record">未签退</span>
         </el-descriptions-item>
         <el-descriptions-item label="迟到">
-          <el-tag v-if="(record.lateMinutes || 0) > 0" type="warning" size="small">
+          <el-tag
+            v-if="(record.lateMinutes || 0) > 0"
+            type="warning"
+            size="small"
+          >
             {{ record.lateMinutes || 0 }}分钟
           </el-tag>
           <span v-else class="normal-text">无</span>
@@ -70,7 +74,11 @@
           <span v-else class="normal-text">无</span>
         </el-descriptions-item>
         <el-descriptions-item label="加班">
-          <el-tag v-if="(record.overtimeHours || 0) > 0" type="info" size="small">
+          <el-tag
+            v-if="(record.overtimeHours || 0) > 0"
+            type="info"
+            size="small"
+          >
             {{ record.overtimeHours || 0 }}小时
           </el-tag>
           <span v-else class="normal-text">无</span>

@@ -190,8 +190,8 @@ const handleBack = () => {
   emit('back')
   // 默认行为：返回上一页
   // if (!emit('back')) {
-    router.back()
-  }
+  router.back()
+  // }
 }
 
 const handleSearch = () => {

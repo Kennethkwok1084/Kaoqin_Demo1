@@ -590,15 +590,17 @@ const handleImport = async () => {
         if ((data as any)?.detail) {
           if (Array.isArray((data as any).detail)) {
             // Pydantic 验证错误
-            const validationErrors = (data as any).detail || []
-              .map((err: any) => {
-                const field = err.loc ? err.loc.join('.') : 'unknown'
-                const input = err.input
-                  ? ` (输入值: ${JSON.stringify(err.input)})`
-                  : ''
-                return `${field}: ${err.msg}${input}`
-              })
-              .join('\n')
+            const validationErrors =
+              (data as any).detail ||
+              []
+                .map((err: any) => {
+                  const field = err.loc ? err.loc.join('.') : 'unknown'
+                  const input = err.input
+                    ? ` (输入值: ${JSON.stringify(err.input)})`
+                    : ''
+                  return `${field}: ${err.msg}${input}`
+                })
+                .join('\n')
             errorMessage = `数据验证失败:\n${validationErrors}`
 
             // 使用消息框显示详细错误
@@ -616,7 +618,10 @@ const handleImport = async () => {
       } else if (status === 500) {
         errorMessage = '服务器内部错误，请联系管理员'
       } else {
-        errorMessage = (data as any)?.message || (data as any)?.detail || `请求失败 (${status})`
+        errorMessage =
+          (data as any)?.message ||
+          (data as any)?.detail ||
+          `请求失败 (${status})`
       }
     } else if (error.message) {
       errorMessage = error.message

@@ -14,7 +14,9 @@
           </el-icon>
         </div>
         <div class="nav-label">{{ item.label }}</div>
-        <div v-if="(item as any)?.badge" class="nav-badge">{{ (item as any)?.badge }}</div>
+        <div v-if="(item as any)?.badge" class="nav-badge">
+          {{ (item as any)?.badge }}
+        </div>
       </div>
     </div>
   </div>

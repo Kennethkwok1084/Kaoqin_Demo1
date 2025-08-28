@@ -58,7 +58,9 @@
             </div>
             <div class="stat-item">
               <span class="label">成功:</span>
-              <span class="value success">{{ importJob.successRows || 0 }}</span>
+              <span class="value success">{{
+                importJob.successRows || 0
+              }}</span>
             </div>
             <div class="stat-item">
               <span class="label">失败:</span>
@@ -86,7 +88,8 @@
       <!-- 错误信息 -->
       <el-card
         v-if="
-          (importJob.validationErrors && importJob.validationErrors.length) || (importJob.processingErrors && importJob.processingErrors.length)
+          (importJob.validationErrors && importJob.validationErrors.length) ||
+          (importJob.processingErrors && importJob.processingErrors.length)
         "
         class="errors-card"
       >
@@ -102,10 +105,9 @@
           >
             <div class="error-list">
               <div
-                v-for="(error, index) in (importJob.validationErrors || []).slice(
-                  0,
-                  20
-                )"
+                v-for="(error, index) in (
+                  importJob.validationErrors || []
+                ).slice(0, 20)"
                 :key="index"
                 class="error-item"
               >
@@ -126,7 +128,8 @@
                 v-if="(importJob.validationErrors?.length || 0) > 20"
                 class="more-errors"
               >
-                还有 {{ (importJob.validationErrors?.length || 0) - 20 }} 个错误...
+                还有
+                {{ (importJob.validationErrors?.length || 0) - 20 }} 个错误...
               </div>
             </div>
           </el-tab-pane>
@@ -138,10 +141,9 @@
           >
             <div class="error-list">
               <div
-                v-for="(error, index) in (importJob.processingErrors || []).slice(
-                  0,
-                  20
-                )"
+                v-for="(error, index) in (
+                  importJob.processingErrors || []
+                ).slice(0, 20)"
                 :key="index"
                 class="error-item"
               >
@@ -159,7 +161,8 @@
                 v-if="(importJob.processingErrors?.length || 0) > 20"
                 class="more-errors"
               >
-                还有 {{ (importJob.processingErrors?.length || 0) - 20 }} 个错误...
+                还有
+                {{ (importJob.processingErrors?.length || 0) - 20 }} 个错误...
               </div>
             </div>
           </el-tab-pane>

@@ -18,10 +18,7 @@ dayjs.locale('zh-cn')
  * @param format 格式字符串，默认 'YYYY-MM-DD'
  * @returns 格式化后的日期字符串
  */
-export function formatDate(
-  date: string | Date,
-  format = 'YYYY-MM-DD'
-): string {
+export function formatDate(date: string | Date, format = 'YYYY-MM-DD'): string {
   if (!date) return ''
   const parsed = dayjs(date)
   if (!parsed.isValid()) return ''
@@ -109,7 +106,10 @@ export function addDays(date: string | Date, days: number): Date {
  * @param endDate 结束日期
  * @returns 天数差（绝对值）
  */
-export function getDaysBetween(startDate: string | Date, endDate: string | Date): number {
+export function getDaysBetween(
+  startDate: string | Date,
+  endDate: string | Date
+): number {
   return Math.abs(dayjs(endDate).diff(dayjs(startDate), 'day'))
 }
 
@@ -304,7 +304,10 @@ export function formatDuration(duration: number): string {
  * @param date 日期字符串或Date对象，默认为当前日期
  * @returns 月份开始和结束日期对象
  */
-export function getMonthRange(date?: string | Date): { start: Date; end: Date } {
+export function getMonthRange(date?: string | Date): {
+  start: Date
+  end: Date
+} {
   const target = dayjs(date)
   return {
     start: target.startOf('month').toDate(),

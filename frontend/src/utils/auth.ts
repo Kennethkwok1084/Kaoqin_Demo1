@@ -58,7 +58,7 @@ export function setRefreshToken(refreshToken: string): void {
  */
 export function isTokenExpired(token: string | null): boolean {
   if (!token) return true
-  
+
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))
     if (!payload.exp) return true // 如果没有exp字段，认为已过期
@@ -87,11 +87,11 @@ export function getTokenPayload(token: string): any {
  */
 export function parseJWT(token: string): any {
   if (!token || typeof token !== 'string') return null
-  
+
   try {
     const parts = token.split('.')
     if (parts.length !== 3) return null
-    
+
     const payload = JSON.parse(atob(parts[1]))
     return payload
   } catch (error) {
