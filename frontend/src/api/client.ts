@@ -175,7 +175,7 @@ export const api = {
         ...config,
         responseType: 'blob'
       })
-      
+
       // 创建下载链接
       const blob = new Blob([response.data])
       const downloadUrl = window.URL.createObjectURL(blob)

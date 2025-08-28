@@ -228,7 +228,11 @@ router.beforeEach(async (to, _from, next) => {
     }
 
     // 检查角色
-    if (to.meta?.roles && Array.isArray(to.meta.roles) && !to.meta.roles.includes(authStore.userInfo?.role)) {
+    if (
+      to.meta?.roles &&
+      Array.isArray(to.meta.roles) &&
+      !to.meta.roles.includes(authStore.userInfo?.role)
+    ) {
       next('/403')
       return
     }

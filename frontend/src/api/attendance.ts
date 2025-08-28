@@ -115,7 +115,9 @@ export const attendanceApi = {
   },
 
   // 获取签到地点 (占位符实现)
-  async getCheckInLocations(): Promise<Array<{ id: number; name: string; address: string }>> {
+  async getCheckInLocations(): Promise<
+    Array<{ id: number; name: string; address: string }>
+  > {
     const response = await http.get('/attendance/check-in-locations')
     return response.data || []
   },

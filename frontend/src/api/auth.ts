@@ -40,7 +40,7 @@ export const authApi = {
 
     // Transform role enum values
     if ((transformedData as any)?.user?.role) {
-      (transformedData as any).user.role = transformEnum(
+      ;(transformedData as any).user.role = transformEnum(
         (transformedData as any).user.role,
         UserRoleMapping.toFrontend
       )
@@ -80,7 +80,7 @@ export const authApi = {
 
     // Transform role enum values
     if ((transformedData as any)?.role) {
-      (transformedData as any).role = transformEnum(
+      ;(transformedData as any).role = transformEnum(
         (transformedData as any).role,
         UserRoleMapping.toFrontend
       )
