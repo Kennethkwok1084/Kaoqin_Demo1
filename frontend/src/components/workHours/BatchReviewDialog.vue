@@ -22,7 +22,7 @@
           />
           <el-table-column prop="taskType" label="类型" width="80">
             <template #default="{ row }">
-              <el-tag :type="getTaskTypeColor(row.taskType)" size="small">
+              <el-tag :type="getTaskTypeColor(row.taskType) as any" size="small">
                 {{ getTaskTypeText(row.taskType) }}
               </el-tag>
             </template>
@@ -32,7 +32,7 @@
           </el-table-column>
           <el-table-column prop="status" label="状态" width="80">
             <template #default="{ row }">
-              <el-tag :type="getStatusColor(row.status)" size="small">
+              <el-tag :type="getStatusColor(row.status) as any" size="small">
                 {{ getStatusText(row.status) }}
               </el-tag>
             </template>

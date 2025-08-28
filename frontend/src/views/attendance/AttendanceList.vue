@@ -352,11 +352,11 @@
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
             <el-tag
-              :type="getStatusTagType(row.status)"
-              :color="ATTENDANCE_STATUS_CONFIG[row.status]?.color"
+              :type="getStatusTagType(row.status) as any"
+              :color="(ATTENDANCE_STATUS_CONFIG as any)[row.status]?.color"
               effect="light"
             >
-              {{ ATTENDANCE_STATUS_CONFIG[row.status]?.label }}
+              {{ (ATTENDANCE_STATUS_CONFIG as any)[row.status]?.label }}
             </el-tag>
           </template>
         </el-table-column>

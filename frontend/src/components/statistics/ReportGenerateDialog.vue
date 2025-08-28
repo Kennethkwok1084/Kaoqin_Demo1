@@ -23,7 +23,7 @@
 
       <el-form-item label="时间范围" prop="dateRange">
         <el-date-picker
-          v-model="form.dateRange"
+          v-model="form.dateRange as any"
           type="monthrange"
           range-separator="至"
           start-placeholder="开始月份"
@@ -181,9 +181,9 @@ const handleGenerate = async () => {
     loading.value = true
 
     const reportData: ReportTemplate = {
-      id: Date.now(),
+      id: Date.now() as any,
       name: getReportTypeName(form.type),
-      type: form.type,
+      type: form.type as any,
       description: form.description,
       config: {
         dateRange: form.dateRange,

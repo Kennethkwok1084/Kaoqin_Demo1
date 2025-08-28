@@ -67,7 +67,7 @@
 
       <el-form-item label="时间范围" v-if="form.type !== 'current'">
         <el-date-picker
-          v-model="form.dateRange"
+          v-model="form.dateRange as any"
           type="monthrange"
           range-separator="至"
           start-placeholder="开始月份"

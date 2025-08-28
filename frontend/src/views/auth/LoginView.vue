@@ -169,7 +169,7 @@ const handleLogin = async () => {
     await loginFormRef.value.validate()
     isLoading.value = true
 
-    await authStore.login(loginForm)
+    await authStore.login(loginForm as any)
     ElMessage.success('登录成功')
   } catch (error: any) {
     console.error('登录失败:', error)

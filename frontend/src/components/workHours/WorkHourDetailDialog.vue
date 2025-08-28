@@ -22,12 +22,12 @@
                 {{ workHour.taskTitle }}
               </el-descriptions-item>
               <el-descriptions-item label="任务类型">
-                <el-tag :type="getTaskTypeColor(workHour.taskType)">
+                <el-tag :type="getTaskTypeColor(workHour.taskType) as any">
                   {{ getTaskTypeText(workHour.taskType) }}
                 </el-tag>
               </el-descriptions-item>
               <el-descriptions-item label="审核状态">
-                <el-tag :type="getStatusColor(workHour.status)">
+                <el-tag :type="getStatusColor(workHour.status) as any">
                   {{ getStatusText(workHour.status) }}
                 </el-tag>
               </el-descriptions-item>
@@ -154,7 +154,7 @@
             <el-card>
               <div class="review-content">
                 <div class="review-header">
-                  <el-tag :type="getReviewTypeColor(review.reviewType)">
+                  <el-tag :type="getReviewTypeColor(review.reviewType) as any">
                     {{ getReviewTypeText(review.reviewType) }}
                   </el-tag>
                   <span class="review-hours" v-if="review.adjustedHours">

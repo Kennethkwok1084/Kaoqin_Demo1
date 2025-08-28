@@ -68,7 +68,7 @@
               <el-col :span="8">
                 <el-form-item label="数据维度">
                   <el-select
-                    v-model="chartFilters.dimension"
+                    v-model="(chartFilters as any).dimension"
                     @change="updateChart"
                   >
                     <el-option label="按日统计" value="day" />

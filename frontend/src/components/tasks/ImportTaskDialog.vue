@@ -1441,9 +1441,9 @@ const handleImport = async () => {
     console.log('导入数据样本:', importData.matched_data.slice(0, 2))
 
     // 发送数据到后端
-    const response = await tasksApi.importMaintenanceOrders(importData)
+    const response = await tasksApi.importMaintenanceOrders(importData as any)
 
-    const result = response.data || response
+    const result = (response as any).data || response
     importResult.success = result.success || 0
     importResult.failed = result.failed || 0
     importResult.matched = result.matched || 0
@@ -1457,10 +1457,10 @@ const handleImport = async () => {
     )
     currentStep.value = 3
   } catch (error) {
-    console.error('导入失败:', error)
-    console.error('错误详情:', error.response?.data)
-    if (error.response?.data?.message) {
-      ElMessage.error(`导入失败: ${error.response.data.message}`)
+    console.error('导入失败:', error as any)
+    console.error('错误详情:', (error as any).response?.data)
+    if ((error as any).response?.data?.message) {
+      ElMessage.error(`导入失败: ${(error as any).response.data.message}`)
     } else {
       ElMessage.error('A-B表匹配导入失败，请检查数据格式')
     }

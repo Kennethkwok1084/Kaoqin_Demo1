@@ -64,7 +64,7 @@
       <el-tabs
         v-model="activeTab"
         class="mobile-tabs"
-        @tab-change="handleTabChange"
+        @tab-change="(tab: any) => handleTabChange(tab)"
       >
         <el-tab-pane
           v-for="tab in tabs"
@@ -189,7 +189,7 @@ const activeTab = ref(props.activeTab)
 const handleBack = () => {
   emit('back')
   // 默认行为：返回上一页
-  if (!emit('back')) {
+  // if (!emit('back')) {
     router.back()
   }
 }

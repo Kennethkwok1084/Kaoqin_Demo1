@@ -27,7 +27,7 @@
 
     <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
       <el-form-item label="审核类型">
-        <el-tag :type="getReviewTypeColor(reviewType)">
+        <el-tag :type="getReviewTypeColor(reviewType) as any">
           {{ getReviewTypeText(reviewType) }}
         </el-tag>
       </el-form-item>
@@ -79,7 +79,7 @@
           </div>
           <div class="preview-item">
             <span class="label">审核结果：</span>
-            <el-tag :type="getReviewTypeColor(reviewType)" size="small">
+            <el-tag :type="getReviewTypeColor(reviewType) as any" size="small">
               {{ getReviewTypeText(reviewType) }}
             </el-tag>
           </div>
@@ -91,7 +91,7 @@
       <div class="dialog-footer">
         <el-button @click="handleClose">取消</el-button>
         <el-button
-          :type="getButtonType()"
+          :type="getButtonType() as any"
           @click="handleSubmit"
           :loading="loading"
         >

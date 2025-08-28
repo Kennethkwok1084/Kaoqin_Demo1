@@ -9,6 +9,25 @@ export interface StatisticsOverview {
   attendanceRate: number
   efficiencyScore: number
   monthlyGrowth: number
+  // 补充缺失的属性
+  tasks?: {
+    total: number
+    completed: number
+    pending: number
+    overdue: number
+  }
+  members?: {
+    total: number
+    active: number
+  }
+  attendance?: {
+    rate: number
+    present: number
+    absent: number
+  }
+  categories?: {
+    [key: string]: any
+  }
 }
 
 export interface TaskStatistics {
@@ -393,4 +412,27 @@ export const CHART_COLORS = {
     orange: ['#E6A23C', '#F0C272', '#F5D49E', '#FAE6CA'],
     red: ['#F56C6C', '#F89898', '#FAB6B6', '#FDD4D4']
   }
+}
+
+// 补充缺失的接口定义
+export interface ChartConfig {
+  type?: string
+  title?: string
+  data?: ChartData
+  dimension?: string
+  [key: string]: any
+}
+
+export interface ExportConfig {
+  format?: string
+  filename?: string
+  data?: any
+  [key: string]: any
+}
+
+export interface Member {
+  id: number
+  name: string
+  department?: string
+  [key: string]: any
 }
