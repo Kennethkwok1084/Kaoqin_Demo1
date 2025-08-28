@@ -11,7 +11,7 @@
           {{ template.name }}
         </el-descriptions-item>
         <el-descriptions-item label="数据类型">
-          <el-tag :type="getTypeColor(template.type)">
+          <el-tag :type="getTypeColor(template.type) as any">
             {{ getTypeText(template.type) }}
           </el-tag>
         </el-descriptions-item>

@@ -514,9 +514,9 @@ const handleImport = async () => {
         const member: MemberImportItem = {
           name: item.name.trim(),
           class_name: item.class_name.trim(),
-          student_id: null, // 显式设置为null
-          phone: null, // 显式设置为null
-          username: null, // 显式设置为null
+          student_id: undefined, // 显式设置为undefined
+          phone: undefined, // 显式设置为undefined
+          username: undefined, // 显式设置为undefined
           role: 'member', // 默认角色
           department: '信息化建设处' // 默认部门
         }

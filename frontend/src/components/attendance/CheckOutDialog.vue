@@ -256,7 +256,7 @@ const loadTodayStatus = async () => {
   try {
     const status = await attendanceApi.getTodayAttendanceStatus()
     if (status.record?.checkInTime) {
-      checkInTime.value = formatTime(status.record.checkInTime)
+      checkInTime.value = formatTime((status as any).record?.checkInTime || '')
     }
   } catch (error) {
     console.error('加载今日状态失败:', error)
@@ -266,7 +266,7 @@ const loadTodayStatus = async () => {
 const loadLocationOptions = async () => {
   try {
     const locations = await attendanceApi.getCheckInLocations()
-    locationOptions.value = locations
+    locationOptions.value = (locations as any) || []
   } catch (error) {
     console.error('加载地点选项失败:', error)
   }
@@ -311,7 +311,7 @@ const handleSubmit = async () => {
       submitData.photo = photoList.value[0].raw
     }
 
-    await attendanceApi.checkOut(submitData)
+    await attendanceApi.checkOut(submitData as any)
 
     ElMessage.success('签退成功')
     emit('success')

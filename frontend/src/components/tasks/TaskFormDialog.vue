@@ -296,7 +296,7 @@ const fileList = ref<UploadFile[]>([])
 const formData = reactive<CreateTaskRequest & { id?: number }>({
   title: '',
   description: '',
-  type: 'repair',
+  type: 'network_repair' as any,
   priority: 'medium',
   assigneeId: undefined,
   location: '',
@@ -427,7 +427,7 @@ const resetForm = () => {
   Object.assign(formData, {
     title: '',
     description: '',
-    type: 'repair',
+    type: 'network_repair' as any,
     priority: 'medium',
     assigneeId: undefined,
     location: '',
@@ -451,7 +451,7 @@ const initForm = () => {
       priority: props.task.priority,
       assigneeId: props.task.assigneeId,
       location: props.task.location,
-      contactInfo: props.task.contactInfo,
+      contactInfo: (props.task as any).contactInfo || '',
       estimatedHours: props.task.estimatedHours,
       dueDate: props.task.dueDate,
       tags: props.task.tags || [],
@@ -483,7 +483,7 @@ const handleSubmit = async () => {
         priority: formData.priority,
         assigneeId: formData.assigneeId,
         location: formData.location,
-        contactInfo: formData.contactInfo,
+        contactInfo: formData.contactInfo || '',
         estimatedHours: formData.estimatedHours,
         dueDate: formData.dueDate,
         tags: formData.tags
@@ -493,14 +493,14 @@ const handleSubmit = async () => {
       ElMessage.success('任务更新成功')
     } else {
       // 创建任务
-      const createData: CreateTaskRequest = {
+      const createData = {
         title: formData.title,
         description: formData.description,
         type: formData.type,
         priority: formData.priority,
         assigneeId: formData.assigneeId,
         location: formData.location,
-        contactInfo: formData.contactInfo,
+        contactInfo: formData.contactInfo || '',
         estimatedHours: formData.estimatedHours,
         dueDate: formData.dueDate,
         tags: formData.tags,

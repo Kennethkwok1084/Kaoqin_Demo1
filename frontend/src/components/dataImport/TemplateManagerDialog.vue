@@ -34,7 +34,7 @@
 
         <el-table-column prop="type" label="类型" width="120">
           <template #default="{ row }">
-            <el-tag :type="getTypeColor(row.type)">
+            <el-tag :type="getTypeColor(row.type) as any">
               {{ getTypeText(row.type) }}
             </el-tag>
           </template>

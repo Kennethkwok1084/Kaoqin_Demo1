@@ -10,6 +10,10 @@ declare namespace NodeJS {
 // Element Plus 类型断言辅助
 declare global {
   type ElementPlusType = 'success' | 'warning' | 'info' | 'primary' | 'danger'
+  type EpPropMergeType<T, K, V> = any
+  type TabPaneName = string | number
+  type ModelValueType = string | number | Date | string[] | [any, any]
+  type DateModelType = string | Date
 }
 
 export {}

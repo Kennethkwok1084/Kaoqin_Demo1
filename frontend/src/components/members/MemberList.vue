@@ -102,7 +102,7 @@
         <el-table-column prop="class_name" label="班级" width="120" />
         <el-table-column prop="role" label="角色" width="100">
           <template #default="{ row }">
-            <el-tag :type="getRoleTagType(row.role)">
+            <el-tag :type="getRoleTagType(row.role) as any">
               {{ getRoleText(row.role) }}
             </el-tag>
           </template>

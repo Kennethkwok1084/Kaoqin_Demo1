@@ -46,7 +46,7 @@
 
         <div class="progress-section">
           <el-progress
-            :percentage="importJob.progress"
+            :percentage="Number(importJob.progress) || 0"
             :status="getProgressStatus(importJob.status)"
             stroke-width="20"
           />
