@@ -11,7 +11,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from jose import JWTError, jwt
+import jwt
+from jwt import PyJWTError
 from passlib.context import CryptContext
 
 from app.core.config import settings
@@ -78,7 +79,7 @@ def verify_token(token: str, token_type: str = "access") -> Optional[Dict[str, A
             return None
 
         return dict(payload)
-    except JWTError:
+    except PyJWTError:
         return None
 
 
@@ -182,7 +183,7 @@ def verify_password_reset_token(token: str) -> Optional[str]:
             return None
 
         return str(decoded_token.get("sub")) if decoded_token.get("sub") else None
-    except JWTError:
+    except PyJWTError:
         return None
 
 
