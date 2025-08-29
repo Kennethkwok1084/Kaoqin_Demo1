@@ -6,18 +6,7 @@ import Dashboard from '@/views/dashboard/Dashboard.vue'
 import * as dashboardApi from '@/api/dashboard'
 import * as statisticsApi from '@/api/statistics'
 
-// Mock APIs
-vi.mock('@/api/dashboard', () => ({
-  getDashboardOverview: vi.fn(),
-  getRecentTasks: vi.fn(),
-  getRecentAttendance: vi.fn()
-}))
-
-vi.mock('@/api/statistics', () => ({
-  getOverviewStats: vi.fn(),
-  getTaskStats: vi.fn(),
-  getWorkHourStats: vi.fn()
-}))
+// APIs will be mocked automatically by __mocks__ directory
 
 // Mock ECharts
 vi.mock('vue-echarts', () => ({
@@ -121,26 +110,8 @@ describe('Dashboard', () => {
 
   beforeEach(async () => {
     setActivePinia(createPinia())
-
-    // Mock API responses
-    vi.mocked(dashboardApi.getDashboardOverview).mockResolvedValue(
-      mockDashboardData.overview
-    )
-    vi.mocked(dashboardApi.getRecentTasks).mockResolvedValue(
-      mockDashboardData.recent_tasks
-    )
-    vi.mocked(dashboardApi.getRecentAttendance).mockResolvedValue(
-      mockDashboardData.recent_attendance
-    )
-    vi.mocked(statisticsApi.getOverviewStats).mockResolvedValue(
-      mockStatsData.task_distribution
-    )
-    vi.mocked(statisticsApi.getTaskStats).mockResolvedValue(
-      mockStatsData.task_status_distribution
-    )
-    vi.mocked(statisticsApi.getWorkHourStats).mockResolvedValue(
-      mockStatsData.work_hours_trend
-    )
+    
+    // The API functions are already mocked by the manual mocks in __mocks__ directory
 
     wrapper = mount(Dashboard, {
       global: {

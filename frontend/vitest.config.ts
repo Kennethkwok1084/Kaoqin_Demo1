@@ -18,6 +18,13 @@ export default defineConfig({
     }
   },
 
+  // 强制Mock映射
+  server: {
+    fs: {
+      allow: [resolve(__dirname, '..')]
+    }
+  },
+
   css: {
     preprocessorOptions: {
       scss: {
@@ -37,6 +44,10 @@ export default defineConfig({
       modules: {
         classNameStrategy: 'non-scoped'
       }
+    },
+    // 启用手动Mock支持
+    deps: {
+      external: [/^@\/api\/statistics$/]
     },
     coverage: {
       provider: 'v8',
