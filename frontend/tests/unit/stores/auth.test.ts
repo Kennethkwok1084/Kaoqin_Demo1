@@ -1,15 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useAuthStore } from '@/stores/auth'
-import * as authApi from '@/api/auth'
+import { authApi } from '@/api/auth'
 
-// Mock auth API
-vi.mock('@/api/auth', () => ({
-  login: vi.fn(),
-  logout: vi.fn(),
-  refreshToken: vi.fn(),
-  getCurrentUser: vi.fn()
-}))
+// Auth API is already mocked in setup.ts - no need to mock again
 
 describe('Auth Store', () => {
   beforeEach(() => {
@@ -32,17 +26,21 @@ describe('Auth Store', () => {
   describe('login', () => {
     it('should login successfully', async () => {
       const mockLoginResponse = {
-        access_token: 'test-access-token',
-        refresh_token: 'test-refresh-token',
-        token_type: 'Bearer',
-        expires_in: 3600,
-        user: {
-          id: 1,
-          username: 'testuser',
-          full_name: '测试用户',
-          email: 'test@example.com',
-          role: 'user',
-          is_active: true
+        success: true,
+        message: 'Login successful',
+        data: {
+          access_token: 'test-access-token',
+          refresh_token: 'test-refresh-token',
+          token_type: 'Bearer',
+          expires_in: 3600,
+          user: {
+            id: 1,
+            username: 'testuser',
+            full_name: '测试用户',
+            email: 'test@example.com',
+            role: 'user',
+            is_active: true
+          }
         }
       }
 
@@ -55,7 +53,7 @@ describe('Auth Store', () => {
       expect(authStore.isAuthenticated).toBe(true)
       expect(authStore.token).toBe('test-access-token')
       expect(authStore.refreshToken).toBe('test-refresh-token')
-      expect(authStore.userInfo).toEqual(mockLoginResponse.user)
+      expect(authStore.userInfo).toEqual(mockLoginResponse.data.user)
       expect(localStorage.setItem).toHaveBeenCalledWith(
         'access_token',
         'test-access-token'

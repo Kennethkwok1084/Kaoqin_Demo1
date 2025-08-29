@@ -4,16 +4,7 @@ import { useTasksStore } from '@/stores/tasks'
 import * as tasksApi from '@/api/tasks'
 import type { Task, TaskCreateRequest, TaskUpdateRequest } from '@/types/task'
 
-// Mock API
-vi.mock('@/api/tasks', () => ({
-  getTasks: vi.fn(),
-  getTaskDetail: vi.fn(),
-  createTask: vi.fn(),
-  updateTask: vi.fn(),
-  deleteTask: vi.fn(),
-  getTaskStats: vi.fn(),
-  getWorkTimeDetail: vi.fn()
-}))
+// API is already mocked in setup.ts - no need to mock again
 
 describe('Tasks Store', () => {
   let tasksStore: ReturnType<typeof useTasksStore>

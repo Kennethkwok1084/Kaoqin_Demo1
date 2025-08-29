@@ -7,15 +7,80 @@ import { config } from '@vue/test-utils'
 // =========================
 // 统计API使用手动Mock文件，在tests/__mocks__/@/api/statistics.ts中定义
 
-vi.mock('@/api/tasks', () => ({
-  tasksApi: {
-    getTasks: vi.fn(() => Promise.resolve({ data: { items: [], total: 0 } })),
-    getTaskDetail: vi.fn(() => Promise.resolve({ data: {} })),
-    createTask: vi.fn(() => Promise.resolve({ data: {} })),
-    updateTask: vi.fn(() => Promise.resolve({ data: {} })),
-    deleteTask: vi.fn(() => Promise.resolve({ data: {} }))
+vi.mock('@/api/auth', () => {
+  const mockAuthApi = {
+    login: vi.fn(() => Promise.resolve({
+      success: true,
+      message: 'Login successful',
+      data: {
+        access_token: 'mock_access_token',
+        refresh_token: 'mock_refresh_token',
+        token_type: 'Bearer',
+        expires_in: 3600,
+        user: {
+          id: 1,
+          name: '测试用户',
+          email: 'test@example.com',
+          role: 'user',
+          permissions: ['read']
+        }
+      }
+    })),
+    logout: vi.fn(() => Promise.resolve()),
+    refreshToken: vi.fn(() => Promise.resolve({
+      access_token: 'new_mock_token',
+      refresh_token: 'new_refresh_token'
+    })),
+    getUserInfo: vi.fn(() => Promise.resolve({
+      id: 1,
+      name: '测试用户',
+      email: 'test@example.com',
+      role: 'user',
+      permissions: ['read']
+    })),
+    changePassword: vi.fn(() => Promise.resolve()),
+    requestResetPassword: vi.fn(() => Promise.resolve()),
+    confirmResetPassword: vi.fn(() => Promise.resolve()),
+    validateToken: vi.fn(() => Promise.resolve({ valid: true })),
+    getUserPermissions: vi.fn(() => Promise.resolve({ permissions: ['read'] }))
   }
-}))
+  
+  return {
+    authApi: mockAuthApi
+  }
+})
+
+vi.mock('@/api/tasks', () => {
+  const mockTasks = vi.fn(() => Promise.resolve({ items: [], total: 0, page: 1, page_size: 20, total_pages: 0 }))
+  const mockTask = vi.fn(() => Promise.resolve({}))
+  const mockTaskCreate = vi.fn(() => Promise.resolve({}))
+  const mockTaskUpdate = vi.fn(() => Promise.resolve({}))
+  const mockTaskDelete = vi.fn(() => Promise.resolve())
+  const mockTaskStats = vi.fn(() => Promise.resolve({}))
+  const mockWorkTimeDetail = vi.fn(() => Promise.resolve({}))
+  
+  return {
+    // Object-based API
+    tasksApi: {
+      getTasks: mockTasks,
+      getTask: mockTask,
+      createTask: mockTaskCreate,
+      updateTask: mockTaskUpdate,
+      deleteTask: mockTaskDelete,
+      getTaskStats: mockTaskStats,
+      getWorkTimeDetail: mockWorkTimeDetail
+    },
+    // Individual function exports for direct import compatibility
+    getTasks: mockTasks,
+    getTask: mockTask,
+    getTaskDetail: mockTask, // Alias
+    createTask: mockTaskCreate,
+    updateTask: mockTaskUpdate,
+    deleteTask: mockTaskDelete,
+    getTaskStats: mockTaskStats,
+    getWorkTimeDetail: mockWorkTimeDetail
+  }
+})
 
 // 不mock members API，让测试使用真实的API，只mock底层的HTTP client
 
@@ -194,7 +259,12 @@ vi.mock('vue-router', () => ({
     replace: vi.fn(),
     go: vi.fn(),
     back: vi.fn(),
-    forward: vi.fn()
+    forward: vi.fn(),
+    beforeEach: vi.fn(),
+    afterEach: vi.fn(),
+    getRoutes: vi.fn(() => []),
+    hasRoute: vi.fn(() => false),
+    resolve: vi.fn(() => ({ name: 'Dashboard', path: '/', params: {}, query: {}, meta: {} }))
   })),
   createWebHistory: vi.fn(),
   useRouter: vi.fn(() => ({
@@ -202,7 +272,9 @@ vi.mock('vue-router', () => ({
     replace: vi.fn(),
     go: vi.fn(),
     back: vi.fn(),
-    forward: vi.fn()
+    forward: vi.fn(),
+    beforeEach: vi.fn(),
+    afterEach: vi.fn()
   })),
   useRoute: vi.fn(() => ({
     path: '/',
@@ -230,72 +302,39 @@ config.global.mocks = {
 }
 
 // =========================
-// 5. Pinia Store Mocks
+// 5. Pinia Store Setup (Allow real Pinia for store tests)
 // =========================
-vi.mock('pinia', () => ({
-  createPinia: vi.fn(),
-  defineStore: vi.fn(() => vi.fn()),
-  storeToRefs: vi.fn((store) => store),
-  setActivePinia: vi.fn(),
-  getActivePinia: vi.fn()
-}))
+// Do not mock pinia itself - let store tests use real Pinia instances
 
-vi.mock('@/stores/auth', () => ({
-  useAuthStore: vi.fn(() => ({
-    user: null,
-    token: null,
-    isAuthenticated: false,
-    login: vi.fn(),
-    logout: vi.fn(),
-    refreshToken: vi.fn()
-  }))
-}))
+// Store mocks removed - let unit tests use real store implementations
 
-vi.mock('@/stores/global', () => ({
-  useGlobalStore: vi.fn(() => ({
-    theme: 'light',
-    language: 'zh-CN',
-    setTheme: vi.fn(),
-    setLanguage: vi.fn()
-  }))
-}))
+// All store mocks removed to allow proper store unit testing
 
-vi.mock('@/stores/tasks', () => ({
-  useTasksStore: vi.fn(() => ({
-    // 状态
-    tasks: [],
-    currentTask: null,
-    loading: false,
-    error: null,
-    pagination: { current: 1, pageSize: 10, total: 0 },
-    filters: {},
-    searchQuery: '',
-    
-    // 方法
-    fetchTasks: vi.fn().mockResolvedValue([]),
-    fetchTaskDetail: vi.fn().mockResolvedValue({}),
-    createTask: vi.fn().mockResolvedValue({}),
-    updateTask: vi.fn().mockResolvedValue({}),
-    deleteTask: vi.fn().mockResolvedValue(true),
-    setSearchQuery: vi.fn(),
-    setFilters: vi.fn(), 
-    clearFilters: vi.fn(),
-    setPage: vi.fn(),
-    setPageSize: vi.fn(),
-    getWorkTimeDetail: vi.fn().mockResolvedValue({}),
-    batchUpdateStatus: vi.fn().mockResolvedValue([]),
-    batchDeleteTasks: vi.fn().mockResolvedValue([]),
-    resetState: vi.fn(),
-    clearError: vi.fn(),
-    
-    // Getters
-    pendingTasks: [],
-    inProgressTasks: [], 
-    completedTasks: [],
-    totalCount: 0,
-    hasNextPage: false,
-    hasPrevPage: false
-  }))
+// =========================
+// 5.5. Router Instance Mock
+// =========================
+vi.mock('@/router', () => ({
+  default: {
+    push: vi.fn(),
+    replace: vi.fn(),
+    go: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    beforeEach: vi.fn(),
+    afterEach: vi.fn(),
+    getRoutes: vi.fn(() => []),
+    hasRoute: vi.fn(() => false),
+    resolve: vi.fn(() => ({ name: 'Dashboard', path: '/', params: {}, query: {}, meta: {} })),
+    currentRoute: {
+      value: {
+        path: '/login',
+        name: 'Login',
+        params: {},
+        query: {},
+        meta: {}
+      }
+    }
+  }
 }))
 
 // =========================

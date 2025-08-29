@@ -402,3 +402,13 @@ export const tasksApi = {
     return response.data.data || { valid: false, errors: [] }
   }
 }
+
+// Export individual functions for test compatibility and easier imports
+export const getTasks = tasksApi.getTasks
+export const getTask = tasksApi.getTask
+export const getTaskDetail = tasksApi.getTask // Alias for compatibility
+export const createTask = tasksApi.createTask
+export const updateTask = tasksApi.updateTask
+export const deleteTask = tasksApi.deleteTask
+export const getTaskStats = tasksApi.getTaskStats
+export const getWorkTimeDetail = tasksApi.getWorkTimeDetail
