@@ -428,7 +428,8 @@ jobs:
     - name: Start Backend for E2E Tests
       id: start_backend
       env:
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_attendence
+        DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence
+        DATABASE_URL_SYNC: postgresql://postgres:postgres@localhost:5432/test_attendence
         REDIS_URL: redis://localhost:6379/0
         ENVIRONMENT: test
         CI: true

@@ -180,6 +180,17 @@ export class MembersApi {
   }
 
   /**
+   * 导出成员数据
+   */
+  static async exportMembers(format: 'csv' | 'excel' = 'excel'): Promise<Blob> {
+    const response = await http.get('/members/export', { 
+      params: { format },
+      responseType: 'blob'
+    })
+    return response.data
+  }
+
+  /**
    * 健康检查
    */
   static async healthCheck(): Promise<any> {
@@ -210,10 +221,14 @@ export const {
   updateMember,
   deleteMember,
   importMembers,
+  exportMembers,
   changePassword,
   getMemberStats,
   healthCheck
 } = MembersApi
+
+// 测试兼容性别名
+export const getMemberDetail = MembersApi.getMember
 
 // 默认导出
 export default MembersApi

@@ -17,17 +17,7 @@ vi.mock('@/api/tasks', () => ({
   }
 }))
 
-vi.mock('@/api/members', () => ({
-  membersApi: {
-    getMembers: vi.fn(() => Promise.resolve({ data: { items: [], total: 0 } })),
-    getMemberDetail: vi.fn(() => Promise.resolve({ data: {} })),
-    createMember: vi.fn(() => Promise.resolve({ data: {} })),
-    updateMember: vi.fn(() => Promise.resolve({ data: {} })),
-    deleteMember: vi.fn(() => Promise.resolve({ data: {} })),
-    importMembers: vi.fn(() => Promise.resolve({ data: {} })),
-    exportMembers: vi.fn(() => Promise.resolve({ data: {} }))
-  }
-}))
+// 不mock members API，让测试使用真实的API，只mock底层的HTTP client
 
 vi.mock('@/api/client', () => ({
   http: {

@@ -9,7 +9,7 @@ import {
   exportMembers,
   getMemberStats
 } from '@/api/members'
-import { client } from '@/api/client'
+import { http } from '@/api/client'
 import type {
   Member,
   MemberCreateRequest,
@@ -17,9 +17,9 @@ import type {
   MemberListParams
 } from '@/types/member'
 
-// Mock client
+// Mock http client
 vi.mock('@/api/client', () => ({
-  client: {
+  http: {
     get: vi.fn(),
     post: vi.fn(),
     put: vi.fn(),
@@ -52,7 +52,7 @@ describe('Members API', () => {
         }
       }
 
-      vi.mocked(client.get).mockResolvedValue(mockResponse)
+      vi.mocked(http.get).mockResolvedValue(mockResponse)
 
       const params: MemberListParams = {
         page: 1,
@@ -62,8 +62,8 @@ describe('Members API', () => {
 
       const result = await getMembers(params)
 
-      expect(client.get).toHaveBeenCalledWith('/v1/members/', { params })
-      expect(result).toEqual(mockResponse.data)
+      expect(http.get).toHaveBeenCalledWith('/members/', { params })
+      expect(result).toEqual(mockResponse.data.data)
     })
 
     it('应该处理无参数的请求', async () => {
@@ -77,12 +77,12 @@ describe('Members API', () => {
         }
       }
 
-      vi.mocked(client.get).mockResolvedValue(mockResponse)
+      vi.mocked(http.get).mockResolvedValue(mockResponse)
 
       const result = await getMembers()
 
-      expect(client.get).toHaveBeenCalledWith('/v1/members/', { params: {} })
-      expect(result).toEqual(mockResponse.data)
+      expect(http.get).toHaveBeenCalledWith('/members/', { params: {} })
+      expect(result).toEqual(mockResponse.data.data)
     })
 
     it('应该处理筛选参数', async () => {
@@ -96,7 +96,7 @@ describe('Members API', () => {
         }
       }
 
-      vi.mocked(client.get).mockResolvedValue(mockResponse)
+      vi.mocked(http.get).mockResolvedValue(mockResponse)
 
       const params: MemberListParams = {
         page: 1,
@@ -109,7 +109,7 @@ describe('Members API', () => {
 
       await getMembers(params)
 
-      expect(client.get).toHaveBeenCalledWith('/v1/members/', { params })
+      expect(http.get).toHaveBeenCalledWith('/members/', { params })
     })
   })
 
@@ -135,19 +135,19 @@ describe('Members API', () => {
       }
 
       const mockResponse = { data: mockMember }
-      vi.mocked(client.get).mockResolvedValue(mockResponse)
+      vi.mocked(http.get).mockResolvedValue(mockResponse)
 
       const result = await getMemberDetail(1)
 
-      expect(client.get).toHaveBeenCalledWith('/v1/members/1')
+      expect(http.get).toHaveBeenCalledWith('/members/1')
       expect(result).toEqual(mockMember)
     })
 
     it('应该处理不存在的成员ID', async () => {
-      vi.mocked(client.get).mockRejectedValue(new Error('Member not found'))
+      vi.mocked(http.get).mockRejectedValue(new Error('Member not found'))
 
       await expect(getMemberDetail(999)).rejects.toThrow('Member not found')
-      expect(client.get).toHaveBeenCalledWith('/v1/members/999')
+      expect(http.get).toHaveBeenCalledWith('/members/999')
     })
   })
 
@@ -178,11 +178,11 @@ describe('Members API', () => {
       }
 
       const mockResponse = { data: mockCreatedMember }
-      vi.mocked(client.post).mockResolvedValue(mockResponse)
+      vi.mocked(http.post).mockResolvedValue(mockResponse)
 
       const result = await createMember(createData)
 
-      expect(client.post).toHaveBeenCalledWith('/v1/members/', createData)
+      expect(http.post).toHaveBeenCalledWith('/members/', createData)
       expect(result).toEqual(mockCreatedMember)
     })
 
@@ -199,7 +199,7 @@ describe('Members API', () => {
         role: 'member'
       }
 
-      vi.mocked(client.post).mockRejectedValue(new Error('Validation failed'))
+      vi.mocked(http.post).mockRejectedValue(new Error('Validation failed'))
 
       await expect(createMember(createData)).rejects.toThrow(
         'Validation failed'
@@ -233,11 +233,11 @@ describe('Members API', () => {
       }
 
       const mockResponse = { data: mockUpdatedMember }
-      vi.mocked(client.put).mockResolvedValue(mockResponse)
+      vi.mocked(http.put).mockResolvedValue(mockResponse)
 
       const result = await updateMember(1, updateData)
 
-      expect(client.put).toHaveBeenCalledWith('/v1/members/1', updateData)
+      expect(http.put).toHaveBeenCalledWith('/members/1', updateData)
       expect(result).toEqual(mockUpdatedMember)
     })
 
@@ -266,11 +266,11 @@ describe('Members API', () => {
       }
 
       const mockResponse = { data: mockUpdatedMember }
-      vi.mocked(client.put).mockResolvedValue(mockResponse)
+      vi.mocked(http.put).mockResolvedValue(mockResponse)
 
       const result = await updateMember(1, updateData)
 
-      expect(client.put).toHaveBeenCalledWith('/v1/members/1', updateData)
+      expect(http.put).toHaveBeenCalledWith('/members/1', updateData)
       expect(result).toEqual(mockUpdatedMember)
     })
   })
@@ -278,15 +278,15 @@ describe('Members API', () => {
   describe('deleteMember', () => {
     it('应该删除成员', async () => {
       const mockResponse = { data: { message: 'Member deleted successfully' } }
-      vi.mocked(client.delete).mockResolvedValue(mockResponse)
+      vi.mocked(http.delete).mockResolvedValue(mockResponse)
 
       await deleteMember(1)
 
-      expect(client.delete).toHaveBeenCalledWith('/v1/members/1')
+      expect(http.delete).toHaveBeenCalledWith('/members/1')
     })
 
     it('应该处理删除不存在的成员', async () => {
-      vi.mocked(client.delete).mockRejectedValue(new Error('Member not found'))
+      vi.mocked(http.delete).mockRejectedValue(new Error('Member not found'))
 
       await expect(deleteMember(999)).rejects.toThrow('Member not found')
     })
@@ -311,12 +311,12 @@ describe('Members API', () => {
       }
 
       const mockResponse = { data: mockImportResult }
-      vi.mocked(client.post).mockResolvedValue(mockResponse)
+      vi.mocked(http.post).mockResolvedValue(mockResponse)
 
       const result = await importMembers(file, { update_existing: true })
 
-      expect(client.post).toHaveBeenCalledWith(
-        '/v1/members/import',
+      expect(http.post).toHaveBeenCalledWith(
+        '/members/import',
         expect.any(FormData),
         expect.objectContaining({
           headers: {
@@ -332,7 +332,7 @@ describe('Members API', () => {
         type: 'text/plain'
       })
 
-      vi.mocked(client.post).mockRejectedValue(new Error('Invalid file format'))
+      vi.mocked(http.post).mockRejectedValue(new Error('Invalid file format'))
 
       await expect(importMembers(file)).rejects.toThrow('Invalid file format')
     })
@@ -342,7 +342,7 @@ describe('Members API', () => {
         type: 'text/csv'
       })
 
-      vi.mocked(client.post).mockRejectedValue(new Error('Empty file'))
+      vi.mocked(http.post).mockRejectedValue(new Error('Empty file'))
 
       await expect(importMembers(file)).rejects.toThrow('Empty file')
     })
@@ -355,7 +355,7 @@ describe('Members API', () => {
       })
       const mockResponse = { data: mockExportData }
 
-      vi.mocked(client.get).mockResolvedValue(mockResponse)
+      vi.mocked(http.get).mockResolvedValue(mockResponse)
 
       const params = {
         format: 'excel' as const,
@@ -365,7 +365,7 @@ describe('Members API', () => {
 
       const result = await exportMembers(params)
 
-      expect(client.get).toHaveBeenCalledWith('/v1/members/export', {
+      expect(http.get).toHaveBeenCalledWith('/members/export', {
         params,
         responseType: 'blob'
       })
@@ -376,7 +376,7 @@ describe('Members API', () => {
       const mockExportData = new Blob(['csv data'], { type: 'text/csv' })
       const mockResponse = { data: mockExportData }
 
-      vi.mocked(client.get).mockResolvedValue(mockResponse)
+      vi.mocked(http.get).mockResolvedValue(mockResponse)
 
       const params = {
         format: 'csv' as const,
@@ -385,7 +385,7 @@ describe('Members API', () => {
 
       const result = await exportMembers(params)
 
-      expect(client.get).toHaveBeenCalledWith('/v1/members/export', {
+      expect(http.get).toHaveBeenCalledWith('/members/export', {
         params,
         responseType: 'blob'
       })
@@ -393,7 +393,7 @@ describe('Members API', () => {
     })
 
     it('应该处理导出权限错误', async () => {
-      vi.mocked(client.get).mockRejectedValue(new Error('Permission denied'))
+      vi.mocked(http.get).mockRejectedValue(new Error('Permission denied'))
 
       const params = { format: 'excel' as const }
 
@@ -423,11 +423,11 @@ describe('Members API', () => {
       }
 
       const mockResponse = { data: mockStats }
-      vi.mocked(client.get).mockResolvedValue(mockResponse)
+      vi.mocked(http.get).mockResolvedValue(mockResponse)
 
       const result = await getMemberStats()
 
-      expect(client.get).toHaveBeenCalledWith('/v1/members/stats')
+      expect(http.get).toHaveBeenCalledWith('/members/stats/overview')
       expect(result).toEqual(mockStats)
     })
 
@@ -443,7 +443,7 @@ describe('Members API', () => {
       }
 
       const mockResponse = { data: mockStats }
-      vi.mocked(client.get).mockResolvedValue(mockResponse)
+      vi.mocked(http.get).mockResolvedValue(mockResponse)
 
       const params = {
         start_date: '2023-01-01',
@@ -452,7 +452,7 @@ describe('Members API', () => {
 
       const result = await getMemberStats(params)
 
-      expect(client.get).toHaveBeenCalledWith('/v1/members/stats', { params })
+      expect(http.get).toHaveBeenCalledWith('/members/stats/overview', { params })
       expect(result).toEqual(mockStats)
     })
   })
@@ -460,14 +460,14 @@ describe('Members API', () => {
   describe('错误处理', () => {
     it('应该正确传递网络错误', async () => {
       const networkError = new Error('Network Error')
-      vi.mocked(client.get).mockRejectedValue(networkError)
+      vi.mocked(http.get).mockRejectedValue(networkError)
 
       await expect(getMembers()).rejects.toThrow('Network Error')
     })
 
     it('应该正确传递服务器错误', async () => {
       const serverError = new Error('Internal Server Error')
-      vi.mocked(client.post).mockRejectedValue(serverError)
+      vi.mocked(http.post).mockRejectedValue(serverError)
 
       const createData: MemberCreateRequest = {
         username: 'test',
@@ -488,7 +488,7 @@ describe('Members API', () => {
 
     it('应该正确传递验证错误', async () => {
       const validationError = new Error('Validation Error')
-      vi.mocked(client.put).mockRejectedValue(validationError)
+      vi.mocked(http.put).mockRejectedValue(validationError)
 
       const updateData: MemberUpdateRequest = {
         email: 'invalid-email'
