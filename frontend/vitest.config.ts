@@ -31,7 +31,13 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: ['./tests/setup-complete.ts'], // 使用完整的setup文件
+    setupFiles: ['./tests/setup.ts'], // 使用优化后的setup文件
+    // 关键修复：CSS处理
+    css: {
+      modules: {
+        classNameStrategy: 'non-scoped'
+      }
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -48,6 +54,22 @@ export default defineConfig({
       'tests/unit/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'src/**/__tests__/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
-    exclude: ['node_modules/', 'dist/', '.idea/', '.git/', '.cache/']
+    // 优化：排除node_modules提高速度
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '.idea/',
+      '.git/',
+      '.cache/'
+    ],
+    // 测试超时设置
+    testTimeout: 10000,
+    // 优化并发性能
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: false
+      }
+    }
   }
 })
