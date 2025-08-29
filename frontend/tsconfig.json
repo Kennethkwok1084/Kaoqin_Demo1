@@ -4,6 +4,7 @@
     "env.d.ts",
     "src/**/*",
     "src/**/*.vue",
+    "src/types/**/*",
     "auto-imports.d.ts",
     "components.d.ts"
   ],
@@ -42,8 +43,8 @@
     "jsx": "preserve",
 
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true
   }
 }

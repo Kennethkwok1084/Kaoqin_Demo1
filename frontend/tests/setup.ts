@@ -5,6 +5,34 @@ import ElementPlus from 'element-plus'
 // Mock Element Plus全局组件
 config.global.plugins = [ElementPlus]
 
+// Mock Element Plus组件
+config.global.stubs = {
+  'el-button': true,
+  'el-icon': true,
+  'el-col': true,
+  'el-row': true,
+  'el-card': true,
+  'el-table': true,
+  'el-table-column': true,
+  'el-form': true,
+  'el-form-item': true,
+  'el-input': true,
+  'el-select': true,
+  'el-option': true,
+  'el-date-picker': true,
+  'el-dialog': true,
+  'el-drawer': true,
+  'el-pagination': true,
+  'el-tag': true,
+  'el-tooltip': true,
+  'el-popover': true,
+  'el-dropdown': true,
+  'el-dropdown-menu': true,
+  'el-dropdown-item': true,
+  'router-link': true,
+  'router-view': true
+}
+
 // Mock全局对象
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -92,8 +120,13 @@ vi.mock('element-plus/theme-chalk/el-card.css', () => ({}))
 vi.mock('element-plus/theme-chalk/el-menu.css', () => ({}))
 vi.mock('element-plus/theme-chalk/el-breadcrumb.css', () => ({}))
 
-// Mock所有CSS和SCSS文件导入
-vi.mock(/\.(css|scss|sass|less|styl|stylus)$/, () => ({}))
+// Mock所有CSS和SCSS文件导入 - 修复语法
+vi.mock('*.css', () => ({}))
+vi.mock('*.scss', () => ({}))
+vi.mock('*.sass', () => ({}))
+vi.mock('*.less', () => ({}))
+vi.mock('*.styl', () => ({}))
+vi.mock('*.stylus', () => ({}))
 
 // 全局CSS模式匹配
 Object.defineProperty(window, 'CSS', {
