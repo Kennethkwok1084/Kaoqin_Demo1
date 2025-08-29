@@ -21,6 +21,7 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
+        api: 'modern-compiler', // 使用现代Sass API，避免弃用警告
         additionalData:
           '@use "@/styles/variables.scss" as *; @use "@/styles/mixins.scss" as *;'
       }
@@ -30,7 +31,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    // setupFiles: ['./tests/setup-clean.ts'], // 暂时禁用所有setup文件
+    setupFiles: ['./tests/setup-complete.ts'], // 使用完整的setup文件
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

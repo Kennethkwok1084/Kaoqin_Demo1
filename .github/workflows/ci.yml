@@ -427,6 +427,15 @@ jobs:
 
     - name: Start Backend for E2E Tests
       id: start_backend
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_attendence
+        REDIS_URL: redis://localhost:6379/0
+        ENVIRONMENT: test
+        CI: true
+        GITHUB_ACTIONS: true
+        TESTING: true
+        SECRET_KEY: test_secret_key_for_e2e_environment_only
+        ACCESS_TOKEN_EXPIRE_MINUTES: 30
       run: |
         cd backend
         echo "===== 为E2E测试启动后端服务 ====="
@@ -434,45 +443,102 @@ jobs:
         # 安装后端依赖（如果还没安装）
         pip install -r requirements.txt
         
-        # 设置测试环境变量
-        export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/test_attendence
-        export REDIS_URL=redis://localhost:6379
-        export ENVIRONMENT=test
-        
         # 运行数据库迁移
-        alembic upgrade head || echo "迁移失败，使用现有数据库"
+        echo "运行数据库迁移..."
+        alembic upgrade head || {
+          echo "数据库迁移失败"
+          exit 1
+        }
         
         # 启动后端服务（后台运行）
-        nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+        echo "启动后端服务..."
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+        BACKEND_PID=$!
+        echo "Backend PID: $BACKEND_PID"
+        echo $BACKEND_PID > ../backend.pid
         
-        # 等待服务启动
-        sleep 10
-        
-        # 检查后端健康状态
-        for i in {1..10}; do
-          if curl -f http://localhost:8000/docs > /dev/null 2>&1; then
-            echo "✅ 后端服务启动成功"
-            exit 0
+        # 增强的服务启动检查
+        echo "等待后端服务启动..."
+        for i in {1..30}; do
+          if curl -f http://localhost:8000/health > /dev/null 2>&1; then
+            echo "✅ 后端健康检查通过"
+            
+            # 验证关键API端点
+            if curl -f http://localhost:8000/api/v1/system/status > /dev/null 2>&1; then
+              echo "✅ 后端系统状态API可访问"
+              break
+            else
+              echo "⚠️ 系统状态API不可访问，继续等待..."
+            fi
           fi
-          echo "⏳ 等待后端服务启动... (${i}/10)"
+          
+          if [ $i -eq 30 ]; then
+            echo "❌ 后端服务启动失败"
+            kill $BACKEND_PID 2>/dev/null || true
+            exit 1
+          fi
+          
+          echo "⏳ 等待后端服务启动... (${i}/30)"
           sleep 3
         done
-        
-        echo "❌ 后端服务启动失败"
-        exit 1
 
     - name: Run E2E tests
       id: e2e_tests
       continue-on-error: true
+      env:
+        CI: true
+        GITHUB_ACTIONS: true
       run: |
         cd frontend
+        echo "===== 运行E2E测试 ====="
+        
         # 检查是否有E2E测试文件
         if [ -d "tests/e2e" ] && [ "$(find tests/e2e -name '*.spec.*' | head -1)" ]; then
-          npm run test:e2e
+          echo "发现E2E测试文件，开始运行..."
+          
+          # 确保fixtures目录存在
+          mkdir -p tests/fixtures
+          
+          # 运行E2E测试
+          npm run test:e2e -- --reporter=json --output-dir=./test-results
+          E2E_EXIT_CODE=$?
+          
+          echo "E2E测试完成，退出码: $E2E_EXIT_CODE"
+          
+          # 生成测试报告摘要
+          if [ -f "test-results/results.json" ]; then
+            echo "===== E2E测试结果摘要 ====="
+            node -e "
+              const fs = require('fs');
+              const results = JSON.parse(fs.readFileSync('test-results/results.json', 'utf8'));
+              console.log(\`总测试数: \${results.stats.expected}\`);
+              console.log(\`通过: \${results.stats.passed}\`);
+              console.log(\`失败: \${results.stats.failed}\`);
+              console.log(\`跳过: \${results.stats.skipped}\`);
+            " || echo "无法解析测试结果"
+          fi
+          
+          exit $E2E_EXIT_CODE
+          
         else
           echo "没有找到E2E测试文件，跳过E2E测试"
           exit 0  # 明确标记为成功
         fi
+        
+    - name: Cleanup Backend Process
+      if: always()
+      run: |
+        echo "清理后端进程..."
+        if [ -f "backend.pid" ]; then
+          BACKEND_PID=$(cat backend.pid)
+          kill $BACKEND_PID 2>/dev/null && echo "✅ 后端服务已停止" || echo "⚠️ 后端服务可能已停止"
+          rm backend.pid
+        else
+          echo "没有找到backend.pid文件"
+        fi
+        
+        # 强制清理可能的残留进程
+        pkill -f "uvicorn app.main:app" 2>/dev/null || true
         
     - name: E2E Tests Results Summary
       if: always()
