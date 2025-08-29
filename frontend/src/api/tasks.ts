@@ -56,6 +56,13 @@ export const tasksApi = {
   },
 
   /**
+   * 获取任务详情 (别名方法，用于测试兼容性)
+   */
+  async getTaskDetail(id: number): Promise<Task> {
+    return this.getTask(id)
+  },
+
+  /**
    * 创建任务
    */
   async createTask(data: CreateTaskRequest): Promise<Task> {
@@ -406,9 +413,9 @@ export const tasksApi = {
 // Export individual functions for test compatibility and easier imports
 export const getTasks = tasksApi.getTasks
 export const getTask = tasksApi.getTask
-export const getTaskDetail = tasksApi.getTask // Alias for compatibility
+export const getTaskDetail = tasksApi.getTaskDetail // Direct method for compatibility
 export const createTask = tasksApi.createTask
 export const updateTask = tasksApi.updateTask
 export const deleteTask = tasksApi.deleteTask
 export const getTaskStats = tasksApi.getTaskStats
-export const getWorkTimeDetail = tasksApi.getWorkTimeDetail
+export const getWorkTimeDetail = tasksApi.getWorkLogs // Work time details - alias for compatibility
