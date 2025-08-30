@@ -3,15 +3,15 @@ import { TestDataManager } from './test-data-manager'
 
 async function globalTeardown() {
   console.log('🧹 Starting global E2E test teardown...')
-  
+
   const apiContext = await request.newContext()
   const testDataManager = new TestDataManager(apiContext)
-  
+
   try {
     // 清理测试数据
     await testDataManager.cleanupTestData()
     console.log('✅ Test data cleanup completed')
-    
+
     // 清理认证状态文件
     try {
       const fs = await import('fs')
@@ -23,13 +23,12 @@ async function globalTeardown() {
     } catch (error) {
       console.warn('⚠️ Failed to cleanup auth state file:', error)
     }
-    
   } catch (error) {
     console.error('❌ Global teardown error:', error)
   } finally {
     await apiContext.dispose()
   }
-  
+
   console.log('🎉 Global teardown completed!')
 }
 

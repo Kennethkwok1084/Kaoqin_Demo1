@@ -4,7 +4,6 @@ import { LoginPage, DashboardPage, TasksPage } from './pages/index'
 // 测试用例：登录 → 创建任务 → 查看工时的完整流程
 test.describe('登录→创建任务→查看工时端到端流程', () => {
   let page: Page
-  let loginPage: LoginPage
   let dashboardPage: DashboardPage
   let tasksPage: TasksPage
 
@@ -95,8 +94,12 @@ test.describe('登录→创建任务→查看工时端到端流程', () => {
       // 验证任务详情显示正确
       await expect(page.locator('.task-detail')).toBeVisible()
       await expect(page.locator('.task-title')).toContainText(testTask.title)
-      await expect(page.locator('.task-description')).toContainText(testTask.description)
-      await expect(page.locator('.task-location')).toContainText(testTask.location)
+      await expect(page.locator('.task-description')).toContainText(
+        testTask.description
+      )
+      await expect(page.locator('.task-location')).toContainText(
+        testTask.location
+      )
 
       // 验证工时记录区域
       await expect(page.locator('.work-hours-section')).toBeVisible()
@@ -122,7 +125,9 @@ test.describe('登录→创建任务→查看工时端到端流程', () => {
       // 验证工时记录保存成功
       await expect(page.locator('.success-message')).toBeVisible()
       await expect(page.locator('.work-hour-item')).toContainText('2.5')
-      await expect(page.locator('.work-hour-item')).toContainText('修复图书馆空调系统')
+      await expect(page.locator('.work-hour-item')).toContainText(
+        '修复图书馆空调系统'
+      )
     })
 
     // 步骤6: 验证工时统计
@@ -130,7 +135,7 @@ test.describe('登录→创建任务→查看工时端到端流程', () => {
       // 检查工时统计信息
       await expect(page.locator('.total-hours')).toContainText('2.5')
       await expect(page.locator('.task-status')).toContainText('进行中')
-      
+
       // 验证工时历史记录
       await expect(page.locator('.work-hours-history')).toBeVisible()
       await expect(page.locator('.work-hour-item').first()).toBeVisible()
@@ -142,7 +147,7 @@ test.describe('登录→创建任务→查看工时端到端流程', () => {
     // 使用fresh page避免使用预设认证状态
     const freshLoginPage = new LoginPage(freshPage)
     const freshDashboardPage = new DashboardPage(freshPage)
-    
+
     await test.step('访问登录页面', async () => {
       await freshLoginPage.goto()
       await freshLoginPage.expectLoginForm()
@@ -158,17 +163,42 @@ test.describe('登录→创建任务→查看工时端到端流程', () => {
   // 错误场景测试
   test('错误处理：无效登录凭据', async ({ page: freshPage }) => {
     const freshLoginPage = new LoginPage(freshPage)
-    
+
     await freshLoginPage.goto()
     await freshLoginPage.login('invalid_user', 'wrong_password')
-    
+
     // 验证错误消息显示
     await freshLoginPage.expectErrorMessage()
-    
+
     // 确保仍在登录页面
     await expect(freshPage.url()).toContain('/login')
   })
 })
+
+test.describe('任务创建和工时管理完整流程', () => {
+  const testTask = {
+    title: '测试维修任务',
+    description: '这是一个测试用的维修任务',
+    task_type: 'repair',
+    priority: 'high',
+    location: '图书馆301',
+    reporter_name: '张同学',
+    reporter_phone: '13800138000'
+  }
+
+  test('创建任务并查看工时', async ({ page }) => {
+    // 先登录
+    const loginPage = new LoginPage(page)
+    await loginPage.goto()
+    await loginPage.login('admin', 'admin123')
+    await page.waitForURL('**/dashboard')
+
+    // 导航到任务页面
+    await page.click('text=任务管理')
+
+    // 创建新任务
+    await test.step('创建新任务', async () => {
+      await page.click('text=新建任务')
 
       // 等待任务创建对话框出现
       await expect(page.locator('.el-dialog')).toBeVisible()
@@ -466,7 +496,7 @@ test.describe('登录→创建任务→查看工时端到端流程', () => {
     })
   })
 
-  test('错误处理：网络异常情况', async () => {
+  test('错误处理：网络异常情况', async ({ page }) => {
     // 模拟网络异常
     await page.route('**/api/**', route => {
       route.abort('failed')

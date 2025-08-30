@@ -147,6 +147,8 @@ export class TasksPage {
   }
 
   async expectTaskInList(taskTitle: string) {
-    await expect(this.page.locator(`.task-item:has-text("${taskTitle}")`)).toBeVisible()
+    await expect(
+      this.page.locator(`.task-item:has-text("${taskTitle}")`)
+    ).toBeVisible()
   }
 }

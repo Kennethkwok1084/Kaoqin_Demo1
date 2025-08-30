@@ -8,28 +8,33 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 export default defineConfig({
   plugins: [
     vue(),
-    AutoImport({
-      resolvers: [ElementPlusResolver()],
-      imports: [
-        'vue',
-        'vue-router',
-        'pinia',
-        'vitest',
-        {
-          'element-plus': [
-            'ElMessage',
-            'ElMessageBox',
-            'ElNotification',
-            'ElLoading'
-          ]
-        }
-      ],
-      dts: true
-    }),
-    Components({
-      resolvers: [ElementPlusResolver()],
-      dts: true
-    })
+    // 在测试环境中禁用 Element Plus 自动导入以避免图标问题
+    ...(process.env.NODE_ENV !== 'test'
+      ? [
+          AutoImport({
+            resolvers: [ElementPlusResolver()],
+            imports: [
+              'vue',
+              'vue-router',
+              'pinia',
+              'vitest',
+              {
+                'element-plus': [
+                  'ElMessage',
+                  'ElMessageBox',
+                  'ElNotification',
+                  'ElLoading'
+                ]
+              }
+            ],
+            dts: true
+          }),
+          Components({
+            resolvers: [ElementPlusResolver()],
+            dts: true
+          })
+        ]
+      : [])
   ],
 
   resolve: {
@@ -59,6 +64,9 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
+    env: {
+      NODE_ENV: 'test'
+    },
     css: {
       modules: {
         classNameStrategy: 'non-scoped'

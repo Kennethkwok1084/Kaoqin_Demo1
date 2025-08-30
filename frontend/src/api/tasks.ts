@@ -69,11 +69,13 @@ export const tasksApi = {
     const formData = new FormData()
 
     // 处理文件上传
-    if (data.attachments) {
-      data.attachments.forEach((file, index) => {
-        formData.append(`attachments[${index}]`, file)
-      })
-      delete data.attachments
+    if ((data as any).attachments) {
+      ;((data as any).attachments as File[]).forEach(
+        (file: File, index: number) => {
+          formData.append(`attachments[${index}]`, file)
+        }
+      )
+      delete (data as any).attachments
     }
 
     Object.entries(data).forEach(([key, value]) => {
@@ -86,20 +88,28 @@ export const tasksApi = {
       }
     })
 
-    const response = await http.post<Task>('/tasks', formData, {
+    const response = await http.post<{
+      success: boolean
+      message: string
+      data: Task
+    }>('/tasks', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     })
-    return response.data
+    return response.data.data || (response.data as any)
   },
 
   /**
    * 更新任务
    */
   async updateTask(id: number, data: UpdateTaskRequest): Promise<Task> {
-    const response = await http.put<Task>(`/tasks/${id}`, data)
-    return response.data
+    const response = await http.put<{
+      success: boolean
+      message: string
+      data: Task
+    }>(`/tasks/${id}`, data)
+    return response.data.data || (response.data as any)
   },
 
   /**
@@ -120,44 +130,64 @@ export const tasksApi = {
    * 分配任务
    */
   async assignTask(id: number, assigneeId: number): Promise<Task> {
-    const response = await http.post<Task>(`/tasks/${id}/assign`, {
+    const response = await http.post<{
+      success: boolean
+      message: string
+      data: Task
+    }>(`/tasks/${id}/assign`, {
       assigneeId
     })
-    return response.data
+    return response.data.data || (response.data as any)
   },
 
   /**
    * 开始任务
    */
   async startTask(id: number): Promise<Task> {
-    const response = await http.post<Task>(`/tasks/${id}/start`)
-    return response.data
+    const response = await http.post<{
+      success: boolean
+      message: string
+      data: Task
+    }>(`/tasks/${id}/start`)
+    return response.data.data || (response.data as any)
   },
 
   /**
    * 完成任务
    */
   async completeTask(id: number, actualHours?: number): Promise<Task> {
-    const response = await http.post<Task>(`/tasks/${id}/complete`, {
+    const response = await http.post<{
+      success: boolean
+      message: string
+      data: Task
+    }>(`/tasks/${id}/complete`, {
       actualHours
     })
-    return response.data
+    return response.data.data || (response.data as any)
   },
 
   /**
    * 取消任务
    */
   async cancelTask(id: number, reason: string): Promise<Task> {
-    const response = await http.post<Task>(`/tasks/${id}/cancel`, { reason })
-    return response.data
+    const response = await http.post<{
+      success: boolean
+      message: string
+      data: Task
+    }>(`/tasks/${id}/cancel`, { reason })
+    return response.data.data || (response.data as any)
   },
 
   /**
    * 重新打开任务
    */
   async reopenTask(id: number, reason: string): Promise<Task> {
-    const response = await http.post<Task>(`/tasks/${id}/reopen`, { reason })
-    return response.data
+    const response = await http.post<{
+      success: boolean
+      message: string
+      data: Task
+    }>(`/tasks/${id}/reopen`, { reason })
+    return response.data.data || (response.data as any)
   },
 
   /**
@@ -188,10 +218,14 @@ export const tasksApi = {
    * 添加任务评论
    */
   async addComment(taskId: number, content: string): Promise<TaskComment> {
-    const response = await http.post<TaskComment>(`/tasks/${taskId}/comments`, {
+    const response = await http.post<{
+      success: boolean
+      message: string
+      data: TaskComment
+    }>(`/tasks/${taskId}/comments`, {
       content
     })
-    return response.data
+    return response.data.data || (response.data as any)
   },
 
   /**
@@ -205,8 +239,12 @@ export const tasksApi = {
    * 获取任务评论列表
    */
   async getComments(taskId: number): Promise<TaskComment[]> {
-    const response = await http.get<TaskComment[]>(`/tasks/${taskId}/comments`)
-    return response.data
+    const response = await http.get<{
+      success: boolean
+      message: string
+      data: TaskComment[]
+    }>(`/tasks/${taskId}/comments`)
+    return response.data.data || (response.data as any) || []
   },
 
   /**
@@ -217,19 +255,24 @@ export const tasksApi = {
     rating: number,
     comment: string
   ): Promise<TaskEvaluation> {
-    const response = await http.post<TaskEvaluation>(
-      `/tasks/${taskId}/evaluate`,
-      { rating, comment }
-    )
-    return response.data
+    const response = await http.post<{
+      success: boolean
+      message: string
+      data: TaskEvaluation
+    }>(`/tasks/${taskId}/evaluate`, { rating, comment })
+    return response.data.data || (response.data as any)
   },
 
   /**
    * 获取任务工时记录
    */
   async getWorkLogs(taskId: number): Promise<TaskWorkLog[]> {
-    const response = await http.get<TaskWorkLog[]>(`/tasks/${taskId}/work-logs`)
-    return response.data
+    const response = await http.get<{
+      success: boolean
+      message: string
+      data: TaskWorkLog[]
+    }>(`/tasks/${taskId}/work-logs`)
+    return response.data.data || (response.data as any) || []
   },
 
   /**
@@ -240,11 +283,12 @@ export const tasksApi = {
     description: string,
     hours: number
   ): Promise<TaskWorkLog> {
-    const response = await http.post<TaskWorkLog>(
-      `/tasks/${taskId}/work-logs`,
-      { description, hours }
-    )
-    return response.data
+    const response = await http.post<{
+      success: boolean
+      message: string
+      data: TaskWorkLog
+    }>(`/tasks/${taskId}/work-logs`, { description, hours })
+    return response.data.data || (response.data as any)
   },
 
   /**
@@ -264,12 +308,16 @@ export const tasksApi = {
     const formData = new FormData()
     formData.append('file', file)
 
-    const response = await http.post(`/tasks/${taskId}/attachments`, formData, {
+    const response = await http.post<{
+      success: boolean
+      message: string
+      data: { id: number; fileName: string; fileUrl: string }
+    }>(`/tasks/${taskId}/attachments`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     })
-    return response.data
+    return response.data.data || (response.data as any)
   },
 
   /**
@@ -361,26 +409,38 @@ export const tasksApi = {
    * 获取任务标签列表
    */
   async getTags(): Promise<string[]> {
-    const response = await http.get<string[]>('/tasks/tags')
-    return response.data
+    const response = await http.get<{
+      success: boolean
+      message: string
+      data: string[]
+    }>('/tasks/tags')
+    return response.data.data || (response.data as any) || []
   },
 
   /**
    * 搜索任务
    */
   async searchTasks(query: string, filters?: any): Promise<Task[]> {
-    const response = await http.get<Task[]>('/tasks/search', {
+    const response = await http.get<{
+      success: boolean
+      message: string
+      data: Task[]
+    }>('/tasks/search', {
       params: { q: query, ...filters }
     })
-    return response.data
+    return response.data.data || (response.data as any) || []
   },
 
   /**
    * 获取任务历史记录
    */
   async getTaskHistory(taskId: number): Promise<any[]> {
-    const response = await http.get<any[]>(`/tasks/${taskId}/history`)
-    return response.data
+    const response = await http.get<{
+      success: boolean
+      message: string
+      data: any[]
+    }>(`/tasks/${taskId}/history`)
+    return response.data.data || (response.data as any) || []
   },
 
   /**
@@ -402,7 +462,11 @@ export const tasksApi = {
     data: any[],
     type: 'a-table' | 'b-table'
   ): Promise<{ valid: boolean; errors: string[] }> {
-    const response = await http.post('/tasks/maintenance-orders/validate', {
+    const response = await http.post<{
+      success: boolean
+      message: string
+      data: { valid: boolean; errors: string[] }
+    }>('/tasks/maintenance-orders/validate', {
       data,
       type
     })

@@ -95,7 +95,7 @@ export default defineConfig({
 
   /* Output directory for test artifacts */
   outputDir: 'test-results/',
-  
+
   /* Test metadata */
   metadata: {
     author: 'E2E Test Suite',

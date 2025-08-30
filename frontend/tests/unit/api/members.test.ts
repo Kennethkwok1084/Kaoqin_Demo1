@@ -452,7 +452,9 @@ describe('Members API', () => {
 
       const result = await getMemberStats(params)
 
-      expect(http.get).toHaveBeenCalledWith('/members/stats/overview', { params })
+      expect(http.get).toHaveBeenCalledWith('/members/stats/overview', {
+        params
+      })
       expect(result).toEqual(mockStats)
     })
   })

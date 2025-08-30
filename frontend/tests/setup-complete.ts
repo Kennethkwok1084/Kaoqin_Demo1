@@ -1,7 +1,5 @@
 import { config } from '@vue/test-utils'
 import { vi } from 'vitest'
-import { createApp } from 'vue'
-import ElementPlus from 'element-plus'
 
 // 创建Element Plus完整组件存根
 const createElementPlusStubs = () => ({
@@ -14,7 +12,7 @@ const createElementPlusStubs = () => ({
   'el-badge': { template: '<span class="el-badge"><slot /></span>' },
   'el-tag': { template: '<span class="el-tag"><slot /></span>' },
   'el-progress': { template: '<div class="el-progress"><slot /></div>' },
-  
+
   // 表单组件
   'el-form': { template: '<form class="el-form"><slot /></form>' },
   'el-form-item': { template: '<div class="el-form-item"><slot /></div>' },
@@ -23,34 +21,38 @@ const createElementPlusStubs = () => ({
   'el-option': { template: '<option class="el-option"><slot /></option>' },
   'el-radio-group': { template: '<div class="el-radio-group"><slot /></div>' },
   'el-radio': { template: '<input type="radio" class="el-radio" />' },
-  'el-radio-button': { template: '<button class="el-radio-button"><slot /></button>' },
+  'el-radio-button': {
+    template: '<button class="el-radio-button"><slot /></button>'
+  },
   'el-checkbox': { template: '<input type="checkbox" class="el-checkbox" />' },
   'el-switch': { template: '<div class="el-switch"></div>' },
   'el-date-picker': { template: '<input class="el-date-picker" />' },
-  
+
   // 表格组件
   'el-table': { template: '<table class="el-table"><slot /></table>' },
   'el-table-column': { template: '<th class="el-table-column"><slot /></th>' },
-  
+
   // 导航组件
   'el-menu': { template: '<nav class="el-menu"><slot /></nav>' },
   'el-menu-item': { template: '<div class="el-menu-item"><slot /></div>' },
   'el-sub-menu': { template: '<div class="el-sub-menu"><slot /></div>' },
   'el-breadcrumb': { template: '<nav class="el-breadcrumb"><slot /></nav>' },
-  'el-breadcrumb-item': { template: '<span class="el-breadcrumb-item"><slot /></span>' },
-  
+  'el-breadcrumb-item': {
+    template: '<span class="el-breadcrumb-item"><slot /></span>'
+  },
+
   // 反馈组件
   'el-dialog': { template: '<div class="el-dialog"><slot /></div>' },
   'el-popover': { template: '<div class="el-popover"><slot /></div>' },
   'el-tooltip': { template: '<div class="el-tooltip"><slot /></div>' },
-  
+
   // 其他
   'el-pagination': { template: '<div class="el-pagination"></div>' },
   'el-loading': { template: '<div class="el-loading"></div>' },
   'el-empty': { template: '<div class="el-empty"><slot /></div>' },
-  
+
   // 路由组件存根
-  'router-link': { 
+  'router-link': {
     template: '<a class="router-link"><slot /></a>',
     props: ['to']
   },
@@ -62,11 +64,11 @@ config.global.stubs = createElementPlusStubs()
 
 // Mock localStorage
 const localStorageMock = {
-  getItem: vi.fn((key) => localStorageMock._storage[key] || null),
+  getItem: vi.fn(key => localStorageMock._storage[key] || null),
   setItem: vi.fn((key, value) => {
     localStorageMock._storage[key] = String(value)
   }),
-  removeItem: vi.fn((key) => {
+  removeItem: vi.fn(key => {
     delete localStorageMock._storage[key]
   }),
   clear: vi.fn(() => {
@@ -123,39 +125,47 @@ vi.mock('*.stylus', () => ({}))
 // 完整的API Mock配置
 vi.mock('@/api/statistics', () => ({
   statisticsApi: {
-    getOverview: vi.fn(() => Promise.resolve({
-      data: {
-        totalMembers: 50,
-        activeMembers: 45,
-        totalTasks: 120,
-        completedTasks: 100,
-        pendingTasks: 20,
-        totalWorkHours: 2400,
-        avgWorkHours: 48,
-        efficiency: 85.5
-      }
-    })),
-    getWorkHoursStats: vi.fn(() => Promise.resolve({
-      data: {
-        thisMonth: 480,
-        lastMonth: 450,
-        growth: 6.7,
-        daily: []
-      }
-    })),
-    getTaskStats: vi.fn(() => Promise.resolve({
-      data: {
-        byType: {},
-        byStatus: {},
-        trend: []
-      }
-    })),
-    getMemberStats: vi.fn(() => Promise.resolve({
-      data: {
-        topPerformers: [],
-        departmentStats: []
-      }
-    }))
+    getOverview: vi.fn(() =>
+      Promise.resolve({
+        data: {
+          totalMembers: 50,
+          activeMembers: 45,
+          totalTasks: 120,
+          completedTasks: 100,
+          pendingTasks: 20,
+          totalWorkHours: 2400,
+          avgWorkHours: 48,
+          efficiency: 85.5
+        }
+      })
+    ),
+    getWorkHoursStats: vi.fn(() =>
+      Promise.resolve({
+        data: {
+          thisMonth: 480,
+          lastMonth: 450,
+          growth: 6.7,
+          daily: []
+        }
+      })
+    ),
+    getTaskStats: vi.fn(() =>
+      Promise.resolve({
+        data: {
+          byType: {},
+          byStatus: {},
+          trend: []
+        }
+      })
+    ),
+    getMemberStats: vi.fn(() =>
+      Promise.resolve({
+        data: {
+          topPerformers: [],
+          departmentStats: []
+        }
+      })
+    )
   }
 }))
 
@@ -195,7 +205,7 @@ vi.mock('@/api/client', () => ({
 vi.mock('pinia', () => ({
   createPinia: vi.fn(),
   defineStore: vi.fn(() => vi.fn()),
-  storeToRefs: vi.fn((store) => store),
+  storeToRefs: vi.fn(store => store),
   setActivePinia: vi.fn(),
   getActivePinia: vi.fn()
 }))

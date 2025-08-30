@@ -173,7 +173,10 @@ const handleSubmit = async () => {
       submitData.checkOutTime = `${props.record.date} ${formData.checkOutTime}:00`
     }
 
-    await attendanceApi.correctAttendance(props.record.id, submitData)
+    await attendanceApi.correctAttendance({
+      id: props.record.id,
+      ...submitData
+    })
 
     ElMessage.success('考勤记录修正成功')
     emit('success')

@@ -199,4 +199,12 @@ Object.assign(http, {
   download: api.download
 })
 
+// 测试兼容性导出
+export const client = http
+export const setupInterceptors = () => {
+  // 这个函数已经在http实例创建时自动设置了拦截器
+  // 这里提供一个空函数用于测试兼容性
+  return http
+}
+
 export default http

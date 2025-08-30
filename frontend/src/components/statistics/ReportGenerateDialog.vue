@@ -181,19 +181,14 @@ const handleGenerate = async () => {
     loading.value = true
 
     const reportData: ReportTemplate = {
-      id: Date.now() as any,
+      id: Date.now().toString(),
       name: getReportTypeName(form.type),
       type: form.type as any,
       description: form.description,
-      config: {
-        dateRange: form.dateRange,
-        departments: form.departments,
-        members: form.members,
-        format: form.format,
-        includeCharts: form.includeCharts
-      },
-      createdAt: new Date(),
-      updatedAt: new Date()
+      categories: ['tasks', 'attendance', 'performance'],
+      metrics: ['completion_rate', 'attendance_rate'],
+      charts: ['overview', 'trends'],
+      format: form.format as any
     }
 
     await statisticsApi.generateReport(reportData as any)

@@ -83,8 +83,8 @@ describe('Global Store', () => {
       const breadcrumb = { title: '首页', path: '/dashboard' }
 
       globalStore.addBreadcrumb(breadcrumb)
-      expect(globalStore.breadcrumbs).toContain(breadcrumb)
       expect(globalStore.breadcrumbs).toHaveLength(1)
+      expect(globalStore.breadcrumbs[0]).toEqual(breadcrumb)
     })
 
     it('should clear breadcrumbs', () => {
@@ -138,38 +138,21 @@ describe('Global Store', () => {
     it('should compute isMobile correctly', () => {
       const globalStore = useGlobalStore()
 
-      // Mock window.innerWidth
-      Object.defineProperty(window, 'innerWidth', {
-        writable: true,
-        configurable: true,
-        value: 1200
-      })
+      // Use setWindowWidth method to trigger reactive updates
+      globalStore.setWindowWidth(1200)
       expect(globalStore.isMobile).toBe(false)
 
-      Object.defineProperty(window, 'innerWidth', {
-        writable: true,
-        configurable: true,
-        value: 600
-      })
-      // 注意：这里可能需要触发响应式更新
+      globalStore.setWindowWidth(600)
       expect(globalStore.isMobile).toBe(true)
     })
 
     it('should compute isTablet correctly', () => {
       const globalStore = useGlobalStore()
 
-      Object.defineProperty(window, 'innerWidth', {
-        writable: true,
-        configurable: true,
-        value: 1000
-      })
+      globalStore.setWindowWidth(1000)
       expect(globalStore.isTablet).toBe(true)
 
-      Object.defineProperty(window, 'innerWidth', {
-        writable: true,
-        configurable: true,
-        value: 600
-      })
+      globalStore.setWindowWidth(600)
       expect(globalStore.isTablet).toBe(false)
     })
   })

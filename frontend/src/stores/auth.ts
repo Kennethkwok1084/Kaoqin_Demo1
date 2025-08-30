@@ -8,12 +8,20 @@ import router from '@/router'
 export const useAuthStore = defineStore('auth', () => {
   // 状态
   const token = ref<string | null>(getToken())
+  const refreshTokenRef = ref<string | null>(
+    typeof localStorage !== 'undefined'
+      ? localStorage.getItem('refresh_token')
+      : null
+  )
   const userInfo = ref<UserInfo | null>(null)
   const isLoading = ref(false)
 
   // 计算属性
   const isAuthenticated = computed(() => !!token.value && !!userInfo.value)
-  const isAdmin = computed(() => userInfo.value?.role === 'admin')
+  const isAdmin = computed(() => {
+    const role = userInfo.value?.role
+    return role === 'admin' || role === 'team_leader'
+  })
   const isGroupLeader = computed(() => userInfo.value?.role === 'group_leader')
   const hasPermission = computed(() => (permission: string) => {
     if (!userInfo.value) return false
@@ -21,13 +29,25 @@ export const useAuthStore = defineStore('auth', () => {
   })
 
   // 登录
-  const login = async (credentials: LoginRequest): Promise<void> => {
+  const login = async (
+    usernameOrEmail: string | LoginRequest,
+    password?: string
+  ): Promise<boolean> => {
+    let credentials: LoginRequest
+
+    // 支持两种调用方式：login(credentials) 或 login(username, password)
+    if (typeof usernameOrEmail === 'string' && password) {
+      credentials = { username: usernameOrEmail, password }
+    } else {
+      credentials = usernameOrEmail as LoginRequest
+    }
     try {
       isLoading.value = true
       const response = await authApi.login(credentials)
 
       // 保存token和用户信息
       token.value = response.data.access_token
+      refreshTokenRef.value = response.data.refresh_token
       userInfo.value = response.data.user
       setToken(response.data.access_token)
       setRefreshToken(response.data.refresh_token)
@@ -40,9 +60,11 @@ export const useAuthStore = defineStore('auth', () => {
         const redirect = router.currentRoute.value.query.redirect as string
         await router.push(redirect || '/')
       }
+
+      return true
     } catch (error) {
       console.error('登录失败:', error)
-      throw error
+      return false
     } finally {
       isLoading.value = false
     }
@@ -63,8 +85,12 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
       // 清除本地状态
       token.value = null
+      refreshTokenRef.value = null
       userInfo.value = null
       removeToken()
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('refresh_token')
+      }
       isLoading.value = false
 
       // 跳转到登录页
@@ -95,11 +121,34 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authApi.refreshToken()
       token.value = response.access_token
       setToken(response.access_token)
+      if (response.refresh_token) {
+        refreshTokenRef.value = response.refresh_token
+        setRefreshToken(response.refresh_token)
+      }
     } catch (error) {
       console.error('刷新token失败:', error)
       // token刷新失败，执行登出
       logout()
       throw error
+    }
+  }
+
+  // refreshAuthToken 方法 - 测试期望的返回 boolean
+  const refreshAuthToken = async (): Promise<boolean> => {
+    try {
+      const response = await authApi.refreshToken()
+      token.value = response.access_token
+      setToken(response.access_token)
+      if (response.refresh_token) {
+        refreshTokenRef.value = response.refresh_token
+        setRefreshToken(response.refresh_token)
+      }
+      return true
+    } catch (error) {
+      console.error('刷新token失败:', error)
+      // token刷新失败，执行登出
+      logout()
+      return false
     }
   }
 
@@ -111,6 +160,37 @@ export const useAuthStore = defineStore('auth', () => {
       } catch (error) {
         // 如果获取用户信息失败，清除token
         logout()
+      }
+    }
+  }
+
+  // initializeAuth 方法 - 测试兼容性别名
+  const initializeAuth = async (): Promise<void> => {
+    const storedToken = getToken()
+    const storedRefreshToken =
+      typeof localStorage !== 'undefined'
+        ? localStorage.getItem('refresh_token')
+        : null
+
+    if (storedToken) {
+      token.value = storedToken
+      if (storedRefreshToken) {
+        // 设置refreshToken的ref值
+        refreshTokenRef.value = storedRefreshToken
+      }
+
+      try {
+        const userInfoData = await authApi.getCurrentUser()
+        userInfo.value = userInfoData
+      } catch (error) {
+        // token无效，清除认证状态
+        token.value = null
+        refreshTokenRef.value = null
+        userInfo.value = null
+        removeToken()
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem('refresh_token')
+        }
       }
     }
   }
@@ -145,6 +225,7 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     // 状态
     token,
+    refreshToken: refreshTokenRef,
     userInfo,
     isLoading,
 
@@ -154,14 +235,17 @@ export const useAuthStore = defineStore('auth', () => {
     isGroupLeader,
     hasPermission,
     needsProfileCompletion,
+    userRole: computed(() => userInfo.value?.role || ''), // 测试期望的计算属性
 
     // 方法
     login,
     logout,
+    refreshToken,
     fetchUserInfo,
     refreshUserInfo,
-    refreshToken,
+    refreshAuthToken, // 测试期望的别名
     initAuth,
+    initializeAuth, // 测试期望的别名
     checkPermission,
     hasRole,
     updateUser

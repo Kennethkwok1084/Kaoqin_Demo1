@@ -167,9 +167,12 @@ const chartData = ref<any[]>([])
 const dataColumns = ref<any[]>([])
 
 const chartFilters = reactive<StatisticsFilters>({
-  dateRange: [new Date(2024, 0, 1), new Date()],
+  dateRange: [
+    new Date(2024, 0, 1).toISOString().split('T')[0],
+    new Date().toISOString().split('T')[0]
+  ],
   dimension: 'month'
-})
+} as any)
 
 watch(
   () => props.visible,
@@ -225,11 +228,13 @@ const loadChartData = async () => {
   if (!props.chartConfig) return
 
   try {
-    const response = await statisticsApi.getChartData(
-      props.chartConfig.id,
-      chartFilters
-    )
-    chartData.value = response.data
+    const response = await statisticsApi.getChartData({
+      type: props.chartConfig.type || 'chart',
+      metric: props.chartConfig.id || 'overview',
+      filters: chartFilters
+    })
+    chartData.value =
+      (response as any).datasets || response.data || (response as any) || []
 
     // 设置数据表格列
     if (chartData.value.length > 0) {
@@ -392,8 +397,10 @@ const downloadChart = (format: string) => {
   if (!chartInstance.value) return
 
   try {
+    const validType =
+      format === 'jpg' ? 'jpeg' : (format as 'svg' | 'png' | 'jpeg')
     const url = chartInstance.value.getDataURL({
-      type: format === 'jpg' ? 'jpeg' : format,
+      type: validType,
       pixelRatio: 2,
       backgroundColor: '#fff'
     })

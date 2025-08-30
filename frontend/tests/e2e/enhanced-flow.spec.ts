@@ -4,7 +4,6 @@ import { LoginPage, DashboardPage, TasksPage } from './pages/index'
 // 测试用例：登录 → 创建任务 → 查看工时的完整流程
 test.describe('登录→创建任务→查看工时端到端流程', () => {
   let page: Page
-  let loginPage: LoginPage
   let dashboardPage: DashboardPage
   let tasksPage: TasksPage
 
@@ -95,8 +94,12 @@ test.describe('登录→创建任务→查看工时端到端流程', () => {
       // 验证任务详情显示正确
       await expect(page.locator('.task-detail')).toBeVisible()
       await expect(page.locator('.task-title')).toContainText(testTask.title)
-      await expect(page.locator('.task-description')).toContainText(testTask.description)
-      await expect(page.locator('.task-location')).toContainText(testTask.location)
+      await expect(page.locator('.task-description')).toContainText(
+        testTask.description
+      )
+      await expect(page.locator('.task-location')).toContainText(
+        testTask.location
+      )
 
       // 验证工时记录区域
       await expect(page.locator('.work-hours-section')).toBeVisible()
@@ -122,7 +125,9 @@ test.describe('登录→创建任务→查看工时端到端流程', () => {
       // 验证工时记录保存成功
       await expect(page.locator('.success-message')).toBeVisible()
       await expect(page.locator('.work-hour-item')).toContainText('2.5')
-      await expect(page.locator('.work-hour-item')).toContainText('修复图书馆空调系统')
+      await expect(page.locator('.work-hour-item')).toContainText(
+        '修复图书馆空调系统'
+      )
     })
 
     // 步骤6: 验证工时统计
@@ -130,7 +135,7 @@ test.describe('登录→创建任务→查看工时端到端流程', () => {
       // 检查工时统计信息
       await expect(page.locator('.total-hours')).toContainText('2.5')
       await expect(page.locator('.task-status')).toContainText('进行中')
-      
+
       // 验证工时历史记录
       await expect(page.locator('.work-hours-history')).toBeVisible()
       await expect(page.locator('.work-hour-item').first()).toBeVisible()
@@ -142,7 +147,7 @@ test.describe('登录→创建任务→查看工时端到端流程', () => {
     // 使用fresh page避免使用预设认证状态
     const freshLoginPage = new LoginPage(freshPage)
     const freshDashboardPage = new DashboardPage(freshPage)
-    
+
     await test.step('访问登录页面', async () => {
       await freshLoginPage.goto()
       await freshLoginPage.expectLoginForm()
@@ -158,13 +163,13 @@ test.describe('登录→创建任务→查看工时端到端流程', () => {
   // 错误场景测试
   test('错误处理：无效登录凭据', async ({ page: freshPage }) => {
     const freshLoginPage = new LoginPage(freshPage)
-    
+
     await freshLoginPage.goto()
     await freshLoginPage.login('invalid_user', 'wrong_password')
-    
+
     // 验证错误消息显示
     await freshLoginPage.expectErrorMessage()
-    
+
     // 确保仍在登录页面
     await expect(freshPage.url()).toContain('/login')
   })

@@ -385,17 +385,39 @@
 
               <div class="task-card-content">
                 <div class="task-card-meta">
-                  <el-tag :type="getTypeTagType(task.type)" size="small">
-                    {{ (TASK_TYPE_CONFIG as any)[task.type]?.label }}
-                  </el-tag>
                   <el-tag
-                    :type="getPriorityTagType(task.priority)"
+                    :type="
+                      getTypeTagType(task.task_type || task.type || '') as any
+                    "
                     size="small"
                   >
-                    {{ (TASK_PRIORITY_CONFIG as any)[task.priority]?.label }}
+                    {{
+                      (TASK_TYPE_CONFIG as any)[
+                        task.task_type || task.type || ''
+                      ]?.label
+                    }}
                   </el-tag>
-                  <el-tag :type="getStatusTagType(task.status)" size="small">
-                    {{ (TASK_STATUS_CONFIG as any)[task.status]?.label }}
+                  <el-tag
+                    :type="getPriorityTagType(task.priority || '') as any"
+                    size="small"
+                  >
+                    {{
+                      (TASK_PRIORITY_CONFIG as any)[task.priority || '']?.label
+                    }}
+                  </el-tag>
+                  <el-tag
+                    :type="
+                      getStatusTagType(
+                        task.task_status || task.status || ''
+                      ) as any
+                    "
+                    size="small"
+                  >
+                    {{
+                      (TASK_STATUS_CONFIG as any)[
+                        task.task_status || task.status || ''
+                      ]?.label
+                    }}
                   </el-tag>
                 </div>
 
@@ -412,7 +434,7 @@
                   </div>
                   <div class="info-item">
                     <el-icon><Clock /></el-icon>
-                    {{ formatDate(task.dueDate) }}
+                    {{ formatDate(task.dueDate || task.due_date || '') }}
                   </div>
                 </div>
               </div>
@@ -420,7 +442,9 @@
               <div class="task-card-footer">
                 <el-progress
                   :percentage="getTaskProgress(task)"
-                  :color="getProgressColor(task.status)"
+                  :color="
+                    getProgressColor(task.task_status || task.status || '')
+                  "
                 />
               </div>
             </div>
@@ -543,12 +567,12 @@ const tasks = ref<Task[]>([])
 const taskStats = reactive<TaskStats>({
   total: 0,
   pending: 0,
-  inProgress: 0,
+  in_progress: 0,
   completed: 0,
   cancelled: 0,
   overdue: 0,
-  byType: { repair: 0, monitoring: 0, assistance: 0 },
-  byPriority: { low: 0, medium: 0, high: 0, urgent: 0 }
+  total_work_hours: 0,
+  avg_work_hours: 0
 })
 
 const searchQuery = ref('')
@@ -624,7 +648,8 @@ const loadTasks = async () => {
 
     const params: TaskListParams = {
       page: pagination.page,
-      pageSize: pagination.pageSize,
+      page_size: pagination.pageSize,
+      pageSize: pagination.pageSize, // Keep for compatibility
       sortBy: sortConfig.sortBy,
       sortOrder: sortConfig.sortOrder,
       filters: {

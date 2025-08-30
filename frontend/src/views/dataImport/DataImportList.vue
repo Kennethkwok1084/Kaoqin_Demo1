@@ -150,7 +150,7 @@
 
         <el-table-column prop="templateName" label="模板类型" width="150">
           <template #default="{ row }">
-            <el-tag :type="getTemplateTypeColor(row.templateName)">
+            <el-tag :type="getTemplateTypeColor(row.templateName) as any">
               {{ getTemplateTypeText(row.templateName) }}
             </el-tag>
           </template>
@@ -158,7 +158,7 @@
 
         <el-table-column prop="status" label="状态" width="120">
           <template #default="{ row }">
-            <el-tag :type="getStatusColor(row.status)">
+            <el-tag :type="getStatusColor(row.status) as any">
               {{ getStatusText(row.status) }}
             </el-tag>
           </template>

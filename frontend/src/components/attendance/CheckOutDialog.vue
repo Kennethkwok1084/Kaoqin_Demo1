@@ -255,8 +255,8 @@ const getCurrentLocation = () => {
 const loadTodayStatus = async () => {
   try {
     const status = await attendanceApi.getTodayAttendanceStatus()
-    if (status.record?.checkInTime) {
-      checkInTime.value = formatTime((status as any).record?.checkInTime || '')
+    if (status?.checkInTime) {
+      checkInTime.value = formatTime(status.checkInTime || '')
     }
   } catch (error) {
     console.error('加载今日状态失败:', error)

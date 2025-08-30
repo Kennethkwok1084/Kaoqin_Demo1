@@ -550,7 +550,16 @@ const todaySummary = reactive<AttendanceSummary>({
   lateMembers: 0,
   leaveMembers: 0,
   attendanceRate: 0,
-  records: []
+  records: [],
+  // Add missing properties from WorkHoursSummary
+  total_members: 0,
+  active_members: 0,
+  total_hours: 0,
+  repair_hours: 0,
+  monitoring_hours: 0,
+  assistance_hours: 0,
+  average_hours: 0,
+  participation_rate: 0
 })
 
 // 今日状态
@@ -615,7 +624,7 @@ const loadAttendanceRecords = async () => {
     }
 
     const records = await attendanceApi.getWorkHoursRecords(params)
-    attendanceList.value = records
+    attendanceList.value = records as any // Type compatibility between WorkHoursRecord[] and AttendanceRecord[]
     pagination.total = records.length
   } catch (error) {
     console.error('加载工时记录失败:', error)
@@ -705,7 +714,9 @@ const handleExport = async () => {
     })
 
     if (result.success) {
-      ElMessage.success(`工时数据导出成功，共 ${result.total_records} 条记录`)
+      ElMessage.success(
+        `工时数据导出成功，共 ${(result as any).total_records || result.total || 0} 条记录`
+      )
       // 如果有下载链接，可以引导用户下载
       if (result.download_url) {
         ElMessage.info('文件已生成，请联系管理员获取下载链接')

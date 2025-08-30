@@ -8,7 +8,7 @@ declare interface ReportTemplate {
   id: string
   name: string
   description?: string
-  config?: any  // 允许config属性
+  config?: any // 允许config属性
   [key: string]: any
 }
 
@@ -18,7 +18,7 @@ declare interface CreateTaskRequest {
   description: string
   type: string
   priority: string
-  contactInfo?: any  // 允许contactInfo属性
+  contactInfo?: any // 允许contactInfo属性
   [key: string]: any
 }
 
@@ -31,7 +31,7 @@ declare interface AttendanceSummary {
   lateMembers: number
   leaveMembers: number
   attendanceRate: number
-  records?: any[]  // 允许records属性
+  records?: any[] // 允许records属性
   [key: string]: any
 }
 
@@ -39,7 +39,7 @@ declare interface AttendanceSummary {
 declare interface ChartData {
   labels?: string[]
   datasets?: any[]
-  data?: any  // 允许data属性
+  data?: any // 允许data属性
   [key: string]: any
 }
 
@@ -47,14 +47,14 @@ declare interface ChartData {
 declare type ExportFormat = 'svg' | 'png' | 'jpeg' | string
 
 // 修复任务类型枚举扩展
-declare type TaskTypeExtended = 
-  | 'monitoring' 
-  | 'assistance' 
-  | 'network_repair' 
-  | 'hardware_repair' 
-  | 'software_support' 
+declare type TaskTypeExtended =
+  | 'monitoring'
+  | 'assistance'
+  | 'network_repair'
+  | 'hardware_repair'
+  | 'software_support'
   | 'other'
-  | 'repair'  // 允许repair类型
-  | string    // 允许其他字符串类型
+  | 'repair' // 允许repair类型
+  | string // 允许其他字符串类型
 
 export {}

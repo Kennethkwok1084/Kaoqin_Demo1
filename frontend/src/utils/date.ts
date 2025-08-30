@@ -302,32 +302,25 @@ export function formatDuration(duration: number): string {
 /**
  * 获取月份的开始和结束日期
  * @param date 日期字符串或Date对象，默认为当前日期
- * @returns 月份开始和结束日期对象
+ * @returns 月份开始和结束日期字符串数组
  */
-export function getMonthRange(date?: string | Date): {
-  start: Date
-  end: Date
-} {
+export function getMonthRange(date?: string | Date): [string, string] {
   const target = dayjs(date)
-  return {
-    start: target.startOf('month').toDate(),
-    end: target.endOf('month').toDate()
-  }
+  const start = target.startOf('month').format('YYYY-MM-DD')
+  const end = target.endOf('month').format('YYYY-MM-DD')
+  return [start, end]
 }
 
 /**
  * 获取周的开始和结束日期
  * @param date 日期字符串或Date对象，默认为当前日期
- * @returns 周开始和结束日期对象
+ * @returns 周开始和结束日期字符串数组
  */
-export function getWeekRange(date?: string | Date): { start: Date; end: Date } {
+export function getWeekRange(date?: string | Date): [string, string] {
   const target = dayjs(date)
-  const start = target.startOf('week')
-  const end = start.add(6, 'day').endOf('day')
-  return {
-    start: start.toDate(),
-    end: end.toDate()
-  }
+  const start = target.startOf('week').format('YYYY-MM-DD')
+  const end = target.startOf('week').add(6, 'day').format('YYYY-MM-DD')
+  return [start, end]
 }
 
 /**

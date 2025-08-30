@@ -414,6 +414,7 @@
     <ChartFullScreenDialog
       :visible="showFullScreenDialog"
       :chart-config="fullScreenChartConfig"
+      :chart-title="fullScreenChartConfig?.title || '图表'"
       @update:visible="showFullScreenDialog = $event"
     />
 
@@ -857,7 +858,12 @@ const handleFilterChange = () => {
   })
 }
 
-const handleQuickFilter = (value: string) => {
+const viewTeamDetails = () => {
+  ElMessage.info('团队详细分析功能开发中')
+}
+
+const handleQuickFilter = (value: string | number | boolean | undefined) => {
+  if (typeof value !== 'string') return
   switch (value) {
     case 'today': {
       const today = new Date().toISOString().split('T')[0]

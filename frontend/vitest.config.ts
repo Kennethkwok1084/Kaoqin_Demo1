@@ -66,13 +66,7 @@ export default defineConfig({
       'src/**/__tests__/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
     // 优化：排除node_modules提高速度
-    exclude: [
-      '**/node_modules/**',
-      '**/dist/**',
-      '.idea/',
-      '.git/',
-      '.cache/'
-    ],
+    exclude: ['**/node_modules/**', '**/dist/**', '.idea/', '.git/', '.cache/'],
     // 测试超时设置
     testTimeout: 10000,
     // 优化并发性能

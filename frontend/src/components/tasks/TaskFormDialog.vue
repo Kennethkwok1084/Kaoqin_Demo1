@@ -292,16 +292,33 @@ const members = ref<Member[]>([])
 const availableTags = ref<string[]>([])
 const fileList = ref<UploadFile[]>([])
 
+// Form data interface that supports both formats
+interface TaskFormData extends CreateTaskRequest {
+  id?: number
+  type?: string
+  assigneeId?: number
+  estimatedHours?: number
+  dueDate?: string
+  tags?: string[]
+  attachments?: File[]
+  contactInfo?: string
+}
+
 // 表单数据
-const formData = reactive<CreateTaskRequest & { id?: number }>({
+const formData = reactive<TaskFormData>({
   title: '',
   description: '',
-  type: 'network_repair' as any,
+  task_type: 'repair',
+  type: 'repair',
   priority: 'medium',
+  assignee_id: undefined,
   assigneeId: undefined,
+  reporter_name: '',
   location: '',
   contactInfo: '',
+  estimated_hours: 2,
   estimatedHours: 2,
+  due_date: '',
   dueDate: '',
   tags: [],
   attachments: []
@@ -416,7 +433,7 @@ const handleFileChange = (file: UploadFile) => {
 
 const handleFileRemove = (file: UploadFile) => {
   if (formData.attachments && file.raw) {
-    const index = formData.attachments.findIndex(f => f === file.raw)
+    const index = formData.attachments.findIndex((f: File) => f === file.raw)
     if (index > -1) {
       formData.attachments.splice(index, 1)
     }

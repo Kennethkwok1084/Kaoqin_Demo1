@@ -183,7 +183,7 @@ export class MembersApi {
    * 导出成员数据
    */
   static async exportMembers(format: 'csv' | 'excel' = 'excel'): Promise<Blob> {
-    const response = await http.get('/members/export', { 
+    const response = await http.get('/members/export', {
       params: { format },
       responseType: 'blob'
     })
