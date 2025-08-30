@@ -274,7 +274,7 @@ Object.defineProperty(HTMLElement.prototype, 'getBoundingClientRect', {
 const elementPlusComponents = {
   'el-button': {
     template:
-      '<button :disabled="disabled" :type="type" :size="size" class="el-button"><slot /></button>',
+      '<button :disabled="disabled" :type="type" :class="buttonClass" class="el-button"><slot /></button>',
     props: [
       'type',
       'size',
@@ -284,22 +284,44 @@ const elementPlusComponents = {
       'round',
       'circle',
       'plain'
-    ]
+    ],
+    computed: {
+      buttonClass() {
+        const classes = []
+        if (this.size && ['default', 'small', 'large'].includes(this.size)) {
+          classes.push(`el-button--${this.size}`)
+        }
+        if (this.type) {
+          classes.push(`el-button--${this.type}`)
+        }
+        return classes.join(' ')
+      }
+    }
   },
   'el-input': {
     template:
-      '<input :value="modelValue" :placeholder="placeholder" :disabled="disabled" :type="type" :readonly="readonly" @input="$emit(\'update:modelValue\', $event.target.value)" class="el-input" />',
+      '<input :value="modelValue" :placeholder="placeholder" :disabled="disabled" :type="type" :readonly="readonly" :class="inputClass" class="el-input" @input="$emit(\'update:modelValue\', $event.target.value)" />',
     props: [
       'modelValue',
       'placeholder',
       'disabled',
       'type',
       'readonly',
+      'size',
       'clearable',
       'show-password',
       'prefix-icon',
       'suffix-icon'
     ],
+    computed: {
+      inputClass() {
+        const classes = []
+        if (this.size && ['default', 'small', 'large'].includes(this.size)) {
+          classes.push(`el-input--${this.size}`)
+        }
+        return classes.join(' ')
+      }
+    },
     emits: ['update:modelValue', 'input', 'change', 'focus', 'blur']
   },
   'el-form': {
@@ -986,19 +1008,35 @@ vi.mock('@/api/auth', () => ({
 
 // Tasks API Mock
 vi.mock('@/api/tasks', () => ({
-  getTasks: vi.fn(),
-  getTask: vi.fn(),
-  getTaskDetail: vi.fn(),
-  createTask: vi.fn(),
-  updateTask: vi.fn(),
-  deleteTask: vi.fn(),
-  getWorkLogs: vi.fn(),
-  getWorkTimeDetail: vi.fn(),
-  updateTaskStatus: vi.fn(),
-  batchUpdateTasks: vi.fn(),
-  batchDeleteTasks: vi.fn(),
-  exportTasks: vi.fn(),
-  importTasks: vi.fn()
+  tasksApi: {
+    getTasks: vi.fn(() => Promise.resolve({ items: [], total: 0, page: 1, pageSize: 20 })),
+    getTask: vi.fn(() => Promise.resolve({})),
+    getTaskDetail: vi.fn(() => Promise.resolve({})),
+    createTask: vi.fn(() => Promise.resolve({})),
+    updateTask: vi.fn(() => Promise.resolve({})),
+    deleteTask: vi.fn(() => Promise.resolve()),
+    getWorkLogs: vi.fn(() => Promise.resolve([])),
+    getWorkTimeDetail: vi.fn(() => Promise.resolve([])),
+    getTaskStats: vi.fn(() => Promise.resolve({})),
+    updateTaskStatus: vi.fn(() => Promise.resolve({})),
+    batchUpdateTasks: vi.fn(() => Promise.resolve()),
+    batchDeleteTasks: vi.fn(() => Promise.resolve()),
+    exportTasks: vi.fn(() => Promise.resolve()),
+    importTasks: vi.fn(() => Promise.resolve({ success: 0, failed: 0, errors: [] }))
+  },
+  getTasks: vi.fn(() => Promise.resolve({ items: [], total: 0, page: 1, pageSize: 20 })),
+  getTask: vi.fn(() => Promise.resolve({})),
+  getTaskDetail: vi.fn(() => Promise.resolve({})),
+  createTask: vi.fn(() => Promise.resolve({})),
+  updateTask: vi.fn(() => Promise.resolve({})),
+  deleteTask: vi.fn(() => Promise.resolve()),
+  getWorkLogs: vi.fn(() => Promise.resolve([])),
+  getWorkTimeDetail: vi.fn(() => Promise.resolve([])),
+  updateTaskStatus: vi.fn(() => Promise.resolve({})),
+  batchUpdateTasks: vi.fn(() => Promise.resolve()),
+  batchDeleteTasks: vi.fn(() => Promise.resolve()),
+  exportTasks: vi.fn(() => Promise.resolve()),
+  importTasks: vi.fn(() => Promise.resolve({ success: 0, failed: 0, errors: [] }))
 }))
 
 vi.mock('@/utils/date', () => ({
@@ -1224,11 +1262,24 @@ Object.defineProperty(global, 'document', {
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
-    createEvent: vi.fn(() => ({
-      initEvent: vi.fn(),
-      preventDefault: vi.fn(),
-      stopPropagation: vi.fn()
-    })),
+    createEvent: vi.fn((type) => {
+      const event = {
+        type: type || 'Event',
+        target: null,
+        currentTarget: null,
+        initEvent: vi.fn(),
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+        stopImmediatePropagation: vi.fn(),
+        bubbles: false,
+        cancelable: false,
+        defaultPrevented: false,
+        eventPhase: 0,
+        isTrusted: false,
+        timeStamp: Date.now()
+      }
+      return event
+    }),
     body: {
       appendChild: vi.fn(),
       removeChild: vi.fn(),
@@ -1278,6 +1329,56 @@ global.Image = vi.fn().mockImplementation(() => ({
   height: 0,
   onload: null,
   onerror: null
+}))
+
+// Event constructor mock
+global.Event = vi.fn().mockImplementation((type, options) => ({
+  type: type || 'Event',
+  target: null,
+  currentTarget: null,
+  bubbles: options?.bubbles || false,
+  cancelable: options?.cancelable || false,
+  composed: options?.composed || false,
+  defaultPrevented: false,
+  eventPhase: 0,
+  isTrusted: false,
+  timeStamp: Date.now(),
+  preventDefault: vi.fn(),
+  stopPropagation: vi.fn(),
+  stopImmediatePropagation: vi.fn()
+}))
+
+// Other event types
+global.MouseEvent = vi.fn().mockImplementation((type, options) => ({
+  ...new Event(type, options),
+  button: options?.button || 0,
+  buttons: options?.buttons || 0,
+  clientX: options?.clientX || 0,
+  clientY: options?.clientY || 0,
+  screenX: options?.screenX || 0,
+  screenY: options?.screenY || 0,
+  ctrlKey: options?.ctrlKey || false,
+  shiftKey: options?.shiftKey || false,
+  altKey: options?.altKey || false,
+  metaKey: options?.metaKey || false
+}))
+
+global.KeyboardEvent = vi.fn().mockImplementation((type, options) => ({
+  ...new Event(type, options),
+  key: options?.key || '',
+  code: options?.code || '',
+  keyCode: options?.keyCode || 0,
+  which: options?.which || 0,
+  ctrlKey: options?.ctrlKey || false,
+  shiftKey: options?.shiftKey || false,
+  altKey: options?.altKey || false,
+  metaKey: options?.metaKey || false
+}))
+
+global.InputEvent = vi.fn().mockImplementation((type, options) => ({
+  ...new Event(type, options),
+  data: options?.data || null,
+  inputType: options?.inputType || ''
 }))
 
 // CSS和静态资源Mock
