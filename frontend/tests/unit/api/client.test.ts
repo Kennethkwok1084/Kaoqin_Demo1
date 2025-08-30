@@ -14,10 +14,33 @@ vi.mock('element-plus', () => ({
   }
 }))
 
-// Mock axios
+// 完整的 axios Mock 配置
 vi.mock('axios', () => ({
+  create: vi.fn(() => ({
+    defaults: { headers: { common: {} } },
+    interceptors: {
+      request: { use: vi.fn() },
+      response: { use: vi.fn() }
+    },
+    get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    delete: vi.fn(),
+    patch: vi.fn()
+  })),
   default: {
-    create: vi.fn(),
+    create: vi.fn(() => ({
+      defaults: { headers: { common: {} } },
+      interceptors: {
+        request: { use: vi.fn() },
+        response: { use: vi.fn() }
+      },
+      get: vi.fn(),
+      post: vi.fn(),
+      put: vi.fn(),
+      delete: vi.fn(),
+      patch: vi.fn()
+    })),
     interceptors: {
       request: {
         use: vi.fn()

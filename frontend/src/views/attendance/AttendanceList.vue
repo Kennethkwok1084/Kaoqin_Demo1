@@ -142,7 +142,7 @@
               <el-button
                 v-if="todayStatus.canCheckIn"
                 type="primary"
-                size="large"
+                size="default"
                 :loading="checkingIn"
                 @click="handleCheckIn"
               >
@@ -153,7 +153,7 @@
               <el-button
                 v-if="todayStatus.canCheckOut"
                 type="success"
-                size="large"
+                size="default"
                 :loading="checkingOut"
                 @click="handleCheckOut"
               >
@@ -163,7 +163,7 @@
 
               <el-tag
                 v-if="!todayStatus.canCheckIn && !todayStatus.canCheckOut"
-                size="large"
+                size="default"
                 type="success"
               >
                 今日考勤已完成

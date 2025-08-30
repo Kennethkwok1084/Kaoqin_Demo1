@@ -3,18 +3,15 @@ import { setActivePinia, createPinia } from 'pinia'
 import { useTasksStore } from '@/stores/tasks'
 import type { Task, TaskCreateRequest, TaskUpdateRequest } from '@/types/task'
 
-// 重新 Mock tasksApi 以获得正确的类型和函数引用
+// 完整的 tasksApi Mock 配置 - 按照您的方案
 vi.mock('@/api/tasks', () => ({
   tasksApi: {
     getTasks: vi.fn(),
-    getTaskDetail: vi.fn(),
+    getTaskDetail: vi.fn(), 
     createTask: vi.fn(),
     updateTask: vi.fn(),
     deleteTask: vi.fn(),
-    getWorkTimeDetail: vi.fn(),
-    getTaskStats: vi.fn(),
-    exportTasks: vi.fn(),
-    importTasks: vi.fn()
+    getWorkTimeDetail: vi.fn()
   }
 }))
 

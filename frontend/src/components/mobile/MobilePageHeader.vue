@@ -6,7 +6,7 @@
         <el-button
           v-if="showBack"
           type="text"
-          size="large"
+          size="default"
           @click="handleBack"
           class="back-button"
         >
@@ -26,7 +26,7 @@
           <el-button
             v-if="showSearch"
             type="text"
-            size="large"
+            size="default"
             @click="handleSearch"
             class="action-button"
           >
@@ -36,7 +36,7 @@
           <el-button
             v-if="showMore"
             type="text"
-            size="large"
+            size="default"
             @click="showMoreMenu = true"
             class="action-button"
           >

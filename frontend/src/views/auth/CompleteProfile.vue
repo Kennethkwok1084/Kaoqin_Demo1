@@ -80,12 +80,12 @@
         </div>
 
         <div class="form-actions">
-          <el-button size="large" @click="handleSkip" :loading="loading">
+          <el-button size="default" @click="handleSkip" :loading="loading">
             跳过，稍后完善
           </el-button>
           <el-button
             type="primary"
-            size="large"
+            size="default"
             @click="handleSubmit"
             :loading="loading"
           >

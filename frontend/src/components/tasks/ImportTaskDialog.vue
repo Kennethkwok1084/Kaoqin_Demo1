@@ -172,7 +172,7 @@
                   v-model="bTableImportOption"
                   class="import-option-group"
                 >
-                  <el-radio value="import" size="large">
+                  <el-radio value="import" size="default">
                     <div class="option-content">
                       <div class="option-title">导入B表维护记录</div>
                       <div class="option-desc">
@@ -180,7 +180,7 @@
                       </div>
                     </div>
                   </el-radio>
-                  <el-radio value="skip" size="large">
+                  <el-radio value="skip" size="default">
                     <div class="option-content">
                       <div class="option-title">跳过B表导入</div>
                       <div class="option-desc">

@@ -22,7 +22,7 @@
           :type="getStatusTagType(record.status || '') as any"
           :color="(ATTENDANCE_STATUS_CONFIG as any)[record.status || '']?.color"
           effect="light"
-          size="large"
+          size="default"
         >
           {{ (ATTENDANCE_STATUS_CONFIG as any)[record.status || '']?.label }}
         </el-tag>

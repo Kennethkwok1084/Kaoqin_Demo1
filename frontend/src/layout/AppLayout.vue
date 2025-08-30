@@ -85,7 +85,7 @@
             <!-- 桌面端侧边栏切换 -->
             <el-button
               type="text"
-              size="large"
+              size="default"
               @click="toggleSidebar"
               class="sidebar-toggle desktop-only"
             >
@@ -95,7 +95,7 @@
             <!-- 移动端菜单切换 -->
             <el-button
               type="text"
-              size="large"
+              size="default"
               @click="toggleMobileSidebar"
               class="mobile-menu-toggle mobile-only"
             >
@@ -116,7 +116,7 @@
           <div class="header-right">
             <!-- 全屏切换 (桌面端) -->
             <el-tooltip content="全屏" placement="bottom" class="hidden-xs">
-              <el-button type="text" size="large" @click="toggleFullscreen">
+              <el-button type="text" size="default" @click="toggleFullscreen">
                 <el-icon><FullScreen /></el-icon>
               </el-button>
             </el-tooltip>
@@ -126,7 +126,7 @@
               :value="notificationCount"
               :hidden="notificationCount === 0"
             >
-              <el-button type="text" size="large" @click="showNotifications">
+              <el-button type="text" size="default" @click="showNotifications">
                 <el-icon><Bell /></el-icon>
               </el-button>
             </el-badge>

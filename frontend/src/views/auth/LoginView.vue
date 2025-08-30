@@ -23,7 +23,7 @@
           <el-input
             v-model="loginForm.username"
             placeholder="请输入用户名"
-            size="large"
+            size="default"
             :prefix-icon="User"
             clearable
             @keyup.enter="handleLogin"
@@ -35,7 +35,7 @@
             v-model="loginForm.password"
             type="password"
             placeholder="请输入密码"
-            size="large"
+            size="default"
             :prefix-icon="Lock"
             show-password
             clearable
@@ -59,7 +59,7 @@
         <el-form-item>
           <el-button
             type="primary"
-            size="large"
+            size="default"
             class="login-button"
             :loading="isLoading"
             @click="handleLogin"
