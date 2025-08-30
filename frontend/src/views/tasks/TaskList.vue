@@ -516,10 +516,10 @@ import {
   TASK_PRIORITY_CONFIG,
   TASK_STATUS_CONFIG
 } from '@/types/task'
-import { 
-  getTaskTypeConfig, 
-  getTaskPriorityConfig, 
-  getTaskStatusConfig 
+import {
+  getTaskTypeConfig,
+  getTaskPriorityConfig,
+  getTaskStatusConfig
 } from '@/types/type-helpers'
 import TaskFormDialog from '@/components/tasks/TaskFormDialog.vue'
 import TaskDetailDialog from '@/components/tasks/TaskDetailDialog.vue'

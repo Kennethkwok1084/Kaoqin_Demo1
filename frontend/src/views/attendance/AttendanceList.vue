@@ -481,7 +481,8 @@
   </div>
 </template>
 
-/// <reference types="node" />
+///
+<reference types="node" />
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'

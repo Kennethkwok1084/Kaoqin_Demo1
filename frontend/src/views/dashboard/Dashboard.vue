@@ -369,7 +369,14 @@ const quickActions: Array<{
   id: string
   title: string
   icon: any
-  color: "default" | "primary" | "success" | "warning" | "info" | "danger" | "text"
+  color:
+    | 'default'
+    | 'primary'
+    | 'success'
+    | 'warning'
+    | 'info'
+    | 'danger'
+    | 'text'
   route: string
 }> = [
   {

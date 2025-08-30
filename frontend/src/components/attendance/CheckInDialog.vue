@@ -93,7 +93,8 @@
   </el-dialog>
 </template>
 
-/// <reference types="node" />
+///
+<reference types="node" />
 <script setup lang="ts">
 import {
   ref,

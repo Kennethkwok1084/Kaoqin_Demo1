@@ -37,7 +37,11 @@ export const useAuthStore = defineStore('auth', () => {
 
     // 支持两种调用方式：login(credentials) 或 login(username, password)
     if (typeof usernameOrEmail === 'string' && password) {
-      credentials = { student_id: usernameOrEmail, username: usernameOrEmail, password }
+      credentials = {
+        student_id: usernameOrEmail,
+        username: usernameOrEmail,
+        password
+      }
     } else {
       credentials = usernameOrEmail as LoginRequest
     }
@@ -225,7 +229,7 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     // 状态
     token,
-    refreshToken: refreshTokenRef,
+    refreshToken: refreshTokenRef, // 测试期望的属性名
     userInfo,
     isLoading,
 
@@ -240,7 +244,8 @@ export const useAuthStore = defineStore('auth', () => {
     // 方法
     login,
     logout,
-    refreshTokenMethod: refreshAuthToken, // 重命名以避免冲突
+    refreshTokenMethod: refreshToken, // 刷新token的方法（重命名避免冲突）
+    refreshAuthToken, // 测试期望的方法名
     fetchUserInfo,
     refreshUserInfo,
     initAuth,

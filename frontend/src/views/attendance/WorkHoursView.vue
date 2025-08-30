@@ -278,8 +278,13 @@ const updateCurrentTime = () => {
 }
 
 // 获取任务类型标签颜色
-const getTaskTypeTagType = (taskType: string): "success" | "warning" | "info" | "primary" | "danger" => {
-  const typeMap: Record<string, "success" | "warning" | "info" | "primary" | "danger"> = {
+const getTaskTypeTagType = (
+  taskType: string
+): 'success' | 'warning' | 'info' | 'primary' | 'danger' => {
+  const typeMap: Record<
+    string,
+    'success' | 'warning' | 'info' | 'primary' | 'danger'
+  > = {
     维修任务: 'primary',
     监控任务: 'success',
     协助任务: 'warning'

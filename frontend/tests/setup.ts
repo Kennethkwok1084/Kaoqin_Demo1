@@ -930,7 +930,30 @@ config.global.mocks = {
 }
 
 // =========================
-// 6. 完美的工具函数Mock
+// 6. 完美的HTTP Client Mock
+// =========================
+vi.mock('@/api/client', () => ({
+  http: {
+    get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    delete: vi.fn(),
+    patch: vi.fn(),
+    request: vi.fn()
+  },
+  client: {
+    get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    delete: vi.fn(),
+    patch: vi.fn(),
+    request: vi.fn()
+  },
+  setupInterceptors: vi.fn()
+}))
+
+// =========================
+// 7. 完美的工具函数Mock
 // =========================
 vi.mock('@/utils/auth', () => ({
   getToken: vi.fn(() => null), // Initial state should be null for tests
@@ -963,15 +986,19 @@ vi.mock('@/api/auth', () => ({
 
 // Tasks API Mock
 vi.mock('@/api/tasks', () => ({
-  tasksApi: {
-    getTasks: vi.fn(),
-    getTaskDetail: vi.fn(),
-    createTask: vi.fn(),
-    updateTask: vi.fn(),
-    deleteTask: vi.fn(),
-    getWorkLogs: vi.fn(),
-    getWorkTimeDetail: vi.fn()
-  }
+  getTasks: vi.fn(),
+  getTask: vi.fn(),
+  getTaskDetail: vi.fn(),
+  createTask: vi.fn(),
+  updateTask: vi.fn(),
+  deleteTask: vi.fn(),
+  getWorkLogs: vi.fn(),
+  getWorkTimeDetail: vi.fn(),
+  updateTaskStatus: vi.fn(),
+  batchUpdateTasks: vi.fn(),
+  batchDeleteTasks: vi.fn(),
+  exportTasks: vi.fn(),
+  importTasks: vi.fn()
 }))
 
 vi.mock('@/utils/date', () => ({

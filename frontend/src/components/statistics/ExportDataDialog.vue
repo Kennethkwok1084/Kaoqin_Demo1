@@ -313,9 +313,12 @@ const handleExport = async () => {
     const response = await statisticsApi.exportData(config)
 
     // 下载文件
-    const blob = new Blob([(response as any).data || response.downloadUrl || response], {
-      type: getContentType(form.format)
-    })
+    const blob = new Blob(
+      [(response as any).data || response.downloadUrl || response],
+      {
+        type: getContentType(form.format)
+      }
+    )
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url

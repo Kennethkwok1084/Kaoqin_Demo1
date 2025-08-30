@@ -263,7 +263,7 @@ export interface ExportResponse {
   expires_at?: number
 }
 
-// Extended interface for attendance export specifically  
+// Extended interface for attendance export specifically
 export interface AttendanceExportResponse {
   success: boolean
   message: string
