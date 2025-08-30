@@ -124,6 +124,7 @@ export interface WorkHourSummary {
   penaltyHours: number
   avgEfficiency: number
   taskCount: number
+  data?: any // Additional data property
 }
 
 export interface MemberWorkHourSummary {

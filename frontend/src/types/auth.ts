@@ -2,6 +2,7 @@
 
 export interface LoginRequest {
   student_id: string // 修复：使用student_id与后端保持一致
+  username?: string // 支持用户名登录
   password: string
   remember_me?: boolean
 }
@@ -25,6 +26,7 @@ export interface LoginResponse extends ApiResponse<LoginData> {}
 
 export interface RefreshTokenResponse {
   access_token: string
+  refresh_token?: string
   token_type: string
   expires_in: number
 }

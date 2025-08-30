@@ -281,7 +281,7 @@ const handlePreview = async () => {
     }
 
     const response = await statisticsApi.previewExportData(config)
-    previewData.value = response.data || response
+    previewData.value = (response as any).data || response
 
     ElMessage.success('数据预览成功')
   } catch (error) {
@@ -313,7 +313,7 @@ const handleExport = async () => {
     const response = await statisticsApi.exportData(config)
 
     // 下载文件
-    const blob = new Blob([response.data || response.downloadUrl || response], {
+    const blob = new Blob([(response as any).data || response.downloadUrl || response], {
       type: getContentType(form.format)
     })
     const url = window.URL.createObjectURL(blob)

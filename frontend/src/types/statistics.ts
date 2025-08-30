@@ -15,6 +15,8 @@ export interface StatisticsOverview {
     completed: number
     pending: number
     overdue: number
+    total_work_hours?: number
+    avg_work_hours?: number
   }
   members?: {
     total: number
@@ -24,6 +26,8 @@ export interface StatisticsOverview {
     rate: number
     present: number
     absent: number
+    total_records?: number
+    late_checkins?: number
   }
   categories?: {
     [key: string]: any
@@ -145,6 +149,7 @@ export interface WorkHoursComparison {
 export interface ChartData {
   labels: string[]
   datasets: ChartDataset[]
+  data?: any[] // Additional data property
 }
 
 export interface ChartDataset {
@@ -244,6 +249,56 @@ export interface ExportOptions {
   includeRawData: boolean
   dateRange: [string, string]
   categories: string[]
+}
+
+export interface ExportResponse {
+  success: boolean
+  message: string
+  data?: any
+  downloadUrl?: string
+  filename?: string
+  total_records?: number
+  total?: number
+  download_url?: string
+  expires_at?: number
+}
+
+// Extended interface for attendance export specifically  
+export interface AttendanceExportResponse {
+  success: boolean
+  message: string
+  filename: string
+  total_records: number
+  total: number // Include total property
+  download_url: string
+  expires_at: number
+}
+
+// Update the original export interface to ensure it has the total property
+export interface WorkHourExportResponse {
+  success: boolean
+  message: string
+  filename: string
+  total_records: number
+  total: number
+  download_url: string
+  expires_at: number
+}
+
+// Specific export response for statistics data
+export interface StatisticsExportResponse {
+  headers: string[]
+  rows: any[][]
+  totalRows: number
+  data?: any // Additional data property
+}
+
+// Specific export response for file downloads
+export interface FileExportResponse {
+  success: boolean
+  message: string
+  downloadUrl?: string
+  data?: any // Additional data property
 }
 
 export interface DashboardWidget {

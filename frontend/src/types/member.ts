@@ -102,6 +102,7 @@ export interface MemberFilters {
 export interface MemberListParams {
   page?: number
   pageSize?: number
+  size?: number // Additional size property
   sortBy?: string
   sortOrder?: 'asc' | 'desc'
   filters?: MemberFilters
@@ -109,6 +110,7 @@ export interface MemberListParams {
 
 export interface MemberListResponse {
   items: Member[]
+  data?: Member[] // Additional data property
   total: number
   page: number
   pageSize: number

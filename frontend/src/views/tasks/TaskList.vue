@@ -184,13 +184,13 @@
                     :type="getTypeTagType(scope.row.type) as any"
                     size="small"
                   >
-                    {{ TASK_TYPE_CONFIG[scope.row.type as any]?.label }}
+                    {{ getTaskTypeConfig(scope.row.type).label }}
                   </el-tag>
                   <el-tag
                     :type="getPriorityTagType(scope.row.priority) as any"
                     size="small"
                   >
-                    {{ TASK_PRIORITY_CONFIG[scope.row.priority as any]?.label }}
+                    {{ getTaskPriorityConfig(scope.row.priority).label }}
                   </el-tag>
                 </div>
               </div>
@@ -205,7 +205,7 @@
           >
             <template #default="scope">
               <el-tag :type="getStatusTagType(scope.row.status) as any">
-                {{ TASK_STATUS_CONFIG[scope.row.status as any]?.label }}
+                {{ getTaskStatusConfig(scope.row.status).label }}
               </el-tag>
             </template>
           </el-table-column>
@@ -516,6 +516,11 @@ import {
   TASK_PRIORITY_CONFIG,
   TASK_STATUS_CONFIG
 } from '@/types/task'
+import { 
+  getTaskTypeConfig, 
+  getTaskPriorityConfig, 
+  getTaskStatusConfig 
+} from '@/types/type-helpers'
 import TaskFormDialog from '@/components/tasks/TaskFormDialog.vue'
 import TaskDetailDialog from '@/components/tasks/TaskDetailDialog.vue'
 import ImportTaskDialog from '@/components/tasks/ImportTaskDialog.vue'

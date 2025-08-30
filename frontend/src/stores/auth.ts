@@ -20,7 +20,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!token.value && !!userInfo.value)
   const isAdmin = computed(() => {
     const role = userInfo.value?.role
-    return role === 'admin' || role === 'team_leader'
+    return role === 'admin' || role === 'group_leader'
   })
   const isGroupLeader = computed(() => userInfo.value?.role === 'group_leader')
   const hasPermission = computed(() => (permission: string) => {
@@ -37,7 +37,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     // 支持两种调用方式：login(credentials) 或 login(username, password)
     if (typeof usernameOrEmail === 'string' && password) {
-      credentials = { username: usernameOrEmail, password }
+      credentials = { student_id: usernameOrEmail, username: usernameOrEmail, password }
     } else {
       credentials = usernameOrEmail as LoginRequest
     }
@@ -240,10 +240,9 @@ export const useAuthStore = defineStore('auth', () => {
     // 方法
     login,
     logout,
-    refreshToken,
+    refreshTokenMethod: refreshAuthToken, // 重命名以避免冲突
     fetchUserInfo,
     refreshUserInfo,
-    refreshAuthToken, // 测试期望的别名
     initAuth,
     initializeAuth, // 测试期望的别名
     checkPermission,

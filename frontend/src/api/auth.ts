@@ -71,6 +71,13 @@ export const authApi = {
   /**
    * 获取当前用户信息
    */
+  async getCurrentUser(): Promise<UserInfo> {
+    return this.getUserInfo()
+  },
+
+  /**
+   * 获取当前用户信息（原方法）
+   */
   async getUserInfo(): Promise<UserInfo> {
     const response = await http.get<ApiResponse<any>>('/auth/me')
 

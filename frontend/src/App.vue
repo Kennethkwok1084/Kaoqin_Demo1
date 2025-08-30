@@ -3,7 +3,7 @@
     <router-view />
     <!-- 全局加载器 -->
     <Teleport to="body">
-      <GlobalLoading v-if="globalStore.isLoading" />
+      <GlobalLoading v-if="globalStore.loading" />
     </Teleport>
   </div>
 </template>

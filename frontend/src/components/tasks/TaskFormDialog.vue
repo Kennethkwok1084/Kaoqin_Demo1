@@ -496,9 +496,9 @@ const handleSubmit = async () => {
       const updateData: UpdateTaskRequest = {
         title: formData.title,
         description: formData.description,
-        type: formData.type,
+        type: formData.type as Task['task_type'],
         priority: formData.priority,
-        assigneeId: formData.assigneeId,
+        assignee_id: formData.assigneeId,
         location: formData.location,
         contactInfo: formData.contactInfo || '',
         estimatedHours: formData.estimatedHours,

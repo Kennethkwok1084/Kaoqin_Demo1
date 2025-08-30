@@ -128,6 +128,7 @@
   </el-dialog>
 </template>
 
+/// <reference types="node" />
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElForm } from 'element-plus'

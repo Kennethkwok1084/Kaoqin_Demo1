@@ -471,6 +471,13 @@ export const tasksApi = {
       type
     })
     return response.data.data || { valid: false, errors: [] }
+  },
+
+  /**
+   * 获取工时详情（别名方法）
+   */
+  async getWorkTimeDetail(taskId: number): Promise<TaskWorkLog[]> {
+    return this.getWorkLogs(taskId)
   }
 }
 
@@ -482,4 +489,13 @@ export const createTask = tasksApi.createTask
 export const updateTask = tasksApi.updateTask
 export const deleteTask = tasksApi.deleteTask
 export const getTaskStats = tasksApi.getTaskStats
-export const getWorkTimeDetail = tasksApi.getWorkLogs // Work time details - alias for compatibility
+export const getWorkTimeDetail = async (taskId: number) => {
+  return await tasksApi.getWorkLogs(taskId)
+}
+
+// Also add the method directly to tasksApi
+const originalTasksApi = tasksApi
+export const tasksApiWithWorkTime = {
+  ...originalTasksApi,
+  getWorkTimeDetail: getWorkTimeDetail
+}

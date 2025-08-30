@@ -245,7 +245,7 @@ import type { WorkHoursRecord } from '@/types/attendance'
 const loading = ref(false)
 const viewMode = ref('table')
 const currentTime = ref('')
-const dateRange = ref<[string, string]>([])
+const dateRange = ref<[string, string]>(['', ''])
 
 const todaySummary = reactive({
   total_hours: 0,
@@ -278,8 +278,8 @@ const updateCurrentTime = () => {
 }
 
 // 获取任务类型标签颜色
-const getTaskTypeTagType = (taskType: string) => {
-  const typeMap: Record<string, string> = {
+const getTaskTypeTagType = (taskType: string): "success" | "warning" | "info" | "primary" | "danger" => {
+  const typeMap: Record<string, "success" | "warning" | "info" | "primary" | "danger"> = {
     维修任务: 'primary',
     监控任务: 'success',
     协助任务: 'warning'
@@ -297,7 +297,7 @@ const formatDate = (date: string | Date) => {
 const loadTodayData = async () => {
   try {
     const summary = await attendanceApi.getTodayWorkHoursSummary()
-    Object.assign(todaySummary, summary.data || summary)
+    Object.assign(todaySummary, (summary as any).data || summary)
   } catch (error) {
     console.error('加载今日数据失败:', error)
     ElMessage.error('加载今日数据失败')
@@ -376,12 +376,12 @@ const loadMemberOptions = async () => {
   try {
     const response = await MembersApi.getMembers({
       page: 1,
-      size: 100,
+      pageSize: 100,
       is_active: true
-    })
+    } as any)
 
     // 适配不同的响应格式
-    const members = response.items || response.data || response
+    const members = response.items || (response as any).data || response
     if (Array.isArray(members)) {
       memberOptions.value = members.map((member: any) => ({
         label: member.name,

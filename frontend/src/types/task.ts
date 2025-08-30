@@ -116,11 +116,18 @@ export interface TaskCreateRequest {
 export interface TaskUpdateRequest {
   title?: string
   description?: string
+  type?: Task['task_type']
+  task_type?: Task['task_type']
   task_status?: Task['task_status']
   priority?: Task['priority']
   assignee_id?: number
+  location?: string
+  contactInfo?: string
+  estimatedHours?: number
   estimated_hours?: number
   actual_hours?: number
+  dueDate?: string
+  tags?: string[]
   completion_notes?: string
 }
 

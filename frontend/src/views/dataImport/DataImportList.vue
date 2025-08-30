@@ -283,6 +283,7 @@
   </div>
 </template>
 
+/// <reference types="node" />
 <script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'

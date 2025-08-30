@@ -481,6 +481,7 @@
   </div>
 </template>
 
+/// <reference types="node" />
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -638,7 +639,7 @@ const loadTodayData = async () => {
   try {
     const summary = await attendanceApi.getTodayWorkHoursSummary()
 
-    Object.assign(todaySummary, summary.data || summary)
+    Object.assign(todaySummary, (summary as any).data || summary)
   } catch (error) {
     console.error('加载今日数据失败:', error)
     ElMessage.error('加载今日数据失败')

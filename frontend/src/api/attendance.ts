@@ -64,6 +64,7 @@ export const attendanceApi = {
     message: string
     filename: string
     total_records: number
+    total?: number
     download_url: string
     expires_at: number
   }> {

@@ -365,7 +365,13 @@ const statsCards = [
 ]
 
 // 快速操作配置
-const quickActions = [
+const quickActions: Array<{
+  id: string
+  title: string
+  icon: any
+  color: "default" | "primary" | "success" | "warning" | "info" | "danger" | "text"
+  route: string
+}> = [
   {
     id: 'new-task',
     title: '新建任务',
