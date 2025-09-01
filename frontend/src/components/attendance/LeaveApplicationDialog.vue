@@ -204,29 +204,11 @@ const formRules = {
   ]
 }
 
-// 方法
+// 极简化 - 移除业务计算逻辑，由后端处理
 const calculateDays = () => {
-  if (
-    formData.startDate &&
-    formData.endDate &&
-    formData.startTime &&
-    formData.endTime
-  ) {
-    const startDateTime = new Date(
-      `${formData.startDate} ${formData.startTime}`
-    )
-    const endDateTime = new Date(`${formData.endDate} ${formData.endTime}`)
-
-    if (endDateTime > startDateTime) {
-      const diffMs = endDateTime.getTime() - startDateTime.getTime()
-      const diffHours = diffMs / (1000 * 60 * 60)
-
-      calculatedDays.value = Math.floor(diffHours / 24)
-      calculatedHours.value = Math.round(diffHours % 24)
-    } else {
-      calculatedDays.value = 0
-      calculatedHours.value = 0
-    }
+  // 后端将直接计算并返回请假时长
+  calculatedDays.value = 0 // 仅用于UI显示，实际计算由后端处理
+  calculatedHours.value = 0
   }
 }
 

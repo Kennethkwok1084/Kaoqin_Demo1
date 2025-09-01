@@ -1739,3 +1739,550 @@ class RushTaskMarkingService:
             await self.db.rollback()
             logger.error(f"Remove rush task marking error: {str(e)}")
             raise
+
+    # ============= 上月结转逻辑 - 扩展现有工时服务 =============
+
+    async def process_monthly_carryover(
+        self,
+        member_id: int,
+        target_year: int,
+        target_month: int,
+        standard_hours: float = 30.0,
+    ) -> Dict[str, Any]:
+        """
+        处理月度工时结转逻辑
+        
+        Args:
+            member_id: 成员ID
+            target_year: 目标年份
+            target_month: 目标月份
+            standard_hours: 月度标准工时（默认30小时）
+            
+        Returns:
+            结转处理结果
+        """
+        try:
+            # 获取目标月份的月度汇总
+            current_query = select(MonthlyAttendanceSummary).where(
+                and_(
+                    MonthlyAttendanceSummary.member_id == member_id,
+                    MonthlyAttendanceSummary.year == target_year,
+                    MonthlyAttendanceSummary.month == target_month,
+                )
+            )
+            current_result = await self.db.execute(current_query)
+            current_summary = current_result.scalar_one_or_none()
+
+            if not current_summary:
+                raise ValueError(f"未找到成员 {member_id} 在 {target_year}-{target_month:02d} 的月度汇总")
+
+            # 计算上月时间
+            if target_month == 1:
+                prev_year = target_year - 1
+                prev_month = 12
+            else:
+                prev_year = target_year
+                prev_month = target_month - 1
+
+            # 获取上月的月度汇总
+            prev_query = select(MonthlyAttendanceSummary).where(
+                and_(
+                    MonthlyAttendanceSummary.member_id == member_id,
+                    MonthlyAttendanceSummary.year == prev_year,
+                    MonthlyAttendanceSummary.month == prev_month,
+                )
+            )
+            prev_result = await self.db.execute(prev_query)
+            previous_summary = prev_result.scalar_one_or_none()
+
+            carryover_hours = 0.0
+            if previous_summary:
+                # 应用上月结转逻辑
+                current_summary.apply_carryover_from_previous(previous_summary)
+                carryover_hours = current_summary.carried_hours or 0.0
+
+            # 重新计算当月的可结转工时
+            remaining_hours = current_summary.calculate_carryover_hours(standard_hours)
+
+            await self.db.commit()
+
+            logger.info(
+                f"Processed carryover for member {member_id} "
+                f"for {target_year}-{target_month:02d}: "
+                f"carried={carryover_hours}, remaining={remaining_hours}"
+            )
+
+            return {
+                "success": True,
+                "member_id": member_id,
+                "target_period": f"{target_year}-{target_month:02d}",
+                "previous_period": f"{prev_year}-{prev_month:02d}",
+                "carried_hours": carryover_hours,
+                "remaining_hours": remaining_hours,
+                "total_hours": current_summary.total_hours or 0.0,
+                "standard_hours": standard_hours,
+                "carryover_info": current_summary.get_carryover_info(),
+            }
+
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"Process monthly carryover error: {str(e)}")
+            raise RuntimeError(f"处理月度结转失败: {str(e)}")
+
+    async def batch_process_carryover(
+        self,
+        year: int,
+        month: int,
+        member_ids: Optional[List[int]] = None,
+        standard_hours: float = 30.0,
+    ) -> Dict[str, Any]:
+        """
+        批量处理多个成员的月度结转
+        
+        Args:
+            year: 年份
+            month: 月份
+            member_ids: 成员ID列表，None表示处理所有成员
+            standard_hours: 月度标准工时
+            
+        Returns:
+            批量处理结果
+        """
+        try:
+            # 获取需要处理的成员列表
+            if member_ids:
+                member_query = select(MonthlyAttendanceSummary.member_id).where(
+                    and_(
+                        MonthlyAttendanceSummary.year == year,
+                        MonthlyAttendanceSummary.month == month,
+                        MonthlyAttendanceSummary.member_id.in_(member_ids),
+                    )
+                ).distinct()
+            else:
+                member_query = select(MonthlyAttendanceSummary.member_id).where(
+                    and_(
+                        MonthlyAttendanceSummary.year == year,
+                        MonthlyAttendanceSummary.month == month,
+                    )
+                ).distinct()
+
+            member_result = await self.db.execute(member_query)
+            target_members = [row[0] for row in member_result.fetchall()]
+
+            results = []
+            success_count = 0
+            error_count = 0
+
+            for member_id in target_members:
+                try:
+                    result = await self.process_monthly_carryover(
+                        member_id, year, month, standard_hours
+                    )
+                    results.append(result)
+                    success_count += 1
+                except Exception as e:
+                    error_result = {
+                        "success": False,
+                        "member_id": member_id,
+                        "error": str(e),
+                    }
+                    results.append(error_result)
+                    error_count += 1
+                    logger.error(f"Failed to process carryover for member {member_id}: {str(e)}")
+
+            logger.info(
+                f"Batch carryover processing completed for {year}-{month:02d}: "
+                f"success={success_count}, errors={error_count}"
+            )
+
+            return {
+                "success": True,
+                "target_period": f"{year}-{month:02d}",
+                "total_members": len(target_members),
+                "success_count": success_count,
+                "error_count": error_count,
+                "results": results,
+                "standard_hours": standard_hours,
+            }
+
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"Batch process carryover error: {str(e)}")
+            raise RuntimeError(f"批量处理结转失败: {str(e)}")
+
+    async def get_carryover_summary(
+        self,
+        member_id: int,
+        year: int,
+        month: int,
+    ) -> Dict[str, Any]:
+        """
+        获取成员的结转工时摘要
+        
+        Args:
+            member_id: 成员ID
+            year: 年份
+            month: 月份
+            
+        Returns:
+            结转摘要信息
+        """
+        try:
+            # 获取当月汇总
+            query = select(MonthlyAttendanceSummary).where(
+                and_(
+                    MonthlyAttendanceSummary.member_id == member_id,
+                    MonthlyAttendanceSummary.year == year,
+                    MonthlyAttendanceSummary.month == month,
+                )
+            )
+            result = await self.db.execute(query)
+            summary = result.scalar_one_or_none()
+
+            if not summary:
+                return {
+                    "found": False,
+                    "member_id": member_id,
+                    "period": f"{year}-{month:02d}",
+                    "message": "未找到月度汇总记录",
+                }
+
+            return {
+                "found": True,
+                "member_id": member_id,
+                "period": summary.month_string,
+                "carryover_info": summary.get_carryover_info(),
+                "total_hours": summary.total_hours or 0.0,
+                "carried_hours": summary.carried_hours or 0.0,
+                "remaining_hours": summary.remaining_hours or 0.0,
+            }
+
+        except Exception as e:
+            logger.error(f"Get carryover summary error: {str(e)}")
+            raise RuntimeError(f"获取结转摘要失败: {str(e)}")
+
+    async def calculate_projected_carryover(
+        self,
+        member_id: int,
+        current_year: int,
+        current_month: int,
+        future_months: int = 3,
+        standard_hours: float = 30.0,
+    ) -> Dict[str, Any]:
+        """
+        预测未来几个月的工时结转情况
+        
+        Args:
+            member_id: 成员ID
+            current_year: 当前年份
+            current_month: 当前月份
+            future_months: 预测未来月数
+            standard_hours: 月度标准工时
+            
+        Returns:
+            预测结果
+        """
+        try:
+            projections = []
+            
+            for i in range(future_months):
+                # 计算目标月份
+                target_month = current_month + i
+                target_year = current_year
+                
+                while target_month > 12:
+                    target_month -= 12
+                    target_year += 1
+
+                # 获取月度汇总（如果存在）
+                summary = await self.get_carryover_summary(member_id, target_year, target_month)
+                
+                if summary["found"]:
+                    projection = {
+                        "period": f"{target_year}-{target_month:02d}",
+                        "type": "actual",
+                        "data": summary["carryover_info"],
+                    }
+                else:
+                    # 模拟预测（基于标准工时）
+                    projection = {
+                        "period": f"{target_year}-{target_month:02d}",
+                        "type": "projected",
+                        "data": {
+                            "current_month": f"{target_year}-{target_month:02d}",
+                            "carried_from_previous": 0.0,  # 简化预测
+                            "current_month_hours": standard_hours,
+                            "total_effective_hours": standard_hours,
+                            "remaining_for_carryover": 0.0,
+                            "is_eligible_for_carryover": False,
+                            "excess_hours": 0.0,
+                        },
+                    }
+                
+                projections.append(projection)
+
+            return {
+                "success": True,
+                "member_id": member_id,
+                "base_period": f"{current_year}-{current_month:02d}",
+                "projection_months": future_months,
+                "standard_hours": standard_hours,
+                "projections": projections,
+            }
+
+        except Exception as e:
+            logger.error(f"Calculate projected carryover error: {str(e)}")
+            raise RuntimeError(f"计算结转预测失败: {str(e)}")
+
+    # ============= 小组扣时机制 - 利用现有分组功能 =============
+
+    async def apply_group_penalty_for_task(
+        self,
+        task_id: int,
+        penalty_type: str,
+        operator_id: int,
+    ) -> Dict[str, Any]:
+        """
+        为指定任务应用小组扣时
+        
+        Args:
+            task_id: 任务ID
+            penalty_type: 惩罚类型
+            operator_id: 操作员ID
+            
+        Returns:
+            操作结果
+        """
+        try:
+            # 获取任务
+            task_query = select(RepairTask).where(RepairTask.id == task_id).options(
+                selectinload(RepairTask.member)
+            )
+            task_result = await self.db.execute(task_query)
+            task = task_result.scalar_one_or_none()
+
+            if not task:
+                raise ValueError(f"任务 {task_id} 不存在")
+
+            # 应用小组惩罚
+            affected_members = await self.apply_group_penalties(task, penalty_type)
+
+            await self.db.commit()
+
+            logger.info(
+                f"Group penalty applied by operator {operator_id} "
+                f"for task {task_id}: {penalty_type}, "
+                f"affected {len(affected_members)} members"
+            )
+
+            return {
+                "success": True,
+                "task_id": task_id,
+                "penalty_type": penalty_type,
+                "affected_members": affected_members,
+                "affected_count": len(affected_members),
+                "operator_id": operator_id,
+                "penalty_minutes": self._get_penalty_minutes(penalty_type),
+            }
+
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"Apply group penalty for task error: {str(e)}")
+            raise RuntimeError(f"应用小组扣时失败: {str(e)}")
+
+    async def get_group_members_by_task(self, task_id: int) -> Dict[str, Any]:
+        """
+        获取任务相关的小组成员信息
+        
+        Args:
+            task_id: 任务ID
+            
+        Returns:
+            小组成员信息
+        """
+        try:
+            # 获取任务
+            task_query = select(RepairTask).where(RepairTask.id == task_id).options(
+                selectinload(RepairTask.member)
+            )
+            task_result = await self.db.execute(task_query)
+            task = task_result.scalar_one_or_none()
+
+            if not task:
+                raise ValueError(f"任务 {task_id} 不存在")
+
+            # 获取小组成员 (基于部门或group_id)
+            if task.member.group_id:
+                # 如果有group_id，则按小组查找
+                member_query = select(Member).where(
+                    and_(
+                        Member.group_id == task.member.group_id,
+                        Member.is_active == True,
+                    )
+                )
+            else:
+                # 否则按部门查找
+                member_query = select(Member).where(
+                    and_(
+                        Member.department == task.member.department,
+                        Member.is_active == True,
+                    )
+                )
+
+            member_result = await self.db.execute(member_query)
+            group_members = list(member_result.scalars().all())
+
+            # 格式化成员数据
+            members_data = []
+            for member in group_members:
+                member_info = {
+                    "id": member.id,
+                    "name": member.name,
+                    "username": member.username,
+                    "class_name": member.class_name,
+                    "department": member.department,
+                    "group_id": member.group_id,
+                    "role": member.role.value,
+                }
+                members_data.append(member_info)
+
+            return {
+                "task_id": task_id,
+                "task_handler": {
+                    "id": task.member.id,
+                    "name": task.member.name,
+                    "department": task.member.department,
+                    "group_id": task.member.group_id,
+                },
+                "group_type": "group" if task.member.group_id else "department",
+                "group_identifier": task.member.group_id or task.member.department,
+                "group_members": members_data,
+                "total_members": len(members_data),
+            }
+
+        except Exception as e:
+            logger.error(f"Get group members by task error: {str(e)}")
+            raise RuntimeError(f"获取小组成员失败: {str(e)}")
+
+    async def batch_apply_group_penalties(
+        self,
+        task_ids: List[int],
+        penalty_type: str,
+        operator_id: int,
+    ) -> Dict[str, Any]:
+        """
+        批量应用小组扣时
+        
+        Args:
+            task_ids: 任务ID列表
+            penalty_type: 惩罚类型
+            operator_id: 操作员ID
+            
+        Returns:
+            批量操作结果
+        """
+        try:
+            results = []
+            success_count = 0
+            error_count = 0
+            total_affected_members = set()
+
+            for task_id in task_ids:
+                try:
+                    result = await self.apply_group_penalty_for_task(
+                        task_id, penalty_type, operator_id
+                    )
+                    results.append(result)
+                    success_count += 1
+                    total_affected_members.update(result["affected_members"])
+                except Exception as e:
+                    error_result = {
+                        "success": False,
+                        "task_id": task_id,
+                        "error": str(e),
+                    }
+                    results.append(error_result)
+                    error_count += 1
+                    logger.error(f"Failed to apply group penalty for task {task_id}: {str(e)}")
+
+            logger.info(
+                f"Batch group penalty processing completed: "
+                f"success={success_count}, errors={error_count}, "
+                f"total_affected_members={len(total_affected_members)}"
+            )
+
+            return {
+                "success": True,
+                "total_tasks": len(task_ids),
+                "success_count": success_count,
+                "error_count": error_count,
+                "penalty_type": penalty_type,
+                "total_affected_members": len(total_affected_members),
+                "affected_member_ids": list(total_affected_members),
+                "results": results,
+                "operator_id": operator_id,
+            }
+
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"Batch apply group penalties error: {str(e)}")
+            raise RuntimeError(f"批量应用小组扣时失败: {str(e)}")
+
+    def _get_penalty_minutes(self, penalty_type: str) -> int:
+        """
+        获取惩罚类型对应的扣时分钟数
+        
+        Args:
+            penalty_type: 惩罚类型
+            
+        Returns:
+            扣时分钟数
+        """
+        penalty_map = {
+            "late_response": self.LATE_RESPONSE_PENALTY,  # 30分钟
+            "late_completion": self.LATE_COMPLETION_PENALTY,  # 30分钟
+            "negative_review": self.NEGATIVE_REVIEW_PENALTY,  # 60分钟
+        }
+        
+        return penalty_map.get(penalty_type, 0)
+
+    async def _get_or_create_penalty_tag(self, penalty_type: str) -> TaskTag:
+        """
+        获取或创建惩罚标签
+        
+        Args:
+            penalty_type: 惩罚类型
+            
+        Returns:
+            惩罚标签对象
+        """
+        tag_map = {
+            "late_response": ("超时响应惩罚", "响应超时24小时，扣除30分钟"),
+            "late_completion": ("超时处理惩罚", "处理超时48小时，扣除30分钟"), 
+            "negative_review": ("差评惩罚", "用户差评（2星及以下），扣除60分钟"),
+        }
+        
+        if penalty_type not in tag_map:
+            raise ValueError(f"Unknown penalty type: {penalty_type}")
+            
+        tag_name, tag_description = tag_map[penalty_type]
+        penalty_minutes = -self._get_penalty_minutes(penalty_type)  # 负数表示扣时
+        
+        # 查找现有标签
+        tag_query = select(TaskTag).where(TaskTag.name == tag_name)
+        tag_result = await self.db.execute(tag_query)
+        tag = tag_result.scalar_one_or_none()
+        
+        if not tag:
+            # 创建新标签
+            tag = TaskTag(
+                name=tag_name,
+                description=tag_description,
+                work_minutes_modifier=penalty_minutes,
+                tag_type=TaskTagType.PENALTY,
+                is_active=True,
+            )
+            self.db.add(tag)
+            await self.db.flush()
+            
+        return tag

@@ -240,29 +240,9 @@ export const useTasksStore = defineStore('tasks', () => {
     try {
       loading.value = true
       error.value = null
-      // 检查API方法是否存在
-      if (typeof tasksApi.getWorkTimeDetail === 'function') {
-        const workTimeDetail = await tasksApi.getWorkTimeDetail(taskId)
-        return workTimeDetail
-      } else if (typeof tasksApi.getWorkLogs === 'function') {
-        const workLogData = await tasksApi.getWorkLogs(taskId)
-        workHours.value = Array.isArray(workLogData) ? workLogData : []
-        return { work_hours: workHours.value }
-      } else {
-        // Mock返回数据以通过测试
-        return {
-          task_id: taskId,
-          base_work_hours: 40,
-          bonus_hours: 15,
-          penalty_hours: -30,
-          total_work_hours: 25,
-          calculation_details: {
-            base_calculation: '维修任务基础工时',
-            bonuses: ['紧急处理奖励 +15分钟'],
-            penalties: ['超时完成惩罚 -30分钟']
-          }
-        }
-      }
+      // 极简API调用 - 所有工时计算由后端处理
+      const workTimeDetail = await tasksApi.getWorkTimeDetail(taskId)
+      return workTimeDetail
     } catch (err: any) {
       error.value = err instanceof Error ? err.message : '获取工时详情失败'
       console.error('getWorkTimeDetail error:', err)

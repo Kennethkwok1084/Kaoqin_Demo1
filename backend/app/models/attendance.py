@@ -5,7 +5,7 @@ Includes attendance records, exceptions, and related enums.
 
 from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from sqlalchemy import (
     Boolean,
@@ -344,3 +344,68 @@ class MonthlyAttendanceSummary(BaseModel):
             f"<MonthlyAttendanceSummary(member_id={self.member_id}, "
             f"month={self.month_string})>"
         )
+
+    # 上月结转逻辑方法
+
+    def calculate_carryover_hours(self, standard_hours: float = 30.0) -> float:
+        """
+        计算可结转到下月的工时
+        
+        Args:
+            standard_hours: 月度工时标准（默认30小时）
+            
+        Returns:
+            可结转的工时数量
+        """
+        # 总工时 = 本月实际工时 + 上月结转工时
+        effective_total = (self.total_hours or 0.0) + (self.carried_hours or 0.0)
+        
+        # 超过标准工时的部分可结转
+        if effective_total > standard_hours:
+            carryover = effective_total - standard_hours
+            self.remaining_hours = carryover
+            return carryover
+        else:
+            self.remaining_hours = 0.0
+            return 0.0
+
+    def apply_carryover_from_previous(self, previous_summary: "MonthlyAttendanceSummary") -> None:
+        """
+        应用上月结转工时
+        
+        Args:
+            previous_summary: 上月考勤汇总
+        """
+        if previous_summary:
+            # 获取上月的可结转工时
+            carryover = previous_summary.calculate_carryover_hours()
+            self.carried_hours = carryover
+            
+            # 重新计算总工时
+            self.recalculate_total_hours()
+
+    def recalculate_total_hours(self) -> None:
+        """重新计算总工时"""
+        base_hours = (
+            (self.repair_task_hours or 0.0) +
+            (self.monitoring_hours or 0.0) + 
+            (self.assistance_hours or 0.0)
+        )
+        
+        # 减去惩罚工时
+        penalty_total = self.penalty_hours or 0.0
+        
+        # 最终总工时 = 基础工时 - 惩罚工时 + 上月结转
+        self.total_hours = max(0.0, base_hours - penalty_total) + (self.carried_hours or 0.0)
+
+    def get_carryover_info(self) -> Dict[str, Any]:
+        """获取结转信息摘要"""
+        return {
+            "current_month": self.month_string,
+            "carried_from_previous": self.carried_hours or 0.0,
+            "current_month_hours": (self.total_hours or 0.0) - (self.carried_hours or 0.0),
+            "total_effective_hours": self.total_hours or 0.0,
+            "remaining_for_carryover": self.remaining_hours or 0.0,
+            "is_eligible_for_carryover": (self.total_hours or 0.0) > 30.0,
+            "excess_hours": max(0.0, (self.total_hours or 0.0) - 30.0),
+        }

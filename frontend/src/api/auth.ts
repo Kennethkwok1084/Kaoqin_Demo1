@@ -9,12 +9,6 @@ import type {
   ConfirmResetPasswordRequest,
   ApiResponse
 } from '@/types/auth'
-import {
-  AuthTransformer,
-  extractResponseData,
-  transformEnum,
-  UserRoleMapping
-} from '@/utils/fieldMapping'
 
 /**
  * 认证相关API
@@ -24,32 +18,16 @@ export const authApi = {
    * 用户登录
    */
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    // Transform frontend request to backend format
-    const backendRequest = AuthTransformer.toBackend(credentials)
-
-    const response = await http.post<ApiResponse<any>>(
+    // 极简API调用 - 后端直接返回前端需要的格式
+    const response = await http.post<ApiResponse<LoginResponse['data']>>(
       '/auth/login',
-      backendRequest
+      credentials
     )
-
-    // Extract and transform response data
-    const responseData = extractResponseData(response.data)
-
-    // Transform backend response to frontend format
-    const transformedData = AuthTransformer.toFrontend(responseData)
-
-    // Transform role enum values
-    if ((transformedData as any)?.user?.role) {
-      ;(transformedData as any).user.role = transformEnum(
-        (transformedData as any).user.role,
-        UserRoleMapping.toFrontend
-      )
-    }
-
+    
     return {
       success: response.data.success,
       message: response.data.message,
-      data: transformedData as LoginResponse['data']
+      data: response.data.data
     }
   },
 
@@ -79,21 +57,9 @@ export const authApi = {
    * 获取当前用户信息（原方法）
    */
   async getUserInfo(): Promise<UserInfo> {
-    const response = await http.get<ApiResponse<any>>('/auth/me')
-
-    // Extract and transform response data
-    const responseData = extractResponseData(response.data)
-    const transformedData = AuthTransformer.toFrontend(responseData)
-
-    // Transform role enum values
-    if ((transformedData as any)?.role) {
-      ;(transformedData as any).role = transformEnum(
-        (transformedData as any).role,
-        UserRoleMapping.toFrontend
-      )
-    }
-
-    return transformedData as UserInfo
+    // 极简API调用 - 后端直接返回正确格式
+    const response = await http.get<ApiResponse<UserInfo>>('/auth/me')
+    return response.data.data
   },
 
   /**

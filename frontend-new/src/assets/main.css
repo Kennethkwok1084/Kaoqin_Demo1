@@ -1,0 +1,37 @@
+@import './base.css';
+
+/* 🚀 全局零边框重置 - 现代响应式基础 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100vw;
+  height: 100vh;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+#app {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  font-weight: normal;
+}
+
+/* 链接样式优化 */
+a {
+  text-decoration: none;
+  color: #667eea;
+  transition: all 0.3s ease;
+}
+
+a:hover {
+  color: #764ba2;
+}
+
+/* 移除所有默认的响应式断点 - 使用Container Queries代替 */

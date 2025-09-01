@@ -109,12 +109,30 @@ async def login(
 
         logger.info(f"Successful login for user: {user.student_id}")
 
+        # Manually construct user data to avoid SQLAlchemy lazy loading issues
+        user_data = {
+            "id": user.id,
+            "username": user.username,
+            "name": user.name,
+            "student_id": user.student_id,
+            "phone": user.phone,
+            "department": user.department,
+            "class_name": user.class_name,
+            "role": user.role.value,
+            "is_active": user.is_active,
+            "profile_completed": user.profile_completed,
+            "needs_profile_completion": not user.profile_completed,
+            "status_display": "在职" if user.is_active else "离职",
+            "is_verified": user.is_verified,
+            "login_count": user.login_count,
+        }
+
         response_data = {
             "access_token": access_token,
             "refresh_token": refresh_token,
             "token_type": "bearer",
             "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            "user": user.get_safe_dict(),
+            "user": user_data,
         }
 
         return create_response(data=response_data, message_key="AUTH_SUCCESS_LOGIN")

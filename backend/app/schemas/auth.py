@@ -7,34 +7,39 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from .base import BaseResponse, StandardResponse
 
 
-class LoginResponse(BaseModel):
-    """Response model for successful login."""
-
-    success: bool = Field(..., description="Login success status")
-    message: str = Field(..., description="Success message")
-    access_token: str = Field(..., description="JWT access token")
-    refresh_token: str = Field(..., description="JWT refresh token")
-    token_type: str = Field(default="bearer", description="Token type")
-    expires_in: int = Field(..., description="Token expiration time in seconds")
-    user: Dict[str, Any] = Field(..., description="User profile information")
+class LoginResponse(StandardResponse):
+    """登录响应 - 直接输出前端需要的camelCase格式"""
+    
+    class LoginData(BaseResponse):
+        """登录数据"""
+        access_token: str = Field(..., description="JWT访问令牌", alias="accessToken")
+        refresh_token: str = Field(..., description="JWT刷新令牌", alias="refreshToken") 
+        token_type: str = Field(default="bearer", description="令牌类型", alias="tokenType")
+        expires_in: int = Field(..., description="令牌过期时间(秒)", alias="expiresIn")
+        user: Dict[str, Any] = Field(..., description="用户信息")
+    
+    data: LoginData = Field(..., description="登录数据")
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "success": True,
                 "message": "登录成功",
-                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                "token_type": "bearer",
-                "expires_in": 3600,
-                "user": {
-                    "id": 1,
-                    "name": "张三",
-                    "student_id": "2021001001",
-                    "role": "member",
-                },
+                "data": {
+                    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                    "tokenType": "bearer",
+                    "expiresIn": 3600,
+                    "user": {
+                        "id": 1,
+                        "name": "张三",
+                        "studentId": "2021001001",
+                        "role": "member"
+                    }
+                }
             }
         }
     )

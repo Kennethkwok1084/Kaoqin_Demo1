@@ -11,6 +11,8 @@ import time
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional
+from functools import lru_cache
+import hashlib
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -83,6 +85,13 @@ class ABTableMatchingService:
         self._name_clean_pattern = re.compile(
             r"[^\u4e00-\u9fff\u0041-\u005a\u0061-\u007a·]"
         )
+        
+        # 优化缓存系统
+        self._similarity_cache = {}
+        self._phone_cache = {}
+        self._name_cache = {}
+        self._cache_hits = 0
+        self._cache_misses = 0
 
     async def match_ab_tables(
         self,
@@ -177,7 +186,16 @@ class ABTableMatchingService:
 
             # 统计结果
             stats = self._calculate_matching_stats(match_results)
+            
+            # 缓存性能统计
+            cache_stats = {
+                "cache_hits": self._cache_hits,
+                "cache_misses": self._cache_misses,
+                "hit_rate": self._cache_hits / max(self._cache_hits + self._cache_misses, 1),
+            }
+            
             logger.info(f"Matching completed: {stats}")
+            logger.info(f"Cache performance: {cache_stats}")
 
             return match_results
 
@@ -296,12 +314,14 @@ class ABTableMatchingService:
         return list(result.scalars().all())
 
     def _build_member_index(self, members: List[Member]) -> Dict[str, Any]:
-        """构建成员索引以提高匹配效率"""
+        """构建成员索引以提高匹配效率（优化版）"""
         index: Dict[str, Dict[str, Any]] = {
             "by_name": {},  # 按姓名索引
             "by_phone": {},  # 按电话索引
             "by_email": {},  # 按邮箱索引
             "by_name_phone": {},  # 按姓名+电话组合索引
+            "by_phone_suffix": {},  # 按电话后缀索引（快速查找）
+            "fuzzy_name_groups": {},  # 按姓名首字符分组（模糊匹配优化）
         }
 
         for member in members:
@@ -349,6 +369,22 @@ class ABTableMatchingService:
                 if combo_key not in index["by_name_phone"]:
                     index["by_name_phone"][combo_key] = []
                 index["by_name_phone"][combo_key].append(member_data)
+                
+            # 电话后缀索引优化（中国手机号后8位、7位、6位）
+            if clean_phone and len(clean_phone) >= 6:
+                for suffix_len in [8, 7, 6]:
+                    if len(clean_phone) >= suffix_len:
+                        suffix = clean_phone[-suffix_len:]
+                        if suffix not in index["by_phone_suffix"]:
+                            index["by_phone_suffix"][suffix] = []
+                        index["by_phone_suffix"][suffix].append(member_data)
+                        
+            # 姓名分组优化（按首字符分组以减少模糊匹配的搜索空间）
+            if clean_name:
+                first_char = clean_name[0] if clean_name else ""
+                if first_char not in index["fuzzy_name_groups"]:
+                    index["fuzzy_name_groups"][first_char] = []
+                index["fuzzy_name_groups"][first_char].append(member_data)
 
         return index
 
@@ -432,31 +468,69 @@ class ABTableMatchingService:
     def _fuzzy_search(
         self, clean_name: str, clean_phone: str, member_index: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
-        """模糊搜索候选项"""
+        """模糊搜索候选项（优化版）"""
         candidates = []
         seen_members = set()
 
-        # 姓名模糊匹配
+        # 优化的姓名模糊匹配：只在相同首字符的组内搜索
         if clean_name:
-            for indexed_name, member_list in member_index["by_name"].items():
-                if self._names_similar(clean_name, indexed_name, threshold=0.7):
-                    for member_data in member_list:
-                        member_id = member_data["member"].id
-                        if member_id not in seen_members:
-                            candidates.append(member_data)
-                            seen_members.add(member_id)
+            first_char = clean_name[0] if clean_name else ""
+            search_groups = []
+            
+            # 主要搜索：相同首字符的组
+            if first_char in member_index["fuzzy_name_groups"]:
+                search_groups.extend(member_index["fuzzy_name_groups"][first_char])
+                
+            # 扩展搜索：相似发音的首字符（中文姓名优化）
+            similar_chars = self._get_similar_first_chars(first_char)
+            for similar_char in similar_chars:
+                if similar_char in member_index["fuzzy_name_groups"]:
+                    search_groups.extend(member_index["fuzzy_name_groups"][similar_char])
+            
+            # 在筛选后的组内进行模糊匹配
+            for member_data in search_groups:
+                if self._names_similar(clean_name, member_data["clean_name"], threshold=0.7):
+                    member_id = member_data["member"].id
+                    if member_id not in seen_members:
+                        candidates.append(member_data)
+                        seen_members.add(member_id)
 
-        # 电话模糊匹配
-        if clean_phone:
-            for indexed_phone, member_list in member_index["by_phone"].items():
-                if self._phones_match(clean_phone, indexed_phone):
-                    for member_data in member_list:
-                        member_id = member_data["member"].id
-                        if member_id not in seen_members:
-                            candidates.append(member_data)
-                            seen_members.add(member_id)
+        # 优化的电话模糊匹配：使用后缀索引
+        if clean_phone and len(clean_phone) >= 6:
+            # 按后缀长度从长到短搜索，提高匹配精度
+            for suffix_len in [8, 7, 6]:
+                if len(clean_phone) >= suffix_len:
+                    suffix = clean_phone[-suffix_len:]
+                    if suffix in member_index["by_phone_suffix"]:
+                        for member_data in member_index["by_phone_suffix"][suffix]:
+                            member_id = member_data["member"].id
+                            if member_id not in seen_members:
+                                # 验证电话号码确实匹配
+                                if self._phones_match(clean_phone, member_data["clean_phone"]):
+                                    candidates.append(member_data)
+                                    seen_members.add(member_id)
+                        # 如果找到足够的候选项，停止搜索更短的后缀
+                        if len(candidates) >= 10:  # 限制候选项数量
+                            break
 
         return candidates
+    
+    def _get_similar_first_chars(self, char: str) -> List[str]:
+        """获取相似发音的首字符（中文姓名优化）"""
+        # 常见中文姓氏的相似发音映射
+        similar_map = {
+            "张": ["章", "长"],
+            "王": ["汪"],
+            "李": ["理", "里"],
+            "刘": ["留", "柳"],
+            "陈": ["程", "成"],
+            "杨": ["羊", "洋"],
+            "黄": ["王"],
+            "吴": ["胡", "武"],
+            "林": ["临"],
+            "何": ["贺"],
+        }
+        return similar_map.get(char, [])
 
     def _multi_field_search(
         self,
@@ -586,20 +660,34 @@ class ABTableMatchingService:
         return self._name_similarity_score(name1, name2) >= threshold
 
     def _name_similarity_score(self, name1: str, name2: str) -> float:
-        """计算姓名相似度得分"""
+        """计算姓名相似度得分（优化版）"""
         if not name1 or not name2:
             return 0.0
+            
+        # 使用缓存键优化
+        cache_key = self._get_cache_key(name1, name2)
+        if cache_key in self._name_cache:
+            self._cache_hits += 1
+            return self._name_cache[cache_key]
+            
+        self._cache_misses += 1
 
         # 完全匹配
         if name1 == name2:
-            return 1.0
-
+            score = 1.0
         # 包含关系
-        if name1 in name2 or name2 in name1:
-            return 0.8
-
-        # 编辑距离相似度
-        return self._levenshtein_similarity(name1, name2)
+        elif name1 in name2 or name2 in name1:
+            score = 0.8
+        # 长度差异过大的早期终止
+        elif abs(len(name1) - len(name2)) > max(len(name1), len(name2)) * 0.7:
+            score = 0.0
+        else:
+            # 使用优化的编辑距离算法
+            score = self._optimized_levenshtein_similarity(name1, name2)
+            
+        # 缓存结果
+        self._name_cache[cache_key] = score
+        return score
 
     def _phones_match(self, phone1: str, phone2: str, strict: bool = True) -> bool:
         """判断两个电话号码是否匹配"""
@@ -623,56 +711,122 @@ class ABTableMatchingService:
         return False
 
     def _phone_similarity_score(self, phone1: str, phone2: str) -> float:
-        """计算电话号码相似度得分"""
+        """计算电话号码相似度得分（优化版）"""
         if not phone1 or not phone2:
             return 0.0
+            
+        # 使用缓存
+        cache_key = self._get_cache_key(phone1, phone2)
+        if cache_key in self._phone_cache:
+            self._cache_hits += 1
+            return self._phone_cache[cache_key]
+            
+        self._cache_misses += 1
 
+        score = 0.0
         if phone1 == phone2:
-            return 1.0
-
-        # 后8位匹配
-        if len(phone1) >= 8 and len(phone2) >= 8 and phone1[-8:] == phone2[-8:]:
-            return 0.95
-
+            score = 1.0
+        # 后8位匹配（中国手机号标准）
+        elif len(phone1) >= 8 and len(phone2) >= 8 and phone1[-8:] == phone2[-8:]:
+            score = 0.95
         # 后7位匹配
-        if len(phone1) >= 7 and len(phone2) >= 7 and phone1[-7:] == phone2[-7:]:
-            return 0.85
-
-        return 0.0
+        elif len(phone1) >= 7 and len(phone2) >= 7 and phone1[-7:] == phone2[-7:]:
+            score = 0.85
+        # 后6位匹配（较宽松）
+        elif len(phone1) >= 6 and len(phone2) >= 6 and phone1[-6:] == phone2[-6:]:
+            score = 0.70
+        
+        # 缓存结果
+        self._phone_cache[cache_key] = score
+        return score
 
     def _levenshtein_similarity(self, s1: str, s2: str) -> float:
         """计算编辑距离相似度"""
+        return self._optimized_levenshtein_similarity(s1, s2)
+    
+    def _optimized_levenshtein_similarity(self, s1: str, s2: str) -> float:
+        """优化的编辑距离相似度计算"""
         if not s1 and not s2:
             return 1.0
         if not s1 or not s2:
             return 0.0
+            
+        # 检查缓存
+        cache_key = self._get_cache_key(s1, s2)
+        if cache_key in self._similarity_cache:
+            self._cache_hits += 1
+            return self._similarity_cache[cache_key]
+            
+        self._cache_misses += 1
 
-        # 动态规划计算编辑距离
         m, n = len(s1), len(s2)
-        dp = [[0] * (n + 1) for _ in range(m + 1)]
-
-        for i in range(m + 1):
-            dp[i][0] = i
-        for j in range(n + 1):
-            dp[0][j] = j
-
+        
+        # 早期终止优化：如果长度差异过大，直接返回低相似度
+        max_len = max(m, n)
+        min_len = min(m, n)
+        if max_len > 0 and min_len / max_len < 0.3:  # 长度比例小于30%
+            result = 0.0
+            self._similarity_cache[cache_key] = result
+            return result
+        
+        # 使用更高效的两行DP优化
+        if m > n:
+            s1, s2 = s2, s1
+            m, n = n, m
+            
+        # 只使用两行的空间优化
+        prev_row = list(range(n + 1))
+        curr_row = [0] * (n + 1)
+        
         for i in range(1, m + 1):
+            curr_row[0] = i
             for j in range(1, n + 1):
                 if s1[i - 1] == s2[j - 1]:
-                    dp[i][j] = dp[i - 1][j - 1]
+                    curr_row[j] = prev_row[j - 1]
                 else:
-                    dp[i][j] = min(
-                        dp[i - 1][j] + 1,  # 删除
-                        dp[i][j - 1] + 1,  # 插入
-                        dp[i - 1][j - 1] + 1,  # 替换
+                    curr_row[j] = min(
+                        prev_row[j] + 1,      # 删除
+                        curr_row[j - 1] + 1,  # 插入
+                        prev_row[j - 1] + 1   # 替换
                     )
-
+            prev_row, curr_row = curr_row, prev_row
+            
         # 转换为相似度 (0-1)
-        max_len = max(m, n)
+        max_len = max(len(s1), len(s2))
         if max_len == 0:
-            return 1.0
-
-        return 1.0 - dp[m][n] / max_len
+            result = 1.0
+        else:
+            result = 1.0 - prev_row[n] / max_len
+            
+        # 缓存结果
+        self._similarity_cache[cache_key] = result
+        return result
+    
+    def _get_cache_key(self, s1: str, s2: str) -> str:
+        """生成缓存键"""
+        # 确保键的顺序一致，避免重复缓存
+        if s1 <= s2:
+            return f"{s1}||{s2}"
+        return f"{s2}||{s1}"
+    
+    def clear_cache(self) -> Dict[str, int]:
+        """清理缓存并返回统计信息"""
+        stats = {
+            "cache_hits": self._cache_hits,
+            "cache_misses": self._cache_misses,
+            "hit_rate": self._cache_hits / max(self._cache_hits + self._cache_misses, 1),
+            "cached_similarities": len(self._similarity_cache),
+            "cached_names": len(self._name_cache),
+            "cached_phones": len(self._phone_cache)
+        }
+        
+        self._similarity_cache.clear()
+        self._name_cache.clear()
+        self._phone_cache.clear()
+        self._cache_hits = 0
+        self._cache_misses = 0
+        
+        return stats
 
     def _extract_name(self, record: Dict[str, Any]) -> str:
         """从记录中提取姓名"""

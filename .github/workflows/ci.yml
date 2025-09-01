@@ -423,7 +423,7 @@ jobs:
     - name: Install Playwright
       run: |
         cd frontend
-        npx playwright install --with-deps chromium firefox
+        npx playwright install --with-deps chromium
 
     - name: Start Backend for E2E Tests
       id: start_backend

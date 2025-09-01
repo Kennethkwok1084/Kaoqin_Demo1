@@ -380,8 +380,40 @@ class RepairTask(BaseModel):
         String(50), nullable=True, comment="B表检修形式（用于线上/线下判断）"
     )
 
+    # 线下单标记功能 - 扩展现有模型
+    is_offline_marked = Column(
+        Boolean, default=False, nullable=False, comment="线下单标记"
+    )
+
+    offline_inspection_result = Column(
+        Text, nullable=True, comment="线下检查结果描述"
+    )
+
+    offline_images = Column(
+        JSON, nullable=True, comment="线下任务相关图片路径列表"
+    )
+
+    offline_marked_by = Column(
+        Integer,
+        ForeignKey("members.id"),
+        nullable=True,
+        comment="线下单标记人员ID",
+    )
+
+    offline_marked_at = Column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="线下单标记时间"
+    )
+
     # Relationships
     member: Mapped["Member"] = relationship("Member", back_populates="repair_tasks")
+    
+    offline_marker: Mapped["Member"] = relationship(
+        "Member", 
+        foreign_keys=[offline_marked_by],
+        post_update=True  # 避免循环引用
+    )
 
     tags: Mapped[List["TaskTag"]] = relationship(
         "TaskTag", secondary=task_tag_association, back_populates="tasks"
@@ -678,6 +710,69 @@ class RepairTask(BaseModel):
             "repair_form": self.repair_form,
         }
 
+    # 线下单标记功能方法
+
+    def mark_as_offline(self, marker_id: int, inspection_result: str = None, images: List[str] = None) -> None:
+        """标记为线下单"""
+        from datetime import datetime
+        
+        self.is_offline_marked = True
+        self.offline_marked_by = marker_id
+        self.offline_marked_at = datetime.utcnow()
+        
+        if inspection_result:
+            self.offline_inspection_result = inspection_result
+            
+        if images:
+            self.offline_images = images
+            
+        # 自动设置任务类型为线下
+        self.task_type = TaskType.OFFLINE
+        self.update_work_minutes()
+
+    def unmark_offline(self) -> None:
+        """取消线下单标记"""
+        self.is_offline_marked = False
+        self.offline_marked_by = None
+        self.offline_marked_at = None
+        self.offline_inspection_result = None
+        self.offline_images = None
+        
+        # 恢复为线上任务（如果没有其他线下依据）
+        if not self.repair_form or "现场" not in self.repair_form.lower():
+            self.task_type = TaskType.ONLINE
+            
+        self.update_work_minutes()
+
+    def add_offline_images(self, image_paths: List[str]) -> None:
+        """添加线下任务图片"""
+        if not self.offline_images:
+            self.offline_images = []
+        
+        existing_images = self.offline_images if isinstance(self.offline_images, list) else []
+        self.offline_images = list(set(existing_images + image_paths))
+
+    def remove_offline_image(self, image_path: str) -> None:
+        """删除线下任务图片"""
+        if self.offline_images and isinstance(self.offline_images, list):
+            if image_path in self.offline_images:
+                self.offline_images.remove(image_path)
+
+    def update_offline_inspection_result(self, result: str) -> None:
+        """更新线下检查结果"""
+        self.offline_inspection_result = result
+
+    def get_offline_info(self) -> Dict[str, Any]:
+        """获取线下单信息"""
+        return {
+            "is_offline_marked": self.is_offline_marked,
+            "offline_marked_by": self.offline_marked_by,
+            "offline_marked_at": self.offline_marked_at.isoformat() if self.offline_marked_at else None,
+            "offline_inspection_result": self.offline_inspection_result,
+            "offline_images": self.offline_images or [],
+            "offline_images_count": len(self.offline_images) if self.offline_images else 0,
+        }
+
 
 class MonitoringTask(BaseModel):
     """
@@ -720,6 +815,38 @@ class MonitoringTask(BaseModel):
     end_time = Column(DateTime(timezone=True), nullable=False, comment="Task end time")
 
     work_minutes = Column(Integer, nullable=False, comment="Actual work minutes")
+
+    # 巡检任务支持 - 扩展现有任务类型
+    cabinet_count = Column(
+        Integer, 
+        nullable=True, 
+        comment="巡检机柜数量（用于计算工时）"
+    )
+
+    minutes_per_cabinet = Column(
+        Integer, 
+        default=5, 
+        nullable=False, 
+        comment="每个机柜的巡检时长（分钟）"
+    )
+
+    inspection_notes = Column(
+        Text, 
+        nullable=True, 
+        comment="巡检记录和备注"
+    )
+
+    equipment_checked = Column(
+        JSON, 
+        nullable=True, 
+        comment="已检查设备清单（JSON格式）"
+    )
+
+    issues_found = Column(
+        JSON, 
+        nullable=True, 
+        comment="发现的问题记录（JSON格式）"
+    )
 
     # Status
     status: Mapped[TaskStatus] = mapped_column(
@@ -798,13 +925,33 @@ class AssistanceTask(BaseModel):
     # Status
     status: Mapped[TaskStatus] = mapped_column(
         PgEnum(TaskStatus, name="taskstatus", create_type=False),
-        default=TaskStatus.COMPLETED,
+        default=TaskStatus.PENDING,  # 改为待审核状态
         nullable=False,
         comment="Task status",
     )
 
+    # 审核流程字段 - 扩展现有模型
+    approved_by = Column(
+        Integer,
+        ForeignKey("members.id"),
+        nullable=True,
+        comment="Approver member ID",
+    )
+
+    approved_at = Column(
+        DateTime(timezone=True), 
+        nullable=True, 
+        comment="Approval time"
+    )
+
     # Relationships
     member: Mapped["Member"] = relationship("Member", back_populates="assistance_tasks")
+    
+    approver: Mapped["Member"] = relationship(
+        "Member", 
+        foreign_keys=[approved_by],
+        post_update=True  # 避免循环引用
+    )
 
     # Constraints and indexes
     __table_args__ = (

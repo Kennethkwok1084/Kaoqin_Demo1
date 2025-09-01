@@ -11,6 +11,7 @@ from app.models.attendance import (
 )
 from app.models.base import Base, BaseModel, TimestampMixin
 from app.models.member import Member, UserRole
+from app.models.system_config import SystemConfig
 from app.models.task import (
     AssistanceTask,
     MonitoringTask,
@@ -32,6 +33,8 @@ __all__ = [
     # Member models
     "Member",
     "UserRole",
+    # System config models
+    "SystemConfig",
     # Task models
     "RepairTask",
     "MonitoringTask",

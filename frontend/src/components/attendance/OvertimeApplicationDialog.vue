@@ -134,22 +134,10 @@ const formRules = {
   ]
 }
 
-// 方法
+// 极简化 - 移除业务计算逻辑，由后端处理
 const calculateHours = () => {
-  if (formData.startTime && formData.endTime) {
-    const [startHour, startMin] = formData.startTime.split(':').map(Number)
-    const [endHour, endMin] = formData.endTime.split(':').map(Number)
-
-    const startMinutes = startHour * 60 + startMin
-    const endMinutes = endHour * 60 + endMin
-
-    if (endMinutes > startMinutes) {
-      calculatedHours.value =
-        Math.round(((endMinutes - startMinutes) / 60) * 10) / 10
-    } else {
-      calculatedHours.value = 0
-    }
-  }
+  // 后端将直接计算并返回加班时长
+  calculatedHours.value = 0 // 仅用于UI显示，实际计算由后端处理
 }
 
 const handleClose = () => {

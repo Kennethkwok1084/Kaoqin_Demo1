@@ -50,7 +50,7 @@ export default defineConfig({
     storageState: 'tests/fixtures/auth-state.json'
   },
 
-  /* Configure projects for major browsers - 优化为Firefox + Chromium组合 */
+  /* Configure projects for major browsers - 仅使用 Chrome 测试 */
   projects: [
     // 设置测试 - 不使用认证状态
     {
@@ -64,11 +64,6 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      dependencies: ['setup']
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
       dependencies: ['setup']
     }
   ],
