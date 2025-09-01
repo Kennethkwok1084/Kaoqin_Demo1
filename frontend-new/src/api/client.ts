@@ -152,7 +152,15 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
-    console.error('API Error:', error.response?.status, error.response?.statusText)
+    const errorMessage = error.response?.data?.message || error.message || '未知错误'
+    const errorStatus = error.response?.status || 'N/A'
+    
+    // 详细的错误日志
+    console.error(`[API Error] Status: ${errorStatus}, Message: ${errorMessage}`, {
+      url: error.config?.url,
+      method: error.config?.method,
+      data: error.config?.data
+    })
     
     // 处理401错误 - token过期
     if (error.response?.status === 401) {
@@ -161,6 +169,16 @@ apiClient.interceptors.response.use(
       if (window.location.pathname !== '/login') {
         window.location.href = '/login'
       }
+    }
+    
+    // 处理429错误 - 限流
+    if (error.response?.status === 429) {
+      console.warn('请求频率过高，请稍后再试')
+    }
+    
+    // 处理500错误 - 服务器错误
+    if (error.response?.status >= 500) {
+      console.error('服务器内部错误，请稍后重试')
     }
     
     return Promise.reject(error)
@@ -173,25 +191,13 @@ export default apiClient
 export const api = {
   // 认证相关
   async login(credentials: { studentId: string; password: string; rememberMe?: boolean }) {
-    // 将前端的camelCase字段映射为后端的snake_case字段
+    // 按照API文档，后端已统一使用camelCase，无需字段映射
     const requestData = {
-      student_id: credentials.studentId,
-      password: credentials.password
+      studentId: credentials.studentId,
+      password: credentials.password,
+      rememberMe: credentials.rememberMe
     }
     const response = await apiClient.post<StandardResponse>('/api/v1/auth/login', requestData)
-    
-    // 将后端的snake_case字段映射为前端期望的camelCase字段
-    if (response.data.success && response.data.data) {
-      const backendData = response.data.data as any
-      response.data.data = {
-        accessToken: backendData.access_token,
-        refreshToken: backendData.refresh_token,
-        tokenType: backendData.token_type,
-        expiresIn: backendData.expires_in,
-        user: backendData.user
-      }
-    }
-    
     return response.data
   },
 
@@ -210,6 +216,14 @@ export const api = {
     return response.data
   },
 
+  async changePassword(data: { currentPassword: string; newPassword: string }) {
+    const response = await apiClient.put<StandardResponse>('/api/v1/auth/change-password', {
+      current_password: data.currentPassword,
+      new_password: data.newPassword
+    })
+    return response.data
+  },
+
   // 任务相关
   async getTasks(params?: {
     page?: number
@@ -225,6 +239,22 @@ export const api = {
     return response.data
   },
 
+  async getRepairTasks(params?: {
+    page?: number
+    pageSize?: number
+    search?: string
+    taskStatus?: string
+    assignedTo?: number
+  }) {
+    const response = await apiClient.get<StandardResponse>('/api/v1/tasks/repair-list', { params })
+    return response.data
+  },
+
+  async getRepairTask(taskId: number) {
+    const response = await apiClient.get<StandardResponse>(`/api/v1/tasks/repair/${taskId}`)
+    return response.data
+  },
+
   async createTask(taskData: {
     title: string
     description: string
@@ -235,6 +265,16 @@ export const api = {
     tagIds?: number[]
   }) {
     const response = await apiClient.post<StandardResponse>('/api/v1/tasks/repair', taskData)
+    return response.data
+  },
+
+  async updateRepairTask(taskId: number, taskData: any) {
+    const response = await apiClient.put<StandardResponse>(`/api/v1/tasks/repair/${taskId}`, taskData)
+    return response.data
+  },
+
+  async deleteRepairTask(taskId: number) {
+    const response = await apiClient.delete<StandardResponse>(`/api/v1/tasks/repair/${taskId}`)
     return response.data
   },
 
@@ -311,6 +351,18 @@ export const api = {
     return response.data
   },
 
+  // 工时记录相关
+  async getWorkHoursRecords(params?: {
+    memberId?: number
+    dateFrom?: string
+    dateTo?: string
+    page?: number
+    size?: number
+  }) {
+    const response = await apiClient.get<StandardResponse>('/api/v1/attendance/records', { params })
+    return response.data
+  },
+
   // 统计相关
   async getWorkHoursStats(params?: {
     dateFrom?: string
@@ -352,33 +404,65 @@ export const api = {
   // 协助任务相关API
   async createAssistanceTask(taskData: {
     title: string
-    description?: string
-    assisted_department?: string
-    assisted_person?: string
-    start_time: string  // ISO格式时间字符串
-    end_time: string    // ISO格式时间字符串
+    assistedDepartment: string
+    assistedPerson?: string
+    location: string
+    assistanceDate: string
+    startTime?: string
+    endTime?: string
+    workHours?: number
+    description: string
+    remarks?: string
+    attachments: string[]
+    status: string
   }) {
     const response = await apiClient.post<StandardResponse>('/api/v1/tasks/assistance', taskData)
+    return response.data
+  },
+
+  // 保存协助任务草稿
+  async saveAssistanceTaskDraft(draftData: any) {
+    const response = await apiClient.post<StandardResponse>('/api/v1/tasks/assistance/draft', draftData)
+    return response.data
+  },
+
+  // 获取我的协助任务统计
+  async getMyAssistanceTasksStats() {
+    const response = await apiClient.get<StandardResponse>('/api/v1/tasks/assistance/my-stats')
     return response.data
   },
 
   async getAssistanceTasks(params?: {
     page?: number
     pageSize?: number
-    member_id?: number
-    date_from?: string
-    date_to?: string
+    memberId?: number
+    dateFrom?: string
+    dateTo?: string
   }) {
-    const response = await apiClient.get<StandardResponse>('/api/v1/tasks/assistance', { params })
+    // Convert camelCase to snake_case for backend
+    const backendParams = {
+      page: params?.page,
+      pageSize: params?.pageSize,
+      member_id: params?.memberId,
+      date_from: params?.dateFrom,
+      date_to: params?.dateTo
+    }
+    const response = await apiClient.get<StandardResponse>('/api/v1/tasks/assistance', { params: backendParams })
     return response.data
   },
 
   async getAssistanceTaskStats(params?: {
-    member_id?: number
-    date_from?: string
-    date_to?: string
+    memberId?: number
+    dateFrom?: string
+    dateTo?: string
   }) {
-    const response = await apiClient.get<StandardResponse>('/api/v1/tasks/assistance/stats', { params })
+    // Convert camelCase to snake_case for backend
+    const backendParams = {
+      member_id: params?.memberId,
+      date_from: params?.dateFrom,
+      date_to: params?.dateTo
+    }
+    const response = await apiClient.get<StandardResponse>('/api/v1/tasks/assistance/stats', { params: backendParams })
     return response.data
   },
 
@@ -410,35 +494,54 @@ export const api = {
     return response.data
   },
 
-  // 线下单标记API (待后端实现)
-  async markTaskAsOffline(taskId: number, data: {
-    inspection_result: string
-    inspection_content: string
-    inspection_images?: File[]
+  // 线下单标记API 
+  async markTaskAsOffline(data: {
+    taskId: number
+    repairResult: string
+    repairContent: string
+    repairImages: string[]
+    estimatedDuration: number
+    remarks?: string
+    isOffline: boolean
   }) {
-    const formData = new FormData()
-    formData.append('inspection_result', data.inspection_result)
-    formData.append('inspection_content', data.inspection_content)
-    
-    if (data.inspection_images) {
-      data.inspection_images.forEach((file, index) => {
-        formData.append(`inspection_image_${index}`, file)
-      })
-    }
-
-    const response = await apiClient.post<StandardResponse>(`/api/v1/tasks/repair/${taskId}/mark-offline`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+    const response = await apiClient.post<StandardResponse>(`/api/v1/tasks/${data.taskId}/mark-offline`, {
+      repairResult: data.repairResult,
+      repairContent: data.repairContent,
+      repairImages: data.repairImages,
+      estimatedDuration: data.estimatedDuration,
+      remarks: data.remarks,
+      isOffline: data.isOffline
     })
     return response.data
   },
 
-  // 数据导出API (待后端实现)
+  // 报修单AB表导入API
+  async importRepairTasks(data: {
+    tasks: any[]
+    options: {
+      overwrite: boolean
+      skipDuplicates: boolean
+      autoAssign: boolean
+    }
+  }) {
+    const response = await apiClient.post<StandardResponse>('/api/v1/tasks/import-repair-data', data)
+    return response.data
+  },
+
+  // 数据导出API
   async exportAttendanceData(params: {
     month: string        // 格式: YYYY-MM
-    include_carryover?: boolean
-    member_ids?: number[]
+    includeCarryover?: boolean
+    memberIds?: number[]
   }) {
-    const response = await apiClient.post('/api/v1/attendance/export', params, {
+    // Convert camelCase to snake_case for backend
+    const backendParams = {
+      month: params.month,
+      include_carryover: params.includeCarryover,
+      member_ids: params.memberIds
+    }
+    
+    const response = await apiClient.post('/api/v1/attendance/export', backendParams, {
       responseType: 'blob'
     })
     
@@ -454,14 +557,64 @@ export const api = {
     window.URL.revokeObjectURL(url)
   },
 
-  // 系统配置API (待后端实现)
-  async getSystemConfig() {
-    const response = await apiClient.get<StandardResponse>('/api/v1/system/config')
+  // 系统设置API
+  async getSystemSettings() {
+    const response = await apiClient.get<StandardResponse>('/api/v1/system/settings')
     return response.data
   },
 
-  async updateSystemConfig(config: Record<string, any>) {
-    const response = await apiClient.put<StandardResponse>('/api/v1/system/config', config)
+  async updateSystemSettings(settings: {
+    workHourRules: any
+    attendanceRules: any
+    notificationSettings: any
+  }) {
+    const response = await apiClient.put<StandardResponse>('/api/v1/system/settings', settings)
+    return response.data
+  },
+
+  async getSettingsModifyHistory() {
+    const response = await apiClient.get<StandardResponse>('/api/v1/system/settings/history')
+    return response.data
+  },
+
+  // 权限管理API
+  async getRoles() {
+    const response = await apiClient.get<StandardResponse>('/api/v1/roles')
+    return response.data
+  },
+
+  async createRole(roleData: {
+    name: string
+    description: string
+    level: number
+    permissions: string[]
+  }) {
+    const response = await apiClient.post<StandardResponse>('/api/v1/roles', roleData)
+    return response.data
+  },
+
+  async updateRole(roleId: number, roleData: {
+    name: string
+    description: string
+    level: number
+    permissions: string[]
+  }) {
+    const response = await apiClient.put<StandardResponse>(`/api/v1/roles/${roleId}`, roleData)
+    return response.data
+  },
+
+  async deleteRole(roleId: number) {
+    const response = await apiClient.delete<StandardResponse>(`/api/v1/roles/${roleId}`)
+    return response.data
+  },
+
+  async updateRolePermissions(roleId: number, data: { permissions: string[] }) {
+    const response = await apiClient.put<StandardResponse>(`/api/v1/roles/${roleId}/permissions`, data)
+    return response.data
+  },
+
+  async getPermissions() {
+    const response = await apiClient.get<StandardResponse>('/api/v1/permissions')
     return response.data
   }
 }

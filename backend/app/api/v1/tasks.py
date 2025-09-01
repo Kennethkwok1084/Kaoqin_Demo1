@@ -5950,6 +5950,347 @@ async def complete_inspection_task(
         )
 
 
+@router.post("/assistance/{task_id}/review", response_model=Dict[str, Any])
+async def review_assistance_task(
+    task_id: int,
+    request_data: Dict[str, Any],
+    current_user: Member = Depends(get_current_active_admin),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """
+    协助任务审核（支持approve/reject操作）
+    
+    权限：仅管理员可审核协助任务
+    """
+    try:
+        from sqlalchemy import select
+        from app.models.task import AssistanceTask, TaskStatus
+        from datetime import datetime
+        
+        # 获取审核操作和评论
+        action = request_data.get("action", "approve")  # approve 或 reject
+        comment = request_data.get("comment", "")
+        
+        # 获取待审核任务
+        stmt = select(AssistanceTask).where(AssistanceTask.id == task_id)
+        result = await db.execute(stmt)
+        task = result.scalar_one_or_none()
+        
+        if not task:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="协助任务不存在"
+            )
+        
+        if task.status != TaskStatus.PENDING:
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="任务已审核，无需重复操作"
+            )
+        
+        # 根据审核操作更新任务状态
+        if action == "approve":
+            task.status = TaskStatus.COMPLETED
+            task.approved_by = current_user.id
+            task.approved_at = datetime.utcnow()
+            task.review_comment = comment
+            
+            # 更新相关成员的月度汇总
+            if task.start_time:
+                from app.services.work_hours_service import WorkHoursCalculationService
+                work_hours_service = WorkHoursCalculationService(db)
+                
+                await work_hours_service.recalculate_member_monthly_summary(
+                    member_id=task.member_id,
+                    year=task.start_time.year,
+                    month=task.start_time.month
+                )
+            
+            message = "协助任务审核通过"
+        elif action == "reject":
+            task.status = TaskStatus.CANCELLED
+            task.approved_by = current_user.id
+            task.approved_at = datetime.utcnow()
+            task.review_comment = comment
+            message = "协助任务审核驳回"
+        else:
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="无效的审核操作，请使用 'approve' 或 'reject'"
+            )
+        
+        await db.commit()
+        await db.refresh(task)
+        
+        logger.info(f"Assistance task {task_id} {action} by user {current_user.id}")
+        
+        return create_response(
+            data={
+                "taskId": task.id,
+                "action": action,
+                "status": task.status.value,
+                "approvedBy": current_user.id,
+                "approvedByName": current_user.name,
+                "approvedAt": task.approved_at.isoformat() if task.approved_at else None,
+                "reviewComment": comment,
+                "workMinutes": task.work_minutes if action == "approve" else 0,
+                "workHours": round((task.work_minutes or 0) / 60.0, 2) if action == "approve" else 0,
+            },
+            message=message,
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Review assistance task error: {str(e)}")
+        return create_error_response(
+            message="审核协助任务失败",
+            details={"error": str(e)}
+        )
+
+
+@router.post("/assistance/batch-review", response_model=Dict[str, Any])
+async def batch_review_assistance_tasks(
+    request_data: Dict[str, Any],
+    current_user: Member = Depends(get_current_active_admin),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """
+    批量审核协助任务
+    
+    权限：仅管理员可批量审核协助任务
+    """
+    try:
+        from sqlalchemy import select
+        from app.models.task import AssistanceTask, TaskStatus
+        from datetime import datetime
+        
+        task_ids = request_data.get("taskIds", [])
+        action = request_data.get("action", "approve")  # approve 或 reject
+        comment = request_data.get("comment", "")
+        
+        if not task_ids:
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="没有提供任务ID列表"
+            )
+        
+        if action not in ["approve", "reject"]:
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="无效的审核操作，请使用 'approve' 或 'reject'"
+            )
+        
+        # 获取待审核任务列表
+        stmt = select(AssistanceTask).where(
+            AssistanceTask.id.in_(task_ids),
+            AssistanceTask.status == TaskStatus.PENDING
+        )
+        result = await db.execute(stmt)
+        tasks = result.scalars().all()
+        
+        if not tasks:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="没有找到待审核的协助任务"
+            )
+        
+        processed_tasks = []
+        errors = []
+        
+        for task in tasks:
+            try:
+                # 根据审核操作更新任务状态
+                if action == "approve":
+                    task.status = TaskStatus.COMPLETED
+                elif action == "reject":
+                    task.status = TaskStatus.CANCELLED
+                
+                task.approved_by = current_user.id
+                task.approved_at = datetime.utcnow()
+                task.review_comment = comment
+                
+                # 如果是批准，更新相关成员的月度汇总
+                if action == "approve" and task.start_time:
+                    from app.services.work_hours_service import WorkHoursCalculationService
+                    work_hours_service = WorkHoursCalculationService(db)
+                    
+                    await work_hours_service.recalculate_member_monthly_summary(
+                        member_id=task.member_id,
+                        year=task.start_time.year,
+                        month=task.start_time.month
+                    )
+                
+                processed_tasks.append({
+                    "taskId": task.id,
+                    "title": task.title,
+                    "status": task.status.value,
+                    "workMinutes": task.work_minutes if action == "approve" else 0,
+                })
+                
+            except Exception as e:
+                logger.error(f"Batch review task {task.id} error: {str(e)}")
+                errors.append(f"任务 {task.id} 审核失败: {str(e)}")
+        
+        await db.commit()
+        
+        result = {
+            "totalRequested": len(task_ids),
+            "processedCount": len(processed_tasks),
+            "errorCount": len(errors),
+            "action": action,
+            "processedTasks": processed_tasks,
+            "errors": errors
+        }
+        
+        logger.info(f"Batch assistance tasks {action} by user {current_user.id}: {result}")
+        
+        return create_response(
+            data=result,
+            message=f"批量审核完成：{len(processed_tasks)} 个任务{action}，{len(errors)} 个失败"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Batch review assistance tasks error: {str(e)}")
+        return create_error_response(
+            message="批量审核协助任务失败",
+            details={"error": str(e)}
+        )
+
+
+@router.post("/import-repair-data", response_model=Dict[str, Any])
+async def import_repair_data(
+    request_data: Dict[str, Any],
+    current_user: Member = Depends(get_current_active_admin),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """
+    AB表导入维修任务数据
+    
+    权限：仅管理员可操作
+    """
+    try:
+        from app.services.import_service import ImportService
+        from app.models.task import TaskType, TaskStatus, TaskPriority
+        from datetime import datetime
+        
+        tasks_data = request_data.get("tasks", [])
+        options = request_data.get("options", {})
+        
+        if not tasks_data:
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="没有提供任务数据"
+            )
+        
+        import_service = ImportService(db)
+        
+        # 处理导入选项
+        overwrite = options.get("overwrite", True)
+        skip_duplicates = options.get("skipDuplicates", True) 
+        auto_assign = options.get("autoAssign", False)
+        
+        created_tasks = []
+        updated_tasks = []
+        skipped_tasks = []
+        errors = []
+        
+        for task_data in tasks_data:
+            try:
+                # 检查必要字段
+                if not task_data.get("workOrderId"):
+                    errors.append(f"任务缺少工单号: {task_data}")
+                    continue
+                    
+                # 检查是否已存在相同工单号的任务
+                existing_task = await db.execute(
+                    select(RepairTask).where(
+                        RepairTask.work_order_id == task_data.get("workOrderId")
+                    )
+                )
+                existing = existing_task.scalar_one_or_none()
+                
+                if existing and skip_duplicates:
+                    skipped_tasks.append(task_data.get("workOrderId"))
+                    continue
+                elif existing and overwrite:
+                    # 更新现有任务
+                    existing.title = task_data.get("title", existing.title)
+                    existing.description = task_data.get("description", existing.description)
+                    existing.location = task_data.get("location", existing.location)
+                    existing.reporter_name = task_data.get("reporterName", existing.reporter_name)
+                    existing.reporter_phone = task_data.get("reporterPhone", existing.reporter_phone)
+                    existing.is_offline = task_data.get("isOffline", existing.is_offline)
+                    existing.updated_at = datetime.utcnow()
+                    updated_tasks.append(existing.work_order_id)
+                    continue
+                
+                # 创建新任务
+                new_task = RepairTask(
+                    work_order_id=task_data.get("workOrderId"),
+                    title=task_data.get("title", "未知维修任务"),
+                    description=task_data.get("description"),
+                    location=task_data.get("location"),
+                    reporter_name=task_data.get("reporterName"),
+                    reporter_phone=task_data.get("reporterPhone"),
+                    task_type=TaskType.REPAIR,
+                    priority=TaskPriority.MEDIUM,
+                    status=TaskStatus.PENDING,
+                    is_offline=task_data.get("isOffline", False),
+                    created_by=current_user.id,
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow()
+                )
+                
+                # 如果启用自动分配，分配给当前用户
+                if auto_assign:
+                    new_task.member_id = current_user.id
+                    new_task.status = TaskStatus.IN_PROGRESS
+                    new_task.assigned_at = datetime.utcnow()
+                
+                db.add(new_task)
+                created_tasks.append(task_data.get("workOrderId"))
+                
+            except Exception as e:
+                logger.error(f"Import task error: {str(e)}")
+                errors.append(f"导入任务失败 {task_data.get('workOrderId', 'Unknown')}: {str(e)}")
+        
+        # 提交所有更改
+        await db.commit()
+        
+        result = {
+            "total_processed": len(tasks_data),
+            "created_count": len(created_tasks),
+            "updated_count": len(updated_tasks), 
+            "skipped_count": len(skipped_tasks),
+            "error_count": len(errors),
+            "created_tasks": created_tasks,
+            "updated_tasks": updated_tasks,
+            "skipped_tasks": skipped_tasks,
+            "errors": errors
+        }
+        
+        logger.info(f"Repair data imported by user {current_user.id}: {result}")
+        
+        return create_response(
+            data=result,
+            message=f"AB表导入完成：创建 {len(created_tasks)} 个，更新 {len(updated_tasks)} 个，跳过 {len(skipped_tasks)} 个"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Import repair data error: {str(e)}")
+        return create_error_response(
+            message="AB表导入失败", 
+            details={"error": str(e)}
+        )
+
+
 @router.get("/health", response_model=Dict[str, Any])
 async def health_check() -> Dict[str, Any]:
     """

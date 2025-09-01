@@ -240,6 +240,34 @@ def auth_headers():
 
 
 @pytest.fixture
+async def token(async_client):
+    """Get authentication token for testing."""
+    # 创建测试用户
+    user_data = {
+        "username": "testuser",
+        "password": "TestPassword123!",
+        "student_id": "2024001001", 
+        "name": "测试用户",
+        "email": "testuser@example.com"
+    }
+    
+    # 先尝试注册
+    await async_client.post("/api/v1/auth/register", json=user_data)
+    
+    # 登录获取token
+    login_response = await async_client.post(
+        "/api/v1/auth/login",
+        json={"username": user_data["username"], "password": user_data["password"]}
+    )
+    
+    if login_response.status_code == 200:
+        data = login_response.json()
+        return data.get("data", {}).get("access_token", "mock_token")
+    else:
+        return "mock_token"
+
+
+@pytest.fixture
 def sample_login_data():
     """Sample login data for testing."""
     return {"student_id": "2021001001", "password": "TestPassword123!"}

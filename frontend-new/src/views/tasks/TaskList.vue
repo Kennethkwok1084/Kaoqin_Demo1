@@ -10,6 +10,9 @@
           <a-button type="primary" :icon="h(PlusOutlined)" @click="$router.push('/tasks/create')">
             创建任务
           </a-button>
+          <a-button :icon="h(ImportOutlined)" @click="$router.push('/tasks/repair-import')">
+            AB表导入
+          </a-button>
           <a-button :icon="h(ReloadOutlined)" @click="refreshTasks" :loading="loading">
             刷新
           </a-button>
@@ -118,10 +121,26 @@
                 @click="editTask(record.id)"
               />
             </a-tooltip>
+            <a-tooltip title="标记为线下任务" v-if="record.type === 'repair' && !record.isOffline">
+              <a-button
+                size="small"
+                type="primary"
+                ghost
+                :icon="h(GlobalOutlined)"
+                @click="markAsOffline(record)"
+              />
+            </a-tooltip>
           </a-space>
         </template>
       </a-table>
     </div>
+
+    <!-- 线下任务标记弹窗 -->
+    <OfflineTaskMarking
+      v-model:visible="offlineMarkingVisible"
+      :task-data="selectedTask"
+      @success="handleOfflineMarkingSuccess"
+    />
   </div>
 </template>
 
@@ -129,13 +148,16 @@
 import { ref, computed, onMounted, h } from 'vue'
 import { message, Modal } from 'ant-design-vue'
 import { useTasksStore } from '@/stores/tasks'
+import OfflineTaskMarking from '@/components/tasks/OfflineTaskMarking.vue'
 import {
   PlusOutlined,
   ReloadOutlined,
   EyeOutlined,
   PlayCircleOutlined,
   CheckCircleOutlined,
-  EditOutlined
+  EditOutlined,
+  ImportOutlined,
+  GlobalOutlined
 } from '@ant-design/icons-vue'
 
 const tasksStore = useTasksStore()
@@ -144,6 +166,10 @@ const tasksStore = useTasksStore()
 const searchText = ref('')
 const statusFilter = ref('')
 const typeFilter = ref('')
+
+// 线下任务标记相关
+const offlineMarkingVisible = ref(false)
+const selectedTask = ref(null)
 
 // 计算属性
 const tasks = computed(() => tasksStore.tasks)
@@ -341,6 +367,19 @@ const completeTask = async (taskId: number) => {
     const errorMessage = error.response?.data?.message || error.message || '任务完成失败'
     message.error(errorMessage)
   }
+}
+
+// 标记为线下任务
+const markAsOffline = (task: any) => {
+  selectedTask.value = task
+  offlineMarkingVisible.value = true
+}
+
+// 线下任务标记成功处理
+const handleOfflineMarkingSuccess = () => {
+  // 刷新任务列表
+  tasksStore.fetchTasks()
+  selectedTask.value = null
 }
 
 // 生命周期
