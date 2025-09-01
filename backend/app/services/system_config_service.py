@@ -19,7 +19,7 @@ class SystemConfigService:
 
     def __init__(self, db: AsyncSession):
         self.db = db
-        
+
     # 默认系统配置
     DEFAULT_CONFIGS = [
         # 工时计算参数
@@ -35,7 +35,7 @@ class SystemConfigService:
             "max_value": 480,
             "display_order": 1,
             "is_system_config": True,
-            "required_role": "admin"
+            "required_role": "admin",
         },
         {
             "config_key": "work_hours.offline_task_minutes",
@@ -49,7 +49,7 @@ class SystemConfigService:
             "max_value": 480,
             "display_order": 2,
             "is_system_config": True,
-            "required_role": "admin"
+            "required_role": "admin",
         },
         {
             "config_key": "work_hours.rush_bonus_minutes",
@@ -63,7 +63,7 @@ class SystemConfigService:
             "max_value": 120,
             "display_order": 3,
             "is_system_config": True,
-            "required_role": "admin"
+            "required_role": "admin",
         },
         {
             "config_key": "work_hours.good_review_bonus_minutes",
@@ -77,7 +77,7 @@ class SystemConfigService:
             "max_value": 120,
             "display_order": 4,
             "is_system_config": True,
-            "required_role": "admin"
+            "required_role": "admin",
         },
         {
             "config_key": "work_hours.inspection_minutes_per_cabinet",
@@ -91,9 +91,8 @@ class SystemConfigService:
             "max_value": 60,
             "display_order": 5,
             "is_system_config": True,
-            "required_role": "admin"
+            "required_role": "admin",
         },
-        
         # 扣时规则参数
         {
             "config_key": "penalties.late_response_minutes",
@@ -107,7 +106,7 @@ class SystemConfigService:
             "max_value": 240,
             "display_order": 11,
             "is_system_config": True,
-            "required_role": "admin"
+            "required_role": "admin",
         },
         {
             "config_key": "penalties.late_completion_minutes",
@@ -121,7 +120,7 @@ class SystemConfigService:
             "max_value": 240,
             "display_order": 12,
             "is_system_config": True,
-            "required_role": "admin"
+            "required_role": "admin",
         },
         {
             "config_key": "penalties.bad_review_minutes",
@@ -135,9 +134,8 @@ class SystemConfigService:
             "max_value": 240,
             "display_order": 13,
             "is_system_config": True,
-            "required_role": "admin"
+            "required_role": "admin",
         },
-        
         # 时间阈值参数
         {
             "config_key": "thresholds.response_timeout_hours",
@@ -151,7 +149,7 @@ class SystemConfigService:
             "max_value": 168,
             "display_order": 21,
             "is_system_config": True,
-            "required_role": "admin"
+            "required_role": "admin",
         },
         {
             "config_key": "thresholds.completion_timeout_hours",
@@ -165,7 +163,7 @@ class SystemConfigService:
             "max_value": 168,
             "display_order": 22,
             "is_system_config": True,
-            "required_role": "admin"
+            "required_role": "admin",
         },
         {
             "config_key": "thresholds.monthly_carryover_hours",
@@ -179,9 +177,8 @@ class SystemConfigService:
             "max_value": 200,
             "display_order": 23,
             "is_system_config": True,
-            "required_role": "admin"
+            "required_role": "admin",
         },
-        
         # 系统通用配置
         {
             "config_key": "system.app_name",
@@ -193,7 +190,7 @@ class SystemConfigService:
             "default_value": "学生网管考勤系统",
             "display_order": 31,
             "is_system_config": True,
-            "required_role": "admin"
+            "required_role": "admin",
         },
         {
             "config_key": "system.maintenance_mode",
@@ -205,7 +202,7 @@ class SystemConfigService:
             "default_value": "false",
             "display_order": 32,
             "is_system_config": True,
-            "required_role": "admin"
+            "required_role": "admin",
         },
         {
             "config_key": "system.max_import_rows",
@@ -219,8 +216,8 @@ class SystemConfigService:
             "max_value": 100000,
             "display_order": 33,
             "is_system_config": True,
-            "required_role": "admin"
-        }
+            "required_role": "admin",
+        },
     ]
 
     async def initialize_default_configs(self) -> Dict[str, Any]:
@@ -229,19 +226,23 @@ class SystemConfigService:
             created_count = 0
             updated_count = 0
             skipped_count = 0
-            
+
             for config_data in self.DEFAULT_CONFIGS:
                 config_key = config_data["config_key"]
-                
+
                 # 检查配置是否已存在
-                query = select(SystemConfig).where(SystemConfig.config_key == config_key)
+                query = select(SystemConfig).where(
+                    SystemConfig.config_key == config_key
+                )
                 result = await self.db.execute(query)
                 existing_config = result.scalar_one_or_none()
-                
+
                 if existing_config:
                     # 更新现有配置的元数据（但保留用户设置的值）
                     existing_config.config_name = config_data["config_name"]
-                    existing_config.config_description = config_data["config_description"]
+                    existing_config.config_description = config_data[
+                        "config_description"
+                    ]
                     existing_config.category = config_data["category"]
                     existing_config.config_group = config_data["config_group"]
                     existing_config.value_type = config_data["value_type"]
@@ -250,14 +251,14 @@ class SystemConfigService:
                     existing_config.display_order = config_data["display_order"]
                     existing_config.is_system_config = config_data["is_system_config"]
                     existing_config.required_role = config_data["required_role"]
-                    
+
                     # 如果没有设置过值，使用默认值
                     if not existing_config.config_value:
                         existing_config.config_value = config_data["default_value"]
-                    
+
                     # 更新默认值
                     existing_config.default_value = config_data["default_value"]
-                    
+
                     updated_count += 1
                     logger.info(f"Updated system config: {config_key}")
                 else:
@@ -276,26 +277,26 @@ class SystemConfigService:
                         display_order=config_data["display_order"],
                         is_system_config=config_data["is_system_config"],
                         required_role=config_data["required_role"],
-                        is_active=True
+                        is_active=True,
                     )
-                    
+
                     self.db.add(new_config)
                     created_count += 1
                     logger.info(f"Created system config: {config_key}")
-            
+
             await self.db.commit()
-            
+
             result = {
                 "success": True,
                 "created_count": created_count,
                 "updated_count": updated_count,
                 "skipped_count": skipped_count,
-                "total_configs": len(self.DEFAULT_CONFIGS)
+                "total_configs": len(self.DEFAULT_CONFIGS),
             }
-            
+
             logger.info(f"System config initialization completed: {result}")
             return result
-            
+
         except Exception as e:
             logger.error(f"Failed to initialize system configs: {str(e)}")
             await self.db.rollback()
@@ -305,15 +306,18 @@ class SystemConfigService:
         """获取配置值（类型转换后）"""
         try:
             query = select(SystemConfig).where(
-                and_(SystemConfig.config_key == config_key, SystemConfig.is_active == True)
+                and_(
+                    SystemConfig.config_key == config_key,
+                    SystemConfig.is_active == True,
+                )
             )
             result = await self.db.execute(query)
             config = result.scalar_one_or_none()
-            
+
             if config:
                 return config.get_typed_value()
             return default
-            
+
         except Exception as e:
             logger.error(f"Failed to get config value for {config_key}: {str(e)}")
             return default
@@ -324,23 +328,23 @@ class SystemConfigService:
             query = select(SystemConfig).where(SystemConfig.config_key == config_key)
             result = await self.db.execute(query)
             config = result.scalar_one_or_none()
-            
+
             if not config:
                 logger.warning(f"Config key not found: {config_key}")
                 return False
-                
+
             # 验证值
             if not config.validate_value(value):
                 logger.warning(f"Invalid value for config {config_key}: {value}")
                 return False
-                
+
             # 设置值
             config.set_typed_value(value)
             await self.db.commit()
-            
+
             logger.info(f"Config updated: {config_key} = {value}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to set config value for {config_key}: {str(e)}")
             await self.db.rollback()
@@ -352,39 +356,50 @@ class SystemConfigService:
             query = (
                 select(SystemConfig)
                 .where(
-                    and_(SystemConfig.category == category, SystemConfig.is_active == True)
+                    and_(
+                        SystemConfig.category == category,
+                        SystemConfig.is_active == True,
+                    )
                 )
                 .order_by(SystemConfig.display_order, SystemConfig.config_key)
             )
             result = await self.db.execute(query)
             return list(result.scalars().all())
-            
+
         except Exception as e:
             logger.error(f"Failed to get configs by category {category}: {str(e)}")
             return []
 
-    async def get_all_configs(self, include_inactive: bool = False) -> List[SystemConfig]:
+    async def get_all_configs(
+        self, include_inactive: bool = False
+    ) -> List[SystemConfig]:
         """获取所有配置"""
         try:
             query = select(SystemConfig)
             if not include_inactive:
                 query = query.where(SystemConfig.is_active == True)
-            query = query.order_by(SystemConfig.category, SystemConfig.display_order, SystemConfig.config_key)
-            
+            query = query.order_by(
+                SystemConfig.category,
+                SystemConfig.display_order,
+                SystemConfig.config_key,
+            )
+
             result = await self.db.execute(query)
             return list(result.scalars().all())
-            
+
         except Exception as e:
             logger.error(f"Failed to get all configs: {str(e)}")
             return []
 
-    async def bulk_update_configs(self, config_updates: Dict[str, Any]) -> Dict[str, Any]:
+    async def bulk_update_configs(
+        self, config_updates: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """批量更新配置"""
         try:
             success_count = 0
             failed_count = 0
             failed_keys = []
-            
+
             for config_key, value in config_updates.items():
                 success = await self.set_config_value(config_key, value)
                 if success:
@@ -392,20 +407,17 @@ class SystemConfigService:
                 else:
                     failed_count += 1
                     failed_keys.append(config_key)
-                    
+
             return {
                 "success": failed_count == 0,
                 "success_count": success_count,
                 "failed_count": failed_count,
-                "failed_keys": failed_keys
+                "failed_keys": failed_keys,
             }
-            
+
         except Exception as e:
             logger.error(f"Failed to bulk update configs: {str(e)}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     async def reset_config_to_default(self, config_key: str) -> bool:
         """重置配置为默认值"""
@@ -413,16 +425,16 @@ class SystemConfigService:
             query = select(SystemConfig).where(SystemConfig.config_key == config_key)
             result = await self.db.execute(query)
             config = result.scalar_one_or_none()
-            
+
             if not config:
                 return False
-                
+
             config.config_value = config.default_value
             await self.db.commit()
-            
+
             logger.info(f"Config reset to default: {config_key}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to reset config {config_key}: {str(e)}")
             await self.db.rollback()
@@ -431,25 +443,47 @@ class SystemConfigService:
     async def get_work_hours_config(self) -> Dict[str, int]:
         """获取工时计算配置（便捷方法）"""
         return {
-            "online_task_minutes": await self.get_config_value("work_hours.online_task_minutes", 40),
-            "offline_task_minutes": await self.get_config_value("work_hours.offline_task_minutes", 100),
-            "rush_bonus_minutes": await self.get_config_value("work_hours.rush_bonus_minutes", 15),
-            "good_review_bonus_minutes": await self.get_config_value("work_hours.good_review_bonus_minutes", 30),
-            "inspection_minutes_per_cabinet": await self.get_config_value("work_hours.inspection_minutes_per_cabinet", 5),
+            "online_task_minutes": await self.get_config_value(
+                "work_hours.online_task_minutes", 40
+            ),
+            "offline_task_minutes": await self.get_config_value(
+                "work_hours.offline_task_minutes", 100
+            ),
+            "rush_bonus_minutes": await self.get_config_value(
+                "work_hours.rush_bonus_minutes", 15
+            ),
+            "good_review_bonus_minutes": await self.get_config_value(
+                "work_hours.good_review_bonus_minutes", 30
+            ),
+            "inspection_minutes_per_cabinet": await self.get_config_value(
+                "work_hours.inspection_minutes_per_cabinet", 5
+            ),
         }
 
     async def get_penalties_config(self) -> Dict[str, int]:
         """获取扣时规则配置（便捷方法）"""
         return {
-            "late_response_minutes": await self.get_config_value("penalties.late_response_minutes", 30),
-            "late_completion_minutes": await self.get_config_value("penalties.late_completion_minutes", 30),
-            "bad_review_minutes": await self.get_config_value("penalties.bad_review_minutes", 60),
+            "late_response_minutes": await self.get_config_value(
+                "penalties.late_response_minutes", 30
+            ),
+            "late_completion_minutes": await self.get_config_value(
+                "penalties.late_completion_minutes", 30
+            ),
+            "bad_review_minutes": await self.get_config_value(
+                "penalties.bad_review_minutes", 60
+            ),
         }
 
     async def get_thresholds_config(self) -> Dict[str, int]:
         """获取时间阈值配置（便捷方法）"""
         return {
-            "response_timeout_hours": await self.get_config_value("thresholds.response_timeout_hours", 24),
-            "completion_timeout_hours": await self.get_config_value("thresholds.completion_timeout_hours", 48),
-            "monthly_carryover_hours": await self.get_config_value("thresholds.monthly_carryover_hours", 30),
+            "response_timeout_hours": await self.get_config_value(
+                "thresholds.response_timeout_hours", 24
+            ),
+            "completion_timeout_hours": await self.get_config_value(
+                "thresholds.completion_timeout_hours", 48
+            ),
+            "monthly_carryover_hours": await self.get_config_value(
+                "thresholds.monthly_carryover_hours", 30
+            ),
         }

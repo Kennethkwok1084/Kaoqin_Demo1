@@ -20,7 +20,9 @@ vi.mock('element-plus', async () => {
 // Mock API - 提供完整的 tasksApi Mock
 vi.mock('@/api/tasks', () => ({
   tasksApi: {
-    getTasks: vi.fn(() => Promise.resolve({ items: [], total: 0, page: 1, pageSize: 20 })),
+    getTasks: vi.fn(() =>
+      Promise.resolve({ items: [], total: 0, page: 1, pageSize: 20 })
+    ),
     getTaskDetail: vi.fn(() => Promise.resolve({})),
     createTask: vi.fn(() => Promise.resolve({})),
     updateTask: vi.fn(() => Promise.resolve({})),
@@ -28,9 +30,13 @@ vi.mock('@/api/tasks', () => ({
     getWorkTimeDetail: vi.fn(() => Promise.resolve([])),
     getTaskStats: vi.fn(() => Promise.resolve({})),
     exportTasks: vi.fn(() => Promise.resolve()),
-    importTasks: vi.fn(() => Promise.resolve({ success: 0, failed: 0, errors: [] }))
+    importTasks: vi.fn(() =>
+      Promise.resolve({ success: 0, failed: 0, errors: [] })
+    )
   },
-  getTasks: vi.fn(() => Promise.resolve({ items: [], total: 0, page: 1, pageSize: 20 })),
+  getTasks: vi.fn(() =>
+    Promise.resolve({ items: [], total: 0, page: 1, pageSize: 20 })
+  ),
   getTaskDetail: vi.fn(() => Promise.resolve({})),
   createTask: vi.fn(() => Promise.resolve({})),
   updateTask: vi.fn(() => Promise.resolve({})),

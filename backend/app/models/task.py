@@ -5,7 +5,7 @@ Includes repair tasks, monitoring tasks, and assistance tasks.
 
 import enum
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from sqlalchemy import (
     JSON,
@@ -385,13 +385,9 @@ class RepairTask(BaseModel):
         Boolean, default=False, nullable=False, comment="线下单标记"
     )
 
-    offline_inspection_result = Column(
-        Text, nullable=True, comment="线下检查结果描述"
-    )
+    offline_inspection_result = Column(Text, nullable=True, comment="线下检查结果描述")
 
-    offline_images = Column(
-        JSON, nullable=True, comment="线下任务相关图片路径列表"
-    )
+    offline_images = Column(JSON, nullable=True, comment="线下任务相关图片路径列表")
 
     offline_marked_by = Column(
         Integer,
@@ -401,18 +397,16 @@ class RepairTask(BaseModel):
     )
 
     offline_marked_at = Column(
-        DateTime(timezone=True),
-        nullable=True,
-        comment="线下单标记时间"
+        DateTime(timezone=True), nullable=True, comment="线下单标记时间"
     )
 
     # Relationships
-    member: Mapped["Member"] = relationship("Member", back_populates="repair_tasks")
-    
-    offline_marker: Mapped["Member"] = relationship(
-        "Member", 
-        foreign_keys=[offline_marked_by],
-        post_update=True  # 避免循环引用
+    member: Mapped["Member"] = relationship(
+        "Member", foreign_keys=[member_id], back_populates="repair_tasks"
+    )
+
+    offline_marker: Mapped[Optional["Member"]] = relationship(
+        "Member", foreign_keys=[offline_marked_by], post_update=True  # 避免循环引用
     )
 
     tags: Mapped[List["TaskTag"]] = relationship(
@@ -712,20 +706,25 @@ class RepairTask(BaseModel):
 
     # 线下单标记功能方法
 
-    def mark_as_offline(self, marker_id: int, inspection_result: str = None, images: List[str] = None) -> None:
+    def mark_as_offline(
+        self,
+        marker_id: int,
+        inspection_result: Optional[str] = None,
+        images: Optional[List[str]] = None,
+    ) -> None:
         """标记为线下单"""
         from datetime import datetime
-        
+
         self.is_offline_marked = True
         self.offline_marked_by = marker_id
         self.offline_marked_at = datetime.utcnow()
-        
+
         if inspection_result:
             self.offline_inspection_result = inspection_result
-            
+
         if images:
             self.offline_images = images
-            
+
         # 自动设置任务类型为线下
         self.task_type = TaskType.OFFLINE
         self.update_work_minutes()
@@ -737,19 +736,21 @@ class RepairTask(BaseModel):
         self.offline_marked_at = None
         self.offline_inspection_result = None
         self.offline_images = None
-        
+
         # 恢复为线上任务（如果没有其他线下依据）
         if not self.repair_form or "现场" not in self.repair_form.lower():
             self.task_type = TaskType.ONLINE
-            
+
         self.update_work_minutes()
 
     def add_offline_images(self, image_paths: List[str]) -> None:
         """添加线下任务图片"""
         if not self.offline_images:
             self.offline_images = []
-        
-        existing_images = self.offline_images if isinstance(self.offline_images, list) else []
+
+        existing_images = (
+            self.offline_images if isinstance(self.offline_images, list) else []
+        )
         self.offline_images = list(set(existing_images + image_paths))
 
     def remove_offline_image(self, image_path: str) -> None:
@@ -767,10 +768,14 @@ class RepairTask(BaseModel):
         return {
             "is_offline_marked": self.is_offline_marked,
             "offline_marked_by": self.offline_marked_by,
-            "offline_marked_at": self.offline_marked_at.isoformat() if self.offline_marked_at else None,
+            "offline_marked_at": (
+                self.offline_marked_at.isoformat() if self.offline_marked_at else None
+            ),
             "offline_inspection_result": self.offline_inspection_result,
             "offline_images": self.offline_images or [],
-            "offline_images_count": len(self.offline_images) if self.offline_images else 0,
+            "offline_images_count": (
+                len(self.offline_images) if self.offline_images else 0
+            ),
         }
 
 
@@ -818,35 +823,20 @@ class MonitoringTask(BaseModel):
 
     # 巡检任务支持 - 扩展现有任务类型
     cabinet_count = Column(
-        Integer, 
-        nullable=True, 
-        comment="巡检机柜数量（用于计算工时）"
+        Integer, nullable=True, comment="巡检机柜数量（用于计算工时）"
     )
 
     minutes_per_cabinet = Column(
-        Integer, 
-        default=5, 
-        nullable=False, 
-        comment="每个机柜的巡检时长（分钟）"
+        Integer, default=5, nullable=False, comment="每个机柜的巡检时长（分钟）"
     )
 
-    inspection_notes = Column(
-        Text, 
-        nullable=True, 
-        comment="巡检记录和备注"
-    )
+    inspection_notes = Column(Text, nullable=True, comment="巡检记录和备注")
 
     equipment_checked = Column(
-        JSON, 
-        nullable=True, 
-        comment="已检查设备清单（JSON格式）"
+        JSON, nullable=True, comment="已检查设备清单（JSON格式）"
     )
 
-    issues_found = Column(
-        JSON, 
-        nullable=True, 
-        comment="发现的问题记录（JSON格式）"
-    )
+    issues_found = Column(JSON, nullable=True, comment="发现的问题记录（JSON格式）")
 
     # Status
     status: Mapped[TaskStatus] = mapped_column(
@@ -857,7 +847,9 @@ class MonitoringTask(BaseModel):
     )
 
     # Relationships
-    member: Mapped["Member"] = relationship("Member", back_populates="monitoring_tasks")
+    member: Mapped["Member"] = relationship(
+        "Member", foreign_keys=[member_id], back_populates="monitoring_tasks"
+    )
 
     # Constraints and indexes
     __table_args__ = (
@@ -939,18 +931,16 @@ class AssistanceTask(BaseModel):
     )
 
     approved_at = Column(
-        DateTime(timezone=True), 
-        nullable=True, 
-        comment="Approval time"
+        DateTime(timezone=True), nullable=True, comment="Approval time"
     )
 
     # Relationships
-    member: Mapped["Member"] = relationship("Member", back_populates="assistance_tasks")
-    
-    approver: Mapped["Member"] = relationship(
-        "Member", 
-        foreign_keys=[approved_by],
-        post_update=True  # 避免循环引用
+    member: Mapped["Member"] = relationship(
+        "Member", foreign_keys=[member_id], back_populates="assistance_tasks"
+    )
+
+    approver: Mapped[Optional["Member"]] = relationship(
+        "Member", foreign_keys=[approved_by], post_update=True  # 避免循环引用
     )
 
     # Constraints and indexes

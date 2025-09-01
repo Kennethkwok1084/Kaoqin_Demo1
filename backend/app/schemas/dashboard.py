@@ -2,12 +2,14 @@
 仪表板相关的数据模式
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel
 
 
 class MetricsData(BaseModel):
     """指标数据"""
+
     totalTasks: int
     inProgress: int
     pending: int
@@ -17,12 +19,14 @@ class MetricsData(BaseModel):
 
 class TrendData(BaseModel):
     """趋势数据"""
+
     value: float
     direction: str
 
 
 class TrendsData(BaseModel):
     """趋势数据集合"""
+
     totalTasksTrend: TrendData
     inProgressTrend: TrendData
     pendingTrend: TrendData
@@ -31,6 +35,7 @@ class TrendsData(BaseModel):
 
 class SystemInfo(BaseModel):
     """系统信息"""
+
     onlineUsers: int
     lastDataSync: str
     systemUptime: str
@@ -38,6 +43,7 @@ class SystemInfo(BaseModel):
 
 class DashboardOverviewResponse(BaseModel):
     """仪表板概览响应"""
+
     metrics: MetricsData
     trends: TrendsData
     systemInfo: SystemInfo
@@ -45,6 +51,7 @@ class DashboardOverviewResponse(BaseModel):
 
 class TaskSummary(BaseModel):
     """任务汇总"""
+
     id: int
     title: str
     status: str
@@ -56,6 +63,7 @@ class TaskSummary(BaseModel):
 
 class TaskStats(BaseModel):
     """任务统计"""
+
     totalAssigned: int
     pending: int
     inProgress: int
@@ -64,12 +72,14 @@ class TaskStats(BaseModel):
 
 class DashboardTasksResponse(BaseModel):
     """我的任务响应"""
+
     tasks: List[TaskSummary]
     summary: TaskStats
 
 
 class Activity(BaseModel):
     """活动记录"""
+
     id: int
     type: str
     title: str
@@ -84,11 +94,13 @@ class Activity(BaseModel):
 
 class ActivitySummary(BaseModel):
     """活动汇总"""
+
     total: int
     todayCount: int
 
 
 class DashboardActivitiesResponse(BaseModel):
     """最近活动响应"""
+
     activities: List[Activity]
     summary: ActivitySummary

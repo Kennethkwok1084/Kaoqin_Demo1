@@ -135,6 +135,7 @@ class Member(BaseModel):
     # 关系定义（暂时保留，实际关系会在相关模块中定义）
     repair_tasks: Mapped[List["RepairTask"]] = relationship(
         "RepairTask",
+        foreign_keys="RepairTask.member_id",
         back_populates="member",
         cascade="all, delete-orphan",
         lazy="dynamic",
@@ -142,6 +143,7 @@ class Member(BaseModel):
 
     monitoring_tasks: Mapped[List["MonitoringTask"]] = relationship(
         "MonitoringTask",
+        foreign_keys="MonitoringTask.member_id",
         back_populates="member",
         cascade="all, delete-orphan",
         lazy="dynamic",
@@ -149,6 +151,7 @@ class Member(BaseModel):
 
     assistance_tasks: Mapped[List["AssistanceTask"]] = relationship(
         "AssistanceTask",
+        foreign_keys="AssistanceTask.member_id",
         back_populates="member",
         cascade="all, delete-orphan",
         lazy="dynamic",

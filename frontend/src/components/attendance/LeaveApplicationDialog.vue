@@ -209,7 +209,6 @@ const calculateDays = () => {
   // 后端将直接计算并返回请假时长
   calculatedDays.value = 0 // 仅用于UI显示，实际计算由后端处理
   calculatedHours.value = 0
-  }
 }
 
 const handleClose = () => {

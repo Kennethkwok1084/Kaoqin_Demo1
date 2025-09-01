@@ -1750,62 +1750,69 @@ async def get_region_analysis(
             year = datetime.now().year
         if not month:
             month = datetime.now().month
-        
+
         start_date = datetime(year, month, 1)
         end_date = datetime(year, month, monthrange(year, month)[1], 23, 59, 59)
-        
+
         # 查询任务按区域分布
-        stmt = select(
-            RepairTask.location,
-            func.count(RepairTask.id).label("task_count"),
-            func.avg(RepairTask.work_minutes).label("avg_work_minutes"),
-            func.sum(
-                case(
-                    (RepairTask.status == TaskStatus.COMPLETED, 1),
-                    else_=0
-                )
-            ).label("completed_count")
-        ).where(
-            and_(
-                RepairTask.created_at >= start_date,
-                RepairTask.created_at <= end_date
+        stmt = (
+            select(
+                RepairTask.location,
+                func.count(RepairTask.id).label("task_count"),
+                func.avg(RepairTask.work_minutes).label("avg_work_minutes"),
+                func.sum(
+                    case((RepairTask.status == TaskStatus.COMPLETED, 1), else_=0)
+                ).label("completed_count"),
             )
-        ).group_by(RepairTask.location)
-        
+            .where(
+                and_(
+                    RepairTask.created_at >= start_date,
+                    RepairTask.created_at <= end_date,
+                )
+            )
+            .group_by(RepairTask.location)
+        )
+
         result = await db.execute(stmt)
         region_stats = result.all()
-        
+
         region_data = []
         for stat in region_stats:
             location = stat.location or "未知区域"
-            completion_rate = (stat.completed_count / stat.task_count * 100) if stat.task_count > 0 else 0
-            
-            region_data.append({
-                "region": location,
-                "taskCount": stat.task_count,
-                "completedCount": stat.completed_count,
-                "completionRate": round(completion_rate, 2),
-                "avgWorkMinutes": round(float(stat.avg_work_minutes or 0), 2),
-                "avgWorkHours": round(float(stat.avg_work_minutes or 0) / 60, 2)
-            })
-        
+            completion_rate = (
+                (stat.completed_count / stat.task_count * 100)
+                if stat.task_count > 0
+                else 0
+            )
+
+            region_data.append(
+                {
+                    "region": location,
+                    "taskCount": stat.task_count,
+                    "completedCount": stat.completed_count,
+                    "completionRate": round(completion_rate, 2),
+                    "avgWorkMinutes": round(float(stat.avg_work_minutes or 0), 2),
+                    "avgWorkHours": round(float(stat.avg_work_minutes or 0) / 60, 2),
+                }
+            )
+
         # 按任务数量排序
         region_data.sort(key=lambda x: x["taskCount"], reverse=True)
-        
+
         return create_response(
             data={
                 "regions": region_data,
                 "total_regions": len(region_data),
-                "period": f"{year}年{month}月"
+                "period": f"{year}年{month}月",
             },
-            message="区域分析数据获取成功"
+            message="区域分析数据获取成功",
         )
-        
+
     except Exception as e:
         logger.error(f"Get region analysis error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="获取区域分析数据失败"
+            detail="获取区域分析数据失败",
         )
 
 
@@ -1824,62 +1831,82 @@ async def get_problem_keywords(
             year = datetime.now().year
         if not month:
             month = datetime.now().month
-        
+
         start_date = datetime(year, month, 1)
         end_date = datetime(year, month, monthrange(year, month)[1], 23, 59, 59)
-        
+
         # 查询任务描述和标题
         stmt = select(RepairTask.title, RepairTask.description).where(
             and_(
                 RepairTask.created_at >= start_date,
                 RepairTask.created_at <= end_date,
-                RepairTask.title.isnot(None)
+                RepairTask.title.isnot(None),
             )
         )
-        
+
         result = await db.execute(stmt)
         tasks = result.all()
-        
+
         # 简单的关键词统计（模拟实现）
         keyword_counts = {}
         common_keywords = [
-            "网络", "断网", "无法上网", "网络连接", "WiFi", "网线",
-            "路由器", "交换机", "服务器", "IP地址", "DNS", "网速慢",
-            "掉线", "连接超时", "网络故障", "无线网络", "有线网络",
-            "网络设备", "网络配置", "网络维护", "系统故障", "硬件故障"
+            "网络",
+            "断网",
+            "无法上网",
+            "网络连接",
+            "WiFi",
+            "网线",
+            "路由器",
+            "交换机",
+            "服务器",
+            "IP地址",
+            "DNS",
+            "网速慢",
+            "掉线",
+            "连接超时",
+            "网络故障",
+            "无线网络",
+            "有线网络",
+            "网络设备",
+            "网络配置",
+            "网络维护",
+            "系统故障",
+            "硬件故障",
         ]
-        
+
         for task in tasks:
             text = f"{task.title or ''} {task.description or ''}".lower()
             for keyword in common_keywords:
                 if keyword.lower() in text:
                     keyword_counts[keyword] = keyword_counts.get(keyword, 0) + 1
-        
+
         # 转换为列表并排序
         keyword_data = [
             {
                 "keyword": keyword,
                 "count": count,
-                "percentage": round(count / len(tasks) * 100, 2) if tasks else 0
+                "percentage": round(count / len(tasks) * 100, 2) if tasks else 0,
             }
-            for keyword, count in sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True)
+            for keyword, count in sorted(
+                keyword_counts.items(), key=lambda x: x[1], reverse=True
+            )
         ][:limit]
-        
+
         return create_response(
             data={
                 "keywords": keyword_data,
                 "total_keywords": len(keyword_data),
                 "total_tasks_analyzed": len(tasks),
-                "period": f"{year}年{month}月"
+                "period": f"{year}年{month}月",
             },
-            message="问题关键词分析获取成功"
+            message="问题关键词分析获取成功",
         )
-        
+
     except Exception as e:
         logger.error(f"Get problem keywords error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="获取问题关键词分析失败"
+            detail="获取问题关键词分析失败",
         )
 
 
@@ -1897,74 +1924,78 @@ async def get_time_distribution(
             year = datetime.now().year
         if not month:
             month = datetime.now().month
-        
+
         start_date = datetime(year, month, 1)
         end_date = datetime(year, month, monthrange(year, month)[1], 23, 59, 59)
-        
+
         # 按小时统计任务创建时间
-        stmt = select(
-            func.extract('hour', RepairTask.created_at).label('hour'),
-            func.count(RepairTask.id).label('task_count')
-        ).where(
-            and_(
-                RepairTask.created_at >= start_date,
-                RepairTask.created_at <= end_date
+        stmt = (
+            select(
+                func.extract("hour", RepairTask.created_at).label("hour"),
+                func.count(RepairTask.id).label("task_count"),
             )
-        ).group_by(func.extract('hour', RepairTask.created_at))
-        
+            .where(
+                and_(
+                    RepairTask.created_at >= start_date,
+                    RepairTask.created_at <= end_date,
+                )
+            )
+            .group_by(func.extract("hour", RepairTask.created_at))
+        )
+
         result = await db.execute(stmt)
         hourly_stats = result.all()
-        
+
         # 初始化24小时数据
         hourly_data = {i: 0 for i in range(24)}
         for stat in hourly_stats:
             hour = int(stat.hour)
             hourly_data[hour] = stat.task_count
-        
+
         # 按星期几统计
-        stmt_weekday = select(
-            func.extract('dow', RepairTask.created_at).label('weekday'),
-            func.count(RepairTask.id).label('task_count')
-        ).where(
-            and_(
-                RepairTask.created_at >= start_date,
-                RepairTask.created_at <= end_date
+        stmt_weekday = (
+            select(
+                func.extract("dow", RepairTask.created_at).label("weekday"),
+                func.count(RepairTask.id).label("task_count"),
             )
-        ).group_by(func.extract('dow', RepairTask.created_at))
-        
+            .where(
+                and_(
+                    RepairTask.created_at >= start_date,
+                    RepairTask.created_at <= end_date,
+                )
+            )
+            .group_by(func.extract("dow", RepairTask.created_at))
+        )
+
         result_weekday = await db.execute(stmt_weekday)
         weekday_stats = result_weekday.all()
-        
+
         weekday_names = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
         weekday_data = []
         weekday_counts = {int(stat.weekday): stat.task_count for stat in weekday_stats}
-        
+
         for i in range(7):
-            weekday_data.append({
-                "weekday": weekday_names[i],
-                "taskCount": weekday_counts.get(i, 0)
-            })
-        
+            weekday_data.append(
+                {"weekday": weekday_names[i], "taskCount": weekday_counts.get(i, 0)}
+            )
+
         return create_response(
             data={
                 "hourlyDistribution": [
-                    {
-                        "hour": f"{hour:02d}:00",
-                        "taskCount": count
-                    }
+                    {"hour": f"{hour:02d}:00", "taskCount": count}
                     for hour, count in hourly_data.items()
                 ],
                 "weekdayDistribution": weekday_data,
-                "period": f"{year}年{month}月"
+                "period": f"{year}年{month}月",
             },
-            message="时间分布分析获取成功"
+            message="时间分布分析获取成功",
         )
-        
+
     except Exception as e:
         logger.error(f"Get time distribution error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="获取时间分布分析失败"
+            detail="获取时间分布分析失败",
         )
 
 
@@ -1982,108 +2013,125 @@ async def get_satisfaction_analysis(
             year = datetime.now().year
         if not month:
             month = datetime.now().month
-        
+
         start_date = datetime(year, month, 1)
         end_date = datetime(year, month, monthrange(year, month)[1], 23, 59, 59)
-        
+
         # 查询评价分布
-        stmt = select(
-            RepairTask.rating,
-            func.count(RepairTask.id).label('count')
-        ).where(
-            and_(
-                RepairTask.created_at >= start_date,
-                RepairTask.created_at <= end_date,
-                RepairTask.rating.isnot(None)
+        stmt = (
+            select(RepairTask.rating, func.count(RepairTask.id).label("count"))
+            .where(
+                and_(
+                    RepairTask.created_at >= start_date,
+                    RepairTask.created_at <= end_date,
+                    RepairTask.rating.isnot(None),
+                )
             )
-        ).group_by(RepairTask.rating)
-        
+            .group_by(RepairTask.rating)
+        )
+
         result = await db.execute(stmt)
         rating_stats = result.all()
-        
+
         # 初始化评分数据
         rating_distribution = []
         total_ratings = 0
         weighted_sum = 0
-        
+
         for i in range(1, 6):  # 1-5星
             count = 0
             for stat in rating_stats:
                 if stat.rating == i:
                     count = stat.count
                     break
-            
-            rating_distribution.append({
-                "rating": i,
-                "count": count,
-                "stars": "★" * i + "☆" * (5 - i)
-            })
-            
+
+            rating_distribution.append(
+                {"rating": i, "count": count, "stars": "★" * i + "☆" * (5 - i)}
+            )
+
             total_ratings += count
             weighted_sum += i * count
-        
+
         # 计算平均评分
         avg_rating = weighted_sum / total_ratings if total_ratings > 0 else 0
-        
+
         # 按成员统计满意度
-        stmt_member = select(
-            RepairTask.member_id,
-            func.avg(RepairTask.rating).label('avg_rating'),
-            func.count(RepairTask.id).label('task_count')
-        ).where(
-            and_(
-                RepairTask.created_at >= start_date,
-                RepairTask.created_at <= end_date,
-                RepairTask.rating.isnot(None),
-                RepairTask.member_id.isnot(None)
+        stmt_member = (
+            select(
+                RepairTask.member_id,
+                func.avg(RepairTask.rating).label("avg_rating"),
+                func.count(RepairTask.id).label("task_count"),
             )
-        ).group_by(RepairTask.member_id)
-        
+            .where(
+                and_(
+                    RepairTask.created_at >= start_date,
+                    RepairTask.created_at <= end_date,
+                    RepairTask.rating.isnot(None),
+                    RepairTask.member_id.isnot(None),
+                )
+            )
+            .group_by(RepairTask.member_id)
+        )
+
         result_member = await db.execute(stmt_member)
         member_stats = result_member.all()
-        
+
         member_satisfaction = []
         for stat in member_stats:
             # 获取成员信息
             member_stmt = select(Member).where(Member.id == stat.member_id)
             member_result = await db.execute(member_stmt)
             member = member_result.scalar_one_or_none()
-            
+
             if member:
-                member_satisfaction.append({
-                    "memberId": member.id,
-                    "memberName": member.name,
-                    "avgRating": round(float(stat.avg_rating), 2),
-                    "taskCount": stat.task_count,
-                    "satisfactionLevel": "优秀" if stat.avg_rating >= 4.5 else 
-                                      "良好" if stat.avg_rating >= 4.0 else
-                                      "一般" if stat.avg_rating >= 3.0 else "待改善"
-                })
-        
+                member_satisfaction.append(
+                    {
+                        "memberId": member.id,
+                        "memberName": member.name,
+                        "avgRating": round(float(stat.avg_rating), 2),
+                        "taskCount": stat.task_count,
+                        "satisfactionLevel": (
+                            "优秀"
+                            if stat.avg_rating >= 4.5
+                            else (
+                                "良好"
+                                if stat.avg_rating >= 4.0
+                                else "一般" if stat.avg_rating >= 3.0 else "待改善"
+                            )
+                        ),
+                    }
+                )
+
         # 按平均评分排序
         member_satisfaction.sort(key=lambda x: x["avgRating"], reverse=True)
-        
+
         return create_response(
             data={
                 "overallSatisfaction": {
                     "averageRating": round(avg_rating, 2),
                     "totalRatings": total_ratings,
-                    "satisfactionLevel": "优秀" if avg_rating >= 4.5 else 
-                                       "良好" if avg_rating >= 4.0 else
-                                       "一般" if avg_rating >= 3.0 else "待改善"
+                    "satisfactionLevel": (
+                        "优秀"
+                        if avg_rating >= 4.5
+                        else (
+                            "良好"
+                            if avg_rating >= 4.0
+                            else "一般" if avg_rating >= 3.0 else "待改善"
+                        )
+                    ),
                 },
                 "ratingDistribution": rating_distribution,
                 "memberSatisfaction": member_satisfaction[:10],  # 取前10名
-                "period": f"{year}年{month}月"
+                "period": f"{year}年{month}月",
             },
-            message="满意度分析获取成功"
+            message="满意度分析获取成功",
         )
-        
+
     except Exception as e:
         logger.error(f"Get satisfaction analysis error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="获取满意度分析失败"
+            detail="获取满意度分析失败",
         )
 
 

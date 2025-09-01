@@ -7,20 +7,24 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
 from .base import BaseResponse, StandardResponse
 
 
 class LoginResponse(StandardResponse):
     """登录响应 - 直接输出前端需要的camelCase格式"""
-    
+
     class LoginData(BaseResponse):
         """登录数据"""
+
         access_token: str = Field(..., description="JWT访问令牌", alias="accessToken")
-        refresh_token: str = Field(..., description="JWT刷新令牌", alias="refreshToken") 
-        token_type: str = Field(default="bearer", description="令牌类型", alias="tokenType")
+        refresh_token: str = Field(..., description="JWT刷新令牌", alias="refreshToken")
+        token_type: str = Field(
+            default="bearer", description="令牌类型", alias="tokenType"
+        )
         expires_in: int = Field(..., description="令牌过期时间(秒)", alias="expiresIn")
         user: Dict[str, Any] = Field(..., description="用户信息")
-    
+
     data: LoginData = Field(..., description="登录数据")
 
     model_config = ConfigDict(
@@ -37,9 +41,9 @@ class LoginResponse(StandardResponse):
                         "id": 1,
                         "name": "张三",
                         "studentId": "2021001001",
-                        "role": "member"
-                    }
-                }
+                        "role": "member",
+                    },
+                },
             }
         }
     )

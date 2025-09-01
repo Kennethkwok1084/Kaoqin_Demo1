@@ -1751,13 +1751,13 @@ class RushTaskMarkingService:
     ) -> Dict[str, Any]:
         """
         处理月度工时结转逻辑
-        
+
         Args:
             member_id: 成员ID
             target_year: 目标年份
             target_month: 目标月份
             standard_hours: 月度标准工时（默认30小时）
-            
+
         Returns:
             结转处理结果
         """
@@ -1774,7 +1774,9 @@ class RushTaskMarkingService:
             current_summary = current_result.scalar_one_or_none()
 
             if not current_summary:
-                raise ValueError(f"未找到成员 {member_id} 在 {target_year}-{target_month:02d} 的月度汇总")
+                raise ValueError(
+                    f"未找到成员 {member_id} 在 {target_year}-{target_month:02d} 的月度汇总"
+                )
 
             # 计算上月时间
             if target_month == 1:
@@ -1838,33 +1840,41 @@ class RushTaskMarkingService:
     ) -> Dict[str, Any]:
         """
         批量处理多个成员的月度结转
-        
+
         Args:
             year: 年份
             month: 月份
             member_ids: 成员ID列表，None表示处理所有成员
             standard_hours: 月度标准工时
-            
+
         Returns:
             批量处理结果
         """
         try:
             # 获取需要处理的成员列表
             if member_ids:
-                member_query = select(MonthlyAttendanceSummary.member_id).where(
-                    and_(
-                        MonthlyAttendanceSummary.year == year,
-                        MonthlyAttendanceSummary.month == month,
-                        MonthlyAttendanceSummary.member_id.in_(member_ids),
+                member_query = (
+                    select(MonthlyAttendanceSummary.member_id)
+                    .where(
+                        and_(
+                            MonthlyAttendanceSummary.year == year,
+                            MonthlyAttendanceSummary.month == month,
+                            MonthlyAttendanceSummary.member_id.in_(member_ids),
+                        )
                     )
-                ).distinct()
+                    .distinct()
+                )
             else:
-                member_query = select(MonthlyAttendanceSummary.member_id).where(
-                    and_(
-                        MonthlyAttendanceSummary.year == year,
-                        MonthlyAttendanceSummary.month == month,
+                member_query = (
+                    select(MonthlyAttendanceSummary.member_id)
+                    .where(
+                        and_(
+                            MonthlyAttendanceSummary.year == year,
+                            MonthlyAttendanceSummary.month == month,
+                        )
                     )
-                ).distinct()
+                    .distinct()
+                )
 
             member_result = await self.db.execute(member_query)
             target_members = [row[0] for row in member_result.fetchall()]
@@ -1888,7 +1898,9 @@ class RushTaskMarkingService:
                     }
                     results.append(error_result)
                     error_count += 1
-                    logger.error(f"Failed to process carryover for member {member_id}: {str(e)}")
+                    logger.error(
+                        f"Failed to process carryover for member {member_id}: {str(e)}"
+                    )
 
             logger.info(
                 f"Batch carryover processing completed for {year}-{month:02d}: "
@@ -1918,12 +1930,12 @@ class RushTaskMarkingService:
     ) -> Dict[str, Any]:
         """
         获取成员的结转工时摘要
-        
+
         Args:
             member_id: 成员ID
             year: 年份
             month: 月份
-            
+
         Returns:
             结转摘要信息
         """
@@ -1971,32 +1983,34 @@ class RushTaskMarkingService:
     ) -> Dict[str, Any]:
         """
         预测未来几个月的工时结转情况
-        
+
         Args:
             member_id: 成员ID
             current_year: 当前年份
             current_month: 当前月份
             future_months: 预测未来月数
             standard_hours: 月度标准工时
-            
+
         Returns:
             预测结果
         """
         try:
             projections = []
-            
+
             for i in range(future_months):
                 # 计算目标月份
                 target_month = current_month + i
                 target_year = current_year
-                
+
                 while target_month > 12:
                     target_month -= 12
                     target_year += 1
 
                 # 获取月度汇总（如果存在）
-                summary = await self.get_carryover_summary(member_id, target_year, target_month)
-                
+                summary = await self.get_carryover_summary(
+                    member_id, target_year, target_month
+                )
+
                 if summary["found"]:
                     projection = {
                         "period": f"{target_year}-{target_month:02d}",
@@ -2018,7 +2032,7 @@ class RushTaskMarkingService:
                             "excess_hours": 0.0,
                         },
                     }
-                
+
                 projections.append(projection)
 
             return {
@@ -2044,19 +2058,21 @@ class RushTaskMarkingService:
     ) -> Dict[str, Any]:
         """
         为指定任务应用小组扣时
-        
+
         Args:
             task_id: 任务ID
             penalty_type: 惩罚类型
             operator_id: 操作员ID
-            
+
         Returns:
             操作结果
         """
         try:
             # 获取任务
-            task_query = select(RepairTask).where(RepairTask.id == task_id).options(
-                selectinload(RepairTask.member)
+            task_query = (
+                select(RepairTask)
+                .where(RepairTask.id == task_id)
+                .options(selectinload(RepairTask.member))
             )
             task_result = await self.db.execute(task_query)
             task = task_result.scalar_one_or_none()
@@ -2093,17 +2109,19 @@ class RushTaskMarkingService:
     async def get_group_members_by_task(self, task_id: int) -> Dict[str, Any]:
         """
         获取任务相关的小组成员信息
-        
+
         Args:
             task_id: 任务ID
-            
+
         Returns:
             小组成员信息
         """
         try:
             # 获取任务
-            task_query = select(RepairTask).where(RepairTask.id == task_id).options(
-                selectinload(RepairTask.member)
+            task_query = (
+                select(RepairTask)
+                .where(RepairTask.id == task_id)
+                .options(selectinload(RepairTask.member))
             )
             task_result = await self.db.execute(task_query)
             task = task_result.scalar_one_or_none()
@@ -2172,12 +2190,12 @@ class RushTaskMarkingService:
     ) -> Dict[str, Any]:
         """
         批量应用小组扣时
-        
+
         Args:
             task_ids: 任务ID列表
             penalty_type: 惩罚类型
             operator_id: 操作员ID
-            
+
         Returns:
             批量操作结果
         """
@@ -2203,7 +2221,9 @@ class RushTaskMarkingService:
                     }
                     results.append(error_result)
                     error_count += 1
-                    logger.error(f"Failed to apply group penalty for task {task_id}: {str(e)}")
+                    logger.error(
+                        f"Failed to apply group penalty for task {task_id}: {str(e)}"
+                    )
 
             logger.info(
                 f"Batch group penalty processing completed: "
@@ -2231,10 +2251,10 @@ class RushTaskMarkingService:
     def _get_penalty_minutes(self, penalty_type: str) -> int:
         """
         获取惩罚类型对应的扣时分钟数
-        
+
         Args:
             penalty_type: 惩罚类型
-            
+
         Returns:
             扣时分钟数
         """
@@ -2243,36 +2263,36 @@ class RushTaskMarkingService:
             "late_completion": self.LATE_COMPLETION_PENALTY,  # 30分钟
             "negative_review": self.NEGATIVE_REVIEW_PENALTY,  # 60分钟
         }
-        
+
         return penalty_map.get(penalty_type, 0)
 
     async def _get_or_create_penalty_tag(self, penalty_type: str) -> TaskTag:
         """
         获取或创建惩罚标签
-        
+
         Args:
             penalty_type: 惩罚类型
-            
+
         Returns:
             惩罚标签对象
         """
         tag_map = {
             "late_response": ("超时响应惩罚", "响应超时24小时，扣除30分钟"),
-            "late_completion": ("超时处理惩罚", "处理超时48小时，扣除30分钟"), 
+            "late_completion": ("超时处理惩罚", "处理超时48小时，扣除30分钟"),
             "negative_review": ("差评惩罚", "用户差评（2星及以下），扣除60分钟"),
         }
-        
+
         if penalty_type not in tag_map:
             raise ValueError(f"Unknown penalty type: {penalty_type}")
-            
+
         tag_name, tag_description = tag_map[penalty_type]
         penalty_minutes = -self._get_penalty_minutes(penalty_type)  # 负数表示扣时
-        
+
         # 查找现有标签
         tag_query = select(TaskTag).where(TaskTag.name == tag_name)
         tag_result = await self.db.execute(tag_query)
         tag = tag_result.scalar_one_or_none()
-        
+
         if not tag:
             # 创建新标签
             tag = TaskTag(
@@ -2284,5 +2304,5 @@ class RushTaskMarkingService:
             )
             self.db.add(tag)
             await self.db.flush()
-            
+
         return tag

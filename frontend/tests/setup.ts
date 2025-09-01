@@ -1009,7 +1009,9 @@ vi.mock('@/api/auth', () => ({
 // Tasks API Mock
 vi.mock('@/api/tasks', () => ({
   tasksApi: {
-    getTasks: vi.fn(() => Promise.resolve({ items: [], total: 0, page: 1, pageSize: 20 })),
+    getTasks: vi.fn(() =>
+      Promise.resolve({ items: [], total: 0, page: 1, pageSize: 20 })
+    ),
     getTask: vi.fn(() => Promise.resolve({})),
     getTaskDetail: vi.fn(() => Promise.resolve({})),
     createTask: vi.fn(() => Promise.resolve({})),
@@ -1022,9 +1024,13 @@ vi.mock('@/api/tasks', () => ({
     batchUpdateTasks: vi.fn(() => Promise.resolve()),
     batchDeleteTasks: vi.fn(() => Promise.resolve()),
     exportTasks: vi.fn(() => Promise.resolve()),
-    importTasks: vi.fn(() => Promise.resolve({ success: 0, failed: 0, errors: [] }))
+    importTasks: vi.fn(() =>
+      Promise.resolve({ success: 0, failed: 0, errors: [] })
+    )
   },
-  getTasks: vi.fn(() => Promise.resolve({ items: [], total: 0, page: 1, pageSize: 20 })),
+  getTasks: vi.fn(() =>
+    Promise.resolve({ items: [], total: 0, page: 1, pageSize: 20 })
+  ),
   getTask: vi.fn(() => Promise.resolve({})),
   getTaskDetail: vi.fn(() => Promise.resolve({})),
   createTask: vi.fn(() => Promise.resolve({})),
@@ -1036,7 +1042,9 @@ vi.mock('@/api/tasks', () => ({
   batchUpdateTasks: vi.fn(() => Promise.resolve()),
   batchDeleteTasks: vi.fn(() => Promise.resolve()),
   exportTasks: vi.fn(() => Promise.resolve()),
-  importTasks: vi.fn(() => Promise.resolve({ success: 0, failed: 0, errors: [] }))
+  importTasks: vi.fn(() =>
+    Promise.resolve({ success: 0, failed: 0, errors: [] })
+  )
 }))
 
 vi.mock('@/utils/date', () => ({
@@ -1262,7 +1270,7 @@ Object.defineProperty(global, 'document', {
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
-    createEvent: vi.fn((type) => {
+    createEvent: vi.fn(type => {
       const event = {
         type: type || 'Event',
         target: null,

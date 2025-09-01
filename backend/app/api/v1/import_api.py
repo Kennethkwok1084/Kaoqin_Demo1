@@ -17,8 +17,8 @@ from app.api.deps import (
     get_db,
 )
 from app.models.member import Member
-from app.services.import_service import DataImportService
 from app.services.ab_table_matching_service import ABTableMatchingService
+from app.services.import_service import DataImportService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -466,6 +466,7 @@ def get_field_mapping(table_type: str = "task_table") -> Dict[str, Any]:
 
 # ============= A/B表匹配优化 =============
 
+
 @router.get("/matching/performance", response_model=Dict[str, Any])
 async def get_matching_performance_stats(
     current_user: Member = Depends(get_current_user),
@@ -474,29 +475,25 @@ async def get_matching_performance_stats(
     """获取A/B表匹配性能统计"""
     try:
         matching_service = ABTableMatchingService(db)
-        
+
         stats = {
             "cache_hits": matching_service._cache_hits,
             "cache_misses": matching_service._cache_misses,
-            "total_operations": matching_service._cache_hits + matching_service._cache_misses,
-            "hit_rate": matching_service._cache_hits / max(
-                matching_service._cache_hits + matching_service._cache_misses, 1
-            ),
+            "total_operations": matching_service._cache_hits
+            + matching_service._cache_misses,
+            "hit_rate": matching_service._cache_hits
+            / max(matching_service._cache_hits + matching_service._cache_misses, 1),
             "cached_similarities": len(matching_service._similarity_cache),
             "cached_names": len(matching_service._name_cache),
             "cached_phones": len(matching_service._phone_cache),
         }
-        
-        return create_response(
-            data=stats,
-            message="A/B表匹配性能统计获取成功"
-        )
+
+        return create_response(data=stats, message="A/B表匹配性能统计获取成功")
 
     except Exception as e:
         logger.error(f"Get matching performance stats error: {str(e)}")
         return create_error_response(
-            message="获取性能统计失败", 
-            details={"error": str(e)}
+            message="获取性能统计失败", details={"error": str(e)}
         )
 
 
@@ -508,23 +505,17 @@ async def clear_matching_cache(
     """清理A/B表匹配缓存"""
     try:
         matching_service = ABTableMatchingService(db)
-        
+
         # 清理缓存并获取统计信息
         cache_stats = matching_service.clear_cache()
-        
+
         logger.info(f"Matching cache cleared by user {current_user.id}: {cache_stats}")
-        
-        return create_response(
-            data=cache_stats,
-            message="A/B表匹配缓存清理成功"
-        )
+
+        return create_response(data=cache_stats, message="A/B表匹配缓存清理成功")
 
     except Exception as e:
         logger.error(f"Clear matching cache error: {str(e)}")
-        return create_error_response(
-            message="清理缓存失败", 
-            details={"error": str(e)}
-        )
+        return create_error_response(message="清理缓存失败", details={"error": str(e)})
 
 
 @router.post("/matching/test-optimization", response_model=Dict[str, Any])
@@ -536,76 +527,76 @@ async def test_matching_optimization(
     """测试A/B表匹配优化效果"""
     try:
         import time
-        
+
         matching_service = ABTableMatchingService(db)
-        
+
         # 获取测试数据
         test_data = request_data.get("test_data", [])
         if not test_data:
             raise HTTPException(
-                status_code=http_status.HTTP_400_BAD_REQUEST,
-                detail="需要提供测试数据"
+                status_code=http_status.HTTP_400_BAD_REQUEST, detail="需要提供测试数据"
             )
-        
+
         # 清理缓存以确保公平测试
         matching_service.clear_cache()
-        
+
         # 执行匹配测试
         start_time = time.time()
-        
+
         match_results = await matching_service.match_ab_tables(
-            a_table_data=test_data,
-            timeout_seconds=60  # 1分钟超时
+            a_table_data=test_data, timeout_seconds=60  # 1分钟超时
         )
-        
+
         end_time = time.time()
         execution_time = end_time - start_time
-        
+
         # 统计结果
         matched_count = sum(1 for result in match_results if result.is_matched)
         high_confidence_count = sum(
-            1 for result in match_results 
+            1
+            for result in match_results
             if result.is_matched and result.confidence >= 0.90
         )
-        
+
         # 缓存性能
         cache_stats = {
             "cache_hits": matching_service._cache_hits,
             "cache_misses": matching_service._cache_misses,
-            "hit_rate": matching_service._cache_hits / max(
-                matching_service._cache_hits + matching_service._cache_misses, 1
-            ),
+            "hit_rate": matching_service._cache_hits
+            / max(matching_service._cache_hits + matching_service._cache_misses, 1),
         }
-        
+
         results = {
             "test_summary": {
                 "total_records": len(test_data),
                 "matched_records": matched_count,
                 "high_confidence_matches": high_confidence_count,
                 "match_rate": matched_count / len(test_data) if test_data else 0,
-                "high_confidence_rate": high_confidence_count / len(test_data) if test_data else 0,
+                "high_confidence_rate": (
+                    high_confidence_count / len(test_data) if test_data else 0
+                ),
                 "execution_time_seconds": execution_time,
-                "records_per_second": len(test_data) / execution_time if execution_time > 0 else 0,
+                "records_per_second": (
+                    len(test_data) / execution_time if execution_time > 0 else 0
+                ),
             },
             "cache_performance": cache_stats,
             "optimization_benefits": {
                 "estimated_speedup": f"{cache_stats['hit_rate'] * 100:.1f}%",
                 "memory_efficiency": f"使用了 {len(matching_service._similarity_cache)} 个相似度缓存",
-            }
+            },
         }
-        
-        logger.info(f"Matching optimization test completed by user {current_user.id}: {results['test_summary']}")
-        
-        return create_response(
-            data=results,
-            message="A/B表匹配优化测试完成"
+
+        logger.info(
+            f"Matching optimization test completed by user {current_user.id}: {results['test_summary']}"
         )
+
+        return create_response(data=results, message="A/B表匹配优化测试完成")
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Test matching optimization error: {str(e)}")
         return create_error_response(
-            message="匹配优化测试失败", 
-            details={"error": str(e)}
+            message="匹配优化测试失败", details={"error": str(e)}
         )

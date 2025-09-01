@@ -16,16 +16,16 @@ from typing import Any, Dict, List, Optional, Tuple
 
 class CICDTestEnhancer:
     """CI/CD测试增强器 - 确保100%覆盖率"""
-    
+
     def __init__(self):
         self.test_results = {
             "timestamp": datetime.now().isoformat(),
             "coverage_target": 100.0,
             "modules": {},
             "missing_endpoints": [],
-            "test_gaps": []
+            "test_gaps": [],
         }
-    
+
     def analyze_current_coverage(self) -> Dict[str, Any]:
         """分析当前测试覆盖率"""
         coverage_analysis = {
@@ -43,18 +43,18 @@ class CICDTestEnhancer:
                     "work_hours_calculation": {"coverage": 85.0},
                     "task_assignment": {"coverage": 70.0},
                     "data_integrity": {"coverage": 90.0},
-                    "permission_control": {"coverage": 60.0}
-                }
+                    "permission_control": {"coverage": 60.0},
+                },
             },
             "frontend": {
                 "components": {"coverage": 45.0},
                 "stores": {"coverage": 60.0},
                 "api_clients": {"coverage": 35.0},
-                "e2e_flows": {"coverage": 25.0}
-            }
+                "e2e_flows": {"coverage": 25.0},
+            },
         }
         return coverage_analysis
-    
+
     def identify_missing_tests(self) -> List[Dict[str, Any]]:
         """识别缺失的测试"""
         missing_tests = [
@@ -63,65 +63,62 @@ class CICDTestEnhancer:
                 "module": "tasks",
                 "endpoint": "POST /api/v1/tasks/work-hours/recalculate",
                 "priority": "HIGH",
-                "reason": "关键业务逻辑未测试"
+                "reason": "关键业务逻辑未测试",
             },
             {
-                "module": "tasks", 
+                "module": "tasks",
                 "endpoint": "GET /api/v1/tasks/work-hours/pending-review",
                 "priority": "HIGH",
-                "reason": "审核流程未测试"
+                "reason": "审核流程未测试",
             },
             {
                 "module": "tasks",
                 "endpoint": "POST /api/v1/tasks/rush-marking/batch",
                 "priority": "MEDIUM",
-                "reason": "批量操作未测试"
+                "reason": "批量操作未测试",
             },
-            
             # 统计分析模块缺失测试
             {
                 "module": "statistics",
                 "endpoint": "GET /api/v1/statistics/charts",
                 "priority": "MEDIUM",
-                "reason": "图表数据API未测试"
+                "reason": "图表数据API未测试",
             },
             {
                 "module": "statistics",
                 "endpoint": "GET /api/v1/statistics/rankings",
-                "priority": "MEDIUM", 
-                "reason": "排行榜功能未测试"
+                "priority": "MEDIUM",
+                "reason": "排行榜功能未测试",
             },
-            
             # 仪表板模块 - 全部缺失
             {
                 "module": "dashboard",
                 "endpoint": "GET /api/v1/dashboard/overview",
                 "priority": "HIGH",
-                "reason": "核心仪表板功能未测试"
+                "reason": "核心仪表板功能未测试",
             },
             {
                 "module": "dashboard",
-                "endpoint": "GET /api/v1/dashboard/my-tasks", 
+                "endpoint": "GET /api/v1/dashboard/my-tasks",
                 "priority": "HIGH",
-                "reason": "个人任务视图未测试"
+                "reason": "个人任务视图未测试",
             },
-            
             # 考勤模块缺失测试
             {
                 "module": "attendance",
                 "endpoint": "POST /api/v1/attendance/records",
                 "priority": "HIGH",
-                "reason": "考勤记录创建未测试"
+                "reason": "考勤记录创建未测试",
             },
             {
                 "module": "attendance",
                 "endpoint": "GET /api/v1/attendance/export",
                 "priority": "MEDIUM",
-                "reason": "数据导出功能未测试"
-            }
+                "reason": "数据导出功能未测试",
+            },
         ]
         return missing_tests
-    
+
     def generate_comprehensive_test_plan(self) -> Dict[str, Any]:
         """生成综合测试计划"""
         test_plan = {
@@ -138,33 +135,33 @@ class CICDTestEnhancer:
                             "DELETE /api/v1/tasks/{id}",
                             "POST /api/v1/tasks/{id}/start",
                             "POST /api/v1/tasks/{id}/complete",
-                            "POST /api/v1/tasks/{id}/cancel"
-                        ]
+                            "POST /api/v1/tasks/{id}/cancel",
+                        ],
                     },
                     {
-                        "name": "work_hours_management_test", 
+                        "name": "work_hours_management_test",
                         "file": "test_work_hours_complete.py",
                         "coverage_target": "工时管理功能100%覆盖",
                         "endpoints": [
                             "POST /api/v1/tasks/work-hours/recalculate",
                             "GET /api/v1/tasks/work-hours/pending-review",
                             "PUT /api/v1/tasks/work-hours/{task_id}/adjust",
-                            "GET /api/v1/tasks/work-hours/statistics"
-                        ]
+                            "GET /api/v1/tasks/work-hours/statistics",
+                        ],
                     },
                     {
                         "name": "statistics_complete_test",
-                        "file": "test_statistics_complete.py", 
+                        "file": "test_statistics_complete.py",
                         "coverage_target": "统计分析模块100%覆盖",
                         "endpoints": [
                             "GET /api/v1/statistics/overview",
                             "GET /api/v1/statistics/work-hours",
-                            "GET /api/v1/statistics/efficiency", 
+                            "GET /api/v1/statistics/efficiency",
                             "GET /api/v1/statistics/monthly-report",
-                            "GET /api/v1/statistics/export"
-                        ]
-                    }
-                ]
+                            "GET /api/v1/statistics/export",
+                        ],
+                    },
+                ],
             },
             "phase2_dashboard": {
                 "description": "仪表板模块完整测试",
@@ -176,10 +173,10 @@ class CICDTestEnhancer:
                         "endpoints": [
                             "GET /api/v1/dashboard/overview",
                             "GET /api/v1/dashboard/my-tasks",
-                            "GET /api/v1/dashboard/recent-activities"
-                        ]
+                            "GET /api/v1/dashboard/recent-activities",
+                        ],
                     }
-                ]
+                ],
             },
             "phase3_integration": {
                 "description": "端到端集成测试",
@@ -191,30 +188,30 @@ class CICDTestEnhancer:
                         "scenarios": [
                             "创建任务→分配→开始→完成→统计",
                             "任务状态变更完整流程",
-                            "多用户协作场景"
-                        ]
+                            "多用户协作场景",
+                        ],
                     },
                     {
-                        "name": "e2e_data_import_test", 
+                        "name": "e2e_data_import_test",
                         "file": "test_e2e_data_import.py",
                         "coverage_target": "数据导入流程测试",
                         "scenarios": [
                             "上传Excel→预览→字段映射→执行导入→结果确认",
                             "错误数据处理流程",
-                            "大文件导入性能测试"
-                        ]
+                            "大文件导入性能测试",
+                        ],
                     },
                     {
                         "name": "e2e_permission_test",
-                        "file": "test_e2e_permissions.py", 
+                        "file": "test_e2e_permissions.py",
                         "coverage_target": "权限控制完整测试",
                         "scenarios": [
                             "不同角色权限验证",
                             "越权操作防护",
-                            "登录过期自动跳转"
-                        ]
-                    }
-                ]
+                            "登录过期自动跳转",
+                        ],
+                    },
+                ],
             },
             "phase4_performance": {
                 "description": "性能和边界测试",
@@ -226,8 +223,8 @@ class CICDTestEnhancer:
                         "metrics": [
                             "响应时间 < 200ms",
                             "并发支持 > 50用户",
-                            "内存使用 < 512MB"
-                        ]
+                            "内存使用 < 512MB",
+                        ],
                     },
                     {
                         "name": "boundary_conditions_test",
@@ -235,16 +232,16 @@ class CICDTestEnhancer:
                         "coverage_target": "边界条件和错误处理测试",
                         "conditions": [
                             "大数据量处理",
-                            "网络异常处理", 
+                            "网络异常处理",
                             "数据库连接失败",
-                            "并发冲突处理"
-                        ]
-                    }
-                ]
-            }
+                            "并发冲突处理",
+                        ],
+                    },
+                ],
+            },
         }
         return test_plan
-    
+
     def generate_enhanced_ci_config(self) -> str:
         """生成增强的CI配置"""
         ci_config = """
@@ -748,11 +745,11 @@ EOF
         # 例如Docker构建、推送到registry等
 """
         return ci_config
-    
+
     def generate_missing_test_files(self) -> List[Tuple[str, str]]:
         """生成缺失的测试文件"""
         test_files = []
-        
+
         # 1. 任务CRUD完整测试
         task_crud_test = '''
 """
@@ -823,7 +820,7 @@ class TestTaskCRUDComplete:
         assert batch_delete_response.status_code in [200, 404, 422]
 '''
         test_files.append(("test_tasks_crud_complete.py", task_crud_test))
-        
+
         # 2. 仪表板完整测试
         dashboard_test = '''
 """
@@ -857,7 +854,7 @@ class TestDashboardComplete:
         assert response.status_code in [200, 404]
 '''
         test_files.append(("test_dashboard_complete.py", dashboard_test))
-        
+
         # 3. E2E任务生命周期测试
         e2e_task_test = '''
 """
@@ -921,22 +918,26 @@ class TestE2ETaskLifecycle:
         print("✅ 完整任务生命周期测试完成")
 '''
         test_files.append(("test_e2e_task_lifecycle.py", e2e_task_test))
-        
+
         return test_files
-    
-    def save_test_files(self, test_files: List[Tuple[str, str]], base_path: str = "backend/tests/comprehensive/"):
+
+    def save_test_files(
+        self,
+        test_files: List[Tuple[str, str]],
+        base_path: str = "backend/tests/comprehensive/",
+    ):
         """保存测试文件"""
         import os
-        
+
         # 确保目录存在
         os.makedirs(base_path, exist_ok=True)
-        
+
         for filename, content in test_files:
             file_path = os.path.join(base_path, filename)
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 f.write(content)
             print(f"✅ 已生成测试文件: {file_path}")
-    
+
     def generate_coverage_report(self) -> Dict[str, Any]:
         """生成覆盖率报告"""
         report = {
@@ -946,55 +947,55 @@ class TestE2ETaskLifecycle:
                 "integration_test_coverage": "90%+",
                 "e2e_test_coverage": "85%+",
                 "security_scan_coverage": "100%",
-                "performance_test_coverage": "80%+"
+                "performance_test_coverage": "80%+",
             },
             "test_phases": {
                 "phase1_basic": "基础功能测试",
                 "phase2_api": "完整API覆盖测试",
-                "phase3_business": "业务逻辑测试", 
+                "phase3_business": "业务逻辑测试",
                 "phase4_integration": "集成测试",
-                "phase5_performance": "性能边界测试"
+                "phase5_performance": "性能边界测试",
             },
             "quality_gates": {
                 "code_coverage": "≥95%",
                 "api_coverage": "100%",
                 "security_scan": "通过",
                 "performance": "响应时间<200ms",
-                "integration": "所有关键流程通过"
-            }
+                "integration": "所有关键流程通过",
+            },
         }
         return report
 
 
 if __name__ == "__main__":
     enhancer = CICDTestEnhancer()
-    
+
     # 分析当前覆盖率
     coverage = enhancer.analyze_current_coverage()
     print("📊 当前覆盖率分析:")
     print(json.dumps(coverage, indent=2, ensure_ascii=False))
-    
+
     # 识别缺失测试
     missing = enhancer.identify_missing_tests()
     print(f"\n🔍 发现 {len(missing)} 个缺失测试")
-    
+
     # 生成测试计划
     plan = enhancer.generate_comprehensive_test_plan()
     print("\n📋 综合测试计划已生成")
-    
+
     # 生成CI配置
     ci_config = enhancer.generate_enhanced_ci_config()
     print("\n⚙️ 增强CI配置已生成")
-    
+
     # 生成缺失的测试文件
     test_files = enhancer.generate_missing_test_files()
     enhancer.save_test_files(test_files)
-    
+
     # 生成覆盖率报告
     report = enhancer.generate_coverage_report()
     print("\n📈 覆盖率目标:")
     print(json.dumps(report, indent=2, ensure_ascii=False))
-    
+
     print("\n🎯 增强版CI/CD测试配置生成完成!")
     print("✅ 预期达到100%API端点覆盖率")
     print("✅ 预期达到95%+代码覆盖率")

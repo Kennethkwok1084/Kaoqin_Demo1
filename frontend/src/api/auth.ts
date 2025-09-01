@@ -23,7 +23,7 @@ export const authApi = {
       '/auth/login',
       credentials
     )
-    
+
     return {
       success: response.data.success,
       message: response.data.message,

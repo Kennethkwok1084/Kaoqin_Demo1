@@ -15,15 +15,18 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api.v1 import attendance, auth
-from app.api.v1 import dashboard
+from app.api.v1 import attendance, auth, dashboard
 from app.api.v1 import import_api as import_router
 from app.api.v1 import members, roles, statistics, system, system_config, tasks
 from app.core.cache import cleanup_cache, init_cache
 from app.core.config import get_cors_origins, get_log_config, settings
 from app.core.database import check_database_health, close_database, init_database
 from app.core.exceptions import BaseCustomException
-from app.core.openapi_config import get_openapi_config, get_custom_openapi_schema, is_protected_path
+from app.core.openapi_config import (
+    get_custom_openapi_schema,
+    get_openapi_config,
+    is_protected_path,
+)
 from app.core.security import get_security_headers
 
 # Configure logging
@@ -77,33 +80,33 @@ app = FastAPI(
     **openapi_config,  # Use complete OpenAPI configuration
     debug=settings.DEBUG,
     lifespan=lifespan,
-    docs_url="/docs",  # Always enable docs for development  
+    docs_url="/docs",  # Always enable docs for development
     redoc_url="/redoc",  # Always enable redoc for development
-    openapi_url="/openapi.json"
+    openapi_url="/openapi.json",
 )
 
 
 # Custom OpenAPI schema with enhanced security and response definitions
-def custom_openapi():
+def custom_openapi() -> Dict[str, Any]:
     """Generate custom OpenAPI schema with enhanced configuration."""
     if app.openapi_schema:
         return app.openapi_schema
-        
+
     from fastapi.openapi.utils import get_openapi
-    
+
     # Generate base OpenAPI schema
     openapi_schema = get_openapi(
         title=openapi_config["title"],
-        version=openapi_config["version"], 
+        version=openapi_config["version"],
         description=openapi_config["description"],
         routes=app.routes,
-        servers=openapi_config["servers"]
+        servers=openapi_config["servers"],
     )
-    
+
     # Add custom enhancements
     custom_components = get_custom_openapi_schema()
     openapi_schema["components"].update(custom_components["components"])
-    
+
     # Add security requirements to protected endpoints
     for path_key, path_obj in openapi_schema["paths"].items():
         for method_key, method_obj in path_obj.items():
@@ -111,21 +114,28 @@ def custom_openapi():
                 # Add security requirement for protected paths
                 if is_protected_path(path_key):
                     method_obj["security"] = [{"BearerAuth": []}]
-                
+
                 # Add common error responses
                 if "responses" not in method_obj:
                     method_obj["responses"] = {}
-                
+
                 if is_protected_path(path_key):
-                    method_obj["responses"]["401"] = {"$ref": "#/components/responses/UnauthorizedError"}
-                    method_obj["responses"]["403"] = {"$ref": "#/components/responses/ForbiddenError"}
-                
+                    method_obj["responses"]["401"] = {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    }
+                    method_obj["responses"]["403"] = {
+                        "$ref": "#/components/responses/ForbiddenError"
+                    }
+
                 if method_key.upper() in ["POST", "PUT", "PATCH"]:
-                    method_obj["responses"]["422"] = {"$ref": "#/components/responses/ValidationError"}
-    
+                    method_obj["responses"]["422"] = {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+
     # Store and return enhanced schema
     app.openapi_schema = openapi_schema
     return app.openapi_schema
+
 
 # Apply custom OpenAPI schema
 app.openapi = custom_openapi
@@ -299,7 +309,9 @@ app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Dashboar
 app.include_router(attendance.router, prefix="/api/v1/attendance", tags=["Attendance"])
 app.include_router(statistics.router, prefix="/api/v1/statistics", tags=["Statistics"])
 app.include_router(import_router.router, prefix="/api/v1/import", tags=["Import"])
-app.include_router(system_config.router, prefix="/api/v1/system-config", tags=["System Config"])
+app.include_router(
+    system_config.router, prefix="/api/v1/system-config", tags=["System Config"]
+)
 app.include_router(system.router, prefix="/api/v1/system", tags=["System Settings"])
 app.include_router(roles.router, prefix="/api/v1/roles", tags=["Roles & Permissions"])
 

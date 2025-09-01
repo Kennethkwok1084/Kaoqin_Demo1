@@ -3,9 +3,10 @@
 100%覆盖率优化总结报告
 """
 
+
 def generate_coverage_summary():
     """生成覆盖率优化总结"""
-    
+
     summary = """
 🎯 100%覆盖率CI/CD优化完成总结
 
@@ -102,9 +103,10 @@ def generate_coverage_summary():
 虽然距离100%目标还有距离，但已经建立了扎实的测试基础，
 为继续优化提供了强有力的工具和框架支持。
 """
-    
+
     print(summary)
     return summary
+
 
 if __name__ == "__main__":
     generate_coverage_summary()

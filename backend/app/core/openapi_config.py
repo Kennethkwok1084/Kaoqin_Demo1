@@ -3,20 +3,17 @@ OpenAPI文档配置增强
 完善的API元数据和机器可读配置
 """
 
-from typing import Dict, List
+from typing import Any, Dict, List
 
 # API标签配置 - 用于组织API端点
 OPENAPI_TAGS = [
     {
         "name": "Authentication",
         "description": "用户认证相关API - JWT登录、刷新令牌、用户信息管理等",
-        "externalDocs": {
-            "description": "JWT认证说明",
-            "url": "https://jwt.io/"
-        }
+        "externalDocs": {"description": "JWT认证说明", "url": "https://jwt.io/"},
     },
     {
-        "name": "Members", 
+        "name": "Members",
         "description": "成员管理API - 用户增删改查、批量导入、角色管理等",
     },
     {
@@ -24,7 +21,7 @@ OPENAPI_TAGS = [
         "description": "任务管理API - 维修任务、监控任务、协助任务的完整生命周期管理",
     },
     {
-        "name": "Statistics", 
+        "name": "Statistics",
         "description": "统计报表API - 工时统计、效率分析、月度报表等数据分析功能",
     },
     {
@@ -42,15 +39,16 @@ OPENAPI_TAGS = [
     {
         "name": "Root",
         "description": "根路径API - 基础信息和系统状态",
-    }
+    },
 ]
+
 
 # OpenAPI配置
 def get_openapi_config() -> Dict:
     """获取完整的OpenAPI配置"""
     return {
         "title": "考勤管理系统API",
-        "version": "1.0.0", 
+        "version": "1.0.0",
         "description": """
 ## 🎯 考勤管理系统API文档
 
@@ -98,42 +96,37 @@ npx @openapitools/openapi-generator-cli generate \\
         """,
         "terms_of_service": "https://github.com/KangJianLin/Kaoqin_Demo/blob/main/LICENSE",
         "contact": {
-            "name": "API技术支持", 
+            "name": "API技术支持",
             "url": "https://github.com/KangJianLin/Kaoqin_Demo/issues",
-            "email": "kangjianlin@example.com"
+            "email": "kangjianlin@example.com",
         },
         "license": {
             "name": "MIT License",
-            "url": "https://opensource.org/licenses/MIT"
+            "url": "https://opensource.org/licenses/MIT",
         },
         "servers": [
-            {
-                "url": "http://localhost:8000",
-                "description": "本地开发环境"
-            },
-            {
-                "url": "http://127.0.0.1:8000", 
-                "description": "本地开发环境 (127.0.0.1)"
-            },
+            {"url": "http://localhost:8000", "description": "本地开发环境"},
+            {"url": "http://127.0.0.1:8000", "description": "本地开发环境 (127.0.0.1)"},
             {
                 "url": "https://api.attendance.example.com",
-                "description": "生产环境 (请替换为实际域名)"
-            }
+                "description": "生产环境 (请替换为实际域名)",
+            },
         ],
-        "openapi_tags": OPENAPI_TAGS
+        "openapi_tags": OPENAPI_TAGS,
     }
 
+
 # 自定义OpenAPI Schema增强
-def get_custom_openapi_schema():
+def get_custom_openapi_schema() -> Dict[str, Any]:
     """返回自定义的OpenAPI schema增强配置"""
     return {
         "components": {
             "securitySchemes": {
                 "BearerAuth": {
                     "type": "http",
-                    "scheme": "bearer", 
+                    "scheme": "bearer",
                     "bearerFormat": "JWT",
-                    "description": "JWT访问令牌，格式：Bearer <token>。通过/api/v1/auth/login获取。"
+                    "description": "JWT访问令牌，格式：Bearer <token>。通过/api/v1/auth/login获取。",
                 }
             },
             "responses": {
@@ -145,27 +138,39 @@ def get_custom_openapi_schema():
                                 "type": "object",
                                 "properties": {
                                     "success": {"type": "boolean", "example": False},
-                                    "message": {"type": "string", "example": "Token验证失败"},
-                                    "errorCode": {"type": "string", "example": "INVALID_TOKEN"}
-                                }
+                                    "message": {
+                                        "type": "string",
+                                        "example": "Token验证失败",
+                                    },
+                                    "errorCode": {
+                                        "type": "string",
+                                        "example": "INVALID_TOKEN",
+                                    },
+                                },
                             }
                         }
-                    }
+                    },
                 },
                 "ForbiddenError": {
                     "description": "权限不足",
                     "content": {
                         "application/json": {
                             "schema": {
-                                "type": "object", 
+                                "type": "object",
                                 "properties": {
                                     "success": {"type": "boolean", "example": False},
-                                    "message": {"type": "string", "example": "权限不足"},
-                                    "errorCode": {"type": "string", "example": "INSUFFICIENT_PERMISSIONS"}
-                                }
+                                    "message": {
+                                        "type": "string",
+                                        "example": "权限不足",
+                                    },
+                                    "errorCode": {
+                                        "type": "string",
+                                        "example": "INSUFFICIENT_PERMISSIONS",
+                                    },
+                                },
                             }
                         }
-                    }
+                    },
                 },
                 "ValidationError": {
                     "description": "请求数据验证失败",
@@ -174,51 +179,59 @@ def get_custom_openapi_schema():
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "success": {"type": "boolean", "example": False}, 
-                                    "message": {"type": "string", "example": "数据验证失败"},
-                                    "errorCode": {"type": "string", "example": "VALIDATION_ERROR"},
+                                    "success": {"type": "boolean", "example": False},
+                                    "message": {
+                                        "type": "string",
+                                        "example": "数据验证失败",
+                                    },
+                                    "errorCode": {
+                                        "type": "string",
+                                        "example": "VALIDATION_ERROR",
+                                    },
                                     "details": {
                                         "type": "object",
                                         "example": {
                                             "fieldErrors": {
                                                 "title": "任务标题不能为空",
-                                                "taskType": "任务类型必须是有效值"
+                                                "taskType": "任务类型必须是有效值",
                                             }
-                                        }
-                                    }
-                                }
+                                        },
+                                    },
+                                },
                             }
                         }
-                    }
-                }
-            }
+                    },
+                },
+            },
         }
     }
 
-# 需要认证的API路径配置  
+
+# 需要认证的API路径配置
 PROTECTED_PATHS = [
     "/api/v1/auth/me",
-    "/api/v1/auth/logout", 
+    "/api/v1/auth/logout",
     "/api/v1/auth/change-password",
     "/api/v1/auth/verify-token",
     "/api/v1/members",
     "/api/v1/tasks",
-    "/api/v1/statistics", 
+    "/api/v1/statistics",
     "/api/v1/attendance",
-    "/api/v1/import"
+    "/api/v1/import",
 ]
 
 # 公开API路径（不需要认证）
 PUBLIC_PATHS = [
     "/",
     "/health",
-    "/api/health", 
+    "/api/health",
     "/api/v1/auth/login",
     "/api/v1/auth/refresh",
     "/docs",
     "/redoc",
-    "/openapi.json"
+    "/openapi.json",
 ]
+
 
 def is_protected_path(path: str) -> bool:
     """判断路径是否需要认证"""
@@ -226,6 +239,7 @@ def is_protected_path(path: str) -> bool:
         if path.startswith(protected):
             return True
     return False
+
 
 def is_public_path(path: str) -> bool:
     """判断路径是否为公开路径"""

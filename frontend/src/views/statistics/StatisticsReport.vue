@@ -451,6 +451,7 @@ import {
   getDefaultLineChartData,
   formatApiResponse
 } from '@/utils/chartDataValidator'
+import type { ChartDataset } from '@/utils/chartDataValidator'
 import type {
   StatisticsOverview,
   StatisticsFilters,
@@ -536,10 +537,10 @@ const loadTaskTrendChart = async () => {
       filters: { dateRange: dateRange.value, ...filters }
     })
 
-    const data = validateChartData(
-      formatApiResponse(apiResponse),
-      getDefaultLineChartData()
-    )
+    const apiData = formatApiResponse(apiResponse)
+    const data = validateChartData(apiData)
+      ? apiData
+      : getDefaultLineChartData()
 
     if (!taskTrendChart) {
       taskTrendChart = echarts.init(taskTrendChartRef.value)
@@ -556,7 +557,7 @@ const loadTaskTrendChart = async () => {
         }
       },
       legend: {
-        data: data.datasets.map(d => d.label)
+        data: data.datasets.map((d: ChartDataset) => d.label)
       },
       grid: {
         left: '3%',
@@ -572,7 +573,7 @@ const loadTaskTrendChart = async () => {
       yAxis: {
         type: 'value'
       },
-      series: data.datasets.map(dataset => ({
+      series: data.datasets.map((dataset: ChartDataset) => ({
         name: dataset.label,
         type: 'line',
         data: dataset.data,
@@ -598,10 +599,12 @@ const loadTaskTrendChart = async () => {
       const defaultOption = {
         title: { show: false },
         tooltip: { trigger: 'axis' },
-        legend: { data: defaultData.datasets.map(d => d.label) },
+        legend: {
+          data: defaultData.datasets.map((d: ChartDataset) => d.label)
+        },
         xAxis: { type: 'category', data: defaultData.labels },
         yAxis: { type: 'value' },
-        series: defaultData.datasets.map(dataset => ({
+        series: defaultData.datasets.map((dataset: ChartDataset) => ({
           name: dataset.label,
           type: 'line',
           data: dataset.data,
@@ -623,10 +626,8 @@ const loadTaskTypeChart = async () => {
       filters: { dateRange: dateRange.value, ...filters }
     })
 
-    const data = validateChartData(
-      formatApiResponse(apiResponse),
-      getDefaultPieChartData()
-    )
+    const apiData = formatApiResponse(apiResponse)
+    const data = validateChartData(apiData) ? apiData : getDefaultPieChartData()
 
     if (!taskTypeChart) {
       taskTypeChart = echarts.init(taskTypeChartRef.value)
@@ -663,7 +664,7 @@ const loadTaskTypeChart = async () => {
           labelLine: {
             show: false
           },
-          data: data.labels.map((label, index) => ({
+          data: data.labels.map((label: string, index: number) => ({
             value: data.datasets[0].data[index],
             name: label,
             itemStyle: {

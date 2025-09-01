@@ -7,7 +7,7 @@ import type { Task, TaskCreateRequest, TaskUpdateRequest } from '@/types/task'
 vi.mock('@/api/tasks', () => ({
   tasksApi: {
     getTasks: vi.fn(),
-    getTaskDetail: vi.fn(), 
+    getTaskDetail: vi.fn(),
     createTask: vi.fn(),
     updateTask: vi.fn(),
     deleteTask: vi.fn(),
@@ -90,7 +90,7 @@ describe('Tasks Store', () => {
     })
 
     it('应该传递正确的参数给API', async () => {
-      (tasksApi.getTasks as any).mockResolvedValue(mockTasksList)
+      ;(tasksApi.getTasks as any).mockResolvedValue(mockTasksList)
 
       tasksStore.pagination.page = 2
       tasksStore.pagination.page_size = 10
@@ -109,8 +109,9 @@ describe('Tasks Store', () => {
     })
 
     it('应该处理API错误', async () => {
-      const errorMessage = 'Network Error'
-      (tasksApi.getTasks as any).mockRejectedValue(new Error(errorMessage))
+      const errorMessage = 'Network Error'(
+        tasksApi.getTasks as any
+      ).mockRejectedValue(new Error(errorMessage))
 
       await tasksStore.fetchTasks()
 
@@ -123,8 +124,7 @@ describe('Tasks Store', () => {
       let resolvePromise: (value: any) => void
       const promise = new Promise(resolve => {
         resolvePromise = resolve
-      })
-      (tasksApi.getTasks as any).mockReturnValue(promise)
+      })(tasksApi.getTasks as any).mockReturnValue(promise)
 
       const fetchPromise = tasksStore.fetchTasks()
       expect(tasksStore.loading).toBe(true)
@@ -138,7 +138,7 @@ describe('Tasks Store', () => {
 
   describe('fetchTaskDetail', () => {
     it('应该成功获取任务详情', async () => {
-      (tasksApi.getTaskDetail as any).mockResolvedValue(mockTask)
+      ;(tasksApi.getTaskDetail as any).mockResolvedValue(mockTask)
 
       await tasksStore.fetchTaskDetail(1)
 
@@ -148,10 +148,9 @@ describe('Tasks Store', () => {
     })
 
     it('应该处理获取详情失败', async () => {
-      const errorMessage = 'Task not found'
-      (tasksApi.getTaskDetail as any).mockRejectedValue(
-        new Error(errorMessage)
-      )
+      const errorMessage = 'Task not found'(
+        tasksApi.getTaskDetail as any
+      ).mockRejectedValue(new Error(errorMessage))
 
       await tasksStore.fetchTaskDetail(999)
 
@@ -174,8 +173,9 @@ describe('Tasks Store', () => {
     }
 
     it('应该成功创建任务', async () => {
-      const createdTask = { ...mockTask, ...createData, id: 2 }
-      (tasksApi.createTask as any).mockResolvedValue(createdTask)
+      const createdTask = { ...mockTask, ...createData, id: 2 }(
+        tasksApi.createTask as any
+      ).mockResolvedValue(createdTask)
 
       const result = await tasksStore.createTask(createData)
 
@@ -185,13 +185,15 @@ describe('Tasks Store', () => {
     })
 
     it('应该在创建成功后刷新列表', async () => {
-      const createdTask = { ...mockTask, ...createData, id: 2 }
-      (tasksApi.createTask as any).mockResolvedValue(createdTask)
-      (tasksApi.getTasks as any).mockResolvedValue({
-        ...mockTasksList,
-        items: [mockTask, createdTask],
-        total: 2
-      })
+      const createdTask = { ...mockTask, ...createData, id: 2 }(
+        tasksApi.createTask as any
+      )
+        .mockResolvedValue(createdTask)(tasksApi.getTasks as any)
+        .mockResolvedValue({
+          ...mockTasksList,
+          items: [mockTask, createdTask],
+          total: 2
+        })
 
       await tasksStore.createTask(createData)
 
@@ -200,8 +202,9 @@ describe('Tasks Store', () => {
     })
 
     it('应该处理创建失败', async () => {
-      const errorMessage = 'Validation failed'
-      (tasksApi.createTask as any).mockRejectedValue(new Error(errorMessage))
+      const errorMessage = 'Validation failed'(
+        tasksApi.createTask as any
+      ).mockRejectedValue(new Error(errorMessage))
 
       const result = await tasksStore.createTask(createData)
 
@@ -223,8 +226,9 @@ describe('Tasks Store', () => {
     })
 
     it('应该成功更新任务', async () => {
-      const updatedTask = { ...mockTask, ...updateData }
-      (tasksApi.updateTask as any).mockResolvedValue(updatedTask)
+      const updatedTask = { ...mockTask, ...updateData }(
+        tasksApi.updateTask as any
+      ).mockResolvedValue(updatedTask)
 
       const result = await tasksStore.updateTask(1, updateData)
 
@@ -234,8 +238,9 @@ describe('Tasks Store', () => {
     })
 
     it('应该更新本地任务列表中的任务', async () => {
-      const updatedTask = { ...mockTask, ...updateData }
-      (tasksApi.updateTask as any).mockResolvedValue(updatedTask)
+      const updatedTask = { ...mockTask, ...updateData }(
+        tasksApi.updateTask as any
+      ).mockResolvedValue(updatedTask)
 
       await tasksStore.updateTask(1, updateData)
 
@@ -243,8 +248,9 @@ describe('Tasks Store', () => {
     })
 
     it('应该更新当前任务详情', async () => {
-      const updatedTask = { ...mockTask, ...updateData }
-      (tasksApi.updateTask as any).mockResolvedValue(updatedTask)
+      const updatedTask = { ...mockTask, ...updateData }(
+        tasksApi.updateTask as any
+      ).mockResolvedValue(updatedTask)
 
       await tasksStore.updateTask(1, updateData)
 
@@ -252,8 +258,9 @@ describe('Tasks Store', () => {
     })
 
     it('应该处理更新失败', async () => {
-      const errorMessage = 'Update failed'
-      (tasksApi.updateTask as any).mockRejectedValue(new Error(errorMessage))
+      const errorMessage = 'Update failed'(
+        tasksApi.updateTask as any
+      ).mockRejectedValue(new Error(errorMessage))
 
       const result = await tasksStore.updateTask(1, updateData)
 
@@ -268,7 +275,7 @@ describe('Tasks Store', () => {
     })
 
     it('应该成功删除任务', async () => {
-      (tasksApi.deleteTask as any).mockResolvedValue(undefined)
+      ;(tasksApi.deleteTask as any).mockResolvedValue(undefined)
 
       const success = await tasksStore.deleteTask(1)
 
@@ -278,7 +285,7 @@ describe('Tasks Store', () => {
     })
 
     it('应该从本地列表中移除删除的任务', async () => {
-      (tasksApi.deleteTask as any).mockResolvedValue(undefined)
+      ;(tasksApi.deleteTask as any).mockResolvedValue(undefined)
 
       await tasksStore.deleteTask(1)
 
@@ -287,8 +294,9 @@ describe('Tasks Store', () => {
     })
 
     it('应该处理删除失败', async () => {
-      const errorMessage = 'Delete failed'
-      (tasksApi.deleteTask as any).mockRejectedValue(new Error(errorMessage))
+      const errorMessage = 'Delete failed'(
+        tasksApi.deleteTask as any
+      ).mockRejectedValue(new Error(errorMessage))
 
       const success = await tasksStore.deleteTask(1)
 
@@ -318,7 +326,7 @@ describe('Tasks Store', () => {
     })
 
     it('应该设置搜索查询并触发搜索', async () => {
-      (tasksApi.getTasks as any).mockResolvedValue(mockTasksList)
+      ;(tasksApi.getTasks as any).mockResolvedValue(mockTasksList)
 
       await tasksStore.setSearchQuery('测试')
 
@@ -332,7 +340,7 @@ describe('Tasks Store', () => {
     })
 
     it('应该设置筛选条件并触发搜索', async () => {
-      (tasksApi.getTasks as any).mockResolvedValue(mockTasksList)
+      ;(tasksApi.getTasks as any).mockResolvedValue(mockTasksList)
 
       await tasksStore.setFilters({ task_type: 'repair', priority: 'high' })
 
@@ -350,8 +358,9 @@ describe('Tasks Store', () => {
     })
 
     it('应该清除筛选条件', async () => {
-      tasksStore.filters = { task_type: 'repair' }
-      (tasksApi.getTasks as any).mockResolvedValue(mockTasksList)
+      tasksStore.filters = { task_type: 'repair' }(
+        tasksApi.getTasks as any
+      ).mockResolvedValue(mockTasksList)
 
       await tasksStore.clearFilters()
 
@@ -364,7 +373,7 @@ describe('Tasks Store', () => {
 
   describe('分页', () => {
     it('应该设置页码并重新获取数据', async () => {
-      (tasksApi.getTasks as any).mockResolvedValue(mockTasksList)
+      ;(tasksApi.getTasks as any).mockResolvedValue(mockTasksList)
 
       await tasksStore.setPage(3)
 
@@ -376,7 +385,7 @@ describe('Tasks Store', () => {
     })
 
     it('应该设置页面大小并重新获取数据', async () => {
-      (tasksApi.getTasks as any).mockResolvedValue(mockTasksList)
+      ;(tasksApi.getTasks as any).mockResolvedValue(mockTasksList)
 
       await tasksStore.setPageSize(50)
 
@@ -453,9 +462,7 @@ describe('Tasks Store', () => {
     }
 
     it('应该获取任务工时详情', async () => {
-      (tasksApi.getWorkTimeDetail as any).mockResolvedValue(
-        mockWorkTimeDetail
-      )
+      ;(tasksApi.getWorkTimeDetail as any).mockResolvedValue(mockWorkTimeDetail)
 
       const result = await tasksStore.getWorkTimeDetail(1)
 
@@ -464,7 +471,7 @@ describe('Tasks Store', () => {
     })
 
     it('应该处理获取工时详情失败', async () => {
-      (tasksApi.getWorkTimeDetail as any).mockRejectedValue(
+      ;(tasksApi.getWorkTimeDetail as any).mockRejectedValue(
         new Error('Work time not found')
       )
 
@@ -486,10 +493,10 @@ describe('Tasks Store', () => {
 
     it('应该批量更新任务状态', async () => {
       const taskIds = [1, 2]
-      const newStatus = 'completed'
-
-      // Mock批量更新API
-      (tasksApi.updateTask as any).mockResolvedValue({
+      const newStatus = 'completed'(
+        // Mock批量更新API
+        tasksApi.updateTask as any
+      ).mockResolvedValue({
         ...mockTask,
         task_status: newStatus
       })
@@ -506,9 +513,9 @@ describe('Tasks Store', () => {
     })
 
     it('应该批量删除任务', async () => {
-      const taskIds = [1, 3]
-
-      (tasksApi.deleteTask as any).mockResolvedValue(undefined)
+      const taskIds = [1, 3](tasksApi.deleteTask as any).mockResolvedValue(
+        undefined
+      )
 
       const success = await tasksStore.batchDeleteTasks(taskIds)
 
@@ -519,9 +526,7 @@ describe('Tasks Store', () => {
     })
 
     it('应该处理批量操作部分失败', async () => {
-      const taskIds = [1, 2]
-
-      (tasksApi.deleteTask as any)
+      const taskIds = [1, 2](tasksApi.deleteTask as any)
         .mockResolvedValueOnce(undefined)
         .mockRejectedValueOnce(new Error('Delete failed'))
 
