@@ -286,9 +286,7 @@ class WorkHourAutomationService:
                     notifications_sent += 1
                 except Exception as e:
                     logger.warning(
-                        f"Failed to send notification for task {
-                            task_info['task_id']}: {
-                            str(e)}"
+                        f"Failed to send notification for task {task_info['task_id']}: {str(e)}"
                     )
 
             result = {

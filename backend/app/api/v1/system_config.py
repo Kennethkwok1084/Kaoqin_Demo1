@@ -4,7 +4,7 @@
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi import status as http_status
@@ -26,7 +26,7 @@ router = APIRouter()
 
 @router.get("/", response_model=Dict[str, Any])
 async def get_all_system_configs(
-    category: str = None,
+    category: Optional[str] = None,
     current_user: Member = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
@@ -40,7 +40,7 @@ async def get_all_system_configs(
             configs = await config_service.get_all_configs()
 
         # 按分类和分组整理配置
-        organized_configs = {}
+        organized_configs: Dict[str, Dict[str, List[Dict[str, Any]]]] = {}
         for config in configs:
             cat = config.category
             group = config.config_group or "其他"
@@ -78,18 +78,19 @@ async def get_config_categories(
         config_service = SystemConfigService(db)
         configs = await config_service.get_all_configs()
 
-        categories = {}
+        categories: Dict[str, Dict[str, Any]] = {}
         for config in configs:
             cat = config.category
             if cat not in categories:
                 categories[cat] = {"category": cat, "count": 0, "groups": set()}
-            categories[cat]["count"] += 1
+            categories[cat]["count"] = int(categories[cat]["count"]) + 1
             if config.config_group:
-                categories[cat]["groups"].add(config.config_group)
+                categories[cat]["groups"].add(str(config.config_group))
 
         # 转换set为list
-        for cat in categories.values():
-            cat["groups"] = list(cat["groups"])
+        for cat_data in categories.values():
+            if "groups" in cat_data and isinstance(cat_data["groups"], set):
+                cat_data["groups"] = list(cat_data["groups"])
 
         return create_response(
             data={"categories": list(categories.values())}, message="成功获取配置分类"

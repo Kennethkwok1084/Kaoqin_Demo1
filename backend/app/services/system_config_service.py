@@ -4,7 +4,7 @@
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,7 +21,7 @@ class SystemConfigService:
         self.db = db
 
     # 默认系统配置
-    DEFAULT_CONFIGS = [
+    DEFAULT_CONFIGS: List[Dict[str, Any]] = [
         # 工时计算参数
         {
             "config_key": "work_hours.online_task_minutes",
@@ -239,46 +239,45 @@ class SystemConfigService:
 
                 if existing_config:
                     # 更新现有配置的元数据（但保留用户设置的值）
-                    existing_config.config_name = config_data["config_name"]
-                    existing_config.config_description = config_data[
+                    existing_config.config_name = cast(str, config_data["config_name"])
+                    existing_config.config_description = cast(Optional[str], config_data[
                         "config_description"
-                    ]
-                    existing_config.category = config_data["category"]
-                    existing_config.config_group = config_data["config_group"]
-                    existing_config.value_type = config_data["value_type"]
-                    existing_config.min_value = config_data.get("min_value")
-                    existing_config.max_value = config_data.get("max_value")
-                    existing_config.display_order = config_data["display_order"]
-                    existing_config.is_system_config = config_data["is_system_config"]
-                    existing_config.required_role = config_data["required_role"]
+                    ])
+                    existing_config.category = cast(str, config_data["category"])
+                    existing_config.config_group = cast(Optional[str], config_data["config_group"])
+                    existing_config.value_type = cast(str, config_data["value_type"])
+                    existing_config.min_value = cast(Optional[float], config_data.get("min_value"))
+                    existing_config.max_value = cast(Optional[float], config_data.get("max_value"))
+                    existing_config.display_order = cast(int, config_data["display_order"])
+                    existing_config.is_system_config = cast(bool, config_data["is_system_config"])
+                    existing_config.required_role = cast(str, config_data["required_role"])
 
                     # 如果没有设置过值，使用默认值
                     if not existing_config.config_value:
-                        existing_config.config_value = config_data["default_value"]
+                        existing_config.config_value = cast(Optional[str], config_data["default_value"])
 
                     # 更新默认值
-                    existing_config.default_value = config_data["default_value"]
+                    existing_config.default_value = cast(Optional[str], config_data["default_value"])
 
                     updated_count += 1
                     logger.info(f"Updated system config: {config_key}")
                 else:
                     # 创建新配置
-                    new_config = SystemConfig(
-                        config_key=config_data["config_key"],
-                        config_name=config_data["config_name"],
-                        config_description=config_data["config_description"],
-                        category=config_data["category"],
-                        config_group=config_data["config_group"],
-                        config_value=config_data["default_value"],
-                        default_value=config_data["default_value"],
-                        value_type=config_data["value_type"],
-                        min_value=config_data.get("min_value"),
-                        max_value=config_data.get("max_value"),
-                        display_order=config_data["display_order"],
-                        is_system_config=config_data["is_system_config"],
-                        required_role=config_data["required_role"],
-                        is_active=True,
-                    )
+                    new_config = SystemConfig()
+                    new_config.config_key = cast(str, config_data["config_key"])
+                    new_config.config_name = cast(str, config_data["config_name"])
+                    new_config.config_description = cast(Optional[str], config_data["config_description"])
+                    new_config.category = cast(str, config_data["category"])
+                    new_config.config_group = cast(Optional[str], config_data["config_group"])
+                    new_config.config_value = cast(Optional[str], config_data["default_value"])
+                    new_config.default_value = cast(Optional[str], config_data["default_value"])
+                    new_config.value_type = cast(str, config_data["value_type"])
+                    new_config.min_value = cast(Optional[float], config_data.get("min_value"))
+                    new_config.max_value = cast(Optional[float], config_data.get("max_value"))
+                    new_config.display_order = cast(int, config_data["display_order"])
+                    new_config.is_system_config = cast(bool, config_data["is_system_config"])
+                    new_config.required_role = cast(str, config_data["required_role"])
+                    new_config.is_active = True
 
                     self.db.add(new_config)
                     created_count += 1
@@ -286,7 +285,7 @@ class SystemConfigService:
 
             await self.db.commit()
 
-            result = {
+            initialization_result: Dict[str, Any] = {
                 "success": True,
                 "created_count": created_count,
                 "updated_count": updated_count,
@@ -294,8 +293,8 @@ class SystemConfigService:
                 "total_configs": len(self.DEFAULT_CONFIGS),
             }
 
-            logger.info(f"System config initialization completed: {result}")
-            return result
+            logger.info(f"System config initialization completed: {initialization_result}")
+            return initialization_result
 
         except Exception as e:
             logger.error(f"Failed to initialize system configs: {str(e)}")

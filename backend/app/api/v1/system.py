@@ -37,7 +37,7 @@ async def get_system_settings(
         configs = await config_service.get_all_configs()
 
         # 按照前端期望的格式组织数据
-        settings = {
+        settings: Dict[str, Dict[str, Any]] = {
             "workHours": {
                 "onlineTaskMinutes": 40,
                 "offlineTaskMinutes": 100,

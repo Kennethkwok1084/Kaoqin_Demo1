@@ -3645,9 +3645,7 @@ async def create_monitoring_task(
         )
 
         logger.info(
-            f"Monitoring task created by {
-                current_user.student_id}: {
-                monitoring_task.id}"
+            f"Monitoring task created by {current_user.student_id}: {monitoring_task.id}"
         )
 
         return create_response(
@@ -3810,9 +3808,7 @@ async def create_assistance_task(
         )
 
         logger.info(
-            f"Assistance task created by {
-                current_user.student_id}: {
-                assistance_task.id}"
+            f"Assistance task created by {current_user.student_id}: {assistance_task.id}"
         )
 
         return create_response(
@@ -4474,15 +4470,10 @@ async def import_maintenance_orders(
                                     assigned_member_id = matched_member.id
                                     matched_assignee_count += 1
                                     matched_assignees.append(
-                                        f"'{assignee_name}' -> '{
-                                            matched_member.name}' (姓氏匹配)"
+                                        f"'{assignee_name}' -> '{matched_member.name}' (姓氏匹配)"
                                     )
                                     logger.info(
-                                        f"Found by surname: '{assignee_name}'"
-                                        f" -> "
-                                        f"'{
-                                            matched_member.name}' (ID: {
-                                            matched_member.id})"
+                                        f"Found by surname: '{assignee_name}' -> '{matched_member.name}' (ID: {matched_member.id})"
                                     )
                                 else:
                                     logger.warning(
@@ -4849,8 +4840,7 @@ async def batch_recalculate_work_hours(
         }
 
         logger.info(
-            f"Batch work hours recalculation completed by {
-                current_user.student_id}: {result_data}"
+            f"Batch work hours recalculation completed by {current_user.student_id}: {result_data}"
         )
 
         return create_response(
@@ -5058,8 +5048,7 @@ async def get_pending_work_hours_review(
         }
 
         logger.info(
-            f"Pending work hours review retrieved by {
-                current_user.student_id}, total: {total}"
+            f"Pending work hours review retrieved by {current_user.student_id}, total: {total}"
         )
 
         return create_response(
@@ -5136,8 +5125,7 @@ async def adjust_task_work_hours(
 
         # 记录调整日志
         logger.info(
-            f"Task {task_id} work hours manually adjusted by {
-                current_user.student_id}: "
+            f"Task {task_id} work hours manually adjusted by {current_user.student_id}: "
             f"{original_minutes} -> {task.work_minutes} minutes, reason: {reason}"
         )
 
@@ -5444,9 +5432,7 @@ async def execute_ab_table_matching(
         }
 
         logger.info(
-            f"AB matching executed by {
-                current_user.student_id}: {
-                match_rate:.2%} match rate"
+            f"AB matching executed by {current_user.student_id}: {match_rate:.2%} match rate"
         )
 
         return create_response(
@@ -5603,8 +5589,7 @@ async def apply_status_mapping(
         }
 
         logger.info(
-            f"Status mapping applied by {
-                current_user.student_id}: {updated_count} tasks updated"
+            f"Status mapping applied by {current_user.student_id}: {updated_count} tasks updated"
         )
 
         return create_response(

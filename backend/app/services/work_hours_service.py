@@ -264,8 +264,7 @@ class WorkHoursCalculationService:
         except Exception as e:
             logger.error(
                 f"Unexpected error calculating task "
-                f"{task.id if hasattr(task,
-                                      'id') else 'unknown'} work minutes: {str(e)}"
+                f"{task.id if hasattr(task, 'id') else 'unknown'} work minutes: {str(e)}"
             )
             raise RuntimeError(f"工时计算过程发生未预期错误: {str(e)}")
 
@@ -1801,7 +1800,7 @@ class RushTaskMarkingService:
             if previous_summary:
                 # 应用上月结转逻辑
                 current_summary.apply_carryover_from_previous(previous_summary)
-                carryover_hours = current_summary.carried_hours or 0.0
+                carryover_hours = float(current_summary.carried_hours or 0.0)
 
             # 重新计算当月的可结转工时
             remaining_hours = current_summary.calculate_carryover_hours(standard_hours)
@@ -2081,7 +2080,7 @@ class RushTaskMarkingService:
                 raise ValueError(f"任务 {task_id} 不存在")
 
             # 应用小组惩罚
-            affected_members = await self.apply_group_penalties(task, penalty_type)
+            affected_members = await self.batch_apply_group_penalties([task], penalty_type)
 
             await self.db.commit()
 
@@ -2259,12 +2258,12 @@ class RushTaskMarkingService:
             扣时分钟数
         """
         penalty_map = {
-            "late_response": self.LATE_RESPONSE_PENALTY,  # 30分钟
-            "late_completion": self.LATE_COMPLETION_PENALTY,  # 30分钟
-            "negative_review": self.NEGATIVE_REVIEW_PENALTY,  # 60分钟
+            "late_response": int(self.LATE_RESPONSE_PENALTY),  # 30分钟
+            "late_completion": int(self.LATE_COMPLETION_PENALTY),  # 30分钟
+            "negative_review": int(self.NEGATIVE_REVIEW_PENALTY),  # 60分钟
         }
 
-        return penalty_map.get(penalty_type, 0)
+        return int(penalty_map.get(penalty_type, 0))
 
     async def _get_or_create_penalty_tag(self, penalty_type: str) -> TaskTag:
         """
@@ -2299,9 +2298,9 @@ class RushTaskMarkingService:
                 name=tag_name,
                 description=tag_description,
                 work_minutes_modifier=penalty_minutes,
-                tag_type=TaskTagType.PENALTY,
                 is_active=True,
             )
+            tag.tag_type = TaskTagType.PENALTY
             self.db.add(tag)
             await self.db.flush()
 

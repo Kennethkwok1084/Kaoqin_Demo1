@@ -27,7 +27,7 @@ router = APIRouter(tags=["仪表板"])
 @router.get("/overview", response_model=TypedResponse[DashboardOverviewResponse])
 async def get_dashboard_overview(
     current_user: Member = Depends(get_current_user), db: AsyncSession = Depends(get_db)
-):
+) -> TypedResponse[DashboardOverviewResponse]:
     """
     获取仪表板概览数据
     """

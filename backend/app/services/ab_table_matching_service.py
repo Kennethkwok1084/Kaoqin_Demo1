@@ -12,7 +12,7 @@ import time
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -87,9 +87,9 @@ class ABTableMatchingService:
         )
 
         # 优化缓存系统
-        self._similarity_cache = {}
-        self._phone_cache = {}
-        self._name_cache = {}
+        self._similarity_cache: Dict[str, float] = {}
+        self._phone_cache: Dict[str, float] = {}
+        self._name_cache: Dict[str, float] = {}
         self._cache_hits = 0
         self._cache_misses = 0
 
@@ -122,8 +122,7 @@ class ABTableMatchingService:
         try:
             start_time = time.time()
             logger.info(
-                f"Starting AB table matching with {
-                    len(a_table_data)} A-records, timeout: {timeout_seconds}s"
+                f"Starting AB table matching with {len(a_table_data)} A-records, timeout: {timeout_seconds}s"
             )
 
             # 获取现有成员数据
@@ -372,7 +371,7 @@ class ABTableMatchingService:
                 index["by_name_phone"][combo_key].append(member_data)
 
             # 电话后缀索引优化（中国手机号后8位、7位、6位）
-            if clean_phone and len(clean_phone) >= 6:
+            if clean_phone and isinstance(clean_phone, str) and len(clean_phone) >= 6:
                 for suffix_len in [8, 7, 6]:
                     if len(clean_phone) >= suffix_len:
                         suffix = clean_phone[-suffix_len:]
@@ -381,7 +380,7 @@ class ABTableMatchingService:
                         index["by_phone_suffix"][suffix].append(member_data)
 
             # 姓名分组优化（按首字符分组以减少模糊匹配的搜索空间）
-            if clean_name:
+            if clean_name and isinstance(clean_name, str):
                 first_char = clean_name[0] if clean_name else ""
                 if first_char not in index["fuzzy_name_groups"]:
                     index["fuzzy_name_groups"][first_char] = []
@@ -675,7 +674,7 @@ class ABTableMatchingService:
         cache_key = self._get_cache_key(name1, name2)
         if cache_key in self._name_cache:
             self._cache_hits += 1
-            return self._name_cache[cache_key]
+            return float(self._name_cache[cache_key])
 
         self._cache_misses += 1
 
@@ -726,7 +725,7 @@ class ABTableMatchingService:
         cache_key = self._get_cache_key(phone1, phone2)
         if cache_key in self._phone_cache:
             self._cache_hits += 1
-            return self._phone_cache[cache_key]
+            return float(self._phone_cache[cache_key])
 
         self._cache_misses += 1
 
@@ -762,7 +761,7 @@ class ABTableMatchingService:
         cache_key = self._get_cache_key(s1, s2)
         if cache_key in self._similarity_cache:
             self._cache_hits += 1
-            return self._similarity_cache[cache_key]
+            return float(self._similarity_cache[cache_key])
 
         self._cache_misses += 1
 
@@ -834,7 +833,7 @@ class ABTableMatchingService:
         self._cache_hits = 0
         self._cache_misses = 0
 
-        return stats
+        return {k: int(v) if isinstance(v, (int, float)) else v for k, v in stats.items()}
 
     def _extract_name(self, record: Dict[str, Any]) -> str:
         """从记录中提取姓名"""

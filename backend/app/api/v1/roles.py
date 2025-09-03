@@ -299,7 +299,7 @@ async def get_role_users(
                         user.created_at.isoformat() if user.created_at else None
                     ),
                     "lastLoginAt": (
-                        user.last_login_at.isoformat() if user.last_login_at else None
+                        user.last_login.isoformat() if user.last_login else None
                     ),
                 }
             )

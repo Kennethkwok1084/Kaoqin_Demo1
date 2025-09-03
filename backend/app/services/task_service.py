@@ -347,9 +347,7 @@ class TaskService:
             await self.db.refresh(task)
 
             logger.info(
-                f"Task {task_id} status updated from {
-                    old_status.value} to {
-                    new_status.value}"
+                f"Task {task_id} status updated from {old_status.value} to {new_status.value}"
             )
             return task
 
@@ -3049,8 +3047,7 @@ class AssistanceTaskService:
                     )
             except Exception as e:
                 logger.warning(
-                    f"Failed to update monthly summary after rush task marking: {
-                        str(e)}"
+                    f"Failed to update monthly summary after rush task marking: {str(e)}"
                 )
 
     async def recalculate_task_work_hours(self, task_id: int) -> bool:
@@ -3093,8 +3090,7 @@ class AssistanceTaskService:
                         )
                     except Exception as e:
                         logger.warning(
-                            f"Failed to update monthly summary for task {task_id}: {
-                                str(e)}"
+                            f"Failed to update monthly summary for task {task_id}: {str(e)}"
                         )
 
                 logger.info(
