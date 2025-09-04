@@ -3,7 +3,7 @@ OpenAPI文档配置增强
 完善的API元数据和机器可读配置
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 # API标签配置 - 用于组织API端点
 OPENAPI_TAGS = [

@@ -2042,7 +2042,7 @@ async def get_satisfaction_analysis(
             count = 0
             for stat in rating_stats:
                 if stat.rating == i:
-                    count = stat.count
+                    count = stat[1]  # Use index to access count column
                     break
 
             rating_distribution.append(

@@ -1155,6 +1155,72 @@ class WorkHoursCalculationService:
             logger.error(f"Recalculate member hours error: {str(e)}")
             raise
 
+    async def recalculate_member_monthly_summary(
+        self, member_id: int, year: int, month: int
+    ) -> MonthlyAttendanceSummary:
+        """Alias for update_monthly_summary for backward compatibility."""
+        return await self.update_monthly_summary(member_id, year, month)
+
+    async def process_monthly_carryover(self, *args: Any, **kwargs: Any) -> Any:
+        """Delegate to RushTaskMarkingService."""
+        rush_service = RushTaskMarkingService(self.db)
+        return await rush_service.process_monthly_carryover(*args, **kwargs)
+
+    async def batch_process_carryover(self, *args: Any, **kwargs: Any) -> Any:
+        """Delegate to RushTaskMarkingService."""
+        rush_service = RushTaskMarkingService(self.db)
+        return await rush_service.batch_process_carryover(*args, **kwargs)
+
+    async def get_carryover_summary(self, *args: Any, **kwargs: Any) -> Any:
+        """Delegate to RushTaskMarkingService."""
+        rush_service = RushTaskMarkingService(self.db)
+        return await rush_service.get_carryover_summary(*args, **kwargs)
+
+    async def calculate_projected_carryover(self, *args: Any, **kwargs: Any) -> Any:
+        """Delegate to RushTaskMarkingService."""
+        rush_service = RushTaskMarkingService(self.db)
+        return await rush_service.calculate_projected_carryover(*args, **kwargs)
+
+    async def apply_group_penalty_for_task(self, *args: Any, **kwargs: Any) -> Any:
+        """Alias for apply_group_penalties for backward compatibility."""
+        return await self.apply_group_penalties(*args, **kwargs)
+
+    async def batch_apply_group_penalties(self, *args: Any, **kwargs: Any) -> Any:
+        """Alias for apply_group_penalties for backward compatibility."""
+        return await self.apply_group_penalties(*args, **kwargs)
+
+    async def get_group_members_by_task(self, task_id: int) -> Dict[str, Any]:
+        """Get group members for a specific task."""
+        # This is a simple implementation - you might need to adjust based on requirements
+        task_query = select(RepairTask).where(RepairTask.id == task_id)
+        task_result = await self.db.execute(task_query)
+        task = task_result.scalar_one_or_none()
+        
+        if not task:
+            return {"members": [], "task_found": False}
+            
+        # Get all members from the same group/department as the task member
+        member_query = (
+            select(Member)
+            .where(Member.department == task.member.department)
+            .options(selectinload(Member.repair_tasks))
+        )
+        member_result = await self.db.execute(member_query)
+        members = member_result.scalars().all()
+        
+        return {
+            "task_found": True,
+            "task_member_department": task.member.department if task.member else None,
+            "members": [
+                {
+                    "id": member.id,
+                    "name": member.name,
+                    "department": member.department,
+                }
+                for member in members
+            ],
+        }
+
 
 class RushTaskMarkingService:
     """爆单标记服务"""
@@ -2080,7 +2146,9 @@ class RushTaskMarkingService:
                 raise ValueError(f"任务 {task_id} 不存在")
 
             # 应用小组惩罚
-            batch_result = await self.batch_apply_group_penalties([task.id], penalty_type, operator_id)
+            batch_result = await self.batch_apply_group_penalties(
+                [task.id], penalty_type, operator_id
+            )
             affected_member_ids = batch_result.get("affected_member_ids", [])
 
             await self.db.commit()
@@ -2135,7 +2203,7 @@ class RushTaskMarkingService:
                 member_query = select(Member).where(
                     and_(
                         Member.group_id == task.member.group_id,
-                        Member.is_active == True,
+                        Member.is_active.is_(True),
                     )
                 )
             else:
@@ -2143,7 +2211,7 @@ class RushTaskMarkingService:
                 member_query = select(Member).where(
                     and_(
                         Member.department == task.member.department,
-                        Member.is_active == True,
+                        Member.is_active.is_(True),
                     )
                 )
 
@@ -2259,6 +2327,7 @@ class RushTaskMarkingService:
             扣时分钟数
         """
         from app.core.config import settings
+
         penalty_map = {
             "late_response": settings.LATE_RESPONSE_PENALTY_MINUTES,  # 30分钟
             "late_completion": settings.LATE_COMPLETION_PENALTY_MINUTES,  # 30分钟

@@ -1,325 +1,293 @@
-===== 运行类型检查 (mypy) =====
-2025-09-03T15:08:13.3521487Z app/services/work_hours_service.py:2083: error: Missing positional argument "operator_id" in call to "batch_apply_group_penalties" of "RushTaskMarkingService"  [call-arg]
-2025-09-03T15:08:13.3527369Z app/services/work_hours_service.py:2083: error: List item 0 has incompatible type "RepairTask"; expected "int"  [list-item]
-2025-09-03T15:08:13.3529810Z app/services/work_hours_service.py:2261: error: "RushTaskMarkingService" has no attribute "LATE_RESPONSE_PENALTY"  [attr-defined]
-2025-09-03T15:08:13.3538285Z app/services/work_hours_service.py:2262: error: "RushTaskMarkingService" has no attribute "LATE_COMPLETION_PENALTY"  [attr-defined]
-2025-09-03T15:08:13.3540292Z app/services/work_hours_service.py:2263: error: "RushTaskMarkingService" has no attribute "NEGATIVE_REVIEW_PENALTY"  [attr-defined]
-2025-09-03T15:08:14.3703017Z app/api/v1/dashboard.py:111: error: Function is missing a return type annotation  [no-untyped-def]
-2025-09-03T15:08:14.3705619Z app/api/v1/dashboard.py:139: error: Argument "metrics" to "DashboardOverviewResponse" has incompatible type "dict[str, object]"; expected "MetricsData"  [arg-type]
-2025-09-03T15:08:14.3712473Z app/api/v1/dashboard.py:146: error: Argument "trends" to "DashboardOverviewResponse" has incompatible type "dict[str, Any]"; expected "TrendsData"  [arg-type]
-2025-09-03T15:08:14.3716085Z app/api/v1/dashboard.py:154: error: Argument "systemInfo" to "DashboardOverviewResponse" has incompatible type "dict[str, object]"; expected "SystemInfo"  [arg-type]
-2025-09-03T15:08:14.3718747Z app/api/v1/dashboard.py:161: error: Incompatible return value type (got "StandardResponse", expected "TypedResponse[DashboardOverviewResponse]")  [return-value]
-2025-09-03T15:08:14.3720529Z app/api/v1/dashboard.py:170: error: Function is missing a return type annotation  [no-untyped-def]
-2025-09-03T15:08:14.3721815Z app/api/v1/dashboard.py:182: error: "type[RepairTask]" has no attribute "assigned_to"  [attr-defined]
-2025-09-03T15:08:14.3723160Z app/api/v1/dashboard.py:183: error: "type[RepairTask]" has no attribute "assigned_member"  [attr-defined]
-2025-09-03T15:08:14.3730251Z app/api/v1/dashboard.py:194: error: "type[RepairTask]" has no attribute "assigned_to"  [attr-defined]
-2025-09-03T15:08:14.3731465Z app/api/v1/dashboard.py:202: error: "type[RepairTask]" has no attribute "assigned_to"  [attr-defined]
-2025-09-03T15:08:14.3732718Z app/api/v1/dashboard.py:212: error: "type[RepairTask]" has no attribute "assigned_to"  [attr-defined]
-2025-09-03T15:08:14.3733903Z app/api/v1/dashboard.py:222: error: "type[RepairTask]" has no attribute "assigned_to"  [attr-defined]
-2025-09-03T15:08:14.3735736Z app/api/v1/dashboard.py:246: error: Argument "tasks" to "DashboardTasksResponse" has incompatible type "list[dict[str, int | str | None]]"; expected "list[TaskSummary]"  [arg-type]
-2025-09-03T15:08:14.3737877Z app/api/v1/dashboard.py:247: error: Argument "summary" to "DashboardTasksResponse" has incompatible type "dict[str, int]"; expected "TaskStats"  [arg-type]
-2025-09-03T15:08:14.3739432Z app/api/v1/dashboard.py:266: error: Function is missing a return type annotation  [no-untyped-def]
-2025-09-03T15:08:14.3741047Z app/api/v1/dashboard.py:279: error: "type[RepairTask]" has no attribute "created_by_member"  [attr-defined]
-2025-09-03T15:08:14.3742367Z app/api/v1/dashboard.py:280: error: "type[RepairTask]" has no attribute "assigned_member"  [attr-defined]
-2025-09-03T15:08:14.3743577Z app/api/v1/dashboard.py:295: error: "RepairTask" has no attribute "created_by_member"  [attr-defined]
-2025-09-03T15:08:14.3744940Z app/api/v1/dashboard.py:302: error: "RepairTask" has no attribute "created_by_member"  [attr-defined]
-2025-09-03T15:08:14.3746071Z app/api/v1/dashboard.py:303: error: "RepairTask" has no attribute "created_by"  [attr-defined]
-2025-09-03T15:08:14.3747218Z app/api/v1/dashboard.py:319: error: "RepairTask" has no attribute "assigned_member"  [attr-defined]
-2025-09-03T15:08:14.3748428Z app/api/v1/dashboard.py:326: error: "RepairTask" has no attribute "assigned_member"  [attr-defined]
-2025-09-03T15:08:14.3749497Z app/api/v1/dashboard.py:327: error: "RepairTask" has no attribute "assigned_to"  [attr-defined]
-2025-09-03T15:08:14.3750605Z app/api/v1/dashboard.py:338: error: "RepairTask" has no attribute "assigned_member"  [attr-defined]
-2025-09-03T15:08:14.3751727Z app/api/v1/dashboard.py:345: error: "RepairTask" has no attribute "assigned_member"  [attr-defined]
-2025-09-03T15:08:14.3752831Z app/api/v1/dashboard.py:346: error: "RepairTask" has no attribute "assigned_to"  [attr-defined]
-2025-09-03T15:08:14.3754665Z app/api/v1/dashboard.py:385: error: Argument "activities" to "DashboardActivitiesResponse" has incompatible type "list[dict[str, Any]]"; expected "list[Activity]"  [arg-type]
-2025-09-03T15:08:14.3756705Z app/api/v1/dashboard.py:386: error: Argument "summary" to "DashboardActivitiesResponse" has incompatible type "dict[str, int]"; expected "ActivitySummary"  [arg-type]
-2025-09-03T15:08:15.9761032Z app/api/v1/statistics.py:1851: error: Need type annotation for "keyword_counts" (hint: "keyword_counts: dict[<type>, <type>] = ...")  [var-annotated]
-2025-09-03T15:08:15.9763541Z app/api/v1/statistics.py:2045: error: Incompatible types in assignment (expression has type "Callable[[Any], int]", variable has type "int")  [assignment]
-2025-09-03T15:08:17.8809164Z app/api/v1/tasks.py:2176: error: Unsupported operand types for + ("None" and "int")  [operator]
-2025-09-03T15:08:17.8811908Z app/api/v1/tasks.py:2176: note: Left operand is of type "int | None"
-2025-09-03T15:08:17.8816238Z app/api/v1/tasks.py:2305: error: Dict entry 3 has incompatible type "str": "list[str | None]"; expected "str": "str | int | None"  [dict-item]
-2025-09-03T15:08:17.8818282Z app/api/v1/tasks.py:2363: error: Incompatible types in assignment (expression has type "AssistanceTask", variable has type "RepairTask")  [assignment]
-2025-09-03T15:08:17.8820231Z app/api/v1/tasks.py:2369: error: "RepairTask" has no attribute "assisted_department"  [attr-defined]
-2025-09-03T15:08:17.8821740Z app/api/v1/tasks.py:2370: error: "RepairTask" has no attribute "assisted_person"  [attr-defined]
-2025-09-03T15:08:17.8823156Z app/api/v1/tasks.py:2372: error: "RepairTask" has no attribute "start_time"  [attr-defined]
-2025-09-03T15:08:17.8824551Z app/api/v1/tasks.py:2374: error: "RepairTask" has no attribute "end_time"  [attr-defined]
-2025-09-03T15:08:17.8825551Z app/api/v1/tasks.py:2383: error: "RepairTask" has no attribute "approved_by"  [attr-defined]
-2025-09-03T15:08:17.8826552Z app/api/v1/tasks.py:2384: error: "RepairTask" has no attribute "approver"  [attr-defined]
-2025-09-03T15:08:17.8827550Z app/api/v1/tasks.py:2386: error: "RepairTask" has no attribute "approved_at"  [attr-defined]
-2025-09-03T15:08:17.8828533Z app/api/v1/tasks.py:2387: error: "RepairTask" has no attribute "approved_at"  [attr-defined]
-2025-09-03T15:08:17.8829879Z app/api/v1/tasks.py:2419: error: Incompatible types in assignment (expression has type "MonitoringTask", variable has type "RepairTask")  [assignment]
-2025-09-03T15:08:17.8831250Z app/api/v1/tasks.py:2425: error: "RepairTask" has no attribute "monitoring_type"  [attr-defined]
-2025-09-03T15:08:17.8832770Z app/api/v1/tasks.py:2428: error: "RepairTask" has no attribute "start_time"  [attr-defined]
-2025-09-03T15:08:17.8833758Z app/api/v1/tasks.py:2430: error: "RepairTask" has no attribute "end_time"  [attr-defined]
-2025-09-03T15:08:17.8835228Z app/api/v1/tasks.py:2491: error: Incompatible types in assignment (expression has type "dict[str, str | int | None]", variable has type "RepairTask")  [assignment]
-2025-09-03T15:08:17.8836525Z app/api/v1/tasks.py:2492: error: Unsupported target for indexed assignment ("RepairTask")  [index]
-2025-09-03T15:08:17.8837671Z app/api/v1/tasks.py:2518: error: Incompatible types in assignment (expression has type "bytes", variable has type "str")  [assignment]
-2025-09-03T15:08:17.8839060Z app/api/v1/tasks.py:2676: error: "WorkHoursCalculationService" has no attribute "process_monthly_carryover"  [attr-defined]
-2025-09-03T15:08:17.8840430Z app/api/v1/tasks.py:2721: error: "WorkHoursCalculationService" has no attribute "batch_process_carryover"  [attr-defined]
-2025-09-03T15:08:17.8841755Z app/api/v1/tasks.py:2775: error: "WorkHoursCalculationService" has no attribute "get_carryover_summary"  [attr-defined]
-2025-09-03T15:08:17.8843110Z app/api/v1/tasks.py:2834: error: "WorkHoursCalculationService" has no attribute "calculate_projected_carryover"  [attr-defined]
-2025-09-03T15:08:17.8844544Z app/api/v1/tasks.py:2917: error: Unsupported operand types for + ("None" and "int")  [operator]
-2025-09-03T15:08:17.8845469Z app/api/v1/tasks.py:2917: note: Left operand is of type "int | None"
-2025-09-03T15:08:17.8846450Z app/api/v1/tasks.py:2925: error: Value of type "dict[str, Any] | int | str | _N | float | None" is not indexable  [index]
-2025-09-03T15:08:17.8847649Z app/api/v1/tasks.py:2925: error: Invalid index type "str" for "str"; expected type "SupportsIndex | slice[Any, Any, Any]"  [index]
-2025-09-03T15:08:17.8849220Z app/api/v1/tasks.py:2974: error: "WorkHoursCalculationService" has no attribute "apply_group_penalty_for_task"; maybe "apply_group_penalties"?  [attr-defined]
-2025-09-03T15:08:17.8851046Z app/api/v1/tasks.py:3018: error: "WorkHoursCalculationService" has no attribute "batch_apply_group_penalties"; maybe "apply_group_penalties"?  [attr-defined]
-2025-09-03T15:08:17.8852988Z app/api/v1/tasks.py:3065: error: "WorkHoursCalculationService" has no attribute "get_group_members_by_task"  [attr-defined]
-2025-09-03T15:08:17.8854456Z app/api/v1/tasks.py:3208: error: Unsupported operand types for + ("None" and "int")  [operator]
-2025-09-03T15:08:17.8855397Z app/api/v1/tasks.py:3208: note: Left operand is of type "int | None"
-2025-09-03T15:08:17.8856566Z app/api/v1/tasks.py:4041: error: "WorkHoursCalculationService" has no attribute "recalculate_member_monthly_summary"  [attr-defined]
-2025-09-03T15:08:17.8858063Z app/api/v1/tasks.py:4157: error: "WorkHoursCalculationService" has no attribute "recalculate_member_monthly_summary"  [attr-defined]
-2025-09-03T15:08:17.8859443Z app/api/v1/tasks.py:5848: error: Unexpected keyword argument "status" for "MonitoringTask"  [call-arg]
-2025-09-03T15:08:17.8860551Z app/api/v1/tasks.py:6094: error: "AssistanceTask" has no attribute "review_comment"  [attr-defined]
-2025-09-03T15:08:17.8862259Z app/api/v1/tasks.py:6102: error: "WorkHoursCalculationService" has no attribute "recalculate_member_monthly_summary"  [attr-defined]
-2025-09-03T15:08:17.8863830Z app/api/v1/tasks.py:6113: error: "AssistanceTask" has no attribute "review_comment"  [attr-defined]
-2025-09-03T15:08:17.8869317Z app/api/v1/tasks.py:6217: error: "AssistanceTask" has no attribute "review_comment"  [attr-defined]
-2025-09-03T15:08:17.8870942Z app/api/v1/tasks.py:6227: error: "WorkHoursCalculationService" has no attribute "recalculate_member_monthly_summary"  [attr-defined]
-2025-09-03T15:08:17.8872864Z app/api/v1/tasks.py:6248: error: Incompatible types in assignment (expression has type "dict[str, Any]", variable has type "Result[tuple[AssistanceTask]]")  [assignment]
-2025-09-03T15:08:17.8875083Z app/api/v1/tasks.py:6291: error: Module "app.services.import_service" has no attribute "ImportService"; maybe "DataImportService"?  [attr-defined]
-2025-09-03T15:08:17.8876998Z app/api/v1/tasks.py:6323: error: "type[RepairTask]" has no attribute "work_order_id"  [attr-defined]
-2025-09-03T15:08:17.8878387Z app/api/v1/tasks.py:6341: error: "RepairTask" has no attribute "reporter_phone"; maybe "reporter_name"?  [attr-defined]
-2025-09-03T15:08:17.8879864Z app/api/v1/tasks.py:6342: error: "RepairTask" has no attribute "reporter_phone"; maybe "reporter_name"?  [attr-defined]
-2025-09-03T15:08:17.8959822Z app/api/v1/tasks.py:6344: error: "RepairTask" has no attribute "is_offline"  [attr-defined]
-2025-09-03T15:08:17.8960996Z app/api/v1/tasks.py:6345: error: "RepairTask" has no attribute "is_offline"  [attr-defined]
-2025-09-03T15:08:17.8962020Z app/api/v1/tasks.py:6348: error: "RepairTask" has no attribute "work_order_id"  [attr-defined]
-2025-09-03T15:08:17.8963104Z app/api/v1/tasks.py:6372: error: "RepairTask" has no attribute "assigned_at"  [attr-defined]
-2025-09-03T15:08:17.9633111Z app/main.py:141: error: Cannot assign to a method  [method-assign]
-2025-09-03T15:08:17.9770696Z Found 82 errors in 5 files (checked 54 source files)
-2025-09-03T15:08:18.0040662Z ⚠️ mypy 类型检查发现问题
-2025-09-03T15:08:18.0042168Z ===== 代码质量检查总结 =====
-2025-09-03T15:08:18.0042601Z 关键错误数量: 1
-2025-09-03T15:08:18.0042960Z 类型检查问题: 1
-2025-09-03T15:08:18.0043345Z ❌ 发现关键代码质量问题，停止构建
-2025-09-03T15:08:18.0043796Z 请修复 Black 和 isort 问题后重新提交
-2025-09-03T15:08:18.0060617Z ##[error]Process completed with exit code 1.
-2025-09-03T15:08:18.1228158Z ##[group]Run actions/upload-artifact@v4
-2025-09-03T15:08:18.1228472Z with:
-2025-09-03T15:08:18.1228664Z   name: benchmark-results
-2025-09-03T15:08:18.1228918Z   path: backend/benchmark-results.json
-2025-09-03T15:08:18.1229184Z   retention-days: 30
-2025-09-03T15:08:18.1229411Z   if-no-files-found: warn
-2025-09-03T15:08:18.1229633Z   compression-level: 6
-2025-09-03T15:08:18.1229845Z   overwrite: false
-2025-09-03T15:08:18.1230058Z   include-hidden-files: false
-2025-09-03T15:08:18.1230285Z env:
-2025-09-03T15:08:18.1230461Z   COVERAGE_THRESHOLD: 95
-2025-09-03T15:08:18.1230682Z   API_COVERAGE_TARGET: 100
-2025-09-03T15:08:18.1230964Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-03T15:08:18.1231575Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
-2025-09-03T15:08:18.1231975Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-03T15:08:18.1232328Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-03T15:08:18.1232719Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-03T15:08:18.1233084Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
-2025-09-03T15:08:18.1233387Z   ENVIRONMENT: test
-2025-09-03T15:08:18.1233586Z   TESTING: true
-2025-09-03T15:08:18.1233778Z   DEBUG: false
-2025-09-03T15:08:18.1235109Z   DATABASE_URL: ***localhost:5432/test_attendence
-2025-09-03T15:08:18.1235636Z   DATABASE_URL_SYNC: ***localhost:5432/test_attendence
-2025-09-03T15:08:18.1235957Z   REDIS_URL: redis://localhost:6379/0
-2025-09-03T15:08:18.1236216Z   POSTGRES_TEST: true
-2025-09-03T15:08:18.1236422Z   CI: true
-2025-09-03T15:08:18.1236604Z   GITHUB_ACTIONS: true
-2025-09-03T15:08:18.1236877Z   SECRET_KEY: test_secret_key_for_ci_cd_environment_only
-2025-09-03T15:08:18.1237181Z   ACCESS_TOKEN_EXPIRE_MINUTES: 30
-2025-09-03T15:08:18.1237424Z ##[endgroup]
-2025-09-03T15:08:18.3690696Z With the provided path, there will be 1 file uploaded
-2025-09-03T15:08:18.3696371Z Artifact name is valid!
-2025-09-03T15:08:18.3698100Z Root directory input is valid!
-2025-09-03T15:08:18.4943448Z Beginning upload of artifact content to blob storage
-2025-09-03T15:08:18.8671328Z Uploaded bytes 684159
-2025-09-03T15:08:18.8849845Z Finished uploading artifact content to blob storage!
-2025-09-03T15:08:18.8855113Z SHA256 digest of uploaded artifact zip is ee1fcb3f65736fc238c728bd48df0706c62249739c4a1e038d5e3ba04ce700f0
-2025-09-03T15:08:18.8857317Z Finalizing artifact upload
-2025-09-03T15:08:19.0077684Z Artifact benchmark-results.zip successfully finalized. Artifact ID 3917789062
-2025-09-03T15:08:19.0079103Z Artifact benchmark-results has been successfully uploaded! Final size is 684159 bytes. Artifact ID is 3917789062
-2025-09-03T15:08:19.0090611Z Artifact download URL: https://github.com/KangJianLin/Kaoqin_Demo/actions/runs/17437726539/artifacts/3917789062
-2025-09-03T15:08:19.0281139Z ##[group]Run actions/upload-artifact@v4
-2025-09-03T15:08:19.0281454Z with:
-2025-09-03T15:08:19.0281650Z   name: test-results
-2025-09-03T15:08:19.0281977Z   path: backend/tests/reports/
+
+2025-09-04T06:19:22.6973265Z ===== 运行类型检查 (mypy) =====
+2025-09-04T06:19:51.0998495Z app/api/v1/statistics.py:2045: error: Incompatible types in assignment (expression has type "Callable[[Any], int]", variable has type "int")  [assignment]
+2025-09-04T06:19:52.9964085Z app/api/v1/tasks.py:2176: error: Unsupported operand types for + ("None" and "int")  [operator]
+2025-09-04T06:19:52.9965726Z app/api/v1/tasks.py:2176: note: Left operand is of type "int | None"
+2025-09-04T06:19:52.9967396Z app/api/v1/tasks.py:2305: error: Dict entry 3 has incompatible type "str": "list[str | None]"; expected "str": "str | int | None"  [dict-item]
+2025-09-04T06:19:52.9974956Z app/api/v1/tasks.py:2363: error: Incompatible types in assignment (expression has type "AssistanceTask", variable has type "RepairTask")  [assignment]
+2025-09-04T06:19:52.9976409Z app/api/v1/tasks.py:2369: error: "RepairTask" has no attribute "assisted_department"  [attr-defined]
+2025-09-04T06:19:52.9977518Z app/api/v1/tasks.py:2370: error: "RepairTask" has no attribute "assisted_person"  [attr-defined]
+2025-09-04T06:19:52.9978586Z app/api/v1/tasks.py:2372: error: "RepairTask" has no attribute "start_time"  [attr-defined]
+2025-09-04T06:19:52.9979587Z app/api/v1/tasks.py:2374: error: "RepairTask" has no attribute "end_time"  [attr-defined]
+2025-09-04T06:19:52.9980581Z app/api/v1/tasks.py:2383: error: "RepairTask" has no attribute "approved_by"  [attr-defined]
+2025-09-04T06:19:52.9981614Z app/api/v1/tasks.py:2384: error: "RepairTask" has no attribute "approver"  [attr-defined]
+2025-09-04T06:19:52.9982619Z app/api/v1/tasks.py:2386: error: "RepairTask" has no attribute "approved_at"  [attr-defined]
+2025-09-04T06:19:52.9984363Z app/api/v1/tasks.py:2387: error: "RepairTask" has no attribute "approved_at"  [attr-defined]
+2025-09-04T06:19:52.9985748Z app/api/v1/tasks.py:2419: error: Incompatible types in assignment (expression has type "MonitoringTask", variable has type "RepairTask")  [assignment]
+2025-09-04T06:19:52.9987113Z app/api/v1/tasks.py:2425: error: "RepairTask" has no attribute "monitoring_type"  [attr-defined]
+2025-09-04T06:19:52.9988121Z app/api/v1/tasks.py:2428: error: "RepairTask" has no attribute "start_time"  [attr-defined]
+2025-09-04T06:19:52.9989079Z app/api/v1/tasks.py:2430: error: "RepairTask" has no attribute "end_time"  [attr-defined]
+2025-09-04T06:19:52.9990308Z app/api/v1/tasks.py:2491: error: Incompatible types in assignment (expression has type "dict[str, str | int | None]", variable has type "RepairTask")  [assignment]
+2025-09-04T06:19:52.9991717Z app/api/v1/tasks.py:2492: error: Unsupported target for indexed assignment ("RepairTask")  [index]
+2025-09-04T06:19:52.9993057Z app/api/v1/tasks.py:2518: error: Incompatible types in assignment (expression has type "bytes", variable has type "str")  [assignment]
+2025-09-04T06:19:52.9998001Z app/api/v1/tasks.py:2676: error: "WorkHoursCalculationService" has no attribute "process_monthly_carryover"  [attr-defined]
+2025-09-04T06:19:52.9999456Z app/api/v1/tasks.py:2721: error: "WorkHoursCalculationService" has no attribute "batch_process_carryover"  [attr-defined]
+2025-09-04T06:19:53.0001149Z app/api/v1/tasks.py:2775: error: "WorkHoursCalculationService" has no attribute "get_carryover_summary"  [attr-defined]
+2025-09-04T06:19:53.0002658Z app/api/v1/tasks.py:2834: error: "WorkHoursCalculationService" has no attribute "calculate_projected_carryover"  [attr-defined]
+2025-09-04T06:19:53.0004279Z app/api/v1/tasks.py:2917: error: Unsupported operand types for + ("None" and "int")  [operator]
+2025-09-04T06:19:53.0005230Z app/api/v1/tasks.py:2917: note: Left operand is of type "int | None"
+2025-09-04T06:19:53.0006238Z app/api/v1/tasks.py:2925: error: Value of type "dict[str, Any] | int | str | _N | float | None" is not indexable  [index]
+2025-09-04T06:19:53.0007547Z app/api/v1/tasks.py:2925: error: Invalid index type "str" for "str"; expected type "SupportsIndex | slice[Any, Any, Any]"  [index]
+2025-09-04T06:19:53.0009201Z app/api/v1/tasks.py:2974: error: "WorkHoursCalculationService" has no attribute "apply_group_penalty_for_task"; maybe "apply_group_penalties"?  [attr-defined]
+2025-09-04T06:19:53.0011043Z app/api/v1/tasks.py:3018: error: "WorkHoursCalculationService" has no attribute "batch_apply_group_penalties"; maybe "apply_group_penalties"?  [attr-defined]
+2025-09-04T06:19:53.0012719Z app/api/v1/tasks.py:3065: error: "WorkHoursCalculationService" has no attribute "get_group_members_by_task"  [attr-defined]
+2025-09-04T06:19:53.0014125Z app/api/v1/tasks.py:3208: error: Unsupported operand types for + ("None" and "int")  [operator]
+2025-09-04T06:19:53.0015044Z app/api/v1/tasks.py:3208: note: Left operand is of type "int | None"
+2025-09-04T06:19:53.0016220Z app/api/v1/tasks.py:4041: error: "WorkHoursCalculationService" has no attribute "recalculate_member_monthly_summary"  [attr-defined]
+2025-09-04T06:19:53.0017778Z app/api/v1/tasks.py:4157: error: "WorkHoursCalculationService" has no attribute "recalculate_member_monthly_summary"  [attr-defined]
+2025-09-04T06:19:53.0019140Z app/api/v1/tasks.py:5848: error: Unexpected keyword argument "status" for "MonitoringTask"  [call-arg]
+2025-09-04T06:19:53.0020298Z app/api/v1/tasks.py:6094: error: "AssistanceTask" has no attribute "review_comment"  [attr-defined]
+2025-09-04T06:19:53.0021631Z app/api/v1/tasks.py:6102: error: "WorkHoursCalculationService" has no attribute "recalculate_member_monthly_summary"  [attr-defined]
+2025-09-04T06:19:53.0022962Z app/api/v1/tasks.py:6113: error: "AssistanceTask" has no attribute "review_comment"  [attr-defined]
+2025-09-04T06:19:53.0024262Z app/api/v1/tasks.py:6217: error: "AssistanceTask" has no attribute "review_comment"  [attr-defined]
+2025-09-04T06:19:53.0025860Z app/api/v1/tasks.py:6227: error: "WorkHoursCalculationService" has no attribute "recalculate_member_monthly_summary"  [attr-defined]
+2025-09-04T06:19:53.0027590Z app/api/v1/tasks.py:6248: error: Incompatible types in assignment (expression has type "dict[str, Any]", variable has type "Result[tuple[AssistanceTask]]")  [assignment]
+2025-09-04T06:19:53.0029387Z app/api/v1/tasks.py:6291: error: Module "app.services.import_service" has no attribute "ImportService"; maybe "DataImportService"?  [attr-defined]
+2025-09-04T06:19:53.0030774Z app/api/v1/tasks.py:6323: error: "type[RepairTask]" has no attribute "work_order_id"  [attr-defined]
+2025-09-04T06:19:53.0031963Z app/api/v1/tasks.py:6341: error: "RepairTask" has no attribute "reporter_phone"; maybe "reporter_name"?  [attr-defined]
+2025-09-04T06:19:53.0033224Z app/api/v1/tasks.py:6342: error: "RepairTask" has no attribute "reporter_phone"; maybe "reporter_name"?  [attr-defined]
+2025-09-04T06:19:53.0034563Z app/api/v1/tasks.py:6344: error: "RepairTask" has no attribute "is_offline"  [attr-defined]
+2025-09-04T06:19:53.0035581Z app/api/v1/tasks.py:6345: error: "RepairTask" has no attribute "is_offline"  [attr-defined]
+2025-09-04T06:19:53.0036609Z app/api/v1/tasks.py:6348: error: "RepairTask" has no attribute "work_order_id"  [attr-defined]
+2025-09-04T06:19:53.0037634Z app/api/v1/tasks.py:6372: error: "RepairTask" has no attribute "assigned_at"  [attr-defined]
+2025-09-04T06:19:53.0748124Z app/main.py:141: error: Cannot assign to a method  [method-assign]
+2025-09-04T06:19:53.0885644Z Found 48 errors in 3 files (checked 54 source files)
+2025-09-04T06:19:53.1182025Z ⚠️ mypy 类型检查发现问题
+2025-09-04T06:19:53.1184927Z ===== 代码质量检查总结 =====
+2025-09-04T06:19:53.1187894Z 关键错误数量: 2
+2025-09-04T06:19:53.1188309Z 类型检查问题: 1
+2025-09-04T06:19:53.1188665Z ❌ 发现关键代码质量问题，停止构建
+2025-09-04T06:19:53.1189073Z 请修复 Black 和 isort 问题后重新提交
+2025-09-04T06:19:53.1204490Z ##[error]Process completed with exit code 1.
+2025-09-04T06:19:53.2406353Z ##[group]Run actions/upload-artifact@v4
+2025-09-04T06:19:53.2406658Z with:
+2025-09-04T06:19:53.2406846Z   name: benchmark-results
+2025-09-04T06:19:53.2407081Z   path: backend/benchmark-results.json
+2025-09-04T06:19:53.2407331Z   retention-days: 30
+2025-09-04T06:19:53.2407529Z   if-no-files-found: warn
+2025-09-04T06:19:53.2407743Z   compression-level: 6
+2025-09-04T06:19:53.2407944Z   overwrite: false
+2025-09-04T06:19:53.2408142Z   include-hidden-files: false
+2025-09-04T06:19:53.2408349Z env:
+2025-09-04T06:19:53.2408519Z   COVERAGE_THRESHOLD: 95
+2025-09-04T06:19:53.2408728Z   API_COVERAGE_TARGET: 100
+2025-09-04T06:19:53.2409000Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T06:19:53.2409392Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
+2025-09-04T06:19:53.2409769Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T06:19:53.2410108Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T06:19:53.2410468Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T06:19:53.2410813Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
+2025-09-04T06:19:53.2411108Z   ENVIRONMENT: test
+2025-09-04T06:19:53.2411295Z   TESTING: true
+2025-09-04T06:19:53.2411473Z   DEBUG: false
+2025-09-04T06:19:53.2412012Z   DATABASE_URL: ***localhost:5432/test_attendence
+2025-09-04T06:19:53.2412455Z   DATABASE_URL_SYNC: ***localhost:5432/test_attendence
+2025-09-04T06:19:53.2412755Z   REDIS_URL: redis://localhost:6379/0
+2025-09-04T06:19:53.2413007Z   POSTGRES_TEST: true
+2025-09-04T06:19:53.2413200Z   CI: true
+2025-09-04T06:19:53.2413608Z   GITHUB_ACTIONS: true
+2025-09-04T06:19:53.2413917Z   SECRET_KEY: test_secret_key_for_ci_cd_environment_only
+2025-09-04T06:19:53.2414220Z   ACCESS_TOKEN_EXPIRE_MINUTES: 30
+2025-09-04T06:19:53.2414447Z ##[endgroup]
+2025-09-04T06:19:53.4774736Z With the provided path, there will be 1 file uploaded
+2025-09-04T06:19:53.4778329Z Artifact name is valid!
+2025-09-04T06:19:53.4778808Z Root directory input is valid!
+2025-09-04T06:19:53.6950682Z Beginning upload of artifact content to blob storage
+2025-09-04T06:19:54.2445912Z Uploaded bytes 684159
+2025-09-04T06:19:54.2891814Z Finished uploading artifact content to blob storage!
+2025-09-04T06:19:54.2896468Z SHA256 digest of uploaded artifact zip is 3d406e8f90c137764ef74749e8ef0331ef444cac8c396fa240d0694d457f3dd8
+2025-09-04T06:19:54.2898668Z Finalizing artifact upload
+2025-09-04T06:19:54.4232513Z Artifact benchmark-results.zip successfully finalized. Artifact ID 3923959300
+2025-09-04T06:19:54.4234342Z Artifact benchmark-results has been successfully uploaded! Final size is 684159 bytes. Artifact ID is 3923959300
+2025-09-04T06:19:54.4241587Z Artifact download URL: https://github.com/KangJianLin/Kaoqin_Demo/actions/runs/17455135205/artifacts/3923959300
+2025-09-04T06:19:54.4362450Z ##[group]Run actions/upload-artifact@v4
+2025-09-04T06:19:54.4362733Z with:
+2025-09-04T06:19:54.4362918Z   name: test-results
+2025-09-04T06:19:54.4363231Z   path: backend/tests/reports/
 backend/htmlcov/
 backend/coverage.json
-2025-09-03T15:08:19.0282330Z   retention-days: 30
-2025-09-03T15:08:19.0282555Z   if-no-files-found: warn
-2025-09-03T15:08:19.0282790Z   compression-level: 6
-2025-09-03T15:08:19.0283015Z   overwrite: false
-2025-09-03T15:08:19.0283234Z   include-hidden-files: false
-2025-09-03T15:08:19.0283468Z env:
-2025-09-03T15:08:19.0283662Z   COVERAGE_THRESHOLD: 95
-2025-09-03T15:08:19.0283891Z   API_COVERAGE_TARGET: 100
-2025-09-03T15:08:19.0284892Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-03T15:08:19.0285380Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
-2025-09-03T15:08:19.0285816Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-03T15:08:19.0286210Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-03T15:08:19.0286613Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-03T15:08:19.0286981Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
-2025-09-03T15:08:19.0287291Z   ENVIRONMENT: test
-2025-09-03T15:08:19.0287497Z   TESTING: true
-2025-09-03T15:08:19.0287692Z   DEBUG: false
-2025-09-03T15:08:19.0288247Z   DATABASE_URL: ***localhost:5432/test_attendence
-2025-09-03T15:08:19.0288721Z   DATABASE_URL_SYNC: ***localhost:5432/test_attendence
-2025-09-03T15:08:19.0289041Z   REDIS_URL: redis://localhost:6379/0
-2025-09-03T15:08:19.0289305Z   POSTGRES_TEST: true
-2025-09-03T15:08:19.0289518Z   CI: true
-2025-09-03T15:08:19.0289709Z   GITHUB_ACTIONS: true
-2025-09-03T15:08:19.0289979Z   SECRET_KEY: test_secret_key_for_ci_cd_environment_only
-2025-09-03T15:08:19.0290291Z   ACCESS_TOKEN_EXPIRE_MINUTES: 30
-2025-09-03T15:08:19.0290535Z ##[endgroup]
-2025-09-03T15:08:19.2742630Z Multiple search paths detected. Calculating the least common ancestor of all paths
-2025-09-03T15:08:19.2749148Z The least common ancestor is /home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend. This will be the root directory of the artifact
-2025-09-03T15:08:19.2750618Z With the provided path, there will be 14 files uploaded
-2025-09-03T15:08:19.2755595Z Artifact name is valid!
-2025-09-03T15:08:19.2756624Z Root directory input is valid!
-2025-09-03T15:08:19.3920242Z Beginning upload of artifact content to blob storage
-2025-09-03T15:08:19.5162203Z Uploaded bytes 69187
-2025-09-03T15:08:19.5360805Z Finished uploading artifact content to blob storage!
-2025-09-03T15:08:19.5364818Z SHA256 digest of uploaded artifact zip is d51b3783414943ff75ddabd77c76ee054778435bb8acf450abed4cb9e9100cb2
-2025-09-03T15:08:19.5367915Z Finalizing artifact upload
-2025-09-03T15:08:19.6451229Z Artifact test-results.zip successfully finalized. Artifact ID 3917789171
-2025-09-03T15:08:19.6454955Z Artifact test-results has been successfully uploaded! Final size is 69187 bytes. Artifact ID is 3917789171
-2025-09-03T15:08:19.6462007Z Artifact download URL: https://github.com/KangJianLin/Kaoqin_Demo/actions/runs/17437726539/artifacts/3917789171
-2025-09-03T15:08:19.6610855Z ##[group]Run echo "====== 后端测试整体状态汇总 ======"
-2025-09-03T15:08:19.6611463Z echo "====== 后端测试整体状态汇总 ======"
-2025-09-03T15:08:19.6612020Z echo "Phase 1 基础测试: 完成"
-2025-09-03T15:08:19.6612528Z echo "Phase 2 API覆盖测试: 完成"
-2025-09-03T15:08:19.6613030Z echo "Phase 3 业务逻辑测试: 完成" 
-2025-09-03T15:08:19.6613481Z echo "Phase 4 集成测试: 完成"
-2025-09-03T15:08:19.6613939Z echo "Phase 5 性能测试: 完成"
-2025-09-03T15:08:19.6615239Z echo ""
-2025-09-03T15:08:19.6615594Z echo "✅ 后端所有测试阶段均已执行"
-2025-09-03T15:08:19.6616028Z echo "🎯 目标: API端点100%覆盖，代码覆盖率95%+"
-2025-09-03T15:08:19.6616488Z echo "📊 详细覆盖率报告已生成""
-2025-09-03T15:08:19.6660214Z shell: /usr/bin/bash -e {0}
-2025-09-03T15:08:19.6660520Z env:
-2025-09-03T15:08:19.6660723Z   COVERAGE_THRESHOLD: 95
-2025-09-03T15:08:19.6660976Z   API_COVERAGE_TARGET: 100
-2025-09-03T15:08:19.6661306Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-03T15:08:19.6661814Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
-2025-09-03T15:08:19.6662252Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-03T15:08:19.6662638Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-03T15:08:19.6663024Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-03T15:08:19.6663419Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
-2025-09-03T15:08:19.6663755Z   ENVIRONMENT: test
-2025-09-03T15:08:19.6663974Z   TESTING: true
-2025-09-03T15:08:19.6664458Z   DEBUG: false
-2025-09-03T15:08:19.6665081Z   DATABASE_URL: ***localhost:5432/test_attendence
-2025-09-03T15:08:19.6665581Z   DATABASE_URL_SYNC: ***localhost:5432/test_attendence
-2025-09-03T15:08:19.6665924Z   REDIS_URL: redis://localhost:6379/0
-2025-09-03T15:08:19.6666220Z   POSTGRES_TEST: true
-2025-09-03T15:08:19.6666444Z   CI: true
-2025-09-03T15:08:19.6666642Z   GITHUB_ACTIONS: true
-2025-09-03T15:08:19.6666948Z   SECRET_KEY: test_secret_key_for_ci_cd_environment_only
-2025-09-03T15:08:19.6667310Z   ACCESS_TOKEN_EXPIRE_MINUTES: 30
-2025-09-03T15:08:19.6667586Z ##[endgroup]
-2025-09-03T15:08:19.6735422Z ====== 后端测试整体状态汇总 ======
-2025-09-03T15:08:19.6736088Z Phase 1 基础测试: 完成
-2025-09-03T15:08:19.6736953Z Phase 2 API覆盖测试: 完成
-2025-09-03T15:08:19.6740063Z /home/runner/work/_temp/566af1a1-75bf-4738-bb14-ab3c86448df3.sh: line 10: unexpected EOF while looking for matching `"'
-2025-09-03T15:08:19.6743439Z Phase 3 业务逻辑测试: 完成
-2025-09-03T15:08:19.6743910Z Phase 4 集成测试: 完成
-2025-09-03T15:08:19.6744597Z Phase 5 性能测试: 完成
-2025-09-03T15:08:19.6744823Z 
-2025-09-03T15:08:19.6745021Z ✅ 后端所有测试阶段均已执行
-2025-09-03T15:08:19.6745470Z 🎯 目标: API端点100%覆盖，代码覆盖率95%+
-2025-09-03T15:08:19.6747253Z ##[error]Process completed with exit code 2.
-2025-09-03T15:08:19.6803165Z Post job cleanup.
-2025-09-03T15:08:19.7911610Z [command]/usr/bin/git version
-2025-09-03T15:08:19.7984279Z git version 2.51.0
-2025-09-03T15:08:19.8058800Z Temporarily overriding HOME='/home/runner/work/_temp/65c40522-306a-47c7-8f36-61eeff068836' before making global git config changes
-2025-09-03T15:08:19.8064442Z Adding repository directory to the temporary git global config as a safe directory
-2025-09-03T15:08:19.8075736Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Kaoqin_Demo/Kaoqin_Demo
-2025-09-03T15:08:19.8161832Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
-2025-09-03T15:08:19.8243425Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
-2025-09-03T15:08:19.8664105Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-2025-09-03T15:08:19.8718032Z http.https://github.com/.extraheader
-2025-09-03T15:08:19.8746034Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
-2025-09-03T15:08:19.8816363Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
-2025-09-03T15:08:19.9269342Z Print service container logs: 9bffb35661964b78a15db58aeec45ed6_postgres15_5e6707
-2025-09-03T15:08:19.9274001Z ##[command]/usr/bin/docker logs --details a806db5d9da9c08f7531068785be4912088b1e15181d348394195c8915a0e853
-2025-09-03T15:08:19.9503692Z  initdb: warning: enabling "trust" authentication for local connections
-2025-09-03T15:08:19.9505170Z  initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
-2025-09-03T15:08:19.9506777Z  2025-09-03 15:06:27.264 UTC [1] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
-2025-09-03T15:08:19.9508058Z  2025-09-03 15:06:27.265 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
-2025-09-03T15:08:19.9508884Z  2025-09-03 15:06:27.265 UTC [1] LOG:  listening on IPv6 address "::", port 5432
-2025-09-03T15:08:19.9509772Z  2025-09-03 15:06:27.266 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
-2025-09-03T15:08:19.9510574Z  2025-09-03 15:06:27.271 UTC [63] LOG:  database system was shut down at 2025-09-03 15:06:27 UTC
-2025-09-03T15:08:19.9511351Z  2025-09-03 15:06:27.277 UTC [1] LOG:  database system is ready to accept connections
-2025-09-03T15:08:19.9512111Z  2025-09-03 15:06:35.969 UTC [74] FATAL:  role "root" does not exist
-2025-09-03T15:08:19.9512745Z  2025-09-03 15:06:46.073 UTC [82] FATAL:  role "root" does not exist
-2025-09-03T15:08:19.9513344Z  2025-09-03 15:06:56.162 UTC [90] FATAL:  role "root" does not exist
-2025-09-03T15:08:19.9513981Z  2025-09-03 15:07:06.261 UTC [100] FATAL:  role "root" does not exist
-2025-09-03T15:08:19.9533504Z  2025-09-03 15:07:16.366 UTC [108] FATAL:  role "root" does not exist
-2025-09-03T15:08:19.9534485Z  2025-09-03 15:07:26.475 UTC [116] FATAL:  role "root" does not exist
-2025-09-03T15:08:19.9535138Z  2025-09-03 15:07:36.638 UTC [125] FATAL:  role "root" does not exist
-2025-09-03T15:08:19.9535743Z  2025-09-03 15:07:46.809 UTC [133] FATAL:  role "root" does not exist
-2025-09-03T15:08:19.9536363Z  2025-09-03 15:07:56.917 UTC [141] FATAL:  role "root" does not exist
-2025-09-03T15:08:19.9536978Z  2025-09-03 15:08:07.020 UTC [150] FATAL:  role "root" does not exist
-2025-09-03T15:08:19.9537632Z  2025-09-03 15:08:17.105 UTC [157] FATAL:  role "root" does not exist
-2025-09-03T15:08:19.9539622Z  The files belonging to this database system will be owned by user "postgres".
-2025-09-03T15:08:19.9540284Z  This user must also own the server process.
-2025-09-03T15:08:19.9540742Z  
-2025-09-03T15:08:19.9541206Z  The database cluster will be initialized with locale "en_US.utf8".
-2025-09-03T15:08:19.9542255Z  The default database encoding has accordingly been set to "UTF8".
-2025-09-03T15:08:19.9542934Z  The default text search configuration will be set to "english".
-2025-09-03T15:08:19.9543275Z  
-2025-09-03T15:08:19.9543482Z  Data page checksums are disabled.
-2025-09-03T15:08:19.9543751Z  
-2025-09-03T15:08:19.9544065Z  fixing permissions on existing directory /var/lib/postgresql/data ... ok
-2025-09-03T15:08:19.9544710Z  creating subdirectories ... ok
-2025-09-03T15:08:19.9545045Z  selecting dynamic shared memory implementation ... posix
-2025-09-03T15:08:19.9545404Z  selecting default max_connections ... 100
-2025-09-03T15:08:19.9545710Z  selecting default shared_buffers ... 128MB
-2025-09-03T15:08:19.9546009Z  selecting default time zone ... Etc/UTC
-2025-09-03T15:08:19.9546298Z  creating configuration files ... ok
-2025-09-03T15:08:19.9546580Z  running bootstrap script ... ok
-2025-09-03T15:08:19.9546888Z  performing post-bootstrap initialization ... ok
-2025-09-03T15:08:19.9547214Z  syncing data to disk ... ok
-2025-09-03T15:08:19.9547460Z  
-2025-09-03T15:08:19.9547643Z  
-2025-09-03T15:08:19.9547884Z  Success. You can now start the database server using:
-2025-09-03T15:08:19.9548193Z  
-2025-09-03T15:08:19.9548439Z      pg_ctl -D /var/lib/postgresql/data -l logfile start
-2025-09-03T15:08:19.9548747Z  
-2025-09-03T15:08:19.9549618Z  waiting for server to start....2025-09-03 15:06:26.879 UTC [47] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
-2025-09-03T15:08:19.9550473Z  2025-09-03 15:06:26.880 UTC [47] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
-2025-09-03T15:08:19.9551017Z  2025-09-03 15:06:26.884 UTC [50] LOG:  database system was shut down at 2025-09-03 15:06:26 UTC
-2025-09-03T15:08:19.9551510Z  2025-09-03 15:06:26.888 UTC [47] LOG:  database system is ready to accept connections
-2025-09-03T15:08:19.9551883Z   done
-2025-09-03T15:08:19.9552076Z  server started
-2025-09-03T15:08:19.9552293Z  CREATE DATABASE
-2025-09-03T15:08:19.9552500Z  
-2025-09-03T15:08:19.9552680Z  
-2025-09-03T15:08:19.9553024Z  /usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/*
-2025-09-03T15:08:19.9553422Z  
-2025-09-03T15:08:19.9553777Z  waiting for server to shut down....2025-09-03 15:06:27.135 UTC [47] LOG:  received fast shutdown request
-2025-09-03T15:08:19.9554497Z  2025-09-03 15:06:27.137 UTC [47] LOG:  aborting any active transactions
-2025-09-03T15:08:19.9555041Z  2025-09-03 15:06:27.144 UTC [47] LOG:  background worker "logical replication launcher" (PID 53) exited with exit code 1
-2025-09-03T15:08:19.9555548Z  2025-09-03 15:06:27.144 UTC [48] LOG:  shutting down
-2025-09-03T15:08:19.9555930Z  2025-09-03 15:06:27.145 UTC [48] LOG:  checkpoint starting: shutdown immediate
-2025-09-03T15:08:19.9556789Z  2025-09-03 15:06:27.174 UTC [48] LOG:  checkpoint complete: wrote 922 buffers (5.6%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.023 s, sync=0.004 s, total=0.030 s; sync files=301, longest=0.002 s, average=0.001 s; distance=4239 kB, estimate=4239 kB
-2025-09-03T15:08:19.9557641Z  2025-09-03 15:06:27.186 UTC [47] LOG:  database system is shut down
-2025-09-03T15:08:19.9557959Z   done
-2025-09-03T15:08:19.9558151Z  server stopped
-2025-09-03T15:08:19.9558351Z  
-2025-09-03T15:08:19.9558595Z  PostgreSQL init process complete; ready for start up.
-2025-09-03T15:08:19.9558911Z  
-2025-09-03T15:08:19.9566044Z Stop and remove container: 9bffb35661964b78a15db58aeec45ed6_postgres15_5e6707
-2025-09-03T15:08:19.9570993Z ##[command]/usr/bin/docker rm --force a806db5d9da9c08f7531068785be4912088b1e15181d348394195c8915a0e853
-2025-09-03T15:08:20.1990069Z a806db5d9da9c08f7531068785be4912088b1e15181d348394195c8915a0e853
-2025-09-03T15:08:20.2028677Z Print service container logs: 7d65003bde54415786fc70b86a530ae3_redis7_4a6e8a
-2025-09-03T15:08:20.2029997Z ##[command]/usr/bin/docker logs --details 186fe66a1f8169d4c65db0c26aae8cd956dfb7b83a48d1fc465a2ad0935a09ff
-2025-09-03T15:08:20.2187702Z  1:C 03 Sep 2025 15:06:29.154 # WARNING Memory overcommit must be enabled! Without it, a background save or replication may fail under low memory condition. Being disabled, it can also cause failures without low memory condition, see https://github.com/jemalloc/jemalloc/issues/1328. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
-2025-09-03T15:08:20.2191339Z  1:C 03 Sep 2025 15:06:29.154 * oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
-2025-09-03T15:08:20.2192507Z  1:C 03 Sep 2025 15:06:29.154 * Redis version=7.4.5, bits=64, commit=00000000, modified=0, pid=1, just started
-2025-09-03T15:08:20.2194446Z  1:C 03 Sep 2025 15:06:29.154 # Warning: no config file specified, using the default config. In order to specify a config file use redis-server /path/to/redis.conf
-2025-09-03T15:08:20.2195937Z  1:M 03 Sep 2025 15:06:29.154 * monotonic clock: POSIX clock_gettime
-2025-09-03T15:08:20.2196658Z  1:M 03 Sep 2025 15:06:29.155 * Running mode=standalone, port=6379.
-2025-09-03T15:08:20.2197304Z  1:M 03 Sep 2025 15:06:29.156 * Server initialized
-2025-09-03T15:08:20.2198040Z  1:M 03 Sep 2025 15:06:29.156 * Ready to accept connections tcp
-2025-09-03T15:08:20.2207660Z Stop and remove container: 7d65003bde54415786fc70b86a530ae3_redis7_4a6e8a
-2025-09-03T15:08:20.2209003Z ##[command]/usr/bin/docker rm --force 186fe66a1f8169d4c65db0c26aae8cd956dfb7b83a48d1fc465a2ad0935a09ff
-2025-09-03T15:08:20.3437253Z 186fe66a1f8169d4c65db0c26aae8cd956dfb7b83a48d1fc465a2ad0935a09ff
-2025-09-03T15:08:20.3475397Z Remove container network: github_network_02dd5dc1ee4040c993802bab340234e9
-2025-09-03T15:08:20.3479863Z ##[command]/usr/bin/docker network rm github_network_02dd5dc1ee4040c993802bab340234e9
-2025-09-03T15:08:20.4293923Z github_network_02dd5dc1ee4040c993802bab340234e9
-2025-09-03T15:08:20.4364989Z Cleaning up orphan processes
+
+2025-09-04T06:19:54.4363911Z   retention-days: 30
+2025-09-04T06:19:54.4364122Z   if-no-files-found: warn
+2025-09-04T06:19:54.4364341Z   compression-level: 6
+2025-09-04T06:19:54.4364545Z   overwrite: false
+2025-09-04T06:19:54.4364750Z   include-hidden-files: false
+2025-09-04T06:19:54.4364970Z env:
+2025-09-04T06:19:54.4365144Z   COVERAGE_THRESHOLD: 95
+2025-09-04T06:19:54.4365359Z   API_COVERAGE_TARGET: 100
+2025-09-04T06:19:54.4365636Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T06:19:54.4366212Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
+2025-09-04T06:19:54.4366647Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T06:19:54.4367071Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T06:19:54.4367488Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T06:19:54.4367922Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
+2025-09-04T06:19:54.4368222Z   ENVIRONMENT: test
+2025-09-04T06:19:54.4368565Z   TESTING: true
+2025-09-04T06:19:54.4368883Z   DEBUG: false
+2025-09-04T06:19:54.4369565Z   DATABASE_URL: ***localhost:5432/test_attendence
+2025-09-04T06:19:54.4370036Z   DATABASE_URL_SYNC: ***localhost:5432/test_attendence
+2025-09-04T06:19:54.4370352Z   REDIS_URL: redis://localhost:6379/0
+2025-09-04T06:19:54.4370607Z   POSTGRES_TEST: true
+2025-09-04T06:19:54.4370805Z   CI: true
+2025-09-04T06:19:54.4370981Z   GITHUB_ACTIONS: true
+2025-09-04T06:19:54.4371237Z   SECRET_KEY: test_secret_key_for_ci_cd_environment_only
+2025-09-04T06:19:54.4371535Z   ACCESS_TOKEN_EXPIRE_MINUTES: 30
+2025-09-04T06:19:54.4371767Z ##[endgroup]
+2025-09-04T06:19:54.6658370Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2025-09-04T06:19:54.6664479Z The least common ancestor is /home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend. This will be the root directory of the artifact
+2025-09-04T06:19:54.6666050Z With the provided path, there will be 14 files uploaded
+2025-09-04T06:19:54.6671376Z Artifact name is valid!
+2025-09-04T06:19:54.6672969Z Root directory input is valid!
+2025-09-04T06:19:54.8238960Z Beginning upload of artifact content to blob storage
+2025-09-04T06:19:55.0818877Z Uploaded bytes 69187
+2025-09-04T06:19:55.1251711Z Finished uploading artifact content to blob storage!
+2025-09-04T06:19:55.1255056Z SHA256 digest of uploaded artifact zip is e080b296d1c7844f39aba3886b40bdc78e3bce71a6a0f3d88f07a22012915916
+2025-09-04T06:19:55.1258414Z Finalizing artifact upload
+2025-09-04T06:19:55.2871694Z Artifact test-results.zip successfully finalized. Artifact ID 3923959388
+2025-09-04T06:19:55.2872952Z Artifact test-results has been successfully uploaded! Final size is 69187 bytes. Artifact ID is 3923959388
+2025-09-04T06:19:55.2880266Z Artifact download URL: https://github.com/KangJianLin/Kaoqin_Demo/actions/runs/17455135205/artifacts/3923959388
+2025-09-04T06:19:55.3008983Z ##[group]Run echo "====== 后端测试整体状态汇总 ======"
+2025-09-04T06:19:55.3009642Z [36;1mecho "====== 后端测试整体状态汇总 ======"[0m
+2025-09-04T06:19:55.3010142Z [36;1mecho "Phase 1 基础测试: 完成"[0m
+2025-09-04T06:19:55.3010897Z [36;1mecho "Phase 2 API覆盖测试: 完成"[0m
+2025-09-04T06:19:55.3011364Z [36;1mecho "Phase 3 业务逻辑测试: 完成" [0m
+2025-09-04T06:19:55.3011830Z [36;1mecho "Phase 4 集成测试: 完成"[0m
+2025-09-04T06:19:55.3012278Z [36;1mecho "Phase 5 性能测试: 完成"[0m
+2025-09-04T06:19:55.3012700Z [36;1mecho ""[0m
+2025-09-04T06:19:55.3013067Z [36;1mecho "✅ 后端所有测试阶段均已执行"[0m
+2025-09-04T06:19:55.3013863Z [36;1mecho "🎯 目标: API端点100%覆盖，代码覆盖率95%+"[0m
+2025-09-04T06:19:55.3014350Z [36;1mecho "📊 详细覆盖率报告已生成"[0m
+2025-09-04T06:19:55.3058195Z shell: /usr/bin/bash -e {0}
+2025-09-04T06:19:55.3058624Z env:
+2025-09-04T06:19:55.3059015Z   COVERAGE_THRESHOLD: 95
+2025-09-04T06:19:55.3059442Z   API_COVERAGE_TARGET: 100
+2025-09-04T06:19:55.3059992Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T06:19:55.3060819Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
+2025-09-04T06:19:55.3061584Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T06:19:55.3062270Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T06:19:55.3062805Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T06:19:55.3063208Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
+2025-09-04T06:19:55.3063795Z   ENVIRONMENT: test
+2025-09-04T06:19:55.3064008Z   TESTING: true
+2025-09-04T06:19:55.3064200Z   DEBUG: false
+2025-09-04T06:19:55.3064724Z   DATABASE_URL: ***localhost:5432/test_attendence
+2025-09-04T06:19:55.3065204Z   DATABASE_URL_SYNC: ***localhost:5432/test_attendence
+2025-09-04T06:19:55.3065527Z   REDIS_URL: redis://localhost:6379/0
+2025-09-04T06:19:55.3065792Z   POSTGRES_TEST: true
+2025-09-04T06:19:55.3065996Z   CI: true
+2025-09-04T06:19:55.3066179Z   GITHUB_ACTIONS: true
+2025-09-04T06:19:55.3066459Z   SECRET_KEY: test_secret_key_for_ci_cd_environment_only
+2025-09-04T06:19:55.3066773Z   ACCESS_TOKEN_EXPIRE_MINUTES: 30
+2025-09-04T06:19:55.3067019Z ##[endgroup]
+2025-09-04T06:19:55.3132071Z ====== 后端测试整体状态汇总 ======
+2025-09-04T06:19:55.3135412Z Phase 1 基础测试: 完成
+2025-09-04T06:19:55.3135870Z Phase 2 API覆盖测试: 完成
+2025-09-04T06:19:55.3136323Z Phase 3 业务逻辑测试: 完成
+2025-09-04T06:19:55.3136744Z Phase 4 集成测试: 完成
+2025-09-04T06:19:55.3137165Z Phase 5 性能测试: 完成
+2025-09-04T06:19:55.3137381Z 
+2025-09-04T06:19:55.3137579Z ✅ 后端所有测试阶段均已执行
+2025-09-04T06:19:55.3138024Z 🎯 目标: API端点100%覆盖，代码覆盖率95%+
+2025-09-04T06:19:55.3138519Z 📊 详细覆盖率报告已生成
+2025-09-04T06:19:55.3227457Z Post job cleanup.
+2025-09-04T06:19:55.4376604Z [command]/usr/bin/git version
+2025-09-04T06:19:55.4417852Z git version 2.51.0
+2025-09-04T06:19:55.4466088Z Temporarily overriding HOME='/home/runner/work/_temp/77553933-707c-47bc-a85e-3aabd903dbf9' before making global git config changes
+2025-09-04T06:19:55.4468955Z Adding repository directory to the temporary git global config as a safe directory
+2025-09-04T06:19:55.4474168Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Kaoqin_Demo/Kaoqin_Demo
+2025-09-04T06:19:55.4518206Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-09-04T06:19:55.4554580Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-09-04T06:19:55.4798336Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-09-04T06:19:55.4822986Z http.https://github.com/.extraheader
+2025-09-04T06:19:55.4837505Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2025-09-04T06:19:55.4872906Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-09-04T06:19:55.5208077Z Print service container logs: c41e9b7845334c1cafac567dfdeb044e_postgres15_c43537
+2025-09-04T06:19:55.5212396Z ##[command]/usr/bin/docker logs --details 41120107b779f09c3e444b888ecccb3d61d7c08c3f3c8625f31e48eb8fe7a3e8
+2025-09-04T06:19:55.5348973Z  The files belonging to this database system will be owned by user "postgres".
+2025-09-04T06:19:55.5351269Z  initdb: warning: enabling "trust" authentication for local connections
+2025-09-04T06:19:55.5352441Z  initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+2025-09-04T06:19:55.5354564Z  2025-09-04 06:17:52.526 UTC [1] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+2025-09-04T06:19:55.5355699Z  2025-09-04 06:17:52.526 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2025-09-04T06:19:55.5356481Z  2025-09-04 06:17:52.526 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+2025-09-04T06:19:55.5357283Z  2025-09-04 06:17:52.528 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2025-09-04T06:19:55.5358171Z  2025-09-04 06:17:52.533 UTC [63] LOG:  database system was shut down at 2025-09-04 06:17:52 UTC
+2025-09-04T06:19:55.5358996Z  2025-09-04 06:17:52.540 UTC [1] LOG:  database system is ready to accept connections
+2025-09-04T06:19:55.5359703Z  2025-09-04 06:18:01.416 UTC [74] FATAL:  role "root" does not exist
+2025-09-04T06:19:55.5360335Z  2025-09-04 06:18:11.578 UTC [82] FATAL:  role "root" does not exist
+2025-09-04T06:19:55.5360974Z  2025-09-04 06:18:21.669 UTC [89] FATAL:  role "root" does not exist
+2025-09-04T06:19:55.5361600Z  2025-09-04 06:18:31.767 UTC [99] FATAL:  role "root" does not exist
+2025-09-04T06:19:55.5362161Z  2025-09-04 06:18:41.868 UTC [107] FATAL:  role "root" does not exist
+2025-09-04T06:19:55.5362727Z  2025-09-04 06:18:51.956 UTC [115] FATAL:  role "root" does not exist
+2025-09-04T06:19:55.5363302Z  2025-09-04 06:19:02.094 UTC [124] FATAL:  role "root" does not exist
+2025-09-04T06:19:55.5364094Z  2025-09-04 06:19:12.253 UTC [132] FATAL:  role "root" does not exist
+2025-09-04T06:19:55.5364725Z  2025-09-04 06:19:22.442 UTC [140] FATAL:  role "root" does not exist
+2025-09-04T06:19:55.5365369Z  2025-09-04 06:19:32.548 UTC [149] FATAL:  role "root" does not exist
+2025-09-04T06:19:55.5365990Z  2025-09-04 06:19:42.656 UTC [156] FATAL:  role "root" does not exist
+2025-09-04T06:19:55.5367600Z  2025-09-04 06:19:52.760 UTC [165] FATAL:  role "root" does not exist
+2025-09-04T06:19:55.5368198Z  This user must also own the server process.
+2025-09-04T06:19:55.5368680Z  
+2025-09-04T06:19:55.5369579Z  The database cluster will be initialized with locale "en_US.utf8".
+2025-09-04T06:19:55.5370316Z  The default database encoding has accordingly been set to "UTF8".
+2025-09-04T06:19:55.5371896Z  The default text search configuration will be set to "english".
+2025-09-04T06:19:55.5372242Z  
+2025-09-04T06:19:55.5372445Z  Data page checksums are disabled.
+2025-09-04T06:19:55.5372703Z  
+2025-09-04T06:19:55.5372995Z  fixing permissions on existing directory /var/lib/postgresql/data ... ok
+2025-09-04T06:19:55.5373625Z  creating subdirectories ... ok
+2025-09-04T06:19:55.5374004Z  selecting dynamic shared memory implementation ... posix
+2025-09-04T06:19:55.5374351Z  selecting default max_connections ... 100
+2025-09-04T06:19:55.5374641Z  selecting default shared_buffers ... 128MB
+2025-09-04T06:19:55.5374918Z  selecting default time zone ... Etc/UTC
+2025-09-04T06:19:55.5375191Z  creating configuration files ... ok
+2025-09-04T06:19:55.5375457Z  running bootstrap script ... ok
+2025-09-04T06:19:55.5375746Z  performing post-bootstrap initialization ... ok
+2025-09-04T06:19:55.5376045Z  syncing data to disk ... ok
+2025-09-04T06:19:55.5376267Z  
+2025-09-04T06:19:55.5376432Z  
+2025-09-04T06:19:55.5376655Z  Success. You can now start the database server using:
+2025-09-04T06:19:55.5376948Z  
+2025-09-04T06:19:55.5377496Z      pg_ctl -D /var/lib/postgresql/data -l logfile start
+2025-09-04T06:19:55.5377796Z  
+2025-09-04T06:19:55.5378368Z  waiting for server to start....2025-09-04 06:17:52.122 UTC [47] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+2025-09-04T06:19:55.5379277Z  2025-09-04 06:17:52.123 UTC [47] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2025-09-04T06:19:55.5379803Z  2025-09-04 06:17:52.128 UTC [50] LOG:  database system was shut down at 2025-09-04 06:17:51 UTC
+2025-09-04T06:19:55.5380269Z  2025-09-04 06:17:52.137 UTC [47] LOG:  database system is ready to accept connections
+2025-09-04T06:19:55.5380622Z   done
+2025-09-04T06:19:55.5380803Z  server started
+2025-09-04T06:19:55.5381000Z  CREATE DATABASE
+2025-09-04T06:19:55.5381192Z  
+2025-09-04T06:19:55.5381353Z  
+2025-09-04T06:19:55.5381667Z  /usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/*
+2025-09-04T06:19:55.5382047Z  
+2025-09-04T06:19:55.5382380Z  waiting for server to shut down....2025-09-04 06:17:52.397 UTC [47] LOG:  received fast shutdown request
+2025-09-04T06:19:55.5382878Z  2025-09-04 06:17:52.399 UTC [47] LOG:  aborting any active transactions
+2025-09-04T06:19:55.5383974Z  2025-09-04 06:17:52.407 UTC [47] LOG:  background worker "logical replication launcher" (PID 53) exited with exit code 1
+2025-09-04T06:19:55.5384534Z  2025-09-04 06:17:52.408 UTC [48] LOG:  shutting down
+2025-09-04T06:19:55.5384914Z  2025-09-04 06:17:52.409 UTC [48] LOG:  checkpoint starting: shutdown immediate
+2025-09-04T06:19:55.5385766Z  2025-09-04 06:17:52.441 UTC [48] LOG:  checkpoint complete: wrote 922 buffers (5.6%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.027 s, sync=0.004 s, total=0.034 s; sync files=301, longest=0.002 s, average=0.001 s; distance=4239 kB, estimate=4239 kB
+2025-09-04T06:19:55.5386632Z  2025-09-04 06:17:52.454 UTC [47] LOG:  database system is shut down
+2025-09-04T06:19:55.5386942Z   done
+2025-09-04T06:19:55.5387127Z  server stopped
+2025-09-04T06:19:55.5387332Z  
+2025-09-04T06:19:55.5387567Z  PostgreSQL init process complete; ready for start up.
+2025-09-04T06:19:55.5387859Z  
+2025-09-04T06:19:55.5393747Z Stop and remove container: c41e9b7845334c1cafac567dfdeb044e_postgres15_c43537
+2025-09-04T06:19:55.5399178Z ##[command]/usr/bin/docker rm --force 41120107b779f09c3e444b888ecccb3d61d7c08c3f3c8625f31e48eb8fe7a3e8
+2025-09-04T06:19:55.7587898Z 41120107b779f09c3e444b888ecccb3d61d7c08c3f3c8625f31e48eb8fe7a3e8
+2025-09-04T06:19:55.7610719Z Print service container logs: b45ad51c1cc842cabfeae664fc192606_redis7_beec51
+2025-09-04T06:19:55.7611980Z ##[command]/usr/bin/docker logs --details ac3d169a03caf4e873d5b3dc704ee8203a06ac5076f021b9b47e4210c7d72c07
+2025-09-04T06:19:55.7754307Z  1:C 04 Sep 2025 06:17:54.379 # WARNING Memory overcommit must be enabled! Without it, a background save or replication may fail under low memory condition. Being disabled, it can also cause failures without low memory condition, see https://github.com/jemalloc/jemalloc/issues/1328. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+2025-09-04T06:19:55.7757034Z  1:C 04 Sep 2025 06:17:54.379 * oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+2025-09-04T06:19:55.7760529Z  1:C 04 Sep 2025 06:17:54.379 * Redis version=7.4.5, bits=64, commit=00000000, modified=0, pid=1, just started
+2025-09-04T06:19:55.7761772Z  1:C 04 Sep 2025 06:17:54.379 # Warning: no config file specified, using the default config. In order to specify a config file use redis-server /path/to/redis.conf
+2025-09-04T06:19:55.7762887Z  1:M 04 Sep 2025 06:17:54.380 * monotonic clock: POSIX clock_gettime
+2025-09-04T06:19:55.7763708Z  1:M 04 Sep 2025 06:17:54.380 * Running mode=standalone, port=6379.
+2025-09-04T06:19:55.7764302Z  1:M 04 Sep 2025 06:17:54.381 * Server initialized
+2025-09-04T06:19:55.7764910Z  1:M 04 Sep 2025 06:17:54.381 * Ready to accept connections tcp
+2025-09-04T06:19:55.7768830Z Stop and remove container: b45ad51c1cc842cabfeae664fc192606_redis7_beec51
+2025-09-04T06:19:55.7770000Z ##[command]/usr/bin/docker rm --force ac3d169a03caf4e873d5b3dc704ee8203a06ac5076f021b9b47e4210c7d72c07
+2025-09-04T06:19:55.8984491Z ac3d169a03caf4e873d5b3dc704ee8203a06ac5076f021b9b47e4210c7d72c07
+2025-09-04T06:19:55.9010209Z Remove container network: github_network_3399bb89c4174a6690575d82de5edea7
+2025-09-04T06:19:55.9018134Z ##[command]/usr/bin/docker network rm github_network_3399bb89c4174a6690575d82de5edea7
+2025-09-04T06:19:55.9959478Z github_network_3399bb89c4174a6690575d82de5edea7
+2025-09-04T06:19:56.0020066Z Cleaning up orphan processes

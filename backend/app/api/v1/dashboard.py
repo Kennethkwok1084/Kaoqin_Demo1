@@ -166,9 +166,7 @@ async def get_dashboard_overview(
             ),
         )
 
-        return TypedResponse[
-            DashboardOverviewResponse
-        ](
+        return TypedResponse[DashboardOverviewResponse](
             success=True, message="仪表板数据获取成功", data=overview_data
         )
 
@@ -262,9 +260,7 @@ async def get_my_tasks(
             ),
         )
 
-        return TypedResponse[
-            DashboardTasksResponse
-        ](
+        return TypedResponse[DashboardTasksResponse](
             success=True, message="我的任务获取成功", data=tasks_data
         )
 
@@ -336,8 +332,7 @@ async def get_recent_activities(
                     actorId=str(task.member_id),
                     targetId=task.id,
                     targetType="task",
-                    createdAt=(task.updated_at or task.created_at).isoformat()
-                    + "Z",
+                    createdAt=(task.updated_at or task.created_at).isoformat() + "Z",
                     priority="success",
                 )
                 activities.append(activity)
@@ -354,8 +349,7 @@ async def get_recent_activities(
                     actorId=str(task.member_id),
                     targetId=task.id,
                     targetType="task",
-                    createdAt=(task.updated_at or task.created_at).isoformat()
-                    + "Z",
+                    createdAt=(task.updated_at or task.created_at).isoformat() + "Z",
                     priority="warning",
                 )
                 activities.append(activity)
@@ -390,12 +384,12 @@ async def get_recent_activities(
 
         activities_data = DashboardActivitiesResponse(
             activities=activities,
-            summary=ActivitySummary(total=total_activities, todayCount=today_activities),
+            summary=ActivitySummary(
+                total=total_activities, todayCount=today_activities
+            ),
         )
 
-        return TypedResponse[
-            DashboardActivitiesResponse
-        ](
+        return TypedResponse[DashboardActivitiesResponse](
             success=True, message="最近活动获取成功", data=activities_data
         )
 

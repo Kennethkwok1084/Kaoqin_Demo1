@@ -3,7 +3,7 @@ Test helper utilities for model creation and testing
 """
 
 from datetime import date, datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from app.models.attendance import AttendanceRecord
 from app.models.member import Member, UserRole

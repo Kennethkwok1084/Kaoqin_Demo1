@@ -138,7 +138,7 @@ def custom_openapi() -> Dict[str, Any]:
 
 
 # Apply custom OpenAPI schema
-app.openapi = custom_openapi
+app.openapi = custom_openapi  # type: ignore[method-assign]
 
 
 # Add security headers middleware

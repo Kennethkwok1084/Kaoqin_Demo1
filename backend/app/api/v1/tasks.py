@@ -2135,7 +2135,7 @@ async def get_offline_marked_tasks(
         # 获取总数
         count_query = select(func.count()).select_from(query.subquery())
         count_result = await db.execute(count_query)
-        total = count_result.scalar()
+        total = count_result.scalar() or 0
 
         # 分页查询
         query = query.order_by(desc(RepairTask.offline_marked_at))
@@ -2218,6 +2218,7 @@ async def export_comprehensive_data(
     """
     try:
         import json
+
         # import tempfile  # removed unused import
         from io import BytesIO
 
@@ -2303,7 +2304,8 @@ async def export_comprehensive_data(
                             "工单状态": task.work_order_status,
                             "检修形式": task.repair_form,
                             "标签列表": (
-                                [tag.name for tag in task.tags] if task.tags else []
+                                ", ".join([tag.name for tag in task.tags if tag.name])
+                                if task.tags else ""
                             ),
                             "标签工时修正": (
                                 sum(
@@ -2360,31 +2362,38 @@ async def export_comprehensive_data(
             assistance_tasks = assistance_result.scalars().all()
 
             assistance_data = []
-            for task in assistance_tasks:
+            for assistance_task in assistance_tasks:
                 task_info = {
-                    "任务ID": task.id,
-                    "任务标题": task.title,
-                    "描述": task.description,
-                    "协助人": task.member.name if task.member else None,
-                    "协助部门": task.assisted_department,
-                    "协助对象": task.assisted_person,
+                    "任务ID": assistance_task.id,
+                    "任务标题": assistance_task.title,
+                    "描述": assistance_task.description,
+                    "协助人": assistance_task.member.name if assistance_task.member else None,
+                    "协助部门": assistance_task.assisted_department,
+                    "协助对象": assistance_task.assisted_person,
                     "开始时间": (
-                        task.start_time.isoformat() if task.start_time else None
+                        assistance_task.start_time.isoformat()
+                        if assistance_task.start_time else None
                     ),
-                    "结束时间": task.end_time.isoformat() if task.end_time else None,
-                    "工时分钟": task.work_minutes,
-                    "任务状态": task.status.value,
+                    "结束时间": (
+                        assistance_task.end_time.isoformat()
+                        if assistance_task.end_time else None
+                    ),
+                    "工时分钟": assistance_task.work_minutes,
+                    "任务状态": assistance_task.status.value,
                 }
 
                 # 包含审核信息
                 if include_approval_info:
                     task_info.update(
                         {
-                            "审核状态": "已审核" if task.approved_by else "待审核",
-                            "审核人": task.approver.name if task.approver else None,
+                            "审核状态": "已审核" if assistance_task.approved_by else "待审核",
+                            "审核人": (
+                                assistance_task.approver.name
+                                if assistance_task.approver else None
+                            ),
                             "审核时间": (
-                                task.approved_at.isoformat()
-                                if task.approved_at
+                                assistance_task.approved_at.isoformat()
+                                if assistance_task.approved_at
                                 else None
                             ),
                         }
@@ -2416,20 +2425,24 @@ async def export_comprehensive_data(
             monitoring_tasks = monitoring_result.scalars().all()
 
             monitoring_data = []
-            for task in monitoring_tasks:
+            for monitoring_task in monitoring_tasks:
                 task_info = {
-                    "任务ID": task.id,
-                    "任务标题": task.title,
-                    "描述": task.description,
-                    "负责人": task.member.name if task.member else None,
-                    "监控类型": task.monitoring_type,
-                    "地点": task.location,
+                    "任务ID": monitoring_task.id,
+                    "任务标题": monitoring_task.title,
+                    "描述": monitoring_task.description,
+                    "负责人": monitoring_task.member.name if monitoring_task.member else None,
+                    "监控类型": monitoring_task.monitoring_type,
+                    "地点": monitoring_task.location,
                     "开始时间": (
-                        task.start_time.isoformat() if task.start_time else None
+                        monitoring_task.start_time.isoformat()
+                        if monitoring_task.start_time else None
                     ),
-                    "结束时间": task.end_time.isoformat() if task.end_time else None,
-                    "工时分钟": task.work_minutes,
-                    "任务状态": task.status.value,
+                    "结束时间": (
+                        monitoring_task.end_time.isoformat()
+                        if monitoring_task.end_time else None
+                    ),
+                    "工时分钟": monitoring_task.work_minutes,
+                    "任务状态": monitoring_task.status.value,
                 }
                 monitoring_data.append(task_info)
 
@@ -2475,6 +2488,7 @@ async def export_comprehensive_data(
         # 生成文件
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"comprehensive_data_{export_type}_{timestamp}"
+        file_content: Union[str, bytes]  # Will be assigned based on format
 
         if format == "json":
             # JSON格式导出
@@ -2488,9 +2502,9 @@ async def export_comprehensive_data(
             filename += ".csv"
             all_data = []
             for task_type, tasks in export_data.items():
-                for task in tasks:
-                    task["数据类型"] = task_type
-                    all_data.append(task)
+                for task_dict in tasks:
+                    task_dict["数据类型"] = task_type
+                    all_data.append(task_dict)
 
             if all_data:
                 df = pd.DataFrame(all_data)
@@ -2731,7 +2745,10 @@ async def batch_process_carryover(
         )
 
         return create_response(
-            message=f"批量处理 {year}-{month:02d} 工时结转完成：成功 {result['success_count']} 个，失败 {result['error_count']} 个",
+            message=(
+                f"批量处理 {year}-{month:02d} 工时结转完成："
+                f"成功 {result['success_count']} 个，失败 {result['error_count']} 个"
+            ),
             data=result,
         )
 
@@ -2884,7 +2901,7 @@ async def get_members_carryover_status(
         # 获取总数
         count_query = select(func.count()).select_from(query.subquery())
         count_result = await db.execute(count_query)
-        total = count_result.scalar()
+        total = count_result.scalar() or 0
 
         # 分页查询
         query = query.order_by(desc(MonthlyAttendanceSummary.total_hours))
@@ -2922,14 +2939,19 @@ async def get_members_carryover_status(
                         [
                             m
                             for m in members_data
-                            if m["carryover_info"]["is_eligible_for_carryover"]
+                            if (isinstance(m, dict) and
+                                "carryover_info" in m and
+                                isinstance(m["carryover_info"], dict) and
+                                m["carryover_info"].get("is_eligible_for_carryover", False))
                         ]
                     ),
                     "total_carried_hours": sum(
                         m["carried_hours"] for m in members_data
+                        if isinstance(m, dict) and "carried_hours" in m
                     ),
                     "total_remaining_hours": sum(
                         m["remaining_hours"] for m in members_data
+                        if isinstance(m, dict) and "remaining_hours" in m
                     ),
                 },
             },
@@ -3028,7 +3050,10 @@ async def batch_apply_group_penalty(
         )
 
         return create_response(
-            message=f"批量应用小组 {penalty_type} 扣时完成：成功 {result['success_count']} 个任务，失败 {result['error_count']} 个，总计影响 {result['total_affected_members']} 名成员",
+            message=(
+                f"批量应用小组 {penalty_type} 扣时完成：成功 {result['success_count']} 个任务，"
+                f"失败 {result['error_count']} 个，总计影响 {result['total_affected_members']} 名成员"
+            ),
             data=result,
         )
 
@@ -3157,7 +3182,7 @@ async def get_group_penalty_history(
         # 获取总数
         count_query = select(func.count()).select_from(query.subquery())
         count_result = await db.execute(count_query)
-        total = count_result.scalar()
+        total = count_result.scalar() or 0
 
         # 分页查询
         query = query.order_by(desc(RepairTask.report_time))
@@ -4024,7 +4049,6 @@ async def approve_assistance_task(
 
         # 解析审核数据
         approve = approval_data.get("approve", True)  # 默认通过
-        comment = approval_data.get("comment", "")
 
         # 更新任务状态
         if approve:
@@ -4038,11 +4062,12 @@ async def approve_assistance_task(
 
                 work_hours_service = WorkHoursCalculationService(db)
 
-                await work_hours_service.recalculate_member_monthly_summary(
-                    member_id=task.member_id,
-                    year=task.start_time.year,
-                    month=task.start_time.month,
-                )
+                if task.member_id:
+                    await work_hours_service.recalculate_member_monthly_summary(
+                        member_id=task.member_id,
+                        year=task.start_time.year,
+                        month=task.start_time.month,
+                    )
 
             message = "协助任务审核通过"
         else:
@@ -4104,7 +4129,6 @@ async def batch_approve_assistance_tasks(
 
         task_ids = batch_data.get("task_ids", [])
         approve_all = batch_data.get("approve", True)
-        comment = batch_data.get("comment", "")
 
         if not task_ids:
             raise HTTPException(
@@ -4154,9 +4178,10 @@ async def batch_approve_assistance_tasks(
 
             # 批量更新月度汇总
             for member_id, year, month in update_periods:
-                await work_hours_service.recalculate_member_monthly_summary(
-                    member_id=member_id, year=year, month=month
-                )
+                if member_id:
+                    await work_hours_service.recalculate_member_monthly_summary(
+                        member_id=member_id, year=year, month=month
+                    )
 
         return {
             "success": True,
@@ -4470,10 +4495,14 @@ async def import_maintenance_orders(
                                     assigned_member_id = matched_member.id
                                     matched_assignee_count += 1
                                     matched_assignees.append(
-                                        f"'{assignee_name}' -> '{matched_member.name}' (姓氏匹配)"
+                                        (
+                                            f"'{assignee_name}' -> '{matched_member.name}' "
+                                            "(姓氏匹配)"
+                                        )
                                     )
                                     logger.info(
-                                        f"Found by surname: '{assignee_name}' -> '{matched_member.name}' (ID: {matched_member.id})"
+                                        f"Found by surname: '{assignee_name}' -> "
+                                        f"'{matched_member.name}' (ID: {matched_member.id})"
                                     )
                                 else:
                                     logger.warning(
@@ -5851,7 +5880,6 @@ async def create_inspection_monitoring_task(
             location=location,
             monitoring_type="inspection",
             member_id=current_user.id,
-            status=TaskStatus.IN_PROGRESS,
             cabinet_count=cabinet_count,
             minutes_per_cabinet=minutes_per_cabinet,
             inspection_notes=request_data.get("inspection_notes", ""),
@@ -5859,6 +5887,9 @@ async def create_inspection_monitoring_task(
             issues_found=request_data.get("issues_found", []),
             start_time=datetime.utcnow(),
         )
+
+        # Set status after creation
+        task.status = TaskStatus.IN_PROGRESS
 
         # 计算工时
         if cabinet_count and minutes_per_cabinet:
@@ -6099,11 +6130,12 @@ async def review_assistance_task(
 
                 work_hours_service = WorkHoursCalculationService(db)
 
-                await work_hours_service.recalculate_member_monthly_summary(
-                    member_id=task.member_id,
-                    year=task.start_time.year,
-                    month=task.start_time.month,
-                )
+                if task.member_id:
+                    await work_hours_service.recalculate_member_monthly_summary(
+                        member_id=task.member_id,
+                        year=task.start_time.year,
+                        month=task.start_time.month,
+                    )
 
             message = "协助任务审核通过"
         elif action == "reject":
@@ -6224,11 +6256,12 @@ async def batch_review_assistance_tasks(
 
                     work_hours_service = WorkHoursCalculationService(db)
 
-                    await work_hours_service.recalculate_member_monthly_summary(
-                        member_id=task.member_id,
-                        year=task.start_time.year,
-                        month=task.start_time.month,
-                    )
+                    if task.member_id:
+                        await work_hours_service.recalculate_member_monthly_summary(
+                            member_id=task.member_id,
+                            year=task.start_time.year,
+                            month=task.start_time.month,
+                        )
 
                 processed_tasks.append(
                     {
@@ -6245,7 +6278,7 @@ async def batch_review_assistance_tasks(
 
         await db.commit()
 
-        result = {
+        batch_result = {
             "totalRequested": len(task_ids),
             "processedCount": len(processed_tasks),
             "errorCount": len(errors),
@@ -6255,11 +6288,11 @@ async def batch_review_assistance_tasks(
         }
 
         logger.info(
-            f"Batch assistance tasks {action} by user {current_user.id}: {result}"
+            f"Batch assistance tasks {action} by user {current_user.id}: {batch_result}"
         )
 
         return create_response(
-            data=result,
+            data=batch_result,
             message=f"批量审核完成：{len(processed_tasks)} 个任务{action}，{len(errors)} 个失败",
         )
 
@@ -6288,7 +6321,6 @@ async def import_repair_data(
         from datetime import datetime
 
         from app.models.task import TaskPriority, TaskStatus, TaskType
-        from app.services.import_service import ImportService
 
         tasks_data = request_data.get("tasks", [])
         options = request_data.get("options", {})
@@ -6297,8 +6329,6 @@ async def import_repair_data(
             raise HTTPException(
                 status_code=http_status.HTTP_400_BAD_REQUEST, detail="没有提供任务数据"
             )
-
-        import_service = ImportService(db)
 
         # 处理导入选项
         overwrite = options.get("overwrite", True)
@@ -6341,8 +6371,8 @@ async def import_repair_data(
                     existing.reporter_phone = task_data.get(
                         "reporterPhone", existing.reporter_phone
                     )
-                    existing.is_offline = task_data.get(
-                        "isOffline", existing.is_offline
+                    existing.is_offline_marked = task_data.get(
+                        "isOffline", existing.is_offline_marked
                     )
                     existing.updated_at = datetime.utcnow()
                     updated_tasks.append(existing.work_order_id)
@@ -6399,7 +6429,10 @@ async def import_repair_data(
 
         return create_response(
             data=result,
-            message=f"AB表导入完成：创建 {len(created_tasks)} 个，更新 {len(updated_tasks)} 个，跳过 {len(skipped_tasks)} 个",
+            message=(
+                f"AB表导入完成：创建 {len(created_tasks)} 个，"
+                f"更新 {len(updated_tasks)} 个，跳过 {len(skipped_tasks)} 个"
+            ),
         )
 
     except HTTPException:

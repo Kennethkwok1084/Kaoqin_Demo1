@@ -12,7 +12,7 @@ from sqlalchemy import and_, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
-from app.core.exceptions import PermissionDeniedError, ValidationError
+from app.core.exceptions import PermissionDeniedError
 from app.models.member import Member, UserRole
 from app.models.task import (
     AssistanceTask,
@@ -2057,13 +2057,6 @@ class TaskService:
             List[RepairTask]: 按优先级排序的待处理任务列表
         """
         try:
-            # 定义优先级排序：URGENT > HIGH > MEDIUM > LOW
-            priority_order = {
-                TaskPriority.URGENT: 1,
-                TaskPriority.HIGH: 2,
-                TaskPriority.MEDIUM: 3,
-                TaskPriority.LOW: 4,
-            }
 
             query = (
                 select(RepairTask)

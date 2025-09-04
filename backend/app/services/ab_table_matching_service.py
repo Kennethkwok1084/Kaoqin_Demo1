@@ -5,14 +5,12 @@ A/B表智能匹配服务（重构版）
 """
 
 import asyncio
-import hashlib
 import logging
 import re
 import time
 from dataclasses import dataclass
 from enum import Enum
-from functools import lru_cache
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -833,7 +831,9 @@ class ABTableMatchingService:
         self._cache_hits = 0
         self._cache_misses = 0
 
-        return {k: int(v) if isinstance(v, (int, float)) else v for k, v in stats.items()}
+        return {
+            k: int(v) if isinstance(v, (int, float)) else v for k, v in stats.items()
+        }
 
     def _extract_name(self, record: Dict[str, Any]) -> str:
         """从记录中提取姓名"""

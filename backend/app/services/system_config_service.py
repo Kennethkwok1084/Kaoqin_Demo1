@@ -240,24 +240,40 @@ class SystemConfigService:
                 if existing_config:
                     # 更新现有配置的元数据（但保留用户设置的值）
                     existing_config.config_name = cast(str, config_data["config_name"])
-                    existing_config.config_description = cast(Optional[str], config_data[
-                        "config_description"
-                    ])
+                    existing_config.config_description = cast(
+                        Optional[str], config_data["config_description"]
+                    )
                     existing_config.category = cast(str, config_data["category"])
-                    existing_config.config_group = cast(Optional[str], config_data["config_group"])
+                    existing_config.config_group = cast(
+                        Optional[str], config_data["config_group"]
+                    )
                     existing_config.value_type = cast(str, config_data["value_type"])
-                    existing_config.min_value = cast(Optional[float], config_data.get("min_value"))
-                    existing_config.max_value = cast(Optional[float], config_data.get("max_value"))
-                    existing_config.display_order = cast(int, config_data["display_order"])
-                    existing_config.is_system_config = cast(bool, config_data["is_system_config"])
-                    existing_config.required_role = cast(str, config_data["required_role"])
+                    existing_config.min_value = cast(
+                        Optional[float], config_data.get("min_value")
+                    )
+                    existing_config.max_value = cast(
+                        Optional[float], config_data.get("max_value")
+                    )
+                    existing_config.display_order = cast(
+                        int, config_data["display_order"]
+                    )
+                    existing_config.is_system_config = cast(
+                        bool, config_data["is_system_config"]
+                    )
+                    existing_config.required_role = cast(
+                        str, config_data["required_role"]
+                    )
 
                     # 如果没有设置过值，使用默认值
                     if not existing_config.config_value:
-                        existing_config.config_value = cast(Optional[str], config_data["default_value"])
+                        existing_config.config_value = cast(
+                            Optional[str], config_data["default_value"]
+                        )
 
                     # 更新默认值
-                    existing_config.default_value = cast(Optional[str], config_data["default_value"])
+                    existing_config.default_value = cast(
+                        Optional[str], config_data["default_value"]
+                    )
 
                     updated_count += 1
                     logger.info(f"Updated system config: {config_key}")
@@ -266,16 +282,30 @@ class SystemConfigService:
                     new_config = SystemConfig()
                     new_config.config_key = cast(str, config_data["config_key"])
                     new_config.config_name = cast(str, config_data["config_name"])
-                    new_config.config_description = cast(Optional[str], config_data["config_description"])
+                    new_config.config_description = cast(
+                        Optional[str], config_data["config_description"]
+                    )
                     new_config.category = cast(str, config_data["category"])
-                    new_config.config_group = cast(Optional[str], config_data["config_group"])
-                    new_config.config_value = cast(Optional[str], config_data["default_value"])
-                    new_config.default_value = cast(Optional[str], config_data["default_value"])
+                    new_config.config_group = cast(
+                        Optional[str], config_data["config_group"]
+                    )
+                    new_config.config_value = cast(
+                        Optional[str], config_data["default_value"]
+                    )
+                    new_config.default_value = cast(
+                        Optional[str], config_data["default_value"]
+                    )
                     new_config.value_type = cast(str, config_data["value_type"])
-                    new_config.min_value = cast(Optional[float], config_data.get("min_value"))
-                    new_config.max_value = cast(Optional[float], config_data.get("max_value"))
+                    new_config.min_value = cast(
+                        Optional[float], config_data.get("min_value")
+                    )
+                    new_config.max_value = cast(
+                        Optional[float], config_data.get("max_value")
+                    )
                     new_config.display_order = cast(int, config_data["display_order"])
-                    new_config.is_system_config = cast(bool, config_data["is_system_config"])
+                    new_config.is_system_config = cast(
+                        bool, config_data["is_system_config"]
+                    )
                     new_config.required_role = cast(str, config_data["required_role"])
                     new_config.is_active = True
 
@@ -293,7 +323,9 @@ class SystemConfigService:
                 "total_configs": len(self.DEFAULT_CONFIGS),
             }
 
-            logger.info(f"System config initialization completed: {initialization_result}")
+            logger.info(
+                f"System config initialization completed: {initialization_result}"
+            )
             return initialization_result
 
         except Exception as e:
@@ -307,7 +339,7 @@ class SystemConfigService:
             query = select(SystemConfig).where(
                 and_(
                     SystemConfig.config_key == config_key,
-                    SystemConfig.is_active == True,
+                    SystemConfig.is_active.is_(True),
                 )
             )
             result = await self.db.execute(query)
@@ -357,7 +389,7 @@ class SystemConfigService:
                 .where(
                     and_(
                         SystemConfig.category == category,
-                        SystemConfig.is_active == True,
+                        SystemConfig.is_active.is_(True),
                     )
                 )
                 .order_by(SystemConfig.display_order, SystemConfig.config_key)
@@ -376,7 +408,7 @@ class SystemConfigService:
         try:
             query = select(SystemConfig)
             if not include_inactive:
-                query = query.where(SystemConfig.is_active == True)
+                query = query.where(SystemConfig.is_active.is_(True))
             query = query.order_by(
                 SystemConfig.category,
                 SystemConfig.display_order,

@@ -1374,7 +1374,7 @@ class DataImportService:
                 clean_contact = self._clean_contact_info(reporter_contact)
                 if clean_contact:
                     contact_query = select(Member).where(
-                        and_(Member.is_active == True, Member.phone == clean_contact)
+                        and_(Member.is_active.is_(True), Member.phone == clean_contact)
                     )
                     result = await self.db.execute(contact_query)
                     member = result.scalar_one_or_none()
@@ -1384,7 +1384,7 @@ class DataImportService:
             # 根据姓名匹配
             if reporter_name:
                 name_query = select(Member).where(
-                    and_(Member.is_active == True, Member.name == reporter_name.strip())
+                    and_(Member.is_active.is_(True), Member.name == reporter_name.strip())
                 )
                 result = await self.db.execute(name_query)
                 member = result.scalar_one_or_none()
@@ -1402,7 +1402,7 @@ class DataImportService:
         try:
             # 查找现有的系统默认成员
             default_query = select(Member).where(
-                and_(Member.username == "system_default", Member.is_active == True)
+                and_(Member.username == "system_default", Member.is_active.is_(True))
             )
             result = await self.db.execute(default_query)
             existing_member = result.scalar_one_or_none()
@@ -1991,7 +1991,7 @@ class DataImportService:
     async def _get_all_members(self) -> List[Member]:
         """获取所有成员（用于匹配）"""
         try:
-            query = select(Member).where(Member.is_active == True)
+            query = select(Member).where(Member.is_active.is_(True))
             result = await self.db.execute(query)
             return list(result.scalars().all())
         except Exception as e:
@@ -2040,11 +2040,11 @@ class DataImportService:
         try:
             # 解析A表
             a_temp_path = await self._save_temp_file(a_table_file)
-            a_data = await self._parse_excel_data(a_temp_path)
+            await self._parse_excel_data(a_temp_path)
 
             # 解析B表
             b_temp_path = await self._save_temp_file(b_table_file)
-            b_data = await self._parse_excel_data(b_temp_path)
+            await self._parse_excel_data(b_temp_path)
 
             # 简化的匹配逻辑用于测试
             result = await self.import_excel_file(a_table_file, import_options or {})

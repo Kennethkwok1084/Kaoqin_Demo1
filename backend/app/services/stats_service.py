@@ -10,7 +10,7 @@ from calendar import monthrange
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Union
 
-from sqlalchemy import and_, case, desc, func, or_, select
+from sqlalchemy import and_, case, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.cache import cache

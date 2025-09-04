@@ -5,7 +5,7 @@ Includes attendance records, exceptions, and related enums.
 
 from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from sqlalchemy import (
     Boolean,
@@ -407,7 +407,8 @@ class MonthlyAttendanceSummary(BaseModel):
         return {
             "current_month": self.month_string,
             "carried_from_previous": float(self.carried_hours or 0.0),
-            "current_month_hours": float(self.total_hours or 0.0) - float(self.carried_hours or 0.0),
+            "current_month_hours": float(self.total_hours or 0.0)
+            - float(self.carried_hours or 0.0),
             "total_effective_hours": float(self.total_hours or 0.0),
             "remaining_for_carryover": float(self.remaining_hours or 0.0),
             "is_eligible_for_carryover": float(self.total_hours or 0.0) > 30.0,
