@@ -264,7 +264,7 @@ class RepairTask(BaseModel):
         index=True,
         comment="External task ID from work order system",
     )
-    
+
     work_order_id = Column(
         String(50), nullable=True, comment="Work order ID from external system"
     )
@@ -277,7 +277,7 @@ class RepairTask(BaseModel):
         index=True,
         comment="Assigned member ID",
     )
-    
+
     assigned_at = Column(
         DateTime(timezone=True), nullable=True, comment="Task assignment time"
     )
@@ -349,10 +349,8 @@ class RepairTask(BaseModel):
     reporter_contact = Column(
         String(100), nullable=True, comment="Reporter contact information"
     )
-    
-    reporter_phone = Column(
-        String(20), nullable=True, comment="Reporter phone number"
-    )
+
+    reporter_phone = Column(String(20), nullable=True, comment="Reporter phone number")
 
     # Work hour calculation
     work_minutes = Column(
@@ -945,7 +943,7 @@ class AssistanceTask(BaseModel):
     approved_at = Column(
         DateTime(timezone=True), nullable=True, comment="Approval time"
     )
-    
+
     review_comment = Column(
         Text, nullable=True, comment="Review comment for the assistance task"
     )

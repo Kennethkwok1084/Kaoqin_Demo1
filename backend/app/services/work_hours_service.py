@@ -1195,10 +1195,10 @@ class WorkHoursCalculationService:
         task_query = select(RepairTask).where(RepairTask.id == task_id)
         task_result = await self.db.execute(task_query)
         task = task_result.scalar_one_or_none()
-        
+
         if not task:
             return {"members": [], "task_found": False}
-            
+
         # Get all members from the same group/department as the task member
         member_query = (
             select(Member)
@@ -1207,7 +1207,7 @@ class WorkHoursCalculationService:
         )
         member_result = await self.db.execute(member_query)
         members = member_result.scalars().all()
-        
+
         return {
             "task_found": True,
             "task_member_department": task.member.department if task.member else None,

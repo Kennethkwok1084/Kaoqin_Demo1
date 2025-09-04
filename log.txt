@@ -1,293 +1,368 @@
 
-2025-09-04T06:19:22.6973265Z ===== 运行类型检查 (mypy) =====
-2025-09-04T06:19:51.0998495Z app/api/v1/statistics.py:2045: error: Incompatible types in assignment (expression has type "Callable[[Any], int]", variable has type "int")  [assignment]
-2025-09-04T06:19:52.9964085Z app/api/v1/tasks.py:2176: error: Unsupported operand types for + ("None" and "int")  [operator]
-2025-09-04T06:19:52.9965726Z app/api/v1/tasks.py:2176: note: Left operand is of type "int | None"
-2025-09-04T06:19:52.9967396Z app/api/v1/tasks.py:2305: error: Dict entry 3 has incompatible type "str": "list[str | None]"; expected "str": "str | int | None"  [dict-item]
-2025-09-04T06:19:52.9974956Z app/api/v1/tasks.py:2363: error: Incompatible types in assignment (expression has type "AssistanceTask", variable has type "RepairTask")  [assignment]
-2025-09-04T06:19:52.9976409Z app/api/v1/tasks.py:2369: error: "RepairTask" has no attribute "assisted_department"  [attr-defined]
-2025-09-04T06:19:52.9977518Z app/api/v1/tasks.py:2370: error: "RepairTask" has no attribute "assisted_person"  [attr-defined]
-2025-09-04T06:19:52.9978586Z app/api/v1/tasks.py:2372: error: "RepairTask" has no attribute "start_time"  [attr-defined]
-2025-09-04T06:19:52.9979587Z app/api/v1/tasks.py:2374: error: "RepairTask" has no attribute "end_time"  [attr-defined]
-2025-09-04T06:19:52.9980581Z app/api/v1/tasks.py:2383: error: "RepairTask" has no attribute "approved_by"  [attr-defined]
-2025-09-04T06:19:52.9981614Z app/api/v1/tasks.py:2384: error: "RepairTask" has no attribute "approver"  [attr-defined]
-2025-09-04T06:19:52.9982619Z app/api/v1/tasks.py:2386: error: "RepairTask" has no attribute "approved_at"  [attr-defined]
-2025-09-04T06:19:52.9984363Z app/api/v1/tasks.py:2387: error: "RepairTask" has no attribute "approved_at"  [attr-defined]
-2025-09-04T06:19:52.9985748Z app/api/v1/tasks.py:2419: error: Incompatible types in assignment (expression has type "MonitoringTask", variable has type "RepairTask")  [assignment]
-2025-09-04T06:19:52.9987113Z app/api/v1/tasks.py:2425: error: "RepairTask" has no attribute "monitoring_type"  [attr-defined]
-2025-09-04T06:19:52.9988121Z app/api/v1/tasks.py:2428: error: "RepairTask" has no attribute "start_time"  [attr-defined]
-2025-09-04T06:19:52.9989079Z app/api/v1/tasks.py:2430: error: "RepairTask" has no attribute "end_time"  [attr-defined]
-2025-09-04T06:19:52.9990308Z app/api/v1/tasks.py:2491: error: Incompatible types in assignment (expression has type "dict[str, str | int | None]", variable has type "RepairTask")  [assignment]
-2025-09-04T06:19:52.9991717Z app/api/v1/tasks.py:2492: error: Unsupported target for indexed assignment ("RepairTask")  [index]
-2025-09-04T06:19:52.9993057Z app/api/v1/tasks.py:2518: error: Incompatible types in assignment (expression has type "bytes", variable has type "str")  [assignment]
-2025-09-04T06:19:52.9998001Z app/api/v1/tasks.py:2676: error: "WorkHoursCalculationService" has no attribute "process_monthly_carryover"  [attr-defined]
-2025-09-04T06:19:52.9999456Z app/api/v1/tasks.py:2721: error: "WorkHoursCalculationService" has no attribute "batch_process_carryover"  [attr-defined]
-2025-09-04T06:19:53.0001149Z app/api/v1/tasks.py:2775: error: "WorkHoursCalculationService" has no attribute "get_carryover_summary"  [attr-defined]
-2025-09-04T06:19:53.0002658Z app/api/v1/tasks.py:2834: error: "WorkHoursCalculationService" has no attribute "calculate_projected_carryover"  [attr-defined]
-2025-09-04T06:19:53.0004279Z app/api/v1/tasks.py:2917: error: Unsupported operand types for + ("None" and "int")  [operator]
-2025-09-04T06:19:53.0005230Z app/api/v1/tasks.py:2917: note: Left operand is of type "int | None"
-2025-09-04T06:19:53.0006238Z app/api/v1/tasks.py:2925: error: Value of type "dict[str, Any] | int | str | _N | float | None" is not indexable  [index]
-2025-09-04T06:19:53.0007547Z app/api/v1/tasks.py:2925: error: Invalid index type "str" for "str"; expected type "SupportsIndex | slice[Any, Any, Any]"  [index]
-2025-09-04T06:19:53.0009201Z app/api/v1/tasks.py:2974: error: "WorkHoursCalculationService" has no attribute "apply_group_penalty_for_task"; maybe "apply_group_penalties"?  [attr-defined]
-2025-09-04T06:19:53.0011043Z app/api/v1/tasks.py:3018: error: "WorkHoursCalculationService" has no attribute "batch_apply_group_penalties"; maybe "apply_group_penalties"?  [attr-defined]
-2025-09-04T06:19:53.0012719Z app/api/v1/tasks.py:3065: error: "WorkHoursCalculationService" has no attribute "get_group_members_by_task"  [attr-defined]
-2025-09-04T06:19:53.0014125Z app/api/v1/tasks.py:3208: error: Unsupported operand types for + ("None" and "int")  [operator]
-2025-09-04T06:19:53.0015044Z app/api/v1/tasks.py:3208: note: Left operand is of type "int | None"
-2025-09-04T06:19:53.0016220Z app/api/v1/tasks.py:4041: error: "WorkHoursCalculationService" has no attribute "recalculate_member_monthly_summary"  [attr-defined]
-2025-09-04T06:19:53.0017778Z app/api/v1/tasks.py:4157: error: "WorkHoursCalculationService" has no attribute "recalculate_member_monthly_summary"  [attr-defined]
-2025-09-04T06:19:53.0019140Z app/api/v1/tasks.py:5848: error: Unexpected keyword argument "status" for "MonitoringTask"  [call-arg]
-2025-09-04T06:19:53.0020298Z app/api/v1/tasks.py:6094: error: "AssistanceTask" has no attribute "review_comment"  [attr-defined]
-2025-09-04T06:19:53.0021631Z app/api/v1/tasks.py:6102: error: "WorkHoursCalculationService" has no attribute "recalculate_member_monthly_summary"  [attr-defined]
-2025-09-04T06:19:53.0022962Z app/api/v1/tasks.py:6113: error: "AssistanceTask" has no attribute "review_comment"  [attr-defined]
-2025-09-04T06:19:53.0024262Z app/api/v1/tasks.py:6217: error: "AssistanceTask" has no attribute "review_comment"  [attr-defined]
-2025-09-04T06:19:53.0025860Z app/api/v1/tasks.py:6227: error: "WorkHoursCalculationService" has no attribute "recalculate_member_monthly_summary"  [attr-defined]
-2025-09-04T06:19:53.0027590Z app/api/v1/tasks.py:6248: error: Incompatible types in assignment (expression has type "dict[str, Any]", variable has type "Result[tuple[AssistanceTask]]")  [assignment]
-2025-09-04T06:19:53.0029387Z app/api/v1/tasks.py:6291: error: Module "app.services.import_service" has no attribute "ImportService"; maybe "DataImportService"?  [attr-defined]
-2025-09-04T06:19:53.0030774Z app/api/v1/tasks.py:6323: error: "type[RepairTask]" has no attribute "work_order_id"  [attr-defined]
-2025-09-04T06:19:53.0031963Z app/api/v1/tasks.py:6341: error: "RepairTask" has no attribute "reporter_phone"; maybe "reporter_name"?  [attr-defined]
-2025-09-04T06:19:53.0033224Z app/api/v1/tasks.py:6342: error: "RepairTask" has no attribute "reporter_phone"; maybe "reporter_name"?  [attr-defined]
-2025-09-04T06:19:53.0034563Z app/api/v1/tasks.py:6344: error: "RepairTask" has no attribute "is_offline"  [attr-defined]
-2025-09-04T06:19:53.0035581Z app/api/v1/tasks.py:6345: error: "RepairTask" has no attribute "is_offline"  [attr-defined]
-2025-09-04T06:19:53.0036609Z app/api/v1/tasks.py:6348: error: "RepairTask" has no attribute "work_order_id"  [attr-defined]
-2025-09-04T06:19:53.0037634Z app/api/v1/tasks.py:6372: error: "RepairTask" has no attribute "assigned_at"  [attr-defined]
-2025-09-04T06:19:53.0748124Z app/main.py:141: error: Cannot assign to a method  [method-assign]
-2025-09-04T06:19:53.0885644Z Found 48 errors in 3 files (checked 54 source files)
-2025-09-04T06:19:53.1182025Z ⚠️ mypy 类型检查发现问题
-2025-09-04T06:19:53.1184927Z ===== 代码质量检查总结 =====
-2025-09-04T06:19:53.1187894Z 关键错误数量: 2
-2025-09-04T06:19:53.1188309Z 类型检查问题: 1
-2025-09-04T06:19:53.1188665Z ❌ 发现关键代码质量问题，停止构建
-2025-09-04T06:19:53.1189073Z 请修复 Black 和 isort 问题后重新提交
-2025-09-04T06:19:53.1204490Z ##[error]Process completed with exit code 1.
-2025-09-04T06:19:53.2406353Z ##[group]Run actions/upload-artifact@v4
-2025-09-04T06:19:53.2406658Z with:
-2025-09-04T06:19:53.2406846Z   name: benchmark-results
-2025-09-04T06:19:53.2407081Z   path: backend/benchmark-results.json
-2025-09-04T06:19:53.2407331Z   retention-days: 30
-2025-09-04T06:19:53.2407529Z   if-no-files-found: warn
-2025-09-04T06:19:53.2407743Z   compression-level: 6
-2025-09-04T06:19:53.2407944Z   overwrite: false
-2025-09-04T06:19:53.2408142Z   include-hidden-files: false
-2025-09-04T06:19:53.2408349Z env:
-2025-09-04T06:19:53.2408519Z   COVERAGE_THRESHOLD: 95
-2025-09-04T06:19:53.2408728Z   API_COVERAGE_TARGET: 100
-2025-09-04T06:19:53.2409000Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-04T06:19:53.2409392Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
-2025-09-04T06:19:53.2409769Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-04T06:19:53.2410108Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-04T06:19:53.2410468Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-04T06:19:53.2410813Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
-2025-09-04T06:19:53.2411108Z   ENVIRONMENT: test
-2025-09-04T06:19:53.2411295Z   TESTING: true
-2025-09-04T06:19:53.2411473Z   DEBUG: false
-2025-09-04T06:19:53.2412012Z   DATABASE_URL: ***localhost:5432/test_attendence
-2025-09-04T06:19:53.2412455Z   DATABASE_URL_SYNC: ***localhost:5432/test_attendence
-2025-09-04T06:19:53.2412755Z   REDIS_URL: redis://localhost:6379/0
-2025-09-04T06:19:53.2413007Z   POSTGRES_TEST: true
-2025-09-04T06:19:53.2413200Z   CI: true
-2025-09-04T06:19:53.2413608Z   GITHUB_ACTIONS: true
-2025-09-04T06:19:53.2413917Z   SECRET_KEY: test_secret_key_for_ci_cd_environment_only
-2025-09-04T06:19:53.2414220Z   ACCESS_TOKEN_EXPIRE_MINUTES: 30
-2025-09-04T06:19:53.2414447Z ##[endgroup]
-2025-09-04T06:19:53.4774736Z With the provided path, there will be 1 file uploaded
-2025-09-04T06:19:53.4778329Z Artifact name is valid!
-2025-09-04T06:19:53.4778808Z Root directory input is valid!
-2025-09-04T06:19:53.6950682Z Beginning upload of artifact content to blob storage
-2025-09-04T06:19:54.2445912Z Uploaded bytes 684159
-2025-09-04T06:19:54.2891814Z Finished uploading artifact content to blob storage!
-2025-09-04T06:19:54.2896468Z SHA256 digest of uploaded artifact zip is 3d406e8f90c137764ef74749e8ef0331ef444cac8c396fa240d0694d457f3dd8
-2025-09-04T06:19:54.2898668Z Finalizing artifact upload
-2025-09-04T06:19:54.4232513Z Artifact benchmark-results.zip successfully finalized. Artifact ID 3923959300
-2025-09-04T06:19:54.4234342Z Artifact benchmark-results has been successfully uploaded! Final size is 684159 bytes. Artifact ID is 3923959300
-2025-09-04T06:19:54.4241587Z Artifact download URL: https://github.com/KangJianLin/Kaoqin_Demo/actions/runs/17455135205/artifacts/3923959300
-2025-09-04T06:19:54.4362450Z ##[group]Run actions/upload-artifact@v4
-2025-09-04T06:19:54.4362733Z with:
-2025-09-04T06:19:54.4362918Z   name: test-results
-2025-09-04T06:19:54.4363231Z   path: backend/tests/reports/
+2025-09-04T14:19:12.4055299Z ===== 运行代码风格检查 (flake8) =====
+2025-09-04T14:19:19.1297826Z app/core/openapi_config.py:61:33: W291 trailing whitespace
+2025-09-04T14:19:19.1300013Z app/core/openapi_config.py:74:21: W291 trailing whitespace
+2025-09-04T14:19:19.1301867Z app/core/openapi_config.py:83:13: W291 trailing whitespace
+2025-09-04T14:19:19.1303790Z app/models/attendance.py:403:101: E501 line too long (102 > 100 characters)
+2025-09-04T14:19:19.1305782Z app/models/task.py:267:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1307525Z app/models/task.py:280:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1309508Z app/models/task.py:352:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1310259Z app/models/task.py:948:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1311139Z app/services/ab_table_matching_service.py:123:101: E501 line too long (109 > 100 characters)
+2025-09-04T14:19:19.1312099Z app/services/task_service.py:2135:101: E501 line too long (127 > 100 characters)
+2025-09-04T14:19:19.1313008Z app/services/task_service.py:2153:101: E501 line too long (108 > 100 characters)
+2025-09-04T14:19:19.1313880Z app/services/task_service.py:2164:101: E501 line too long (102 > 100 characters)
+2025-09-04T14:19:19.1314751Z app/services/work_hours_service.py:1198:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1315627Z app/services/work_hours_service.py:1201:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1316938Z app/services/work_hours_service.py:1210:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1318034Z tests/business/test_data_integrity_operations.py:167:101: E501 line too long (104 > 100 characters)
+2025-09-04T14:19:19.1319452Z tests/business/test_data_integrity_operations.py:168:101: E501 line too long (107 > 100 characters)
+2025-09-04T14:19:19.1320587Z tests/comprehensive/test_import_export_api_comprehensive.py:158:19: W291 trailing whitespace
+2025-09-04T14:19:19.1321513Z tests/conftest.py:35:1: E402 module level import not at top of file
+2025-09-04T14:19:19.1322260Z tests/conftest.py:36:1: E402 module level import not at top of file
+2025-09-04T14:19:19.1323003Z tests/conftest.py:37:1: E402 module level import not at top of file
+2025-09-04T14:19:19.1323745Z tests/conftest.py:38:1: E402 module level import not at top of file
+2025-09-04T14:19:19.1324731Z tests/e2e/conftest.py:456:101: E501 line too long (102 > 100 characters)
+2025-09-04T14:19:19.1325581Z tests/e2e/run_e2e_tests.py:57:13: F811 redefinition of unused 'asyncio' from line 9
+2025-09-04T14:19:19.1326373Z tests/e2e/run_e2e_tests.py:257:101: E501 line too long (116 > 100 characters)
+2025-09-04T14:19:19.1327087Z tests/e2e/run_e2e_tests.py:280:15: F541 f-string is missing placeholders
+2025-09-04T14:19:19.1327927Z tests/e2e/test_system_settings_and_permissions.py:224:101: E501 line too long (128 > 100 characters)
+2025-09-04T14:19:19.1329087Z tests/e2e/test_user_authentication_flow.py:401:101: E501 line too long (162 > 100 characters)
+2025-09-04T14:19:19.1329963Z tests/enhanced_cicd_config.py:267:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1330747Z tests/enhanced_cicd_config.py:321:101: E501 line too long (112 > 100 characters)
+2025-09-04T14:19:19.1331533Z tests/enhanced_cicd_config.py:322:101: E501 line too long (109 > 100 characters)
+2025-09-04T14:19:19.1332300Z tests/enhanced_cicd_config.py:347:101: E501 line too long (111 > 100 characters)
+2025-09-04T14:19:19.1333028Z tests/enhanced_cicd_config.py:348:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1333788Z tests/enhanced_cicd_config.py:360:101: E501 line too long (106 > 100 characters)
+2025-09-04T14:19:19.1334805Z tests/enhanced_cicd_config.py:362:101: E501 line too long (109 > 100 characters)
+2025-09-04T14:19:19.1335569Z tests/enhanced_cicd_config.py:364:101: E501 line too long (110 > 100 characters)
+2025-09-04T14:19:19.1336338Z tests/enhanced_cicd_config.py:379:101: E501 line too long (136 > 100 characters)
+2025-09-04T14:19:19.1337073Z tests/enhanced_cicd_config.py:392:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1337794Z tests/enhanced_cicd_config.py:418:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1338519Z tests/enhanced_cicd_config.py:422:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1340543Z tests/enhanced_cicd_config.py:503:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1341271Z tests/enhanced_cicd_config.py:506:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1341994Z tests/enhanced_cicd_config.py:509:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1342716Z tests/enhanced_cicd_config.py:512:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1343398Z tests/enhanced_cicd_config.py:519:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1344055Z tests/enhanced_cicd_config.py:550:34: W291 trailing whitespace
+2025-09-04T14:19:19.1344708Z tests/enhanced_cicd_config.py:574:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1345433Z tests/enhanced_cicd_config.py:578:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1346156Z tests/enhanced_cicd_config.py:622:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1346870Z tests/enhanced_cicd_config.py:624:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1347575Z tests/enhanced_cicd_config.py:628:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1348267Z tests/enhanced_cicd_config.py:632:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1349365Z tests/enhanced_cicd_config.py:650:101: E501 line too long (111 > 100 characters)
+2025-09-04T14:19:19.1350141Z tests/enhanced_cicd_config.py:661:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1351567Z tests/enhanced_cicd_config.py:665:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1352274Z tests/enhanced_cicd_config.py:670:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1352980Z tests/enhanced_cicd_config.py:674:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1353746Z tests/enhanced_cicd_config.py:676:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1354403Z tests/enhanced_cicd_config.py:680:25: W291 trailing whitespace
+2025-09-04T14:19:19.1355038Z tests/enhanced_cicd_config.py:684:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1355695Z tests/enhanced_cicd_config.py:691:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1356369Z tests/enhanced_cicd_config.py:695:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1357060Z tests/enhanced_cicd_config.py:700:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1357727Z tests/enhanced_cicd_config.py:702:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1358415Z tests/enhanced_cicd_config.py:703:101: E501 line too long (205 > 100 characters)
+2025-09-04T14:19:19.1359285Z tests/enhanced_cicd_config.py:704:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1359946Z tests/enhanced_cicd_config.py:706:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1360591Z tests/enhanced_cicd_config.py:708:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1361249Z tests/enhanced_cicd_config.py:712:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1361879Z tests/enhanced_cicd_config.py:730:41: W291 trailing whitespace
+2025-09-04T14:19:19.1362512Z tests/enhanced_cicd_config.py:731:101: E501 line too long (119 > 100 characters)
+2025-09-04T14:19:19.1363208Z tests/enhanced_cicd_config.py:732:101: E501 line too long (108 > 100 characters)
+2025-09-04T14:19:19.1363906Z tests/enhanced_cicd_config.py:743:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1364813Z tests/enhanced_cicd_config.py:765:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1365472Z tests/enhanced_cicd_config.py:777:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1366126Z tests/enhanced_cicd_config.py:784:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1366790Z tests/enhanced_cicd_config.py:787:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1367463Z tests/enhanced_cicd_config.py:791:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1368103Z tests/enhanced_cicd_config.py:799:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1368920Z tests/enhanced_cicd_config.py:801:101: E501 line too long (108 > 100 characters)
+2025-09-04T14:19:19.1369612Z tests/enhanced_cicd_config.py:807:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1370286Z tests/enhanced_cicd_config.py:809:101: E501 line too long (105 > 100 characters)
+2025-09-04T14:19:19.1370974Z tests/enhanced_cicd_config.py:811:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1371639Z tests/enhanced_cicd_config.py:835:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1372294Z tests/enhanced_cicd_config.py:840:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1372960Z tests/enhanced_cicd_config.py:845:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1373629Z tests/enhanced_cicd_config.py:850:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1374310Z tests/enhanced_cicd_config.py:853:101: E501 line too long (102 > 100 characters)
+2025-09-04T14:19:19.1374987Z tests/enhanced_cicd_config.py:869:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1375645Z tests/enhanced_cicd_config.py:872:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1376297Z tests/enhanced_cicd_config.py:880:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1376947Z tests/enhanced_cicd_config.py:886:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1377786Z tests/enhanced_cicd_config.py:889:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1378452Z tests/enhanced_cicd_config.py:891:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1379292Z tests/enhanced_cicd_config.py:893:101: E501 line too long (104 > 100 characters)
+2025-09-04T14:19:19.1379973Z tests/enhanced_cicd_config.py:894:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1380697Z tests/enhanced_cicd_config.py:901:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1381418Z tests/enhanced_cicd_config.py:908:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1382132Z tests/enhanced_cicd_config.py:914:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1382830Z tests/enhanced_cicd_config.py:917:1: W293 blank line contains whitespace
+2025-09-04T14:19:19.1383582Z tests/enhanced_cicd_config.py:930:9: F811 redefinition of unused 'os' from line 10
+2025-09-04T14:19:19.1384315Z tests/test_debug_fixtures.py:20:15: F541 f-string is missing placeholders
+2025-09-04T14:19:19.1385025Z tests/test_debug_fixtures.py:29:15: F541 f-string is missing placeholders
+2025-09-04T14:19:19.1385792Z tests/unit/test_bulk_operations.py:510:101: E501 line too long (127 > 100 characters)
+2025-09-04T14:19:19.1386687Z tests/unit/test_task_service_coverage_fixed.py:372:9: F811 redefinition of unused 'date' from line 7
+2025-09-04T14:19:19.1387730Z tests/unit/test_task_service_coverage_fixed.py:454:9: F811 redefinition of unused 'MagicMock' from line 8
+2025-09-04T14:19:19.1388910Z tests/unit/test_task_service_coverage_fixed.py:507:9: F811 redefinition of unused 'MagicMock' from line 8
+2025-09-04T14:19:19.1389933Z tests/unit/test_task_service_coverage_fixed.py:555:9: F811 redefinition of unused 'MagicMock' from line 8
+2025-09-04T14:19:19.1574844Z ⚠️ Flake8 代码风格检查发现问题（允许继续）
+2025-09-04T14:19:19.1578494Z ===== 运行类型检查 (mypy) =====
+2025-09-04T14:19:19.1579166Z 运行mypy类型检查...
+2025-09-04T14:19:50.8639020Z Success: no issues found in 54 source files
+2025-09-04T14:19:50.8926635Z ✅ mypy 类型检查通过
+2025-09-04T14:19:50.8940377Z ===== 代码质量检查总结 =====
+2025-09-04T14:19:50.8941799Z 关键错误数量: 1
+2025-09-04T14:19:50.8942480Z 类型检查问题: 0 (仅警告，不阻塞)
+2025-09-04T14:19:50.8942887Z ❌ 发现关键代码质量问题，停止构建
+2025-09-04T14:19:50.8943300Z 请修复 Black 和 isort 问题后重新提交
+2025-09-04T14:19:50.8960083Z ##[error]Process completed with exit code 1.
+2025-09-04T14:19:51.0207972Z ##[group]Run actions/upload-artifact@v4
+2025-09-04T14:19:51.0208263Z with:
+2025-09-04T14:19:51.0208450Z   name: benchmark-results
+2025-09-04T14:19:51.0208691Z   path: backend/benchmark-results.json
+2025-09-04T14:19:51.0209300Z   retention-days: 30
+2025-09-04T14:19:51.0209523Z   if-no-files-found: warn
+2025-09-04T14:19:51.0209746Z   compression-level: 6
+2025-09-04T14:19:51.0209945Z   overwrite: false
+2025-09-04T14:19:51.0210150Z   include-hidden-files: false
+2025-09-04T14:19:51.0210370Z env:
+2025-09-04T14:19:51.0210542Z   COVERAGE_THRESHOLD: 95
+2025-09-04T14:19:51.0210752Z   API_COVERAGE_TARGET: 100
+2025-09-04T14:19:51.0211028Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T14:19:51.0211423Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
+2025-09-04T14:19:51.0211832Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T14:19:51.0212177Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T14:19:51.0212563Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T14:19:51.0212920Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
+2025-09-04T14:19:51.0213212Z   ENVIRONMENT: test
+2025-09-04T14:19:51.0213400Z   TESTING: true
+2025-09-04T14:19:51.0213581Z   DEBUG: false
+2025-09-04T14:19:51.0214177Z   DATABASE_URL: ***localhost:5432/test_attendence
+2025-09-04T14:19:51.0214640Z   DATABASE_URL_SYNC: ***localhost:5432/test_attendence
+2025-09-04T14:19:51.0214950Z   REDIS_URL: redis://localhost:6379/0
+2025-09-04T14:19:51.0215197Z   POSTGRES_TEST: true
+2025-09-04T14:19:51.0215394Z   CI: true
+2025-09-04T14:19:51.0215566Z   GITHUB_ACTIONS: true
+2025-09-04T14:19:51.0215817Z   SECRET_KEY: test_secret_key_for_ci_cd_environment_only
+2025-09-04T14:19:51.0216109Z   ACCESS_TOKEN_EXPIRE_MINUTES: 30
+2025-09-04T14:19:51.0216349Z ##[endgroup]
+2025-09-04T14:19:51.2727173Z With the provided path, there will be 1 file uploaded
+2025-09-04T14:19:51.2733265Z Artifact name is valid!
+2025-09-04T14:19:51.2735465Z Root directory input is valid!
+2025-09-04T14:19:51.6177533Z Beginning upload of artifact content to blob storage
+2025-09-04T14:19:52.5530592Z Uploaded bytes 684159
+2025-09-04T14:19:52.6378664Z Finished uploading artifact content to blob storage!
+2025-09-04T14:19:52.6383265Z SHA256 digest of uploaded artifact zip is a8617055f43af3532dd4f085afef18146254b4998b4917dcfb8da5883818b056
+2025-09-04T14:19:52.6385550Z Finalizing artifact upload
+2025-09-04T14:19:52.8228366Z Artifact benchmark-results.zip successfully finalized. Artifact ID 3927944352
+2025-09-04T14:19:52.8229961Z Artifact benchmark-results has been successfully uploaded! Final size is 684159 bytes. Artifact ID is 3927944352
+2025-09-04T14:19:52.8231788Z Artifact download URL: https://github.com/KangJianLin/Kaoqin_Demo/actions/runs/17466887378/artifacts/3927944352
+2025-09-04T14:19:52.8352149Z ##[group]Run actions/upload-artifact@v4
+2025-09-04T14:19:52.8352442Z with:
+2025-09-04T14:19:52.8352627Z   name: test-results
+2025-09-04T14:19:52.8352941Z   path: backend/tests/reports/
 backend/htmlcov/
 backend/coverage.json
 
-2025-09-04T06:19:54.4363911Z   retention-days: 30
-2025-09-04T06:19:54.4364122Z   if-no-files-found: warn
-2025-09-04T06:19:54.4364341Z   compression-level: 6
-2025-09-04T06:19:54.4364545Z   overwrite: false
-2025-09-04T06:19:54.4364750Z   include-hidden-files: false
-2025-09-04T06:19:54.4364970Z env:
-2025-09-04T06:19:54.4365144Z   COVERAGE_THRESHOLD: 95
-2025-09-04T06:19:54.4365359Z   API_COVERAGE_TARGET: 100
-2025-09-04T06:19:54.4365636Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-04T06:19:54.4366212Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
-2025-09-04T06:19:54.4366647Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-04T06:19:54.4367071Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-04T06:19:54.4367488Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-04T06:19:54.4367922Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
-2025-09-04T06:19:54.4368222Z   ENVIRONMENT: test
-2025-09-04T06:19:54.4368565Z   TESTING: true
-2025-09-04T06:19:54.4368883Z   DEBUG: false
-2025-09-04T06:19:54.4369565Z   DATABASE_URL: ***localhost:5432/test_attendence
-2025-09-04T06:19:54.4370036Z   DATABASE_URL_SYNC: ***localhost:5432/test_attendence
-2025-09-04T06:19:54.4370352Z   REDIS_URL: redis://localhost:6379/0
-2025-09-04T06:19:54.4370607Z   POSTGRES_TEST: true
-2025-09-04T06:19:54.4370805Z   CI: true
-2025-09-04T06:19:54.4370981Z   GITHUB_ACTIONS: true
-2025-09-04T06:19:54.4371237Z   SECRET_KEY: test_secret_key_for_ci_cd_environment_only
-2025-09-04T06:19:54.4371535Z   ACCESS_TOKEN_EXPIRE_MINUTES: 30
-2025-09-04T06:19:54.4371767Z ##[endgroup]
-2025-09-04T06:19:54.6658370Z Multiple search paths detected. Calculating the least common ancestor of all paths
-2025-09-04T06:19:54.6664479Z The least common ancestor is /home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend. This will be the root directory of the artifact
-2025-09-04T06:19:54.6666050Z With the provided path, there will be 14 files uploaded
-2025-09-04T06:19:54.6671376Z Artifact name is valid!
-2025-09-04T06:19:54.6672969Z Root directory input is valid!
-2025-09-04T06:19:54.8238960Z Beginning upload of artifact content to blob storage
-2025-09-04T06:19:55.0818877Z Uploaded bytes 69187
-2025-09-04T06:19:55.1251711Z Finished uploading artifact content to blob storage!
-2025-09-04T06:19:55.1255056Z SHA256 digest of uploaded artifact zip is e080b296d1c7844f39aba3886b40bdc78e3bce71a6a0f3d88f07a22012915916
-2025-09-04T06:19:55.1258414Z Finalizing artifact upload
-2025-09-04T06:19:55.2871694Z Artifact test-results.zip successfully finalized. Artifact ID 3923959388
-2025-09-04T06:19:55.2872952Z Artifact test-results has been successfully uploaded! Final size is 69187 bytes. Artifact ID is 3923959388
-2025-09-04T06:19:55.2880266Z Artifact download URL: https://github.com/KangJianLin/Kaoqin_Demo/actions/runs/17455135205/artifacts/3923959388
-2025-09-04T06:19:55.3008983Z ##[group]Run echo "====== 后端测试整体状态汇总 ======"
-2025-09-04T06:19:55.3009642Z [36;1mecho "====== 后端测试整体状态汇总 ======"[0m
-2025-09-04T06:19:55.3010142Z [36;1mecho "Phase 1 基础测试: 完成"[0m
-2025-09-04T06:19:55.3010897Z [36;1mecho "Phase 2 API覆盖测试: 完成"[0m
-2025-09-04T06:19:55.3011364Z [36;1mecho "Phase 3 业务逻辑测试: 完成" [0m
-2025-09-04T06:19:55.3011830Z [36;1mecho "Phase 4 集成测试: 完成"[0m
-2025-09-04T06:19:55.3012278Z [36;1mecho "Phase 5 性能测试: 完成"[0m
-2025-09-04T06:19:55.3012700Z [36;1mecho ""[0m
-2025-09-04T06:19:55.3013067Z [36;1mecho "✅ 后端所有测试阶段均已执行"[0m
-2025-09-04T06:19:55.3013863Z [36;1mecho "🎯 目标: API端点100%覆盖，代码覆盖率95%+"[0m
-2025-09-04T06:19:55.3014350Z [36;1mecho "📊 详细覆盖率报告已生成"[0m
-2025-09-04T06:19:55.3058195Z shell: /usr/bin/bash -e {0}
-2025-09-04T06:19:55.3058624Z env:
-2025-09-04T06:19:55.3059015Z   COVERAGE_THRESHOLD: 95
-2025-09-04T06:19:55.3059442Z   API_COVERAGE_TARGET: 100
-2025-09-04T06:19:55.3059992Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-04T06:19:55.3060819Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
-2025-09-04T06:19:55.3061584Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-04T06:19:55.3062270Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-04T06:19:55.3062805Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-04T06:19:55.3063208Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
-2025-09-04T06:19:55.3063795Z   ENVIRONMENT: test
-2025-09-04T06:19:55.3064008Z   TESTING: true
-2025-09-04T06:19:55.3064200Z   DEBUG: false
-2025-09-04T06:19:55.3064724Z   DATABASE_URL: ***localhost:5432/test_attendence
-2025-09-04T06:19:55.3065204Z   DATABASE_URL_SYNC: ***localhost:5432/test_attendence
-2025-09-04T06:19:55.3065527Z   REDIS_URL: redis://localhost:6379/0
-2025-09-04T06:19:55.3065792Z   POSTGRES_TEST: true
-2025-09-04T06:19:55.3065996Z   CI: true
-2025-09-04T06:19:55.3066179Z   GITHUB_ACTIONS: true
-2025-09-04T06:19:55.3066459Z   SECRET_KEY: test_secret_key_for_ci_cd_environment_only
-2025-09-04T06:19:55.3066773Z   ACCESS_TOKEN_EXPIRE_MINUTES: 30
-2025-09-04T06:19:55.3067019Z ##[endgroup]
-2025-09-04T06:19:55.3132071Z ====== 后端测试整体状态汇总 ======
-2025-09-04T06:19:55.3135412Z Phase 1 基础测试: 完成
-2025-09-04T06:19:55.3135870Z Phase 2 API覆盖测试: 完成
-2025-09-04T06:19:55.3136323Z Phase 3 业务逻辑测试: 完成
-2025-09-04T06:19:55.3136744Z Phase 4 集成测试: 完成
-2025-09-04T06:19:55.3137165Z Phase 5 性能测试: 完成
-2025-09-04T06:19:55.3137381Z 
-2025-09-04T06:19:55.3137579Z ✅ 后端所有测试阶段均已执行
-2025-09-04T06:19:55.3138024Z 🎯 目标: API端点100%覆盖，代码覆盖率95%+
-2025-09-04T06:19:55.3138519Z 📊 详细覆盖率报告已生成
-2025-09-04T06:19:55.3227457Z Post job cleanup.
-2025-09-04T06:19:55.4376604Z [command]/usr/bin/git version
-2025-09-04T06:19:55.4417852Z git version 2.51.0
-2025-09-04T06:19:55.4466088Z Temporarily overriding HOME='/home/runner/work/_temp/77553933-707c-47bc-a85e-3aabd903dbf9' before making global git config changes
-2025-09-04T06:19:55.4468955Z Adding repository directory to the temporary git global config as a safe directory
-2025-09-04T06:19:55.4474168Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Kaoqin_Demo/Kaoqin_Demo
-2025-09-04T06:19:55.4518206Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
-2025-09-04T06:19:55.4554580Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
-2025-09-04T06:19:55.4798336Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-2025-09-04T06:19:55.4822986Z http.https://github.com/.extraheader
-2025-09-04T06:19:55.4837505Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
-2025-09-04T06:19:55.4872906Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
-2025-09-04T06:19:55.5208077Z Print service container logs: c41e9b7845334c1cafac567dfdeb044e_postgres15_c43537
-2025-09-04T06:19:55.5212396Z ##[command]/usr/bin/docker logs --details 41120107b779f09c3e444b888ecccb3d61d7c08c3f3c8625f31e48eb8fe7a3e8
-2025-09-04T06:19:55.5348973Z  The files belonging to this database system will be owned by user "postgres".
-2025-09-04T06:19:55.5351269Z  initdb: warning: enabling "trust" authentication for local connections
-2025-09-04T06:19:55.5352441Z  initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
-2025-09-04T06:19:55.5354564Z  2025-09-04 06:17:52.526 UTC [1] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
-2025-09-04T06:19:55.5355699Z  2025-09-04 06:17:52.526 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
-2025-09-04T06:19:55.5356481Z  2025-09-04 06:17:52.526 UTC [1] LOG:  listening on IPv6 address "::", port 5432
-2025-09-04T06:19:55.5357283Z  2025-09-04 06:17:52.528 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
-2025-09-04T06:19:55.5358171Z  2025-09-04 06:17:52.533 UTC [63] LOG:  database system was shut down at 2025-09-04 06:17:52 UTC
-2025-09-04T06:19:55.5358996Z  2025-09-04 06:17:52.540 UTC [1] LOG:  database system is ready to accept connections
-2025-09-04T06:19:55.5359703Z  2025-09-04 06:18:01.416 UTC [74] FATAL:  role "root" does not exist
-2025-09-04T06:19:55.5360335Z  2025-09-04 06:18:11.578 UTC [82] FATAL:  role "root" does not exist
-2025-09-04T06:19:55.5360974Z  2025-09-04 06:18:21.669 UTC [89] FATAL:  role "root" does not exist
-2025-09-04T06:19:55.5361600Z  2025-09-04 06:18:31.767 UTC [99] FATAL:  role "root" does not exist
-2025-09-04T06:19:55.5362161Z  2025-09-04 06:18:41.868 UTC [107] FATAL:  role "root" does not exist
-2025-09-04T06:19:55.5362727Z  2025-09-04 06:18:51.956 UTC [115] FATAL:  role "root" does not exist
-2025-09-04T06:19:55.5363302Z  2025-09-04 06:19:02.094 UTC [124] FATAL:  role "root" does not exist
-2025-09-04T06:19:55.5364094Z  2025-09-04 06:19:12.253 UTC [132] FATAL:  role "root" does not exist
-2025-09-04T06:19:55.5364725Z  2025-09-04 06:19:22.442 UTC [140] FATAL:  role "root" does not exist
-2025-09-04T06:19:55.5365369Z  2025-09-04 06:19:32.548 UTC [149] FATAL:  role "root" does not exist
-2025-09-04T06:19:55.5365990Z  2025-09-04 06:19:42.656 UTC [156] FATAL:  role "root" does not exist
-2025-09-04T06:19:55.5367600Z  2025-09-04 06:19:52.760 UTC [165] FATAL:  role "root" does not exist
-2025-09-04T06:19:55.5368198Z  This user must also own the server process.
-2025-09-04T06:19:55.5368680Z  
-2025-09-04T06:19:55.5369579Z  The database cluster will be initialized with locale "en_US.utf8".
-2025-09-04T06:19:55.5370316Z  The default database encoding has accordingly been set to "UTF8".
-2025-09-04T06:19:55.5371896Z  The default text search configuration will be set to "english".
-2025-09-04T06:19:55.5372242Z  
-2025-09-04T06:19:55.5372445Z  Data page checksums are disabled.
-2025-09-04T06:19:55.5372703Z  
-2025-09-04T06:19:55.5372995Z  fixing permissions on existing directory /var/lib/postgresql/data ... ok
-2025-09-04T06:19:55.5373625Z  creating subdirectories ... ok
-2025-09-04T06:19:55.5374004Z  selecting dynamic shared memory implementation ... posix
-2025-09-04T06:19:55.5374351Z  selecting default max_connections ... 100
-2025-09-04T06:19:55.5374641Z  selecting default shared_buffers ... 128MB
-2025-09-04T06:19:55.5374918Z  selecting default time zone ... Etc/UTC
-2025-09-04T06:19:55.5375191Z  creating configuration files ... ok
-2025-09-04T06:19:55.5375457Z  running bootstrap script ... ok
-2025-09-04T06:19:55.5375746Z  performing post-bootstrap initialization ... ok
-2025-09-04T06:19:55.5376045Z  syncing data to disk ... ok
-2025-09-04T06:19:55.5376267Z  
-2025-09-04T06:19:55.5376432Z  
-2025-09-04T06:19:55.5376655Z  Success. You can now start the database server using:
-2025-09-04T06:19:55.5376948Z  
-2025-09-04T06:19:55.5377496Z      pg_ctl -D /var/lib/postgresql/data -l logfile start
-2025-09-04T06:19:55.5377796Z  
-2025-09-04T06:19:55.5378368Z  waiting for server to start....2025-09-04 06:17:52.122 UTC [47] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
-2025-09-04T06:19:55.5379277Z  2025-09-04 06:17:52.123 UTC [47] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
-2025-09-04T06:19:55.5379803Z  2025-09-04 06:17:52.128 UTC [50] LOG:  database system was shut down at 2025-09-04 06:17:51 UTC
-2025-09-04T06:19:55.5380269Z  2025-09-04 06:17:52.137 UTC [47] LOG:  database system is ready to accept connections
-2025-09-04T06:19:55.5380622Z   done
-2025-09-04T06:19:55.5380803Z  server started
-2025-09-04T06:19:55.5381000Z  CREATE DATABASE
-2025-09-04T06:19:55.5381192Z  
-2025-09-04T06:19:55.5381353Z  
-2025-09-04T06:19:55.5381667Z  /usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/*
-2025-09-04T06:19:55.5382047Z  
-2025-09-04T06:19:55.5382380Z  waiting for server to shut down....2025-09-04 06:17:52.397 UTC [47] LOG:  received fast shutdown request
-2025-09-04T06:19:55.5382878Z  2025-09-04 06:17:52.399 UTC [47] LOG:  aborting any active transactions
-2025-09-04T06:19:55.5383974Z  2025-09-04 06:17:52.407 UTC [47] LOG:  background worker "logical replication launcher" (PID 53) exited with exit code 1
-2025-09-04T06:19:55.5384534Z  2025-09-04 06:17:52.408 UTC [48] LOG:  shutting down
-2025-09-04T06:19:55.5384914Z  2025-09-04 06:17:52.409 UTC [48] LOG:  checkpoint starting: shutdown immediate
-2025-09-04T06:19:55.5385766Z  2025-09-04 06:17:52.441 UTC [48] LOG:  checkpoint complete: wrote 922 buffers (5.6%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.027 s, sync=0.004 s, total=0.034 s; sync files=301, longest=0.002 s, average=0.001 s; distance=4239 kB, estimate=4239 kB
-2025-09-04T06:19:55.5386632Z  2025-09-04 06:17:52.454 UTC [47] LOG:  database system is shut down
-2025-09-04T06:19:55.5386942Z   done
-2025-09-04T06:19:55.5387127Z  server stopped
-2025-09-04T06:19:55.5387332Z  
-2025-09-04T06:19:55.5387567Z  PostgreSQL init process complete; ready for start up.
-2025-09-04T06:19:55.5387859Z  
-2025-09-04T06:19:55.5393747Z Stop and remove container: c41e9b7845334c1cafac567dfdeb044e_postgres15_c43537
-2025-09-04T06:19:55.5399178Z ##[command]/usr/bin/docker rm --force 41120107b779f09c3e444b888ecccb3d61d7c08c3f3c8625f31e48eb8fe7a3e8
-2025-09-04T06:19:55.7587898Z 41120107b779f09c3e444b888ecccb3d61d7c08c3f3c8625f31e48eb8fe7a3e8
-2025-09-04T06:19:55.7610719Z Print service container logs: b45ad51c1cc842cabfeae664fc192606_redis7_beec51
-2025-09-04T06:19:55.7611980Z ##[command]/usr/bin/docker logs --details ac3d169a03caf4e873d5b3dc704ee8203a06ac5076f021b9b47e4210c7d72c07
-2025-09-04T06:19:55.7754307Z  1:C 04 Sep 2025 06:17:54.379 # WARNING Memory overcommit must be enabled! Without it, a background save or replication may fail under low memory condition. Being disabled, it can also cause failures without low memory condition, see https://github.com/jemalloc/jemalloc/issues/1328. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
-2025-09-04T06:19:55.7757034Z  1:C 04 Sep 2025 06:17:54.379 * oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
-2025-09-04T06:19:55.7760529Z  1:C 04 Sep 2025 06:17:54.379 * Redis version=7.4.5, bits=64, commit=00000000, modified=0, pid=1, just started
-2025-09-04T06:19:55.7761772Z  1:C 04 Sep 2025 06:17:54.379 # Warning: no config file specified, using the default config. In order to specify a config file use redis-server /path/to/redis.conf
-2025-09-04T06:19:55.7762887Z  1:M 04 Sep 2025 06:17:54.380 * monotonic clock: POSIX clock_gettime
-2025-09-04T06:19:55.7763708Z  1:M 04 Sep 2025 06:17:54.380 * Running mode=standalone, port=6379.
-2025-09-04T06:19:55.7764302Z  1:M 04 Sep 2025 06:17:54.381 * Server initialized
-2025-09-04T06:19:55.7764910Z  1:M 04 Sep 2025 06:17:54.381 * Ready to accept connections tcp
-2025-09-04T06:19:55.7768830Z Stop and remove container: b45ad51c1cc842cabfeae664fc192606_redis7_beec51
-2025-09-04T06:19:55.7770000Z ##[command]/usr/bin/docker rm --force ac3d169a03caf4e873d5b3dc704ee8203a06ac5076f021b9b47e4210c7d72c07
-2025-09-04T06:19:55.8984491Z ac3d169a03caf4e873d5b3dc704ee8203a06ac5076f021b9b47e4210c7d72c07
-2025-09-04T06:19:55.9010209Z Remove container network: github_network_3399bb89c4174a6690575d82de5edea7
-2025-09-04T06:19:55.9018134Z ##[command]/usr/bin/docker network rm github_network_3399bb89c4174a6690575d82de5edea7
-2025-09-04T06:19:55.9959478Z github_network_3399bb89c4174a6690575d82de5edea7
-2025-09-04T06:19:56.0020066Z Cleaning up orphan processes
+2025-09-04T14:19:52.8353297Z   retention-days: 30
+2025-09-04T14:19:52.8353508Z   if-no-files-found: warn
+2025-09-04T14:19:52.8353727Z   compression-level: 6
+2025-09-04T14:19:52.8353931Z   overwrite: false
+2025-09-04T14:19:52.8354138Z   include-hidden-files: false
+2025-09-04T14:19:52.8354354Z env:
+2025-09-04T14:19:52.8354531Z   COVERAGE_THRESHOLD: 95
+2025-09-04T14:19:52.8354755Z   API_COVERAGE_TARGET: 100
+2025-09-04T14:19:52.8355035Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T14:19:52.8355436Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
+2025-09-04T14:19:52.8355851Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T14:19:52.8356215Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T14:19:52.8356759Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T14:19:52.8357106Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
+2025-09-04T14:19:52.8357405Z   ENVIRONMENT: test
+2025-09-04T14:19:52.8357598Z   TESTING: true
+2025-09-04T14:19:52.8357780Z   DEBUG: false
+2025-09-04T14:19:52.8358276Z   DATABASE_URL: ***localhost:5432/test_attendence
+2025-09-04T14:19:52.8358730Z   DATABASE_URL_SYNC: ***localhost:5432/test_attendence
+2025-09-04T14:19:52.8359309Z   REDIS_URL: redis://localhost:6379/0
+2025-09-04T14:19:52.8359568Z   POSTGRES_TEST: true
+2025-09-04T14:19:52.8359766Z   CI: true
+2025-09-04T14:19:52.8359941Z   GITHUB_ACTIONS: true
+2025-09-04T14:19:52.8360197Z   SECRET_KEY: test_secret_key_for_ci_cd_environment_only
+2025-09-04T14:19:52.8360499Z   ACCESS_TOKEN_EXPIRE_MINUTES: 30
+2025-09-04T14:19:52.8360735Z ##[endgroup]
+2025-09-04T14:19:53.0787547Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2025-09-04T14:19:53.0798290Z The least common ancestor is /home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend. This will be the root directory of the artifact
+2025-09-04T14:19:53.0799648Z With the provided path, there will be 14 files uploaded
+2025-09-04T14:19:53.0800474Z Artifact name is valid!
+2025-09-04T14:19:53.0800884Z Root directory input is valid!
+2025-09-04T14:19:53.3809523Z Beginning upload of artifact content to blob storage
+2025-09-04T14:19:53.8693282Z Uploaded bytes 69187
+2025-09-04T14:19:53.9509930Z Finished uploading artifact content to blob storage!
+2025-09-04T14:19:53.9514361Z SHA256 digest of uploaded artifact zip is c2f161f7144d08e73fbe82c44577a40dcf6249d04895a51233e0a79bff262e75
+2025-09-04T14:19:53.9516545Z Finalizing artifact upload
+2025-09-04T14:19:54.1329207Z Artifact test-results.zip successfully finalized. Artifact ID 3927944559
+2025-09-04T14:19:54.1330754Z Artifact test-results has been successfully uploaded! Final size is 69187 bytes. Artifact ID is 3927944559
+2025-09-04T14:19:54.1338021Z Artifact download URL: https://github.com/KangJianLin/Kaoqin_Demo/actions/runs/17466887378/artifacts/3927944559
+2025-09-04T14:19:54.1464210Z ##[group]Run echo "====== 后端测试与代码质量综合汇总 ======"
+2025-09-04T14:19:54.1464826Z [36;1mecho "====== 后端测试与代码质量综合汇总 ======"[0m
+2025-09-04T14:19:54.1465316Z [36;1mecho "Phase 1 基础测试: 完成"[0m
+2025-09-04T14:19:54.1465802Z [36;1mecho "Phase 2 API覆盖测试: 完成"[0m
+2025-09-04T14:19:54.1466281Z [36;1mecho "Phase 3 业务逻辑测试: 完成" [0m
+2025-09-04T14:19:54.1466728Z [36;1mecho "Phase 4 集成测试: 完成"[0m
+2025-09-04T14:19:54.1467179Z [36;1mecho "Phase 5 性能测试: 完成"[0m
+2025-09-04T14:19:54.1467602Z [36;1mecho ""[0m
+2025-09-04T14:19:54.1467974Z [36;1mecho "代码质量检查状态:"[0m
+2025-09-04T14:19:54.1468395Z [36;1mecho "- Black格式检查: 已通过或已修复"[0m
+2025-09-04T14:19:54.1469057Z [36;1mecho "- isort导入排序: 已通过或已修复"[0m
+2025-09-04T14:19:54.1469534Z [36;1mecho "- flake8代码风格: 警告级别（允许继续）"[0m
+2025-09-04T14:19:54.1470010Z [36;1mecho "- mypy类型检查: 警告级别（允许继续）"[0m
+2025-09-04T14:19:54.1470465Z [36;1mecho ""[0m
+2025-09-04T14:19:54.1470860Z [36;1mecho "✅ 所有功能测试阶段均已执行"[0m
+2025-09-04T14:19:54.1471336Z [36;1mecho "⚠️ 代码质量问题不阻塞功能验证"[0m
+2025-09-04T14:19:54.1471796Z [36;1mecho "🎯 目标: API端点100%覆盖，代码覆盖率95%+"[0m
+2025-09-04T14:19:54.1472279Z [36;1mecho "📊 详细覆盖率报告已生成"[0m
+2025-09-04T14:19:54.1472700Z [36;1mecho "🔧 建议在后续迭代中修复类型注解和代码风格问题"[0m
+2025-09-04T14:19:54.1515117Z shell: /usr/bin/bash -e {0}
+2025-09-04T14:19:54.1515372Z env:
+2025-09-04T14:19:54.1515569Z   COVERAGE_THRESHOLD: 95
+2025-09-04T14:19:54.1515814Z   API_COVERAGE_TARGET: 100
+2025-09-04T14:19:54.1516113Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T14:19:54.1516536Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
+2025-09-04T14:19:54.1516942Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T14:19:54.1517302Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T14:19:54.1517661Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-04T14:19:54.1518021Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
+2025-09-04T14:19:54.1518551Z   ENVIRONMENT: test
+2025-09-04T14:19:54.1518969Z   TESTING: true
+2025-09-04T14:19:54.1519206Z   DEBUG: false
+2025-09-04T14:19:54.1519746Z   DATABASE_URL: ***localhost:5432/test_attendence
+2025-09-04T14:19:54.1520211Z   DATABASE_URL_SYNC: ***localhost:5432/test_attendence
+2025-09-04T14:19:54.1520529Z   REDIS_URL: redis://localhost:6379/0
+2025-09-04T14:19:54.1520795Z   POSTGRES_TEST: true
+2025-09-04T14:19:54.1521000Z   CI: true
+2025-09-04T14:19:54.1521181Z   GITHUB_ACTIONS: true
+2025-09-04T14:19:54.1521441Z   SECRET_KEY: test_secret_key_for_ci_cd_environment_only
+2025-09-04T14:19:54.1521750Z   ACCESS_TOKEN_EXPIRE_MINUTES: 30
+2025-09-04T14:19:54.1521991Z ##[endgroup]
+2025-09-04T14:19:54.1672742Z ====== 后端测试与代码质量综合汇总 ======
+2025-09-04T14:19:54.1673209Z Phase 1 基础测试: 完成
+2025-09-04T14:19:54.1673630Z Phase 2 API覆盖测试: 完成
+2025-09-04T14:19:54.1674043Z Phase 3 业务逻辑测试: 完成
+2025-09-04T14:19:54.1674438Z Phase 4 集成测试: 完成
+2025-09-04T14:19:54.1674798Z Phase 5 性能测试: 完成
+2025-09-04T14:19:54.1674939Z 
+2025-09-04T14:19:54.1675055Z 代码质量检查状态:
+2025-09-04T14:19:54.1675312Z - Black格式检查: 已通过或已修复
+2025-09-04T14:19:54.1675574Z - isort导入排序: 已通过或已修复
+2025-09-04T14:19:54.1675842Z - flake8代码风格: 警告级别（允许继续）
+2025-09-04T14:19:54.1676107Z - mypy类型检查: 警告级别（允许继续）
+2025-09-04T14:19:54.1676242Z 
+2025-09-04T14:19:54.1676366Z ✅ 所有功能测试阶段均已执行
+2025-09-04T14:19:54.1676604Z ⚠️ 代码质量问题不阻塞功能验证
+2025-09-04T14:19:54.1676865Z 🎯 目标: API端点100%覆盖，代码覆盖率95%+
+2025-09-04T14:19:54.1677123Z 📊 详细覆盖率报告已生成
+2025-09-04T14:19:54.1677364Z 🔧 建议在后续迭代中修复类型注解和代码风格问题
+2025-09-04T14:19:54.1731580Z Post job cleanup.
+2025-09-04T14:19:54.2727365Z [command]/usr/bin/git version
+2025-09-04T14:19:54.2769925Z git version 2.51.0
+2025-09-04T14:19:54.2818325Z Temporarily overriding HOME='/home/runner/work/_temp/1ec4a549-d46b-46e1-a7f7-a9279b7ae0b2' before making global git config changes
+2025-09-04T14:19:54.2834576Z Adding repository directory to the temporary git global config as a safe directory
+2025-09-04T14:19:54.2835623Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Kaoqin_Demo/Kaoqin_Demo
+2025-09-04T14:19:54.2876914Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-09-04T14:19:54.2914058Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-09-04T14:19:54.3161564Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-09-04T14:19:54.3186224Z http.https://github.com/.extraheader
+2025-09-04T14:19:54.3201463Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2025-09-04T14:19:54.3235616Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-09-04T14:19:54.3585090Z Print service container logs: 5004c3ba658248b4af6bf1f55f78e0de_postgres15_96ccbd
+2025-09-04T14:19:54.3589963Z ##[command]/usr/bin/docker logs --details a67c5f1901e0f297a98028d94cbb38567bb9f4d9e8b2c818a21126b5297ff9ed
+2025-09-04T14:19:54.3731138Z  initdb: warning: enabling "trust" authentication for local connections
+2025-09-04T14:19:54.3732229Z  initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+2025-09-04T14:19:54.3733312Z  2025-09-04 14:17:55.854 UTC [1] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+2025-09-04T14:19:54.3734177Z  2025-09-04 14:17:55.855 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2025-09-04T14:19:54.3734806Z  2025-09-04 14:17:55.855 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+2025-09-04T14:19:54.3735565Z  2025-09-04 14:17:55.857 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2025-09-04T14:19:54.3736308Z  2025-09-04 14:17:55.862 UTC [62] LOG:  database system was shut down at 2025-09-04 14:17:55 UTC
+2025-09-04T14:19:54.3736970Z  2025-09-04 14:17:55.866 UTC [1] LOG:  database system is ready to accept connections
+2025-09-04T14:19:54.3737551Z  2025-09-04 14:18:04.845 UTC [73] FATAL:  role "root" does not exist
+2025-09-04T14:19:54.3738106Z  2025-09-04 14:18:14.929 UTC [81] FATAL:  role "root" does not exist
+2025-09-04T14:19:54.3738653Z  2025-09-04 14:18:25.029 UTC [89] FATAL:  role "root" does not exist
+2025-09-04T14:19:54.3755378Z  2025-09-04 14:18:35.126 UTC [99] FATAL:  role "root" does not exist
+2025-09-04T14:19:54.3756133Z  The files belonging to this database system will be owned by user "postgres".
+2025-09-04T14:19:54.3756779Z  This user must also own the server process.
+2025-09-04T14:19:54.3757241Z  
+2025-09-04T14:19:54.3757710Z  The database cluster will be initialized with locale "en_US.utf8".
+2025-09-04T14:19:54.3758443Z  The default database encoding has accordingly been set to "UTF8".
+2025-09-04T14:19:54.3759362Z  The default text search configuration will be set to "english".
+2025-09-04T14:19:54.3759901Z  
+2025-09-04T14:19:54.3760223Z  Data page checksums are disabled.
+2025-09-04T14:19:54.3760622Z  
+2025-09-04T14:19:54.3761121Z  fixing permissions on existing directory /var/lib/postgresql/data ... ok
+2025-09-04T14:19:54.3761795Z  creating subdirectories ... ok
+2025-09-04T14:19:54.3762344Z  selecting dynamic shared memory implementation ... posix
+2025-09-04T14:19:54.3762938Z  selecting default max_connections ... 100
+2025-09-04T14:19:54.3763447Z  selecting default shared_buffers ... 128MB
+2025-09-04T14:19:54.3763942Z  selecting default time zone ... Etc/UTC
+2025-09-04T14:19:54.3764397Z  creating configuration files ... ok
+2025-09-04T14:19:54.3765391Z  running bootstrap script ... ok
+2025-09-04T14:19:54.3766078Z  performing post-bootstrap initialization ... ok
+2025-09-04T14:19:54.3766547Z  syncing data to disk ... ok
+2025-09-04T14:19:54.3766927Z  
+2025-09-04T14:19:54.3767421Z  2025-09-04 14:18:45.226 UTC [107] FATAL:  role "root" does not exist
+2025-09-04T14:19:54.3768064Z  
+2025-09-04T14:19:54.3769320Z  2025-09-04 14:18:55.339 UTC [114] FATAL:  role "root" does not exist
+2025-09-04T14:19:54.3769983Z  Success. You can now start the database server using:
+2025-09-04T14:19:54.3770497Z  
+2025-09-04T14:19:54.3770893Z      pg_ctl -D /var/lib/postgresql/data -l logfile start
+2025-09-04T14:19:54.3771401Z  
+2025-09-04T14:19:54.3772378Z  waiting for server to start....2025-09-04 14:17:55.540 UTC [46] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+2025-09-04T14:19:54.3773581Z  2025-09-04 14:17:55.541 UTC [46] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2025-09-04T14:19:54.3774340Z  2025-09-04 14:17:55.544 UTC [49] LOG:  database system was shut down at 2025-09-04 14:17:55 UTC
+2025-09-04T14:19:54.3775390Z  2025-09-04 14:17:55.548 UTC [46] LOG:  database system is ready to accept connections
+2025-09-04T14:19:54.3776220Z   done
+2025-09-04T14:19:54.3776531Z  server started
+2025-09-04T14:19:54.3776833Z  CREATE DATABASE
+2025-09-04T14:19:54.3777120Z  
+2025-09-04T14:19:54.3777379Z  
+2025-09-04T14:19:54.3777861Z  /usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/*
+2025-09-04T14:19:54.3778520Z  
+2025-09-04T14:19:54.3779241Z  2025-09-04 14:17:55.731 UTC [46] LOG:  received fast shutdown request
+2025-09-04T14:19:54.3780101Z  waiting for server to shut down....2025-09-04 14:17:55.731 UTC [46] LOG:  aborting any active transactions
+2025-09-04T14:19:54.3781187Z  2025-09-04 14:17:55.735 UTC [46] LOG:  background worker "logical replication launcher" (PID 52) exited with exit code 1
+2025-09-04T14:19:54.3782044Z  2025-09-04 14:17:55.735 UTC [47] LOG:  shutting down
+2025-09-04T14:19:54.3782466Z  2025-09-04 14:17:55.735 UTC [47] LOG:  checkpoint starting: shutdown immediate
+2025-09-04T14:19:54.3783345Z  2025-09-04 14:17:55.754 UTC [47] LOG:  checkpoint complete: wrote 922 buffers (5.6%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.016 s, sync=0.002 s, total=0.020 s; sync files=301, longest=0.001 s, average=0.001 s; distance=4239 kB, estimate=4239 kB
+2025-09-04T14:19:54.3784214Z  2025-09-04 14:17:55.761 UTC [46] LOG:  database system is shut down
+2025-09-04T14:19:54.3784525Z   done
+2025-09-04T14:19:54.3784712Z  server stopped
+2025-09-04T14:19:54.3784912Z  
+2025-09-04T14:19:54.3785160Z  PostgreSQL init process complete; ready for start up.
+2025-09-04T14:19:54.3785463Z  
+2025-09-04T14:19:54.3785726Z  2025-09-04 14:19:05.550 UTC [123] FATAL:  role "root" does not exist
+2025-09-04T14:19:54.3786102Z  2025-09-04 14:19:15.720 UTC [131] FATAL:  role "root" does not exist
+2025-09-04T14:19:54.3786465Z  2025-09-04 14:19:25.818 UTC [139] FATAL:  role "root" does not exist
+2025-09-04T14:19:54.3786833Z  2025-09-04 14:19:35.923 UTC [148] FATAL:  role "root" does not exist
+2025-09-04T14:19:54.3787195Z  2025-09-04 14:19:46.031 UTC [156] FATAL:  role "root" does not exist
+2025-09-04T14:19:54.3793480Z Stop and remove container: 5004c3ba658248b4af6bf1f55f78e0de_postgres15_96ccbd
+2025-09-04T14:19:54.3798512Z ##[command]/usr/bin/docker rm --force a67c5f1901e0f297a98028d94cbb38567bb9f4d9e8b2c818a21126b5297ff9ed
+2025-09-04T14:19:54.6117113Z a67c5f1901e0f297a98028d94cbb38567bb9f4d9e8b2c818a21126b5297ff9ed
+2025-09-04T14:19:54.6127478Z Print service container logs: 985718ada652484988fa454694b56ef9_redis7_8f9c66
+2025-09-04T14:19:54.6128656Z ##[command]/usr/bin/docker logs --details 67247143bd89206f42d72fbeaa9fa11d2f430c2d805399f8a2841e9cbc27121d
+2025-09-04T14:19:54.6281657Z  1:C 04 Sep 2025 14:17:58.983 # WARNING Memory overcommit must be enabled! Without it, a background save or replication may fail under low memory condition. Being disabled, it can also cause failures without low memory condition, see https://github.com/jemalloc/jemalloc/issues/1328. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+2025-09-04T14:19:54.6283220Z  1:C 04 Sep 2025 14:17:58.983 * oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+2025-09-04T14:19:54.6283709Z  1:C 04 Sep 2025 14:17:58.983 * Redis version=7.4.5, bits=64, commit=00000000, modified=0, pid=1, just started
+2025-09-04T14:19:54.6284437Z  1:C 04 Sep 2025 14:17:58.983 # Warning: no config file specified, using the default config. In order to specify a config file use redis-server /path/to/redis.conf
+2025-09-04T14:19:54.6285081Z  1:M 04 Sep 2025 14:17:58.986 * monotonic clock: POSIX clock_gettime
+2025-09-04T14:19:54.6285463Z  1:M 04 Sep 2025 14:17:58.986 * Running mode=standalone, port=6379.
+2025-09-04T14:19:54.6285801Z  1:M 04 Sep 2025 14:17:58.987 * Server initialized
+2025-09-04T14:19:54.6286127Z  1:M 04 Sep 2025 14:17:58.987 * Ready to accept connections tcp
+2025-09-04T14:19:54.6287117Z Stop and remove container: 985718ada652484988fa454694b56ef9_redis7_8f9c66
+2025-09-04T14:19:54.6288077Z ##[command]/usr/bin/docker rm --force 67247143bd89206f42d72fbeaa9fa11d2f430c2d805399f8a2841e9cbc27121d
+2025-09-04T14:19:54.7467855Z 67247143bd89206f42d72fbeaa9fa11d2f430c2d805399f8a2841e9cbc27121d
+2025-09-04T14:19:54.7492674Z Remove container network: github_network_cc305e335d474128a3184e7d0d6da0a0
+2025-09-04T14:19:54.7498680Z ##[command]/usr/bin/docker network rm github_network_cc305e335d474128a3184e7d0d6da0a0
+2025-09-04T14:19:54.8349925Z github_network_cc305e335d474128a3184e7d0d6da0a0
+2025-09-04T14:19:54.8408384Z Cleaning up orphan processes

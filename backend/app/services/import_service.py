@@ -1384,7 +1384,9 @@ class DataImportService:
             # 根据姓名匹配
             if reporter_name:
                 name_query = select(Member).where(
-                    and_(Member.is_active.is_(True), Member.name == reporter_name.strip())
+                    and_(
+                        Member.is_active.is_(True), Member.name == reporter_name.strip()
+                    )
                 )
                 result = await self.db.execute(name_query)
                 member = result.scalar_one_or_none()

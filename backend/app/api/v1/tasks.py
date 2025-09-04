@@ -2305,7 +2305,8 @@ async def export_comprehensive_data(
                             "检修形式": task.repair_form,
                             "标签列表": (
                                 ", ".join([tag.name for tag in task.tags if tag.name])
-                                if task.tags else ""
+                                if task.tags
+                                else ""
                             ),
                             "标签工时修正": (
                                 sum(
@@ -2367,16 +2368,20 @@ async def export_comprehensive_data(
                     "任务ID": assistance_task.id,
                     "任务标题": assistance_task.title,
                     "描述": assistance_task.description,
-                    "协助人": assistance_task.member.name if assistance_task.member else None,
+                    "协助人": (
+                        assistance_task.member.name if assistance_task.member else None
+                    ),
                     "协助部门": assistance_task.assisted_department,
                     "协助对象": assistance_task.assisted_person,
                     "开始时间": (
                         assistance_task.start_time.isoformat()
-                        if assistance_task.start_time else None
+                        if assistance_task.start_time
+                        else None
                     ),
                     "结束时间": (
                         assistance_task.end_time.isoformat()
-                        if assistance_task.end_time else None
+                        if assistance_task.end_time
+                        else None
                     ),
                     "工时分钟": assistance_task.work_minutes,
                     "任务状态": assistance_task.status.value,
@@ -2386,10 +2391,13 @@ async def export_comprehensive_data(
                 if include_approval_info:
                     task_info.update(
                         {
-                            "审核状态": "已审核" if assistance_task.approved_by else "待审核",
+                            "审核状态": (
+                                "已审核" if assistance_task.approved_by else "待审核"
+                            ),
                             "审核人": (
                                 assistance_task.approver.name
-                                if assistance_task.approver else None
+                                if assistance_task.approver
+                                else None
                             ),
                             "审核时间": (
                                 assistance_task.approved_at.isoformat()
@@ -2430,16 +2438,20 @@ async def export_comprehensive_data(
                     "任务ID": monitoring_task.id,
                     "任务标题": monitoring_task.title,
                     "描述": monitoring_task.description,
-                    "负责人": monitoring_task.member.name if monitoring_task.member else None,
+                    "负责人": (
+                        monitoring_task.member.name if monitoring_task.member else None
+                    ),
                     "监控类型": monitoring_task.monitoring_type,
                     "地点": monitoring_task.location,
                     "开始时间": (
                         monitoring_task.start_time.isoformat()
-                        if monitoring_task.start_time else None
+                        if monitoring_task.start_time
+                        else None
                     ),
                     "结束时间": (
                         monitoring_task.end_time.isoformat()
-                        if monitoring_task.end_time else None
+                        if monitoring_task.end_time
+                        else None
                     ),
                     "工时分钟": monitoring_task.work_minutes,
                     "任务状态": monitoring_task.status.value,
@@ -2939,18 +2951,24 @@ async def get_members_carryover_status(
                         [
                             m
                             for m in members_data
-                            if (isinstance(m, dict) and
-                                "carryover_info" in m and
-                                isinstance(m["carryover_info"], dict) and
-                                m["carryover_info"].get("is_eligible_for_carryover", False))
+                            if (
+                                isinstance(m, dict)
+                                and "carryover_info" in m
+                                and isinstance(m["carryover_info"], dict)
+                                and m["carryover_info"].get(
+                                    "is_eligible_for_carryover", False
+                                )
+                            )
                         ]
                     ),
                     "total_carried_hours": sum(
-                        m["carried_hours"] for m in members_data
+                        m["carried_hours"]
+                        for m in members_data
                         if isinstance(m, dict) and "carried_hours" in m
                     ),
                     "total_remaining_hours": sum(
-                        m["remaining_hours"] for m in members_data
+                        m["remaining_hours"]
+                        for m in members_data
                         if isinstance(m, dict) and "remaining_hours" in m
                     ),
                 },
