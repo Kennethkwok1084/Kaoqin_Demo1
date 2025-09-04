@@ -1,5 +1,4 @@
-jiejue 方案
-2025-09-03T15:07:47.0788408Z ===== 运行类型检查 (mypy) =====
+===== 运行类型检查 (mypy) =====
 2025-09-03T15:08:13.3521487Z app/services/work_hours_service.py:2083: error: Missing positional argument "operator_id" in call to "batch_apply_group_penalties" of "RushTaskMarkingService"  [call-arg]
 2025-09-03T15:08:13.3527369Z app/services/work_hours_service.py:2083: error: List item 0 has incompatible type "RepairTask"; expected "int"  [list-item]
 2025-09-03T15:08:13.3529810Z app/services/work_hours_service.py:2261: error: "RushTaskMarkingService" has no attribute "LATE_RESPONSE_PENALTY"  [attr-defined]
@@ -140,7 +139,6 @@ jiejue 方案
 2025-09-03T15:08:19.0281977Z   path: backend/tests/reports/
 backend/htmlcov/
 backend/coverage.json
-
 2025-09-03T15:08:19.0282330Z   retention-days: 30
 2025-09-03T15:08:19.0282555Z   if-no-files-found: warn
 2025-09-03T15:08:19.0282790Z   compression-level: 6
@@ -181,16 +179,16 @@ backend/coverage.json
 2025-09-03T15:08:19.6454955Z Artifact test-results has been successfully uploaded! Final size is 69187 bytes. Artifact ID is 3917789171
 2025-09-03T15:08:19.6462007Z Artifact download URL: https://github.com/KangJianLin/Kaoqin_Demo/actions/runs/17437726539/artifacts/3917789171
 2025-09-03T15:08:19.6610855Z ##[group]Run echo "====== 后端测试整体状态汇总 ======"
-2025-09-03T15:08:19.6611463Z [36;1mecho "====== 后端测试整体状态汇总 ======"[0m
-2025-09-03T15:08:19.6612020Z [36;1mecho "Phase 1 基础测试: 完成"[0m
-2025-09-03T15:08:19.6612528Z [36;1mecho "Phase 2 API覆盖测试: 完成"[0m
-2025-09-03T15:08:19.6613030Z [36;1mecho "Phase 3 业务逻辑测试: 完成" [0m
-2025-09-03T15:08:19.6613481Z [36;1mecho "Phase 4 集成测试: 完成"[0m
-2025-09-03T15:08:19.6613939Z [36;1mecho "Phase 5 性能测试: 完成"[0m
-2025-09-03T15:08:19.6615239Z [36;1mecho ""[0m
-2025-09-03T15:08:19.6615594Z [36;1mecho "✅ 后端所有测试阶段均已执行"[0m
-2025-09-03T15:08:19.6616028Z [36;1mecho "🎯 目标: API端点100%覆盖，代码覆盖率95%+"[0m
-2025-09-03T15:08:19.6616488Z [36;1mecho "📊 详细覆盖率报告已生成""[0m
+2025-09-03T15:08:19.6611463Z echo "====== 后端测试整体状态汇总 ======"
+2025-09-03T15:08:19.6612020Z echo "Phase 1 基础测试: 完成"
+2025-09-03T15:08:19.6612528Z echo "Phase 2 API覆盖测试: 完成"
+2025-09-03T15:08:19.6613030Z echo "Phase 3 业务逻辑测试: 完成" 
+2025-09-03T15:08:19.6613481Z echo "Phase 4 集成测试: 完成"
+2025-09-03T15:08:19.6613939Z echo "Phase 5 性能测试: 完成"
+2025-09-03T15:08:19.6615239Z echo ""
+2025-09-03T15:08:19.6615594Z echo "✅ 后端所有测试阶段均已执行"
+2025-09-03T15:08:19.6616028Z echo "🎯 目标: API端点100%覆盖，代码覆盖率95%+"
+2025-09-03T15:08:19.6616488Z echo "📊 详细覆盖率报告已生成""
 2025-09-03T15:08:19.6660214Z shell: /usr/bin/bash -e {0}
 2025-09-03T15:08:19.6660520Z env:
 2025-09-03T15:08:19.6660723Z   COVERAGE_THRESHOLD: 95
