@@ -233,19 +233,71 @@ async def validation_exception_handler(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """Handle unexpected exceptions."""
-    logger.error(f"Unexpected error: {str(exc)}", exc_info=exc)
-
-    if settings.DEBUG:
-        # In debug mode, return detailed error info
-        import traceback
-
+    """Handle unexpected exceptions with enhanced error categorization."""
+    import traceback
+    from sqlalchemy.exc import SQLAlchemyError
+    
+    # Log the error with full context
+    logger.error(f"Unexpected error in {request.method} {request.url}: {str(exc)}", exc_info=exc)
+    
+    # Enhanced error categorization for better debugging
+    error_context = {
+        "path": str(request.url),
+        "method": request.method,
+        "exception_type": exc.__class__.__name__,
+        "exception_module": exc.__class__.__module__,
+    }
+    
+    # Handle specific exception types
+    if isinstance(exc, SQLAlchemyError):
+        # Database-related errors
+        logger.error(f"Database error: {str(exc)}")
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "success": False,
+                "message": "Database service temporarily unavailable" if not settings.DEBUG else str(exc),
+                "details": error_context if settings.DEBUG else {"error_type": "database"},
+                "error_code": "DatabaseError",
+            },
+        )
+    elif "Event loop is closed" in str(exc) or "RuntimeError" in str(exc):
+        # Event loop / async context errors (common in tests/CI)
+        logger.error(f"Event loop error: {str(exc)}")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "success": False,
+                "message": "Async operation failed" if not settings.DEBUG else str(exc),
+                "details": error_context if settings.DEBUG else {"error_type": "async"},
+                "error_code": "AsyncError",
+            },
+        )
+    elif "connection" in str(exc).lower() or "timeout" in str(exc).lower():
+        # Connection/timeout related errors
+        logger.error(f"Connection error: {str(exc)}")
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "success": False,
+                "message": "Service temporarily unavailable" if not settings.DEBUG else str(exc),
+                "details": error_context if settings.DEBUG else {"error_type": "connection"},
+                "error_code": "ConnectionError",
+            },
+        )
+    
+    # Generic exception handling
+    if settings.DEBUG or settings.TESTING:
+        # In debug/testing mode, return detailed error info
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
                 "success": False,
                 "message": str(exc),
-                "details": {"traceback": traceback.format_exc()},
+                "details": {
+                    **error_context,
+                    "traceback": traceback.format_exc().split('\n')[-20:],  # Last 20 lines
+                },
                 "error_code": exc.__class__.__name__,
             },
         )
@@ -256,7 +308,7 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
             content={
                 "success": False,
                 "message": "Internal server error",
-                "details": {},
+                "details": {"error_id": hash(str(exc)) % 1000000},  # Error ID for support
                 "error_code": "InternalServerError",
             },
         )

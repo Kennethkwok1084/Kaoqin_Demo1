@@ -24,9 +24,25 @@ security = HTTPBearer()
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """Get async database session dependency."""
-    async for session in get_async_session():
-        yield session
+    """Get async database session dependency with enhanced error handling."""
+    session = None
+    try:
+        async for session in get_async_session():
+            yield session
+    except Exception as e:
+        logger.error(f"Database session dependency error: {e}")
+        # Re-raise the exception to be handled by FastAPI's exception handler
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=get_message("DATABASE_ERROR_CONNECTION")
+        )
+    finally:
+        # Additional cleanup if needed
+        if session and hasattr(session, 'is_closed') and not session.is_closed:
+            try:
+                await session.close()
+            except Exception as e:
+                logger.error(f"Database session cleanup error: {e}")
 
 
 def get_sync_db() -> Generator[Session, None, None]:
@@ -76,22 +92,38 @@ async def get_current_user(
         logger.error(f"Token verification error: {e}")
         raise credentials_exception
 
-    # Get user from database
-    from sqlalchemy import select
+    # Get user from database with enhanced error handling
+    try:
+        from sqlalchemy import select
+        from sqlalchemy.exc import SQLAlchemyError
 
-    result = await db.execute(select(Member).where(Member.id == user_id))
-    user = result.scalar_one_or_none()
+        result = await db.execute(select(Member).where(Member.id == user_id))
+        user = result.scalar_one_or_none()
 
-    if user is None:
-        raise credentials_exception
+        if user is None:
+            logger.warning(f"User not found for ID: {user_id}")
+            raise credentials_exception
 
-    if not user.is_active:
+        if not user.is_active:
+            logger.warning(f"Inactive user attempted access: {user.student_id}")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=get_message("AUTH_ERROR_INACTIVE_USER"),
+            )
+
+        return user
+    except SQLAlchemyError as e:
+        logger.error(f"Database error during user authentication: {e}")
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=get_message("AUTH_ERROR_INACTIVE_USER"),
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=get_message("DATABASE_ERROR_QUERY")
         )
-
-    return user
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error during user authentication: {e}")
+        raise credentials_exception
 
 
 async def get_current_active_user(

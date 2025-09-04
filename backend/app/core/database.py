@@ -45,22 +45,24 @@ def _is_testing_environment() -> bool:
 def _get_optimized_pool_config() -> Dict[str, Any]:
     """Get optimized pool configuration based on environment."""
     if _is_ci_environment():
-        # CI environment: lightweight, fast connections
+        # CI environment: ultra-lightweight, fast connections, aggressive cleanup
         return {
-            "pool_size": 2,  # Reduced pool size for CI resources
-            "max_overflow": 3,  # Limited overflow for CI
-            "pool_recycle": 300,  # 5 minutes - frequent recycle in CI
-            "pool_timeout": 10,  # Fast timeout for CI
+            "pool_size": 1,  # Minimal pool size for CI resources
+            "max_overflow": 1,  # Minimal overflow for CI
+            "pool_recycle": 180,  # 3 minutes - very frequent recycle in CI
+            "pool_timeout": 5,  # Very fast timeout for CI
             "pool_pre_ping": True,
+            "pool_reset_on_return": "commit",  # Aggressive cleanup
         }
     elif _is_testing_environment():
-        # Testing environment: minimal overhead
+        # Testing environment: minimal overhead with better isolation
         return {
             "pool_size": 1,
-            "max_overflow": 2,
-            "pool_recycle": 600,  # 10 minutes
-            "pool_timeout": 5,
+            "max_overflow": 1,  # Reduced overflow for testing
+            "pool_recycle": 300,  # 5 minutes
+            "pool_timeout": 3,  # Fast timeout for tests
             "pool_pre_ping": True,
+            "pool_reset_on_return": "commit",
         }
     else:
         # Production environment: robust configuration
@@ -82,17 +84,27 @@ def _get_optimized_connect_args() -> Dict[str, Any]:
     }
 
     if _is_ci_environment():
-        # CI environment: aggressive timeouts (using only valid asyncpg parameters)
+        # CI environment: very aggressive timeouts for quick failure
         base_args.update(
             {
-                "command_timeout": 30,  # 30 seconds for CI
+                "command_timeout": 10,  # 10 seconds for CI - fail fast
+                "server_settings": {
+                    **base_args["server_settings"],
+                    "statement_timeout": "10000",  # 10 seconds
+                    "idle_in_transaction_session_timeout": "30000",  # 30 seconds
+                },
             }
         )
     elif _is_testing_environment():
         # Testing environment: moderate timeouts
         base_args.update(
             {
-                "command_timeout": 60,  # 1 minute for tests
+                "command_timeout": 15,  # 15 seconds for tests
+                "server_settings": {
+                    **base_args["server_settings"],
+                    "statement_timeout": "15000",  # 15 seconds
+                    "idle_in_transaction_session_timeout": "60000",  # 1 minute
+                },
             }
         )
     else:
