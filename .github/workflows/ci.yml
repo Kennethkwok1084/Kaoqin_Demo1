@@ -311,7 +311,7 @@ jobs:
         echo ""
         echo "✅ 后端所有测试阶段均已执行"
         echo "🎯 目标: API端点100%覆盖，代码覆盖率95%+"
-        echo "📊 详细覆盖率报告已生成""
+        echo "📊 详细覆盖率报告已生成"
 
   frontend-test:
     name: Frontend Tests

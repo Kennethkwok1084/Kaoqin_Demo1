@@ -1,629 +1,327 @@
-2025-09-03T08:06:15.1557620Z ===== 运行类型检查 (mypy) =====
-2025-09-03T08:06:33.9963518Z app/services/system_config_service.py:242: error: Incompatible types in assignment (expression has type "object", variable has type "SQLCoreOperations[str] | str")  [assignment]
-2025-09-03T08:06:33.9965851Z app/services/system_config_service.py:243: error: Incompatible types in assignment (expression has type "object", variable has type "SQLCoreOperations[str | None] | str | None")  [assignment]
-2025-09-03T08:06:33.9969783Z app/services/system_config_service.py:246: error: Incompatible types in assignment (expression has type "object", variable has type "SQLCoreOperations[str] | str")  [assignment]
-2025-09-03T08:06:33.9971868Z app/services/system_config_service.py:247: error: Incompatible types in assignment (expression has type "object", variable has type "SQLCoreOperations[str | None] | str | None")  [assignment]
-2025-09-03T08:06:33.9973819Z app/services/system_config_service.py:248: error: Incompatible types in assignment (expression has type "object", variable has type "SQLCoreOperations[str] | str")  [assignment]
-2025-09-03T08:06:33.9975776Z app/services/system_config_service.py:249: error: Incompatible types in assignment (expression has type "object", variable has type "SQLCoreOperations[float | None] | float | None")  [assignment]
-2025-09-03T08:06:33.9978040Z app/services/system_config_service.py:250: error: Incompatible types in assignment (expression has type "object", variable has type "SQLCoreOperations[float | None] | float | None")  [assignment]
-2025-09-03T08:06:33.9980089Z app/services/system_config_service.py:251: error: Incompatible types in assignment (expression has type "object", variable has type "SQLCoreOperations[int] | int")  [assignment]
-2025-09-03T08:06:33.9982297Z app/services/system_config_service.py:252: error: Incompatible types in assignment (expression has type "object", variable has type "SQLCoreOperations[bool] | bool")  [assignment]
-2025-09-03T08:06:33.9984223Z app/services/system_config_service.py:253: error: Incompatible types in assignment (expression has type "object", variable has type "SQLCoreOperations[str] | str")  [assignment]
-2025-09-03T08:06:33.9986184Z app/services/system_config_service.py:257: error: Incompatible types in assignment (expression has type "object", variable has type "SQLCoreOperations[str | None] | str | None")  [assignment]
-2025-09-03T08:06:33.9988383Z app/services/system_config_service.py:260: error: Incompatible types in assignment (expression has type "object", variable has type "SQLCoreOperations[str | None] | str | None")  [assignment]
-2025-09-03T08:06:33.9989992Z app/services/system_config_service.py:266: error: Unexpected keyword argument "config_key" for "SystemConfig"  [call-arg]
-2025-09-03T08:06:33.9991303Z app/services/system_config_service.py:266: error: Unexpected keyword argument "config_name" for "SystemConfig"  [call-arg]
-2025-09-03T08:06:33.9992570Z app/services/system_config_service.py:266: error: Unexpected keyword argument "config_description" for "SystemConfig"  [call-arg]
-2025-09-03T08:06:33.9993823Z app/services/system_config_service.py:266: error: Unexpected keyword argument "category" for "SystemConfig"  [call-arg]
-2025-09-03T08:06:33.9995053Z app/services/system_config_service.py:266: error: Unexpected keyword argument "config_group" for "SystemConfig"  [call-arg]
-2025-09-03T08:06:33.9996367Z app/services/system_config_service.py:266: error: Unexpected keyword argument "config_value" for "SystemConfig"  [call-arg]
-2025-09-03T08:06:33.9999178Z app/services/system_config_service.py:266: error: Unexpected keyword argument "default_value" for "SystemConfig"  [call-arg]
-2025-09-03T08:06:34.0000507Z app/services/system_config_service.py:266: error: Unexpected keyword argument "value_type" for "SystemConfig"  [call-arg]
-2025-09-03T08:06:34.0001834Z app/services/system_config_service.py:266: error: Unexpected keyword argument "min_value" for "SystemConfig"  [call-arg]
-2025-09-03T08:06:34.0003150Z app/services/system_config_service.py:266: error: Unexpected keyword argument "max_value" for "SystemConfig"  [call-arg]
-2025-09-03T08:06:34.0004498Z app/services/system_config_service.py:266: error: Unexpected keyword argument "display_order" for "SystemConfig"  [call-arg]
-2025-09-03T08:06:34.0005879Z app/services/system_config_service.py:266: error: Unexpected keyword argument "is_system_config" for "SystemConfig"  [call-arg]
-2025-09-03T08:06:34.0007548Z app/services/system_config_service.py:266: error: Unexpected keyword argument "required_role" for "SystemConfig"  [call-arg]
-2025-09-03T08:06:34.0009190Z app/services/system_config_service.py:266: error: Unexpected keyword argument "is_active" for "SystemConfig"  [call-arg]
-2025-09-03T08:06:34.0010804Z app/services/system_config_service.py:289: error: Incompatible types in assignment (expression has type "dict[str, int]", variable has type "Result[tuple[SystemConfig]]")  [assignment]
-2025-09-03T08:06:34.0012636Z app/services/system_config_service.py:298: error: Incompatible return value type (got "Result[tuple[SystemConfig]]", expected "dict[str, Any]")  [return-value]
-2025-09-03T08:06:38.8354195Z app/models/attendance.py:361: error: Unsupported operand types for + (likely involving Union)  [operator]
-2025-09-03T08:06:38.8356697Z app/models/attendance.py:361: error: Unsupported operand types for + ("float" and "_N")  [operator]
-2025-09-03T08:06:38.8357964Z app/models/attendance.py:361: note: Both left and right operands are unions
-2025-09-03T08:06:38.8358947Z app/models/attendance.py:365: error: Unsupported operand types for - ("Decimal" and "float")  [operator]
-2025-09-03T08:06:38.8360000Z app/models/attendance.py:365: note: Left operand is of type "Decimal | float | Any"
-2025-09-03T08:06:38.8361905Z app/models/attendance.py:366: error: Incompatible types in assignment (expression has type "Any | float", variable has type "SQLCoreOperations[_N | None] | _N | None")  [assignment]
-2025-09-03T08:06:38.8363797Z app/models/attendance.py:369: error: Incompatible types in assignment (expression has type "float", variable has type "SQLCoreOperations[_N | None] | _N | None")  [assignment]
-2025-09-03T08:06:38.8365649Z app/models/attendance.py:384: error: Incompatible types in assignment (expression has type "float", variable has type "SQLCoreOperations[_N | None] | _N | None")  [assignment]
-2025-09-03T08:06:38.8367360Z app/models/attendance.py:392: error: Unsupported operand types for + (likely involving Union)  [operator]
-2025-09-03T08:06:38.8368513Z app/models/attendance.py:392: error: Unsupported operand types for + ("float" and "_N")  [operator]
-2025-09-03T08:06:38.8369507Z app/models/attendance.py:392: note: Both left and right operands are unions
-2025-09-03T08:06:38.8370494Z app/models/attendance.py:392: error: Unsupported operand types for + ("Decimal" and "_N")  [operator]
-2025-09-03T08:06:38.8371616Z app/models/attendance.py:392: error: Unsupported operand types for + ("Decimal" and "float")  [operator]
-2025-09-03T08:06:38.8372713Z app/models/attendance.py:401: error: Unsupported operand types for + ("float" and "_N")  [operator]
-2025-09-03T08:06:38.8373693Z app/models/attendance.py:401: note: Both left and right operands are unions
-2025-09-03T08:06:38.8375043Z app/models/attendance.py:401: error: Incompatible types in assignment (expression has type "Any | float", variable has type "SQLCoreOperations[_N | None] | _N | None")  [assignment]
-2025-09-03T08:06:38.8376526Z app/models/attendance.py:401: error: Unsupported operand types for - ("float" and "_N")  [operator]
-2025-09-03T08:06:38.8377846Z app/models/attendance.py:410: error: Unsupported operand types for - (likely involving Union)  [operator]
-2025-09-03T08:06:38.8378984Z app/models/attendance.py:410: error: Unsupported operand types for - ("float" and "_N")  [operator]
-2025-09-03T08:06:38.8379959Z app/models/attendance.py:410: note: Both left and right operands are unions
-2025-09-03T08:06:38.8380957Z app/models/attendance.py:415: error: Unsupported operand types for - (likely involving Union)  [operator]
-2025-09-03T08:06:38.8381961Z app/models/attendance.py:415: note: Left operand is of type "_N | float"
-2025-09-03T08:06:39.5487927Z app/services/ab_table_matching_service.py:90: error: Need type annotation for "_similarity_cache" (hint: "_similarity_cache: dict[<type>, <type>] = ...")  [var-annotated]
-2025-09-03T08:06:39.5491212Z app/services/ab_table_matching_service.py:91: error: Need type annotation for "_phone_cache" (hint: "_phone_cache: dict[<type>, <type>] = ...")  [var-annotated]
-2025-09-03T08:06:39.5492780Z app/services/ab_table_matching_service.py:92: error: Need type annotation for "_name_cache" (hint: "_name_cache: dict[<type>, <type>] = ...")  [var-annotated]
-2025-09-03T08:06:39.5494748Z app/services/ab_table_matching_service.py:375: error: Argument 1 to "len" has incompatible type "Member | Any | str"; expected "Sized"  [arg-type]
-2025-09-03T08:06:39.5496277Z app/services/ab_table_matching_service.py:377: error: Argument 1 to "len" has incompatible type "Member | Any | str"; expected "Sized"  [arg-type]
-2025-09-03T08:06:39.5497839Z app/services/ab_table_matching_service.py:378: error: Value of type "Member | Any | str" is not indexable  [index]
-2025-09-03T08:06:39.5499016Z app/services/ab_table_matching_service.py:385: error: Value of type "Member | Any | str" is not indexable  [index]
-2025-09-03T08:06:39.5500257Z app/services/ab_table_matching_service.py:678: error: Returning Any from function declared to return "float"  [no-any-return]
-2025-09-03T08:06:39.5501564Z app/services/ab_table_matching_service.py:729: error: Returning Any from function declared to return "float"  [no-any-return]
-2025-09-03T08:06:39.5502889Z app/services/ab_table_matching_service.py:765: error: Returning Any from function declared to return "float"  [no-any-return]
-2025-09-03T08:06:39.5504618Z app/services/ab_table_matching_service.py:837: error: Incompatible return value type (got "dict[str, float]", expected "dict[str, int]")  [return-value]
-2025-09-03T08:06:40.6171020Z app/services/work_hours_service.py:1804: error: Incompatible types in assignment (expression has type "_N | float", variable has type "float")  [assignment]
-2025-09-03T08:06:40.6177762Z app/services/work_hours_service.py:2084: error: "RushTaskMarkingService" has no attribute "apply_group_penalties"; maybe "batch_apply_group_penalties" or "apply_group_penalty_for_task"?  [attr-defined]
-2025-09-03T08:06:40.6179559Z app/services/work_hours_service.py:2262: error: "RushTaskMarkingService" has no attribute "LATE_RESPONSE_PENALTY"  [attr-defined]
-2025-09-03T08:06:40.6180956Z app/services/work_hours_service.py:2263: error: "RushTaskMarkingService" has no attribute "LATE_COMPLETION_PENALTY"  [attr-defined]
-2025-09-03T08:06:40.6182445Z app/services/work_hours_service.py:2264: error: "RushTaskMarkingService" has no attribute "NEGATIVE_REVIEW_PENALTY"  [attr-defined]
-2025-09-03T08:06:40.6183820Z app/services/work_hours_service.py:2267: error: Returning Any from function declared to return "int"  [no-any-return]
-2025-09-03T08:06:40.6185076Z app/services/work_hours_service.py:2298: error: Unexpected keyword argument "tag_type" for "TaskTag"  [call-arg]
-2025-09-03T08:06:41.2696161Z app/api/v1/system_config.py:29: error: Incompatible default for argument "category" (default has type "None", argument has type "str")  [assignment]
-2025-09-03T08:06:41.2698572Z app/api/v1/system_config.py:29: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
-2025-09-03T08:06:41.2702328Z app/api/v1/system_config.py:29: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
-2025-09-03T08:06:41.2703903Z app/api/v1/system_config.py:43: error: Need type annotation for "organized_configs" (hint: "organized_configs: dict[<type>, <type>] = ...")  [var-annotated]
-2025-09-03T08:06:41.2705253Z app/api/v1/system_config.py:86: error: Unsupported operand types for + ("object" and "int")  [operator]
-2025-09-03T08:06:41.2706247Z app/api/v1/system_config.py:88: error: "object" has no attribute "add"  [attr-defined]
-2025-09-03T08:06:41.2707669Z app/api/v1/system_config.py:91: error: Incompatible types in assignment (expression has type "dict[str, object]", variable has type "str")  [assignment]
-2025-09-03T08:06:41.2708988Z app/api/v1/system_config.py:92: error: Unsupported target for indexed assignment ("str")  [index]
-2025-09-03T08:06:41.2710187Z app/api/v1/system_config.py:92: error: Invalid index type "str" for "str"; expected type "SupportsIndex | slice[Any, Any, Any]"  [index]
-2025-09-03T08:06:41.2943225Z app/api/v1/system.py:85: error: Unsupported target for indexed assignment ("object")  [index]
-2025-09-03T08:06:41.2954529Z app/api/v1/system.py:89: error: Unsupported target for indexed assignment ("object")  [index]
-2025-09-03T08:06:41.2955571Z app/api/v1/system.py:93: error: Unsupported target for indexed assignment ("object")  [index]
-2025-09-03T08:06:41.2956560Z app/api/v1/system.py:97: error: Unsupported target for indexed assignment ("object")  [index]
-2025-09-03T08:06:41.3385697Z app/api/v1/roles.py:302: error: "Member" has no attribute "last_login_at"; maybe "last_login"?  [attr-defined]
-2025-09-03T08:06:41.6375195Z app/api/v1/dashboard.py:28: error: Function is missing a return type annotation  [no-untyped-def]
-2025-09-03T08:06:41.6380574Z app/api/v1/dashboard.py:111: error: Function is missing a return type annotation  [no-untyped-def]
-2025-09-03T08:06:41.6382009Z app/api/v1/dashboard.py:139: error: Argument "metrics" to "DashboardOverviewResponse" has incompatible type "dict[str, object]"; expected "MetricsData"  [arg-type]
-2025-09-03T08:06:41.6383751Z app/api/v1/dashboard.py:146: error: Argument "trends" to "DashboardOverviewResponse" has incompatible type "dict[str, Any]"; expected "TrendsData"  [arg-type]
-2025-09-03T08:06:41.6386025Z app/api/v1/dashboard.py:154: error: Argument "systemInfo" to "DashboardOverviewResponse" has incompatible type "dict[str, object]"; expected "SystemInfo"  [arg-type]
-2025-09-03T08:06:41.6387757Z app/api/v1/dashboard.py:170: error: Function is missing a return type annotation  [no-untyped-def]
-2025-09-03T08:06:41.6388824Z app/api/v1/dashboard.py:182: error: "type[RepairTask]" has no attribute "assigned_to"  [attr-defined]
-2025-09-03T08:06:41.6389927Z app/api/v1/dashboard.py:183: error: "type[RepairTask]" has no attribute "assigned_member"  [attr-defined]
-2025-09-03T08:06:41.6391021Z app/api/v1/dashboard.py:194: error: "type[RepairTask]" has no attribute "assigned_to"  [attr-defined]
-2025-09-03T08:06:41.6392080Z app/api/v1/dashboard.py:202: error: "type[RepairTask]" has no attribute "assigned_to"  [attr-defined]
-2025-09-03T08:06:41.6393132Z app/api/v1/dashboard.py:212: error: "type[RepairTask]" has no attribute "assigned_to"  [attr-defined]
-2025-09-03T08:06:41.6394211Z app/api/v1/dashboard.py:222: error: "type[RepairTask]" has no attribute "assigned_to"  [attr-defined]
-2025-09-03T08:06:41.6395665Z app/api/v1/dashboard.py:246: error: Argument "tasks" to "DashboardTasksResponse" has incompatible type "list[dict[str, int | str | None]]"; expected "list[TaskSummary]"  [arg-type]
-2025-09-03T08:06:41.6400071Z app/api/v1/dashboard.py:247: error: Argument "summary" to "DashboardTasksResponse" has incompatible type "dict[str, int]"; expected "TaskStats"  [arg-type]
-2025-09-03T08:06:41.6401473Z app/api/v1/dashboard.py:266: error: Function is missing a return type annotation  [no-untyped-def]
-2025-09-03T08:06:41.6402570Z app/api/v1/dashboard.py:279: error: "type[RepairTask]" has no attribute "created_by_member"  [attr-defined]
-2025-09-03T08:06:41.6403675Z app/api/v1/dashboard.py:280: error: "type[RepairTask]" has no attribute "assigned_member"  [attr-defined]
-2025-09-03T08:06:41.6404738Z app/api/v1/dashboard.py:295: error: "RepairTask" has no attribute "created_by_member"  [attr-defined]
-2025-09-03T08:06:41.6405817Z app/api/v1/dashboard.py:302: error: "RepairTask" has no attribute "created_by_member"  [attr-defined]
-2025-09-03T08:06:41.6406846Z app/api/v1/dashboard.py:303: error: "RepairTask" has no attribute "created_by"  [attr-defined]
-2025-09-03T08:06:41.6408055Z app/api/v1/dashboard.py:319: error: "RepairTask" has no attribute "assigned_member"  [attr-defined]
-2025-09-03T08:06:41.6409162Z app/api/v1/dashboard.py:326: error: "RepairTask" has no attribute "assigned_member"  [attr-defined]
-2025-09-03T08:06:41.6410165Z app/api/v1/dashboard.py:327: error: "RepairTask" has no attribute "assigned_to"  [attr-defined]
-2025-09-03T08:06:41.6411199Z app/api/v1/dashboard.py:338: error: "RepairTask" has no attribute "assigned_member"  [attr-defined]
-2025-09-03T08:06:41.6412243Z app/api/v1/dashboard.py:345: error: "RepairTask" has no attribute "assigned_member"  [attr-defined]
-2025-09-03T08:06:41.6413593Z app/api/v1/dashboard.py:346: error: "RepairTask" has no attribute "assigned_to"  [attr-defined]
-2025-09-03T08:06:41.6418598Z app/api/v1/dashboard.py:385: error: Argument "activities" to "DashboardActivitiesResponse" has incompatible type "list[dict[str, Any]]"; expected "list[Activity]"  [arg-type]
-2025-09-03T08:06:41.6420496Z app/api/v1/dashboard.py:386: error: Argument "summary" to "DashboardActivitiesResponse" has incompatible type "dict[str, int]"; expected "ActivitySummary"  [arg-type]
-2025-09-03T08:06:43.2099478Z app/api/v1/statistics.py:1851: error: Need type annotation for "keyword_counts" (hint: "keyword_counts: dict[<type>, <type>] = ...")  [var-annotated]
-2025-09-03T08:06:43.2102666Z app/api/v1/statistics.py:2045: error: Incompatible types in assignment (expression has type "Callable[[Any], int]", variable has type "int")  [assignment]
-2025-09-03T08:06:45.0672574Z app/api/v1/tasks.py:2176: error: Unsupported operand types for + ("None" and "int")  [operator]
-2025-09-03T08:06:45.0674967Z app/api/v1/tasks.py:2176: note: Left operand is of type "int | None"
-2025-09-03T08:06:45.0678752Z app/api/v1/tasks.py:2305: error: Dict entry 3 has incompatible type "str": "list[str | None]"; expected "str": "str | int | None"  [dict-item]
-2025-09-03T08:06:45.0680775Z app/api/v1/tasks.py:2363: error: Incompatible types in assignment (expression has type "AssistanceTask", variable has type "RepairTask")  [assignment]
-2025-09-03T08:06:45.0682125Z app/api/v1/tasks.py:2369: error: "RepairTask" has no attribute "assisted_department"  [attr-defined]
-2025-09-03T08:06:45.0683168Z app/api/v1/tasks.py:2370: error: "RepairTask" has no attribute "assisted_person"  [attr-defined]
-2025-09-03T08:06:45.0684144Z app/api/v1/tasks.py:2372: error: "RepairTask" has no attribute "start_time"  [attr-defined]
-2025-09-03T08:06:45.0685082Z app/api/v1/tasks.py:2374: error: "RepairTask" has no attribute "end_time"  [attr-defined]
-2025-09-03T08:06:45.0686018Z app/api/v1/tasks.py:2383: error: "RepairTask" has no attribute "approved_by"  [attr-defined]
-2025-09-03T08:06:45.0687150Z app/api/v1/tasks.py:2384: error: "RepairTask" has no attribute "approver"  [attr-defined]
-2025-09-03T08:06:45.0688099Z app/api/v1/tasks.py:2386: error: "RepairTask" has no attribute "approved_at"  [attr-defined]
-2025-09-03T08:06:45.0689065Z app/api/v1/tasks.py:2387: error: "RepairTask" has no attribute "approved_at"  [attr-defined]
-2025-09-03T08:06:45.0690342Z app/api/v1/tasks.py:2419: error: Incompatible types in assignment (expression has type "MonitoringTask", variable has type "RepairTask")  [assignment]
-2025-09-03T08:06:45.0691623Z app/api/v1/tasks.py:2425: error: "RepairTask" has no attribute "monitoring_type"  [attr-defined]
-2025-09-03T08:06:45.0692582Z app/api/v1/tasks.py:2428: error: "RepairTask" has no attribute "start_time"  [attr-defined]
-2025-09-03T08:06:45.0693480Z app/api/v1/tasks.py:2430: error: "RepairTask" has no attribute "end_time"  [attr-defined]
-2025-09-03T08:06:45.0694748Z app/api/v1/tasks.py:2491: error: Incompatible types in assignment (expression has type "dict[str, str | int | None]", variable has type "RepairTask")  [assignment]
-2025-09-03T08:06:45.0696066Z app/api/v1/tasks.py:2492: error: Unsupported target for indexed assignment ("RepairTask")  [index]
-2025-09-03T08:06:45.0697423Z app/api/v1/tasks.py:2518: error: Incompatible types in assignment (expression has type "bytes", variable has type "str")  [assignment]
-2025-09-03T08:06:45.0698695Z app/api/v1/tasks.py:2676: error: "WorkHoursCalculationService" has no attribute "process_monthly_carryover"  [attr-defined]
-2025-09-03T08:06:45.0699871Z app/api/v1/tasks.py:2721: error: "WorkHoursCalculationService" has no attribute "batch_process_carryover"  [attr-defined]
-2025-09-03T08:06:45.0701100Z app/api/v1/tasks.py:2775: error: "WorkHoursCalculationService" has no attribute "get_carryover_summary"  [attr-defined]
-2025-09-03T08:06:45.0702395Z app/api/v1/tasks.py:2834: error: "WorkHoursCalculationService" has no attribute "calculate_projected_carryover"  [attr-defined]
-2025-09-03T08:06:45.0703912Z app/api/v1/tasks.py:2917: error: Unsupported operand types for + ("None" and "int")  [operator]
-2025-09-03T08:06:45.0704779Z app/api/v1/tasks.py:2917: note: Left operand is of type "int | None"
-2025-09-03T08:06:45.0705651Z app/api/v1/tasks.py:2925: error: Value of type "dict[str, Any] | int | str | _N | float | None" is not indexable  [index]
-2025-09-03T08:06:45.0706815Z app/api/v1/tasks.py:2925: error: Invalid index type "str" for "str"; expected type "SupportsIndex | slice[Any, Any, Any]"  [index]
-2025-09-03T08:06:45.0708483Z app/api/v1/tasks.py:2974: error: "WorkHoursCalculationService" has no attribute "apply_group_penalty_for_task"; maybe "apply_group_penalties"?  [attr-defined]
-2025-09-03T08:06:45.0710178Z app/api/v1/tasks.py:3018: error: "WorkHoursCalculationService" has no attribute "batch_apply_group_penalties"; maybe "apply_group_penalties"?  [attr-defined]
-2025-09-03T08:06:45.0711672Z app/api/v1/tasks.py:3065: error: "WorkHoursCalculationService" has no attribute "get_group_members_by_task"  [attr-defined]
-2025-09-03T08:06:45.0712859Z app/api/v1/tasks.py:3208: error: Unsupported operand types for + ("None" and "int")  [operator]
-2025-09-03T08:06:45.0713733Z app/api/v1/tasks.py:3208: note: Left operand is of type "int | None"
-2025-09-03T08:06:45.0715081Z app/api/v1/tasks.py:4045: error: "WorkHoursCalculationService" has no attribute "recalculate_member_monthly_summary"  [attr-defined]
-2025-09-03T08:06:45.0716585Z app/api/v1/tasks.py:4161: error: "WorkHoursCalculationService" has no attribute "recalculate_member_monthly_summary"  [attr-defined]
-2025-09-03T08:06:45.0718084Z app/api/v1/tasks.py:5863: error: Unexpected keyword argument "status" for "MonitoringTask"  [call-arg]
-2025-09-03T08:06:45.0719169Z app/api/v1/tasks.py:6109: error: "AssistanceTask" has no attribute "review_comment"  [attr-defined]
-2025-09-03T08:06:45.0720419Z app/api/v1/tasks.py:6117: error: "WorkHoursCalculationService" has no attribute "recalculate_member_monthly_summary"  [attr-defined]
-2025-09-03T08:06:45.0721635Z app/api/v1/tasks.py:6128: error: "AssistanceTask" has no attribute "review_comment"  [attr-defined]
-2025-09-03T08:06:45.0722672Z app/api/v1/tasks.py:6232: error: "AssistanceTask" has no attribute "review_comment"  [attr-defined]
-2025-09-03T08:06:45.0723901Z app/api/v1/tasks.py:6242: error: "WorkHoursCalculationService" has no attribute "recalculate_member_monthly_summary"  [attr-defined]
-2025-09-03T08:06:45.0725414Z app/api/v1/tasks.py:6263: error: Incompatible types in assignment (expression has type "dict[str, Any]", variable has type "Result[tuple[AssistanceTask]]")  [assignment]
-2025-09-03T08:06:45.0730917Z app/api/v1/tasks.py:6306: error: Module "app.services.import_service" has no attribute "ImportService"; maybe "DataImportService"?  [attr-defined]
-2025-09-03T08:06:45.0732269Z app/api/v1/tasks.py:6338: error: "type[RepairTask]" has no attribute "work_order_id"  [attr-defined]
-2025-09-03T08:06:45.0733400Z app/api/v1/tasks.py:6356: error: "RepairTask" has no attribute "reporter_phone"; maybe "reporter_name"?  [attr-defined]
-2025-09-03T08:06:45.0734631Z app/api/v1/tasks.py:6357: error: "RepairTask" has no attribute "reporter_phone"; maybe "reporter_name"?  [attr-defined]
-2025-09-03T08:06:45.0735709Z app/api/v1/tasks.py:6359: error: "RepairTask" has no attribute "is_offline"  [attr-defined]
-2025-09-03T08:06:45.0736653Z app/api/v1/tasks.py:6360: error: "RepairTask" has no attribute "is_offline"  [attr-defined]
-2025-09-03T08:06:45.0737830Z app/api/v1/tasks.py:6363: error: "RepairTask" has no attribute "work_order_id"  [attr-defined]
-2025-09-03T08:06:45.0738797Z app/api/v1/tasks.py:6387: error: "RepairTask" has no attribute "assigned_at"  [attr-defined]
-2025-09-03T08:06:45.1446085Z app/main.py:141: error: Cannot assign to a method  [method-assign]
-2025-09-03T08:06:45.1575495Z Found 151 errors in 11 files (checked 54 source files)
-2025-09-03T08:06:45.1850402Z ⚠️ mypy 类型检查发现问题
-2025-09-03T08:06:45.1851883Z ===== 代码质量检查总结 =====
-2025-09-03T08:06:45.1852264Z 关键错误数量: 0
-2025-09-03T08:06:45.1852592Z 类型检查问题: 1
-2025-09-03T08:06:45.1853296Z ⚠️ 类型检查发现问题，建议修复但允许继续构建
-2025-09-03T08:06:45.1854205Z ✅ 关键代码质量检查通过
-2025-09-03T08:06:45.1883674Z ##[group]Run cd backend
-2025-09-03T08:06:45.1883952Z [36;1mcd backend[0m
-2025-09-03T08:06:45.1884181Z [36;1m# 连接PostgreSQL数据库[0m
-2025-09-03T08:06:45.1884434Z [36;1mecho "连接本地PostgreSQL数据库..."[0m
-2025-09-03T08:06:45.1884705Z [36;1mecho "使用数据库URL: $DATABASE_URL_SYNC"[0m
-2025-09-03T08:06:45.1884984Z [36;1mpython simple_db_test.py || {[0m
-2025-09-03T08:06:45.1885251Z [36;1m  echo "❌ PostgreSQL数据库连接失败，停止构建"[0m
-2025-09-03T08:06:45.1885498Z [36;1m  exit 1[0m
-2025-09-03T08:06:45.1885682Z [36;1m}[0m
-2025-09-03T08:06:45.1885871Z [36;1mecho "✅ PostgreSQL数据库连接成功"[0m
-2025-09-03T08:06:45.1886103Z [36;1m[0m
-2025-09-03T08:06:45.1886274Z [36;1m# 运行数据库迁移[0m
-2025-09-03T08:06:45.1886470Z [36;1mecho "运行数据库迁移..."[0m
-2025-09-03T08:06:45.1886692Z [36;1malembic upgrade head || {[0m
-2025-09-03T08:06:45.1886924Z [36;1m  echo "❌ 数据库迁移失败，停止构建"[0m
-2025-09-03T08:06:45.1887450Z [36;1m  exit 1[0m
-2025-09-03T08:06:45.1887659Z [36;1m}[0m
-2025-09-03T08:06:45.1887872Z [36;1mecho "✅ 数据库迁移完成"[0m
-2025-09-03T08:06:45.1918299Z shell: /usr/bin/bash -e {0}
-2025-09-03T08:06:45.1918536Z env:
-2025-09-03T08:06:45.1918716Z   COVERAGE_THRESHOLD: 95
-2025-09-03T08:06:45.1918938Z   API_COVERAGE_TARGET: 100
-2025-09-03T08:06:45.1919226Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-03T08:06:45.1919643Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
-2025-09-03T08:06:45.1920032Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-03T08:06:45.1920378Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-03T08:06:45.1920727Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-03T08:06:45.1921105Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
-2025-09-03T08:06:45.1921541Z   ENVIRONMENT: test
-2025-09-03T08:06:45.1921795Z   TESTING: true
-2025-09-03T08:06:45.1922176Z   DEBUG: false
-2025-09-03T08:06:45.1922865Z   DATABASE_URL: ***localhost:5432/test_attendence
-2025-09-03T08:06:45.1923500Z   DATABASE_URL_SYNC: ***localhost:5432/test_attendence
-2025-09-03T08:06:45.1923988Z   REDIS_URL: redis://localhost:6379/0
-2025-09-03T08:06:45.1924311Z   POSTGRES_TEST: true
-2025-09-03T08:06:45.1924591Z   CI: true
-2025-09-03T08:06:45.1924931Z   GITHUB_ACTIONS: true
-2025-09-03T08:06:45.1936320Z   SECRET_KEY: test_secret_key_for_ci_cd_environment_only
-2025-09-03T08:06:45.1936858Z   ACCESS_TOKEN_EXPIRE_MINUTES: 30
-2025-09-03T08:06:45.1937381Z ##[endgroup]
-2025-09-03T08:06:45.1989389Z 连接本地PostgreSQL数据库...
-2025-09-03T08:06:45.1990376Z 使用数据库URL: ***localhost:5432/test_attendence
-2025-09-03T08:06:45.4649300Z === 简单数据库连接测试 ===
-2025-09-03T08:06:45.4650542Z 数据库URL: ***localhost:5432/test_attendence
-2025-09-03T08:06:45.4651142Z 测试模式: True
-2025-09-03T08:06:45.4659207Z [OK] 配置加载成功
-2025-09-03T08:06:45.4659587Z 尝试使用psycopg2连接数据库...
-2025-09-03T08:06:45.4660060Z CI环境变量: true
-2025-09-03T08:06:45.4660414Z GITHUB_ACTIONS环境变量: true
-2025-09-03T08:06:45.4661114Z 使用数据库URL: ***localhost:5432/test_attendence
-2025-09-03T08:06:45.4661969Z 连接到数据库: localhost:5432/test_attendence
-2025-09-03T08:06:45.4662374Z 用户名: postgres
-2025-09-03T08:06:45.4663173Z PostgreSQL版本: PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
-2025-09-03T08:06:45.4663943Z 当前数据库: test_attendence
-2025-09-03T08:06:45.4664302Z [OK] psycopg2连接成功
-2025-09-03T08:06:45.4664483Z 
-2025-09-03T08:06:45.4664662Z [SUCCESS] 基础连接测试通过
-2025-09-03T08:06:45.4902150Z ✅ PostgreSQL数据库连接成功
-2025-09-03T08:06:45.4903978Z 运行数据库迁移...
-2025-09-03T08:06:46.1044590Z INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
-2025-09-03T08:06:46.1058528Z INFO  [alembic.runtime.migration] Will assume transactional DDL.
-2025-09-03T08:06:46.1245104Z INFO  [alembic.runtime.migration] Running upgrade  -> 8e5236d2ab84, Initial unified migration
-2025-09-03T08:06:46.3285945Z INFO  [alembic.runtime.migration] Running upgrade 8e5236d2ab84 -> 8f982508d35c, Add assistance task approval fields
-2025-09-03T08:06:46.3473687Z INFO  [alembic.runtime.migration] Running upgrade 8f982508d35c -> 619f3900d258, Add offline task marking fields to repair_tasks
-2025-09-03T08:06:46.3597932Z INFO  [alembic.runtime.migration] Running upgrade 619f3900d258 -> 77468d69bee0, Add inspection fields to monitoring tasks
-2025-09-03T08:06:46.3676181Z INFO  [alembic.runtime.migration] Running upgrade 77468d69bee0 -> f8854d11d63a, Add system config model
-2025-09-03T08:06:46.4531984Z ✅ 数据库迁移完成
-2025-09-03T08:06:46.4560442Z ##[group]Run cd backend
-2025-09-03T08:06:46.4560721Z [36;1mcd backend[0m
-2025-09-03T08:06:46.4560965Z [36;1mecho "========== Phase 1: 基础功能测试 =========="[0m
-2025-09-03T08:06:46.4561239Z [36;1m[0m
-2025-09-03T08:06:46.4561445Z [36;1m# 运行基础数学和导入测试 - 这些不依赖数据模型[0m
-2025-09-03T08:06:46.4561685Z [36;1mecho "运行基础功能测试..."[0m
-2025-09-03T08:06:46.4561991Z [36;1mpython -m pytest tests/test_basic.py -v --tb=short || {[0m
-2025-09-03T08:06:46.4562321Z [36;1m  echo "❌ 基础功能测试失败，停止构建"[0m
-2025-09-03T08:06:46.4562569Z [36;1m  exit 1[0m
-2025-09-03T08:06:46.4562747Z [36;1m}[0m
-2025-09-03T08:06:46.4562922Z [36;1m[0m
-2025-09-03T08:06:46.4563098Z [36;1m# 尝试运行认证测试，但如果失败不阻塞[0m
-2025-09-03T08:06:46.4563318Z [36;1mecho "尝试运行认证测试..."[0m
-2025-09-03T08:06:46.4563621Z [36;1mif python -m pytest tests/test_auth.py -v --tb=short; then[0m
-2025-09-03T08:06:46.4563939Z [36;1m  echo "✅ 认证测试通过"[0m
-2025-09-03T08:06:46.4564149Z [36;1melse[0m
-2025-09-03T08:06:46.4564396Z [36;1m  echo "⚠️ 认证测试失败，可能是数据模型关系问题，继续构建收集更多信息"[0m
-2025-09-03T08:06:46.4564653Z [36;1mfi[0m
-2025-09-03T08:06:46.4564827Z [36;1m[0m
-2025-09-03T08:06:46.4565002Z [36;1mecho "尝试运行单元认证测试..."[0m
-2025-09-03T08:06:46.4565332Z [36;1mif python -m pytest tests/unit/test_auth_api.py -v --tb=short; then[0m
-2025-09-03T08:06:46.4565676Z [36;1m  echo "✅ 单元认证测试通过"[0m
-2025-09-03T08:06:46.4565887Z [36;1melse[0m
-2025-09-03T08:06:46.4566076Z [36;1m  echo "⚠️ 单元认证测试失败，继续构建"[0m
-2025-09-03T08:06:46.4566299Z [36;1mfi[0m
-2025-09-03T08:06:46.4596791Z shell: /usr/bin/bash -e {0}
-2025-09-03T08:06:46.4597330Z env:
-2025-09-03T08:06:46.4597558Z   COVERAGE_THRESHOLD: 95
-2025-09-03T08:06:46.4597787Z   API_COVERAGE_TARGET: 100
-2025-09-03T08:06:46.4598081Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-03T08:06:46.4598488Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
-2025-09-03T08:06:46.4598898Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-03T08:06:46.4599264Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-03T08:06:46.4599613Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
-2025-09-03T08:06:46.4599960Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
-2025-09-03T08:06:46.4600257Z   ENVIRONMENT: test
-2025-09-03T08:06:46.4600450Z   TESTING: true
-2025-09-03T08:06:46.4600658Z   DEBUG: false
-2025-09-03T08:06:46.4601155Z   DATABASE_URL: ***localhost:5432/test_attendence
-2025-09-03T08:06:46.4601604Z   DATABASE_URL_SYNC: ***localhost:5432/test_attendence
-2025-09-03T08:06:46.4602125Z   REDIS_URL: redis://localhost:6379/0
-2025-09-03T08:06:46.4602379Z   POSTGRES_TEST: true
-2025-09-03T08:06:46.4602578Z   CI: true
-2025-09-03T08:06:46.4602753Z   GITHUB_ACTIONS: true
-2025-09-03T08:06:46.4603006Z   SECRET_KEY: test_secret_key_for_ci_cd_environment_only
-2025-09-03T08:06:46.4603294Z   ACCESS_TOKEN_EXPIRE_MINUTES: 30
-2025-09-03T08:06:46.4603524Z ##[endgroup]
-2025-09-03T08:06:46.4655829Z ========== Phase 1: 基础功能测试 ==========
-2025-09-03T08:06:46.4658386Z 运行基础功能测试...
-2025-09-03T08:06:49.5415849Z ============================= test session starts ==============================
-2025-09-03T08:06:49.5418680Z platform linux -- Python 3.13.7, pytest-8.4.1, pluggy-1.6.0 -- /opt/hostedtoolcache/Python/3.13.7/x64/bin/python
-2025-09-03T08:06:49.5421832Z cachedir: .pytest_cache
-2025-09-03T08:06:49.5422934Z benchmark: 5.1.0 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
-2025-09-03T08:06:49.5425358Z metadata: {'Python': '3.13.7', 'Platform': 'Linux-6.11.0-1018-azure-x86_64-with-glibc2.39', 'Packages': {'pytest': '8.4.1', 'pluggy': '1.6.0'}, 'Plugins': {'benchmark': '5.1.0', 'timeout': '2.4.0', 'asyncio': '1.1.0', 'json-report': '1.5.0', 'metadata': '3.1.1', 'mock': '3.14.1', 'anyio': '4.10.0', 'xdist': '3.8.0', 'html': '4.1.1', 'cov': '6.2.1', 'Faker': '37.6.0'}, 'CI': 'true', 'JAVA_HOME': '/usr/lib/jvm/temurin-17-jdk-amd64'}
-2025-09-03T08:06:49.5427750Z rootdir: /home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend
-2025-09-03T08:06:49.5428338Z configfile: pytest.ini
-2025-09-03T08:06:49.5429341Z plugins: benchmark-5.1.0, timeout-2.4.0, asyncio-1.1.0, json-report-1.5.0, metadata-3.1.1, mock-3.14.1, anyio-4.10.0, xdist-3.8.0, html-4.1.1, cov-6.2.1, Faker-37.6.0
-2025-09-03T08:06:49.5430723Z asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
-2025-09-03T08:06:49.5635034Z collecting ... collected 5 items
-2025-09-03T08:06:49.5637606Z 
-2025-09-03T08:06:49.6227354Z tests/test_basic.py::TestBasic::test_basic_math PASSED                   [ 20%]
-2025-09-03T08:06:49.6236852Z tests/test_basic.py::TestBasic::test_string_operations PASSED            [ 40%]
-2025-09-03T08:06:49.6246388Z tests/test_basic.py::TestBasic::test_list_operations PASSED              [ 60%]
-2025-09-03T08:06:49.6274743Z tests/test_basic.py::test_basic_async PASSED                             [ 80%]
-2025-09-03T08:06:49.9595504Z tests/test_basic.py::test_imports PASSED                                 [100%]
-2025-09-03T08:06:49.9596455Z 
-2025-09-03T08:06:49.9602341Z ========================= 5 passed, 1 warning in 0.10s =========================
-2025-09-03T08:06:50.2413182Z 尝试运行认证测试...
-2025-09-03T08:06:52.0874441Z ============================= test session starts ==============================
-2025-09-03T08:06:52.0875748Z platform linux -- Python 3.13.7, pytest-8.4.1, pluggy-1.6.0 -- /opt/hostedtoolcache/Python/3.13.7/x64/bin/python
-2025-09-03T08:06:52.0878772Z cachedir: .pytest_cache
-2025-09-03T08:06:52.0883537Z benchmark: 5.1.0 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
-2025-09-03T08:06:52.0885933Z metadata: {'Python': '3.13.7', 'Platform': 'Linux-6.11.0-1018-azure-x86_64-with-glibc2.39', 'Packages': {'pytest': '8.4.1', 'pluggy': '1.6.0'}, 'Plugins': {'benchmark': '5.1.0', 'timeout': '2.4.0', 'asyncio': '1.1.0', 'json-report': '1.5.0', 'metadata': '3.1.1', 'mock': '3.14.1', 'anyio': '4.10.0', 'xdist': '3.8.0', 'html': '4.1.1', 'cov': '6.2.1', 'Faker': '37.6.0'}, 'CI': 'true', 'JAVA_HOME': '/usr/lib/jvm/temurin-17-jdk-amd64'}
-2025-09-03T08:06:52.0887978Z rootdir: /home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend
-2025-09-03T08:06:52.0888521Z configfile: pytest.ini
-2025-09-03T08:06:52.0889462Z plugins: benchmark-5.1.0, timeout-2.4.0, asyncio-1.1.0, json-report-1.5.0, metadata-3.1.1, mock-3.14.1, anyio-4.10.0, xdist-3.8.0, html-4.1.1, cov-6.2.1, Faker-37.6.0
-2025-09-03T08:06:52.0899800Z asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
-2025-09-03T08:06:52.1488985Z collecting ... collected 26 items
-2025-09-03T08:06:52.1491294Z 
-2025-09-03T08:06:52.5092283Z tests/test_auth.py::TestAuthLogin::test_successful_login 
-2025-09-03T08:06:52.5094944Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:06:52.5096220Z 2025-09-03 08:06:52 [    INFO] Starting up application...
-2025-09-03T08:06:52.5097318Z 2025-09-03 08:06:52 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:06:52.5098037Z 2025-09-03 08:06:52 [    INFO] Application startup complete
-2025-09-03T08:06:52.5115783Z 2025-09-03 08:06:52 [ WARNING] (trapped) error reading bcrypt version
-2025-09-03T08:06:52.5116741Z Traceback (most recent call last):
-2025-09-03T08:06:52.5125007Z   File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages/passlib/handlers/bcrypt.py", line 620, in _load_backend_mixin
-2025-09-03T08:06:52.5126053Z     version = _bcrypt.__about__.__version__
-2025-09-03T08:06:52.5126455Z               ^^^^^^^^^^^^^^^^^
-2025-09-03T08:06:52.5126908Z AttributeError: module 'bcrypt' has no attribute '__about__'
-2025-09-03T08:06:52.8783292Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:06:52.8786353Z 2025-09-03 08:06:52 [    INFO] HTTP Request: POST http://testserver/api/v1/auth/login "HTTP/1.1 400 Bad Request"
-2025-09-03T08:06:52.9885546Z FAILED                                                                   [  3%]
-2025-09-03T08:06:52.9886747Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:06:52.9887724Z 2025-09-03 08:06:52 [    INFO] Shutting down application...
-2025-09-03T08:06:52.9889017Z 2025-09-03 08:06:52 [    INFO] Application shutdown complete
-2025-09-03T08:06:52.9964989Z 
-2025-09-03T08:06:53.2764962Z tests/test_auth.py::TestAuthLogin::test_invalid_credentials 
-2025-09-03T08:06:53.2767551Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:06:53.2770737Z 2025-09-03 08:06:53 [    INFO] Starting up application...
-2025-09-03T08:06:53.2771526Z 2025-09-03 08:06:53 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:06:53.2772323Z 2025-09-03 08:06:53 [    INFO] Application startup complete
-2025-09-03T08:06:53.5933487Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:06:53.5934930Z 2025-09-03 08:06:53 [    INFO] HTTP Request: POST http://testserver/api/v1/auth/login "HTTP/1.1 400 Bad Request"
-2025-09-03T08:06:53.6346536Z FAILED                                                                   [  7%]
-2025-09-03T08:06:53.6348441Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:06:53.6349085Z 2025-09-03 08:06:53 [    INFO] Shutting down application...
-2025-09-03T08:06:53.6349682Z 2025-09-03 08:06:53 [    INFO] Application shutdown complete
-2025-09-03T08:06:53.6407258Z 
-2025-09-03T08:06:53.9176506Z tests/test_auth.py::TestAuthLogin::test_nonexistent_user 
-2025-09-03T08:06:53.9177827Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:06:53.9178853Z 2025-09-03 08:06:53 [    INFO] Starting up application...
-2025-09-03T08:06:53.9180413Z 2025-09-03 08:06:53 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:06:53.9187583Z 2025-09-03 08:06:53 [    INFO] Application startup complete
-2025-09-03T08:06:53.9195961Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:06:53.9198005Z 2025-09-03 08:06:53 [    INFO] HTTP Request: POST http://testserver/api/v1/auth/login "HTTP/1.1 400 Bad Request"
-2025-09-03T08:06:53.9261778Z FAILED                                                                   [ 11%]
-2025-09-03T08:06:53.9262793Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:06:53.9264319Z 2025-09-03 08:06:53 [    INFO] Shutting down application...
-2025-09-03T08:06:53.9265194Z 2025-09-03 08:06:53 [    INFO] Application shutdown complete
-2025-09-03T08:06:53.9320239Z 
-2025-09-03T08:06:54.2025573Z tests/test_auth.py::TestAuthLogin::test_inactive_user_login 
-2025-09-03T08:06:54.2026727Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:06:54.2028928Z 2025-09-03 08:06:54 [    INFO] Starting up application...
-2025-09-03T08:06:54.2029737Z 2025-09-03 08:06:54 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:06:54.2030447Z 2025-09-03 08:06:54 [    INFO] Application startup complete
-2025-09-03T08:06:54.4858403Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:06:54.4859684Z 2025-09-03 08:06:54 [    INFO] HTTP Request: POST http://testserver/api/v1/auth/login "HTTP/1.1 400 Bad Request"
-2025-09-03T08:06:54.4929047Z FAILED                                                                   [ 15%]
-2025-09-03T08:06:54.4930758Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:06:54.4931441Z 2025-09-03 08:06:54 [    INFO] Shutting down application...
-2025-09-03T08:06:54.4932019Z 2025-09-03 08:06:54 [    INFO] Application shutdown complete
-2025-09-03T08:06:54.4990833Z 
-2025-09-03T08:06:54.7822611Z tests/test_auth.py::TestAuthLogin::test_missing_fields 
-2025-09-03T08:06:54.7824349Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:06:54.7827766Z 2025-09-03 08:06:54 [    INFO] Starting up application...
-2025-09-03T08:06:54.7828504Z 2025-09-03 08:06:54 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:06:54.7829191Z 2025-09-03 08:06:54 [    INFO] Application startup complete
-2025-09-03T08:06:54.7842129Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:06:54.7846812Z 2025-09-03 08:06:54 [    INFO] HTTP Request: POST http://testserver/api/v1/auth/login "HTTP/1.1 400 Bad Request"
-2025-09-03T08:06:54.7910634Z FAILED                                                                   [ 19%]
-2025-09-03T08:06:54.7912980Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:06:54.7913629Z 2025-09-03 08:06:54 [    INFO] Shutting down application...
-2025-09-03T08:06:54.7914203Z 2025-09-03 08:06:54 [    INFO] Application shutdown complete
-2025-09-03T08:06:54.7970775Z 
-2025-09-03T08:06:55.0936248Z tests/test_auth.py::TestAuthLogin::test_rate_limiting 
-2025-09-03T08:06:55.0938875Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:06:55.0940444Z 2025-09-03 08:06:55 [    INFO] Starting up application...
-2025-09-03T08:06:55.0942449Z 2025-09-03 08:06:55 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:06:55.0943178Z 2025-09-03 08:06:55 [    INFO] Application startup complete
-2025-09-03T08:06:55.4101939Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:06:55.4106796Z 2025-09-03 08:06:55 [    INFO] HTTP Request: POST http://testserver/api/v1/auth/login "HTTP/1.1 400 Bad Request"
-2025-09-03T08:06:55.4502027Z FAILED                                                                   [ 23%]
-2025-09-03T08:06:55.4505411Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:06:55.4506161Z 2025-09-03 08:06:55 [    INFO] Shutting down application...
-2025-09-03T08:06:55.4506813Z 2025-09-03 08:06:55 [    INFO] Application shutdown complete
-2025-09-03T08:06:55.4560939Z 
-2025-09-03T08:06:55.7352098Z tests/test_auth.py::TestTokenRefresh::test_successful_token_refresh 
-2025-09-03T08:06:55.7354342Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:06:55.7355033Z 2025-09-03 08:06:55 [    INFO] Starting up application...
-2025-09-03T08:06:55.7355788Z 2025-09-03 08:06:55 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:06:55.7356920Z 2025-09-03 08:06:55 [    INFO] Application startup complete
-2025-09-03T08:06:56.0663411Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:06:56.0665667Z 2025-09-03 08:06:56 [    INFO] HTTP Request: POST http://testserver/api/v1/auth/refresh "HTTP/1.1 400 Bad Request"
-2025-09-03T08:06:56.1061942Z FAILED                                                                   [ 26%]
-2025-09-03T08:06:56.1064101Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:06:56.1066118Z 2025-09-03 08:06:56 [    INFO] Shutting down application...
-2025-09-03T08:06:56.1068231Z 2025-09-03 08:06:56 [    INFO] Application shutdown complete
-2025-09-03T08:06:56.1125967Z 
-2025-09-03T08:06:56.3836225Z tests/test_auth.py::TestTokenRefresh::test_invalid_refresh_token 
-2025-09-03T08:06:56.3839181Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:06:56.3839891Z 2025-09-03 08:06:56 [    INFO] Starting up application...
-2025-09-03T08:06:56.3840621Z 2025-09-03 08:06:56 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:06:56.3841358Z 2025-09-03 08:06:56 [    INFO] Application startup complete
-2025-09-03T08:06:56.3867857Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:06:56.3870421Z 2025-09-03 08:06:56 [    INFO] HTTP Request: POST http://testserver/api/v1/auth/refresh "HTTP/1.1 400 Bad Request"
-2025-09-03T08:06:56.3921373Z FAILED                                                                   [ 30%]
-2025-09-03T08:06:56.3923525Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:06:56.3924216Z 2025-09-03 08:06:56 [    INFO] Shutting down application...
-2025-09-03T08:06:56.3924847Z 2025-09-03 08:06:56 [    INFO] Application shutdown complete
-2025-09-03T08:06:56.3980738Z 
-2025-09-03T08:06:56.6684723Z tests/test_auth.py::TestTokenRefresh::test_expired_refresh_token 
-2025-09-03T08:06:56.6685943Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:06:56.6687226Z 2025-09-03 08:06:56 [    INFO] Starting up application...
-2025-09-03T08:06:56.6688417Z 2025-09-03 08:06:56 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:06:56.6689603Z 2025-09-03 08:06:56 [    INFO] Application startup complete
-2025-09-03T08:06:56.9843030Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:06:56.9844489Z 2025-09-03 08:06:56 [    INFO] HTTP Request: POST http://testserver/api/v1/auth/refresh "HTTP/1.1 400 Bad Request"
-2025-09-03T08:06:57.0238899Z FAILED                                                                   [ 34%]
-2025-09-03T08:06:57.0240619Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:06:57.0241277Z 2025-09-03 08:06:57 [    INFO] Shutting down application...
-2025-09-03T08:06:57.0241871Z 2025-09-03 08:06:57 [    INFO] Application shutdown complete
-2025-09-03T08:06:57.0298662Z 
-2025-09-03T08:06:57.3022828Z tests/test_auth.py::TestTokenRefresh::test_access_token_as_refresh_token 
-2025-09-03T08:06:57.3024132Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:06:57.3025185Z 2025-09-03 08:06:57 [    INFO] Starting up application...
-2025-09-03T08:06:57.3027672Z 2025-09-03 08:06:57 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:06:57.3028647Z 2025-09-03 08:06:57 [    INFO] Application startup complete
-2025-09-03T08:06:57.6191988Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:06:57.6193389Z 2025-09-03 08:06:57 [    INFO] HTTP Request: POST http://testserver/api/v1/auth/refresh "HTTP/1.1 400 Bad Request"
-2025-09-03T08:06:57.6618828Z FAILED                                                                   [ 38%]
-2025-09-03T08:06:57.6620219Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:06:57.6621308Z 2025-09-03 08:06:57 [    INFO] Shutting down application...
-2025-09-03T08:06:57.6622977Z 2025-09-03 08:06:57 [    INFO] Application shutdown complete
-2025-09-03T08:06:57.6678928Z 
-2025-09-03T08:06:57.9541409Z tests/test_auth.py::TestUserProfile::test_get_current_user_profile 
-2025-09-03T08:06:57.9542622Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:06:57.9543670Z 2025-09-03 08:06:57 [    INFO] Starting up application...
-2025-09-03T08:06:57.9544752Z 2025-09-03 08:06:57 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:06:57.9545471Z 2025-09-03 08:06:57 [    INFO] Application startup complete
-2025-09-03T08:06:58.2697322Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:06:58.2702091Z 2025-09-03 08:06:58 [    INFO] HTTP Request: GET http://testserver/api/v1/auth/me "HTTP/1.1 400 Bad Request"
-2025-09-03T08:06:58.3090806Z FAILED                                                                   [ 42%]
-2025-09-03T08:06:58.3091508Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:06:58.3092184Z 2025-09-03 08:06:58 [    INFO] Shutting down application...
-2025-09-03T08:06:58.3095295Z 2025-09-03 08:06:58 [    INFO] Application shutdown complete
-2025-09-03T08:06:58.3150055Z 
-2025-09-03T08:06:58.5825858Z tests/test_auth.py::TestUserProfile::test_get_profile_without_auth 
-2025-09-03T08:06:58.5828445Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:06:58.5837625Z 2025-09-03 08:06:58 [    INFO] Starting up application...
-2025-09-03T08:06:58.5838365Z 2025-09-03 08:06:58 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:06:58.5839120Z 2025-09-03 08:06:58 [    INFO] Application startup complete
-2025-09-03T08:06:58.5847646Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:06:58.5849022Z 2025-09-03 08:06:58 [    INFO] HTTP Request: GET http://testserver/api/v1/auth/me "HTTP/1.1 400 Bad Request"
-2025-09-03T08:06:58.5915453Z FAILED                                                                   [ 46%]
-2025-09-03T08:06:58.5916473Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:06:58.5920925Z 2025-09-03 08:06:58 [    INFO] Shutting down application...
-2025-09-03T08:06:58.5923249Z 2025-09-03 08:06:58 [    INFO] Application shutdown complete
-2025-09-03T08:06:58.5975034Z 
-2025-09-03T08:06:58.8736276Z tests/test_auth.py::TestUserProfile::test_get_profile_with_invalid_token 
-2025-09-03T08:06:58.8737749Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:06:58.8738788Z 2025-09-03 08:06:58 [    INFO] Starting up application...
-2025-09-03T08:06:58.8741157Z 2025-09-03 08:06:58 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:06:58.8742199Z 2025-09-03 08:06:58 [    INFO] Application startup complete
-2025-09-03T08:06:58.8754253Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:06:58.8755128Z 2025-09-03 08:06:58 [    INFO] HTTP Request: GET http://testserver/api/v1/auth/me "HTTP/1.1 400 Bad Request"
-2025-09-03T08:06:58.8820877Z FAILED                                                                   [ 50%]
-2025-09-03T08:06:58.8821683Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:06:58.8822310Z 2025-09-03 08:06:58 [    INFO] Shutting down application...
-2025-09-03T08:06:58.8824519Z 2025-09-03 08:06:58 [    INFO] Application shutdown complete
-2025-09-03T08:06:58.8882189Z 
-2025-09-03T08:06:59.1626826Z tests/test_auth.py::TestUserProfile::test_update_user_profile 
-2025-09-03T08:06:59.1630504Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:06:59.1631164Z 2025-09-03 08:06:59 [    INFO] Starting up application...
-2025-09-03T08:06:59.1632291Z 2025-09-03 08:06:59 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:06:59.1637766Z 2025-09-03 08:06:59 [    INFO] Application startup complete
-2025-09-03T08:06:59.4847660Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:06:59.4850913Z 2025-09-03 08:06:59 [    INFO] HTTP Request: PUT http://testserver/api/v1/auth/me "HTTP/1.1 400 Bad Request"
-2025-09-03T08:06:59.5238877Z FAILED                                                                   [ 53%]
-2025-09-03T08:06:59.5240439Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:06:59.5241065Z 2025-09-03 08:06:59 [    INFO] Shutting down application...
-2025-09-03T08:06:59.5242592Z 2025-09-03 08:06:59 [    INFO] Application shutdown complete
-2025-09-03T08:06:59.5299152Z 
-2025-09-03T08:06:59.8088986Z tests/test_auth.py::TestUserProfile::test_update_profile_with_invalid_email 
-2025-09-03T08:06:59.8090604Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:06:59.8094335Z 2025-09-03 08:06:59 [    INFO] Starting up application...
-2025-09-03T08:06:59.8095076Z 2025-09-03 08:06:59 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:06:59.8095788Z 2025-09-03 08:06:59 [    INFO] Application startup complete
-2025-09-03T08:07:00.1239369Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:07:00.1240854Z 2025-09-03 08:07:00 [    INFO] HTTP Request: PUT http://testserver/api/v1/auth/me "HTTP/1.1 400 Bad Request"
-2025-09-03T08:07:00.1649474Z FAILED                                                                   [ 57%]
-2025-09-03T08:07:00.1650492Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:07:00.1651539Z 2025-09-03 08:07:00 [    INFO] Shutting down application...
-2025-09-03T08:07:00.1652305Z 2025-09-03 08:07:00 [    INFO] Application shutdown complete
-2025-09-03T08:07:00.1711013Z 
-2025-09-03T08:07:00.4374566Z tests/test_auth.py::TestUserProfile::test_regular_user_cannot_update_role 
-2025-09-03T08:07:00.4376562Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:07:00.4377521Z 2025-09-03 08:07:00 [    INFO] Starting up application...
-2025-09-03T08:07:00.4378273Z 2025-09-03 08:07:00 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:07:00.4378964Z 2025-09-03 08:07:00 [    INFO] Application startup complete
-2025-09-03T08:07:00.7537765Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:07:00.7539233Z 2025-09-03 08:07:00 [    INFO] HTTP Request: PUT http://testserver/api/v1/auth/me "HTTP/1.1 400 Bad Request"
-2025-09-03T08:07:00.7927733Z FAILED                                                                   [ 61%]
-2025-09-03T08:07:00.7928855Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:07:00.7930492Z 2025-09-03 08:07:00 [    INFO] Shutting down application...
-2025-09-03T08:07:00.7931626Z 2025-09-03 08:07:00 [    INFO] Application shutdown complete
-2025-09-03T08:07:00.7987690Z 
-2025-09-03T08:07:01.0960560Z tests/test_auth.py::TestPasswordChange::test_successful_password_change 
-2025-09-03T08:07:01.0961924Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:07:01.0963097Z 2025-09-03 08:07:01 [    INFO] Starting up application...
-2025-09-03T08:07:01.0966243Z 2025-09-03 08:07:01 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:07:01.0967238Z 2025-09-03 08:07:01 [    INFO] Application startup complete
-2025-09-03T08:07:01.4113354Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:07:01.4114668Z 2025-09-03 08:07:01 [    INFO] HTTP Request: PUT http://testserver/api/v1/auth/change-password "HTTP/1.1 400 Bad Request"
-2025-09-03T08:07:01.4505368Z FAILED                                                                   [ 65%]
-2025-09-03T08:07:01.4508145Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:07:01.4508950Z 2025-09-03 08:07:01 [    INFO] Shutting down application...
-2025-09-03T08:07:01.4509559Z 2025-09-03 08:07:01 [    INFO] Application shutdown complete
-2025-09-03T08:07:01.4564139Z 
-2025-09-03T08:07:01.7252638Z tests/test_auth.py::TestPasswordChange::test_password_change_with_wrong_current_password 
-2025-09-03T08:07:01.7253971Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:07:01.7255037Z 2025-09-03 08:07:01 [    INFO] Starting up application...
-2025-09-03T08:07:01.7257663Z 2025-09-03 08:07:01 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:07:01.7258533Z 2025-09-03 08:07:01 [    INFO] Application startup complete
-2025-09-03T08:07:02.0420921Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:07:02.0425753Z 2025-09-03 08:07:02 [    INFO] HTTP Request: PUT http://testserver/api/v1/auth/change-password "HTTP/1.1 400 Bad Request"
-2025-09-03T08:07:02.1399902Z FAILED                                                                   [ 69%]
-2025-09-03T08:07:02.1401863Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:07:02.1403224Z 2025-09-03 08:07:02 [    INFO] Shutting down application...
-2025-09-03T08:07:02.1403922Z 2025-09-03 08:07:02 [    INFO] Application shutdown complete
-2025-09-03T08:07:02.1455830Z 
-2025-09-03T08:07:02.4256181Z tests/test_auth.py::TestPasswordChange::test_password_change_with_weak_password 
-2025-09-03T08:07:02.4258010Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:07:02.4267804Z 2025-09-03 08:07:02 [    INFO] Starting up application...
-2025-09-03T08:07:02.4268557Z 2025-09-03 08:07:02 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:07:02.4269296Z 2025-09-03 08:07:02 [    INFO] Application startup complete
-2025-09-03T08:07:02.7405785Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:07:02.7407330Z 2025-09-03 08:07:02 [    INFO] HTTP Request: PUT http://testserver/api/v1/auth/change-password "HTTP/1.1 400 Bad Request"
-2025-09-03T08:07:02.7800105Z FAILED                                                                   [ 73%]
-2025-09-03T08:07:02.7801162Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:07:02.7802180Z 2025-09-03 08:07:02 [    INFO] Shutting down application...
-2025-09-03T08:07:02.7804500Z 2025-09-03 08:07:02 [    INFO] Application shutdown complete
-2025-09-03T08:07:02.7857142Z 
-2025-09-03T08:07:03.0568955Z tests/test_auth.py::TestPasswordChange::test_password_change_same_as_current 
-2025-09-03T08:07:03.0571726Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:07:03.0572461Z 2025-09-03 08:07:03 [    INFO] Starting up application...
-2025-09-03T08:07:03.0573232Z 2025-09-03 08:07:03 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:07:03.0573980Z 2025-09-03 08:07:03 [    INFO] Application startup complete
-2025-09-03T08:07:03.3722319Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:07:03.3724594Z 2025-09-03 08:07:03 [    INFO] HTTP Request: PUT http://testserver/api/v1/auth/change-password "HTTP/1.1 400 Bad Request"
-2025-09-03T08:07:03.4340134Z FAILED                                                                   [ 76%]
-2025-09-03T08:07:03.4342483Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:07:03.4343193Z 2025-09-03 08:07:03 [    INFO] Shutting down application...
-2025-09-03T08:07:03.4343828Z 2025-09-03 08:07:03 [    INFO] Application shutdown complete
-2025-09-03T08:07:03.4399069Z 
-2025-09-03T08:07:03.7098456Z tests/test_auth.py::TestTokenVerification::test_verify_valid_token 
-2025-09-03T08:07:03.7114619Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:07:03.7116137Z 2025-09-03 08:07:03 [    INFO] Starting up application...
-2025-09-03T08:07:03.7116825Z 2025-09-03 08:07:03 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:07:03.7117745Z 2025-09-03 08:07:03 [    INFO] Application startup complete
-2025-09-03T08:07:04.0248528Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:07:04.0250708Z 2025-09-03 08:07:04 [    INFO] HTTP Request: GET http://testserver/api/v1/auth/verify-token "HTTP/1.1 400 Bad Request"
-2025-09-03T08:07:04.0669495Z FAILED                                                                   [ 80%]
-2025-09-03T08:07:04.0671937Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:07:04.0672661Z 2025-09-03 08:07:04 [    INFO] Shutting down application...
-2025-09-03T08:07:04.0673345Z 2025-09-03 08:07:04 [    INFO] Application shutdown complete
-2025-09-03T08:07:04.0726406Z 
-2025-09-03T08:07:04.3465519Z tests/test_auth.py::TestTokenVerification::test_verify_invalid_token 
-2025-09-03T08:07:04.3468423Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:07:04.3470659Z 2025-09-03 08:07:04 [    INFO] Starting up application...
-2025-09-03T08:07:04.3471695Z 2025-09-03 08:07:04 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:07:04.3472470Z 2025-09-03 08:07:04 [    INFO] Application startup complete
-2025-09-03T08:07:04.3473128Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:07:04.3474028Z 2025-09-03 08:07:04 [    INFO] HTTP Request: GET http://testserver/api/v1/auth/verify-token "HTTP/1.1 400 Bad Request"
-2025-09-03T08:07:04.3539875Z FAILED                                                                   [ 84%]
-2025-09-03T08:07:04.3542299Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:07:04.3544701Z 2025-09-03 08:07:04 [    INFO] Shutting down application...
-2025-09-03T08:07:04.3547330Z 2025-09-03 08:07:04 [    INFO] Application shutdown complete
-2025-09-03T08:07:04.3599455Z 
-2025-09-03T08:07:04.6324963Z tests/test_auth.py::TestTokenVerification::test_verify_expired_token 
-2025-09-03T08:07:04.6329168Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:07:04.6330638Z 2025-09-03 08:07:04 [    INFO] Starting up application...
-2025-09-03T08:07:04.6331967Z 2025-09-03 08:07:04 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:07:04.6334006Z 2025-09-03 08:07:04 [    INFO] Application startup complete
-2025-09-03T08:07:04.9474768Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:07:04.9476381Z 2025-09-03 08:07:04 [    INFO] HTTP Request: GET http://testserver/api/v1/auth/verify-token "HTTP/1.1 400 Bad Request"
-2025-09-03T08:07:04.9870387Z FAILED                                                                   [ 88%]
-2025-09-03T08:07:04.9872124Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:07:04.9872789Z 2025-09-03 08:07:04 [    INFO] Shutting down application...
-2025-09-03T08:07:04.9873365Z 2025-09-03 08:07:04 [    INFO] Application shutdown complete
-2025-09-03T08:07:04.9929530Z 
-2025-09-03T08:07:05.2701368Z tests/test_auth.py::TestLogout::test_successful_logout 
-2025-09-03T08:07:05.2702585Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:07:05.2704195Z 2025-09-03 08:07:05 [    INFO] Starting up application...
-2025-09-03T08:07:05.2704936Z 2025-09-03 08:07:05 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:07:05.2705637Z 2025-09-03 08:07:05 [    INFO] Application startup complete
-2025-09-03T08:07:05.5852149Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:07:05.5853918Z 2025-09-03 08:07:05 [    INFO] HTTP Request: POST http://testserver/api/v1/auth/logout "HTTP/1.1 400 Bad Request"
-2025-09-03T08:07:05.6253638Z FAILED                                                                   [ 92%]
-2025-09-03T08:07:05.6254773Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:07:05.6255932Z 2025-09-03 08:07:05 [    INFO] Shutting down application...
-2025-09-03T08:07:05.6256549Z 2025-09-03 08:07:05 [    INFO] Application shutdown complete
-2025-09-03T08:07:05.6313947Z 
-2025-09-03T08:07:05.9239552Z tests/test_auth.py::TestLogout::test_logout_without_auth 
-2025-09-03T08:07:05.9248244Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:07:05.9249547Z 2025-09-03 08:07:05 [    INFO] Starting up application...
-2025-09-03T08:07:05.9250627Z 2025-09-03 08:07:05 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:07:05.9251730Z 2025-09-03 08:07:05 [    INFO] Application startup complete
-2025-09-03T08:07:05.9252716Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:07:05.9253933Z 2025-09-03 08:07:05 [    INFO] HTTP Request: POST http://testserver/api/v1/auth/logout "HTTP/1.1 400 Bad Request"
-2025-09-03T08:07:05.9368387Z FAILED                                                                   [ 96%]
-2025-09-03T08:07:05.9369710Z ------------------------------ live log teardown -------------------------------
-2025-09-03T08:07:05.9372299Z 2025-09-03 08:07:05 [    INFO] Shutting down application...
-2025-09-03T08:07:05.9374626Z 2025-09-03 08:07:05 [    INFO] Application shutdown complete
-2025-09-03T08:07:05.9437691Z 
-2025-09-03T08:07:06.2130001Z tests/test_auth.py::TestAuthHealthCheck::test_auth_health_check 
-2025-09-03T08:07:06.2131179Z -------------------------------- live log setup --------------------------------
-2025-09-03T08:07:06.2132224Z 2025-09-03 08:07:06 [    INFO] Starting up application...
-2025-09-03T08:07:06.2133763Z 2025-09-03 08:07:06 [    INFO] Running in testing mode - skipping external service connections
-2025-09-03T08:07:06.2137615Z 2025-09-03 08:07:06 [    INFO] Application startup complete
-2025-09-03T08:07:06.2148765Z -------------------------------- live log call ---------------------------------
-2025-09-03T08:07:06.2149953Z 2025-09-03 08:07:06 [    INFO] HTTP Request: GET http://testserver/api/v1/auth/health "HTTP/1.1 400
+jiejue 方案
+2025-09-03T15:07:47.0788408Z ===== 运行类型检查 (mypy) =====
+2025-09-03T15:08:13.3521487Z app/services/work_hours_service.py:2083: error: Missing positional argument "operator_id" in call to "batch_apply_group_penalties" of "RushTaskMarkingService"  [call-arg]
+2025-09-03T15:08:13.3527369Z app/services/work_hours_service.py:2083: error: List item 0 has incompatible type "RepairTask"; expected "int"  [list-item]
+2025-09-03T15:08:13.3529810Z app/services/work_hours_service.py:2261: error: "RushTaskMarkingService" has no attribute "LATE_RESPONSE_PENALTY"  [attr-defined]
+2025-09-03T15:08:13.3538285Z app/services/work_hours_service.py:2262: error: "RushTaskMarkingService" has no attribute "LATE_COMPLETION_PENALTY"  [attr-defined]
+2025-09-03T15:08:13.3540292Z app/services/work_hours_service.py:2263: error: "RushTaskMarkingService" has no attribute "NEGATIVE_REVIEW_PENALTY"  [attr-defined]
+2025-09-03T15:08:14.3703017Z app/api/v1/dashboard.py:111: error: Function is missing a return type annotation  [no-untyped-def]
+2025-09-03T15:08:14.3705619Z app/api/v1/dashboard.py:139: error: Argument "metrics" to "DashboardOverviewResponse" has incompatible type "dict[str, object]"; expected "MetricsData"  [arg-type]
+2025-09-03T15:08:14.3712473Z app/api/v1/dashboard.py:146: error: Argument "trends" to "DashboardOverviewResponse" has incompatible type "dict[str, Any]"; expected "TrendsData"  [arg-type]
+2025-09-03T15:08:14.3716085Z app/api/v1/dashboard.py:154: error: Argument "systemInfo" to "DashboardOverviewResponse" has incompatible type "dict[str, object]"; expected "SystemInfo"  [arg-type]
+2025-09-03T15:08:14.3718747Z app/api/v1/dashboard.py:161: error: Incompatible return value type (got "StandardResponse", expected "TypedResponse[DashboardOverviewResponse]")  [return-value]
+2025-09-03T15:08:14.3720529Z app/api/v1/dashboard.py:170: error: Function is missing a return type annotation  [no-untyped-def]
+2025-09-03T15:08:14.3721815Z app/api/v1/dashboard.py:182: error: "type[RepairTask]" has no attribute "assigned_to"  [attr-defined]
+2025-09-03T15:08:14.3723160Z app/api/v1/dashboard.py:183: error: "type[RepairTask]" has no attribute "assigned_member"  [attr-defined]
+2025-09-03T15:08:14.3730251Z app/api/v1/dashboard.py:194: error: "type[RepairTask]" has no attribute "assigned_to"  [attr-defined]
+2025-09-03T15:08:14.3731465Z app/api/v1/dashboard.py:202: error: "type[RepairTask]" has no attribute "assigned_to"  [attr-defined]
+2025-09-03T15:08:14.3732718Z app/api/v1/dashboard.py:212: error: "type[RepairTask]" has no attribute "assigned_to"  [attr-defined]
+2025-09-03T15:08:14.3733903Z app/api/v1/dashboard.py:222: error: "type[RepairTask]" has no attribute "assigned_to"  [attr-defined]
+2025-09-03T15:08:14.3735736Z app/api/v1/dashboard.py:246: error: Argument "tasks" to "DashboardTasksResponse" has incompatible type "list[dict[str, int | str | None]]"; expected "list[TaskSummary]"  [arg-type]
+2025-09-03T15:08:14.3737877Z app/api/v1/dashboard.py:247: error: Argument "summary" to "DashboardTasksResponse" has incompatible type "dict[str, int]"; expected "TaskStats"  [arg-type]
+2025-09-03T15:08:14.3739432Z app/api/v1/dashboard.py:266: error: Function is missing a return type annotation  [no-untyped-def]
+2025-09-03T15:08:14.3741047Z app/api/v1/dashboard.py:279: error: "type[RepairTask]" has no attribute "created_by_member"  [attr-defined]
+2025-09-03T15:08:14.3742367Z app/api/v1/dashboard.py:280: error: "type[RepairTask]" has no attribute "assigned_member"  [attr-defined]
+2025-09-03T15:08:14.3743577Z app/api/v1/dashboard.py:295: error: "RepairTask" has no attribute "created_by_member"  [attr-defined]
+2025-09-03T15:08:14.3744940Z app/api/v1/dashboard.py:302: error: "RepairTask" has no attribute "created_by_member"  [attr-defined]
+2025-09-03T15:08:14.3746071Z app/api/v1/dashboard.py:303: error: "RepairTask" has no attribute "created_by"  [attr-defined]
+2025-09-03T15:08:14.3747218Z app/api/v1/dashboard.py:319: error: "RepairTask" has no attribute "assigned_member"  [attr-defined]
+2025-09-03T15:08:14.3748428Z app/api/v1/dashboard.py:326: error: "RepairTask" has no attribute "assigned_member"  [attr-defined]
+2025-09-03T15:08:14.3749497Z app/api/v1/dashboard.py:327: error: "RepairTask" has no attribute "assigned_to"  [attr-defined]
+2025-09-03T15:08:14.3750605Z app/api/v1/dashboard.py:338: error: "RepairTask" has no attribute "assigned_member"  [attr-defined]
+2025-09-03T15:08:14.3751727Z app/api/v1/dashboard.py:345: error: "RepairTask" has no attribute "assigned_member"  [attr-defined]
+2025-09-03T15:08:14.3752831Z app/api/v1/dashboard.py:346: error: "RepairTask" has no attribute "assigned_to"  [attr-defined]
+2025-09-03T15:08:14.3754665Z app/api/v1/dashboard.py:385: error: Argument "activities" to "DashboardActivitiesResponse" has incompatible type "list[dict[str, Any]]"; expected "list[Activity]"  [arg-type]
+2025-09-03T15:08:14.3756705Z app/api/v1/dashboard.py:386: error: Argument "summary" to "DashboardActivitiesResponse" has incompatible type "dict[str, int]"; expected "ActivitySummary"  [arg-type]
+2025-09-03T15:08:15.9761032Z app/api/v1/statistics.py:1851: error: Need type annotation for "keyword_counts" (hint: "keyword_counts: dict[<type>, <type>] = ...")  [var-annotated]
+2025-09-03T15:08:15.9763541Z app/api/v1/statistics.py:2045: error: Incompatible types in assignment (expression has type "Callable[[Any], int]", variable has type "int")  [assignment]
+2025-09-03T15:08:17.8809164Z app/api/v1/tasks.py:2176: error: Unsupported operand types for + ("None" and "int")  [operator]
+2025-09-03T15:08:17.8811908Z app/api/v1/tasks.py:2176: note: Left operand is of type "int | None"
+2025-09-03T15:08:17.8816238Z app/api/v1/tasks.py:2305: error: Dict entry 3 has incompatible type "str": "list[str | None]"; expected "str": "str | int | None"  [dict-item]
+2025-09-03T15:08:17.8818282Z app/api/v1/tasks.py:2363: error: Incompatible types in assignment (expression has type "AssistanceTask", variable has type "RepairTask")  [assignment]
+2025-09-03T15:08:17.8820231Z app/api/v1/tasks.py:2369: error: "RepairTask" has no attribute "assisted_department"  [attr-defined]
+2025-09-03T15:08:17.8821740Z app/api/v1/tasks.py:2370: error: "RepairTask" has no attribute "assisted_person"  [attr-defined]
+2025-09-03T15:08:17.8823156Z app/api/v1/tasks.py:2372: error: "RepairTask" has no attribute "start_time"  [attr-defined]
+2025-09-03T15:08:17.8824551Z app/api/v1/tasks.py:2374: error: "RepairTask" has no attribute "end_time"  [attr-defined]
+2025-09-03T15:08:17.8825551Z app/api/v1/tasks.py:2383: error: "RepairTask" has no attribute "approved_by"  [attr-defined]
+2025-09-03T15:08:17.8826552Z app/api/v1/tasks.py:2384: error: "RepairTask" has no attribute "approver"  [attr-defined]
+2025-09-03T15:08:17.8827550Z app/api/v1/tasks.py:2386: error: "RepairTask" has no attribute "approved_at"  [attr-defined]
+2025-09-03T15:08:17.8828533Z app/api/v1/tasks.py:2387: error: "RepairTask" has no attribute "approved_at"  [attr-defined]
+2025-09-03T15:08:17.8829879Z app/api/v1/tasks.py:2419: error: Incompatible types in assignment (expression has type "MonitoringTask", variable has type "RepairTask")  [assignment]
+2025-09-03T15:08:17.8831250Z app/api/v1/tasks.py:2425: error: "RepairTask" has no attribute "monitoring_type"  [attr-defined]
+2025-09-03T15:08:17.8832770Z app/api/v1/tasks.py:2428: error: "RepairTask" has no attribute "start_time"  [attr-defined]
+2025-09-03T15:08:17.8833758Z app/api/v1/tasks.py:2430: error: "RepairTask" has no attribute "end_time"  [attr-defined]
+2025-09-03T15:08:17.8835228Z app/api/v1/tasks.py:2491: error: Incompatible types in assignment (expression has type "dict[str, str | int | None]", variable has type "RepairTask")  [assignment]
+2025-09-03T15:08:17.8836525Z app/api/v1/tasks.py:2492: error: Unsupported target for indexed assignment ("RepairTask")  [index]
+2025-09-03T15:08:17.8837671Z app/api/v1/tasks.py:2518: error: Incompatible types in assignment (expression has type "bytes", variable has type "str")  [assignment]
+2025-09-03T15:08:17.8839060Z app/api/v1/tasks.py:2676: error: "WorkHoursCalculationService" has no attribute "process_monthly_carryover"  [attr-defined]
+2025-09-03T15:08:17.8840430Z app/api/v1/tasks.py:2721: error: "WorkHoursCalculationService" has no attribute "batch_process_carryover"  [attr-defined]
+2025-09-03T15:08:17.8841755Z app/api/v1/tasks.py:2775: error: "WorkHoursCalculationService" has no attribute "get_carryover_summary"  [attr-defined]
+2025-09-03T15:08:17.8843110Z app/api/v1/tasks.py:2834: error: "WorkHoursCalculationService" has no attribute "calculate_projected_carryover"  [attr-defined]
+2025-09-03T15:08:17.8844544Z app/api/v1/tasks.py:2917: error: Unsupported operand types for + ("None" and "int")  [operator]
+2025-09-03T15:08:17.8845469Z app/api/v1/tasks.py:2917: note: Left operand is of type "int | None"
+2025-09-03T15:08:17.8846450Z app/api/v1/tasks.py:2925: error: Value of type "dict[str, Any] | int | str | _N | float | None" is not indexable  [index]
+2025-09-03T15:08:17.8847649Z app/api/v1/tasks.py:2925: error: Invalid index type "str" for "str"; expected type "SupportsIndex | slice[Any, Any, Any]"  [index]
+2025-09-03T15:08:17.8849220Z app/api/v1/tasks.py:2974: error: "WorkHoursCalculationService" has no attribute "apply_group_penalty_for_task"; maybe "apply_group_penalties"?  [attr-defined]
+2025-09-03T15:08:17.8851046Z app/api/v1/tasks.py:3018: error: "WorkHoursCalculationService" has no attribute "batch_apply_group_penalties"; maybe "apply_group_penalties"?  [attr-defined]
+2025-09-03T15:08:17.8852988Z app/api/v1/tasks.py:3065: error: "WorkHoursCalculationService" has no attribute "get_group_members_by_task"  [attr-defined]
+2025-09-03T15:08:17.8854456Z app/api/v1/tasks.py:3208: error: Unsupported operand types for + ("None" and "int")  [operator]
+2025-09-03T15:08:17.8855397Z app/api/v1/tasks.py:3208: note: Left operand is of type "int | None"
+2025-09-03T15:08:17.8856566Z app/api/v1/tasks.py:4041: error: "WorkHoursCalculationService" has no attribute "recalculate_member_monthly_summary"  [attr-defined]
+2025-09-03T15:08:17.8858063Z app/api/v1/tasks.py:4157: error: "WorkHoursCalculationService" has no attribute "recalculate_member_monthly_summary"  [attr-defined]
+2025-09-03T15:08:17.8859443Z app/api/v1/tasks.py:5848: error: Unexpected keyword argument "status" for "MonitoringTask"  [call-arg]
+2025-09-03T15:08:17.8860551Z app/api/v1/tasks.py:6094: error: "AssistanceTask" has no attribute "review_comment"  [attr-defined]
+2025-09-03T15:08:17.8862259Z app/api/v1/tasks.py:6102: error: "WorkHoursCalculationService" has no attribute "recalculate_member_monthly_summary"  [attr-defined]
+2025-09-03T15:08:17.8863830Z app/api/v1/tasks.py:6113: error: "AssistanceTask" has no attribute "review_comment"  [attr-defined]
+2025-09-03T15:08:17.8869317Z app/api/v1/tasks.py:6217: error: "AssistanceTask" has no attribute "review_comment"  [attr-defined]
+2025-09-03T15:08:17.8870942Z app/api/v1/tasks.py:6227: error: "WorkHoursCalculationService" has no attribute "recalculate_member_monthly_summary"  [attr-defined]
+2025-09-03T15:08:17.8872864Z app/api/v1/tasks.py:6248: error: Incompatible types in assignment (expression has type "dict[str, Any]", variable has type "Result[tuple[AssistanceTask]]")  [assignment]
+2025-09-03T15:08:17.8875083Z app/api/v1/tasks.py:6291: error: Module "app.services.import_service" has no attribute "ImportService"; maybe "DataImportService"?  [attr-defined]
+2025-09-03T15:08:17.8876998Z app/api/v1/tasks.py:6323: error: "type[RepairTask]" has no attribute "work_order_id"  [attr-defined]
+2025-09-03T15:08:17.8878387Z app/api/v1/tasks.py:6341: error: "RepairTask" has no attribute "reporter_phone"; maybe "reporter_name"?  [attr-defined]
+2025-09-03T15:08:17.8879864Z app/api/v1/tasks.py:6342: error: "RepairTask" has no attribute "reporter_phone"; maybe "reporter_name"?  [attr-defined]
+2025-09-03T15:08:17.8959822Z app/api/v1/tasks.py:6344: error: "RepairTask" has no attribute "is_offline"  [attr-defined]
+2025-09-03T15:08:17.8960996Z app/api/v1/tasks.py:6345: error: "RepairTask" has no attribute "is_offline"  [attr-defined]
+2025-09-03T15:08:17.8962020Z app/api/v1/tasks.py:6348: error: "RepairTask" has no attribute "work_order_id"  [attr-defined]
+2025-09-03T15:08:17.8963104Z app/api/v1/tasks.py:6372: error: "RepairTask" has no attribute "assigned_at"  [attr-defined]
+2025-09-03T15:08:17.9633111Z app/main.py:141: error: Cannot assign to a method  [method-assign]
+2025-09-03T15:08:17.9770696Z Found 82 errors in 5 files (checked 54 source files)
+2025-09-03T15:08:18.0040662Z ⚠️ mypy 类型检查发现问题
+2025-09-03T15:08:18.0042168Z ===== 代码质量检查总结 =====
+2025-09-03T15:08:18.0042601Z 关键错误数量: 1
+2025-09-03T15:08:18.0042960Z 类型检查问题: 1
+2025-09-03T15:08:18.0043345Z ❌ 发现关键代码质量问题，停止构建
+2025-09-03T15:08:18.0043796Z 请修复 Black 和 isort 问题后重新提交
+2025-09-03T15:08:18.0060617Z ##[error]Process completed with exit code 1.
+2025-09-03T15:08:18.1228158Z ##[group]Run actions/upload-artifact@v4
+2025-09-03T15:08:18.1228472Z with:
+2025-09-03T15:08:18.1228664Z   name: benchmark-results
+2025-09-03T15:08:18.1228918Z   path: backend/benchmark-results.json
+2025-09-03T15:08:18.1229184Z   retention-days: 30
+2025-09-03T15:08:18.1229411Z   if-no-files-found: warn
+2025-09-03T15:08:18.1229633Z   compression-level: 6
+2025-09-03T15:08:18.1229845Z   overwrite: false
+2025-09-03T15:08:18.1230058Z   include-hidden-files: false
+2025-09-03T15:08:18.1230285Z env:
+2025-09-03T15:08:18.1230461Z   COVERAGE_THRESHOLD: 95
+2025-09-03T15:08:18.1230682Z   API_COVERAGE_TARGET: 100
+2025-09-03T15:08:18.1230964Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-03T15:08:18.1231575Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
+2025-09-03T15:08:18.1231975Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-03T15:08:18.1232328Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-03T15:08:18.1232719Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-03T15:08:18.1233084Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
+2025-09-03T15:08:18.1233387Z   ENVIRONMENT: test
+2025-09-03T15:08:18.1233586Z   TESTING: true
+2025-09-03T15:08:18.1233778Z   DEBUG: false
+2025-09-03T15:08:18.1235109Z   DATABASE_URL: ***localhost:5432/test_attendence
+2025-09-03T15:08:18.1235636Z   DATABASE_URL_SYNC: ***localhost:5432/test_attendence
+2025-09-03T15:08:18.1235957Z   REDIS_URL: redis://localhost:6379/0
+2025-09-03T15:08:18.1236216Z   POSTGRES_TEST: true
+2025-09-03T15:08:18.1236422Z   CI: true
+2025-09-03T15:08:18.1236604Z   GITHUB_ACTIONS: true
+2025-09-03T15:08:18.1236877Z   SECRET_KEY: test_secret_key_for_ci_cd_environment_only
+2025-09-03T15:08:18.1237181Z   ACCESS_TOKEN_EXPIRE_MINUTES: 30
+2025-09-03T15:08:18.1237424Z ##[endgroup]
+2025-09-03T15:08:18.3690696Z With the provided path, there will be 1 file uploaded
+2025-09-03T15:08:18.3696371Z Artifact name is valid!
+2025-09-03T15:08:18.3698100Z Root directory input is valid!
+2025-09-03T15:08:18.4943448Z Beginning upload of artifact content to blob storage
+2025-09-03T15:08:18.8671328Z Uploaded bytes 684159
+2025-09-03T15:08:18.8849845Z Finished uploading artifact content to blob storage!
+2025-09-03T15:08:18.8855113Z SHA256 digest of uploaded artifact zip is ee1fcb3f65736fc238c728bd48df0706c62249739c4a1e038d5e3ba04ce700f0
+2025-09-03T15:08:18.8857317Z Finalizing artifact upload
+2025-09-03T15:08:19.0077684Z Artifact benchmark-results.zip successfully finalized. Artifact ID 3917789062
+2025-09-03T15:08:19.0079103Z Artifact benchmark-results has been successfully uploaded! Final size is 684159 bytes. Artifact ID is 3917789062
+2025-09-03T15:08:19.0090611Z Artifact download URL: https://github.com/KangJianLin/Kaoqin_Demo/actions/runs/17437726539/artifacts/3917789062
+2025-09-03T15:08:19.0281139Z ##[group]Run actions/upload-artifact@v4
+2025-09-03T15:08:19.0281454Z with:
+2025-09-03T15:08:19.0281650Z   name: test-results
+2025-09-03T15:08:19.0281977Z   path: backend/tests/reports/
+backend/htmlcov/
+backend/coverage.json
+
+2025-09-03T15:08:19.0282330Z   retention-days: 30
+2025-09-03T15:08:19.0282555Z   if-no-files-found: warn
+2025-09-03T15:08:19.0282790Z   compression-level: 6
+2025-09-03T15:08:19.0283015Z   overwrite: false
+2025-09-03T15:08:19.0283234Z   include-hidden-files: false
+2025-09-03T15:08:19.0283468Z env:
+2025-09-03T15:08:19.0283662Z   COVERAGE_THRESHOLD: 95
+2025-09-03T15:08:19.0283891Z   API_COVERAGE_TARGET: 100
+2025-09-03T15:08:19.0284892Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-03T15:08:19.0285380Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
+2025-09-03T15:08:19.0285816Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-03T15:08:19.0286210Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-03T15:08:19.0286613Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-03T15:08:19.0286981Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
+2025-09-03T15:08:19.0287291Z   ENVIRONMENT: test
+2025-09-03T15:08:19.0287497Z   TESTING: true
+2025-09-03T15:08:19.0287692Z   DEBUG: false
+2025-09-03T15:08:19.0288247Z   DATABASE_URL: ***localhost:5432/test_attendence
+2025-09-03T15:08:19.0288721Z   DATABASE_URL_SYNC: ***localhost:5432/test_attendence
+2025-09-03T15:08:19.0289041Z   REDIS_URL: redis://localhost:6379/0
+2025-09-03T15:08:19.0289305Z   POSTGRES_TEST: true
+2025-09-03T15:08:19.0289518Z   CI: true
+2025-09-03T15:08:19.0289709Z   GITHUB_ACTIONS: true
+2025-09-03T15:08:19.0289979Z   SECRET_KEY: test_secret_key_for_ci_cd_environment_only
+2025-09-03T15:08:19.0290291Z   ACCESS_TOKEN_EXPIRE_MINUTES: 30
+2025-09-03T15:08:19.0290535Z ##[endgroup]
+2025-09-03T15:08:19.2742630Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2025-09-03T15:08:19.2749148Z The least common ancestor is /home/runner/work/Kaoqin_Demo/Kaoqin_Demo/backend. This will be the root directory of the artifact
+2025-09-03T15:08:19.2750618Z With the provided path, there will be 14 files uploaded
+2025-09-03T15:08:19.2755595Z Artifact name is valid!
+2025-09-03T15:08:19.2756624Z Root directory input is valid!
+2025-09-03T15:08:19.3920242Z Beginning upload of artifact content to blob storage
+2025-09-03T15:08:19.5162203Z Uploaded bytes 69187
+2025-09-03T15:08:19.5360805Z Finished uploading artifact content to blob storage!
+2025-09-03T15:08:19.5364818Z SHA256 digest of uploaded artifact zip is d51b3783414943ff75ddabd77c76ee054778435bb8acf450abed4cb9e9100cb2
+2025-09-03T15:08:19.5367915Z Finalizing artifact upload
+2025-09-03T15:08:19.6451229Z Artifact test-results.zip successfully finalized. Artifact ID 3917789171
+2025-09-03T15:08:19.6454955Z Artifact test-results has been successfully uploaded! Final size is 69187 bytes. Artifact ID is 3917789171
+2025-09-03T15:08:19.6462007Z Artifact download URL: https://github.com/KangJianLin/Kaoqin_Demo/actions/runs/17437726539/artifacts/3917789171
+2025-09-03T15:08:19.6610855Z ##[group]Run echo "====== 后端测试整体状态汇总 ======"
+2025-09-03T15:08:19.6611463Z [36;1mecho "====== 后端测试整体状态汇总 ======"[0m
+2025-09-03T15:08:19.6612020Z [36;1mecho "Phase 1 基础测试: 完成"[0m
+2025-09-03T15:08:19.6612528Z [36;1mecho "Phase 2 API覆盖测试: 完成"[0m
+2025-09-03T15:08:19.6613030Z [36;1mecho "Phase 3 业务逻辑测试: 完成" [0m
+2025-09-03T15:08:19.6613481Z [36;1mecho "Phase 4 集成测试: 完成"[0m
+2025-09-03T15:08:19.6613939Z [36;1mecho "Phase 5 性能测试: 完成"[0m
+2025-09-03T15:08:19.6615239Z [36;1mecho ""[0m
+2025-09-03T15:08:19.6615594Z [36;1mecho "✅ 后端所有测试阶段均已执行"[0m
+2025-09-03T15:08:19.6616028Z [36;1mecho "🎯 目标: API端点100%覆盖，代码覆盖率95%+"[0m
+2025-09-03T15:08:19.6616488Z [36;1mecho "📊 详细覆盖率报告已生成""[0m
+2025-09-03T15:08:19.6660214Z shell: /usr/bin/bash -e {0}
+2025-09-03T15:08:19.6660520Z env:
+2025-09-03T15:08:19.6660723Z   COVERAGE_THRESHOLD: 95
+2025-09-03T15:08:19.6660976Z   API_COVERAGE_TARGET: 100
+2025-09-03T15:08:19.6661306Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-03T15:08:19.6661814Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
+2025-09-03T15:08:19.6662252Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-03T15:08:19.6662638Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-03T15:08:19.6663024Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2025-09-03T15:08:19.6663419Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
+2025-09-03T15:08:19.6663755Z   ENVIRONMENT: test
+2025-09-03T15:08:19.6663974Z   TESTING: true
+2025-09-03T15:08:19.6664458Z   DEBUG: false
+2025-09-03T15:08:19.6665081Z   DATABASE_URL: ***localhost:5432/test_attendence
+2025-09-03T15:08:19.6665581Z   DATABASE_URL_SYNC: ***localhost:5432/test_attendence
+2025-09-03T15:08:19.6665924Z   REDIS_URL: redis://localhost:6379/0
+2025-09-03T15:08:19.6666220Z   POSTGRES_TEST: true
+2025-09-03T15:08:19.6666444Z   CI: true
+2025-09-03T15:08:19.6666642Z   GITHUB_ACTIONS: true
+2025-09-03T15:08:19.6666948Z   SECRET_KEY: test_secret_key_for_ci_cd_environment_only
+2025-09-03T15:08:19.6667310Z   ACCESS_TOKEN_EXPIRE_MINUTES: 30
+2025-09-03T15:08:19.6667586Z ##[endgroup]
+2025-09-03T15:08:19.6735422Z ====== 后端测试整体状态汇总 ======
+2025-09-03T15:08:19.6736088Z Phase 1 基础测试: 完成
+2025-09-03T15:08:19.6736953Z Phase 2 API覆盖测试: 完成
+2025-09-03T15:08:19.6740063Z /home/runner/work/_temp/566af1a1-75bf-4738-bb14-ab3c86448df3.sh: line 10: unexpected EOF while looking for matching `"'
+2025-09-03T15:08:19.6743439Z Phase 3 业务逻辑测试: 完成
+2025-09-03T15:08:19.6743910Z Phase 4 集成测试: 完成
+2025-09-03T15:08:19.6744597Z Phase 5 性能测试: 完成
+2025-09-03T15:08:19.6744823Z 
+2025-09-03T15:08:19.6745021Z ✅ 后端所有测试阶段均已执行
+2025-09-03T15:08:19.6745470Z 🎯 目标: API端点100%覆盖，代码覆盖率95%+
+2025-09-03T15:08:19.6747253Z ##[error]Process completed with exit code 2.
+2025-09-03T15:08:19.6803165Z Post job cleanup.
+2025-09-03T15:08:19.7911610Z [command]/usr/bin/git version
+2025-09-03T15:08:19.7984279Z git version 2.51.0
+2025-09-03T15:08:19.8058800Z Temporarily overriding HOME='/home/runner/work/_temp/65c40522-306a-47c7-8f36-61eeff068836' before making global git config changes
+2025-09-03T15:08:19.8064442Z Adding repository directory to the temporary git global config as a safe directory
+2025-09-03T15:08:19.8075736Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Kaoqin_Demo/Kaoqin_Demo
+2025-09-03T15:08:19.8161832Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-09-03T15:08:19.8243425Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-09-03T15:08:19.8664105Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-09-03T15:08:19.8718032Z http.https://github.com/.extraheader
+2025-09-03T15:08:19.8746034Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2025-09-03T15:08:19.8816363Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-09-03T15:08:19.9269342Z Print service container logs: 9bffb35661964b78a15db58aeec45ed6_postgres15_5e6707
+2025-09-03T15:08:19.9274001Z ##[command]/usr/bin/docker logs --details a806db5d9da9c08f7531068785be4912088b1e15181d348394195c8915a0e853
+2025-09-03T15:08:19.9503692Z  initdb: warning: enabling "trust" authentication for local connections
+2025-09-03T15:08:19.9505170Z  initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+2025-09-03T15:08:19.9506777Z  2025-09-03 15:06:27.264 UTC [1] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+2025-09-03T15:08:19.9508058Z  2025-09-03 15:06:27.265 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2025-09-03T15:08:19.9508884Z  2025-09-03 15:06:27.265 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+2025-09-03T15:08:19.9509772Z  2025-09-03 15:06:27.266 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2025-09-03T15:08:19.9510574Z  2025-09-03 15:06:27.271 UTC [63] LOG:  database system was shut down at 2025-09-03 15:06:27 UTC
+2025-09-03T15:08:19.9511351Z  2025-09-03 15:06:27.277 UTC [1] LOG:  database system is ready to accept connections
+2025-09-03T15:08:19.9512111Z  2025-09-03 15:06:35.969 UTC [74] FATAL:  role "root" does not exist
+2025-09-03T15:08:19.9512745Z  2025-09-03 15:06:46.073 UTC [82] FATAL:  role "root" does not exist
+2025-09-03T15:08:19.9513344Z  2025-09-03 15:06:56.162 UTC [90] FATAL:  role "root" does not exist
+2025-09-03T15:08:19.9513981Z  2025-09-03 15:07:06.261 UTC [100] FATAL:  role "root" does not exist
+2025-09-03T15:08:19.9533504Z  2025-09-03 15:07:16.366 UTC [108] FATAL:  role "root" does not exist
+2025-09-03T15:08:19.9534485Z  2025-09-03 15:07:26.475 UTC [116] FATAL:  role "root" does not exist
+2025-09-03T15:08:19.9535138Z  2025-09-03 15:07:36.638 UTC [125] FATAL:  role "root" does not exist
+2025-09-03T15:08:19.9535743Z  2025-09-03 15:07:46.809 UTC [133] FATAL:  role "root" does not exist
+2025-09-03T15:08:19.9536363Z  2025-09-03 15:07:56.917 UTC [141] FATAL:  role "root" does not exist
+2025-09-03T15:08:19.9536978Z  2025-09-03 15:08:07.020 UTC [150] FATAL:  role "root" does not exist
+2025-09-03T15:08:19.9537632Z  2025-09-03 15:08:17.105 UTC [157] FATAL:  role "root" does not exist
+2025-09-03T15:08:19.9539622Z  The files belonging to this database system will be owned by user "postgres".
+2025-09-03T15:08:19.9540284Z  This user must also own the server process.
+2025-09-03T15:08:19.9540742Z  
+2025-09-03T15:08:19.9541206Z  The database cluster will be initialized with locale "en_US.utf8".
+2025-09-03T15:08:19.9542255Z  The default database encoding has accordingly been set to "UTF8".
+2025-09-03T15:08:19.9542934Z  The default text search configuration will be set to "english".
+2025-09-03T15:08:19.9543275Z  
+2025-09-03T15:08:19.9543482Z  Data page checksums are disabled.
+2025-09-03T15:08:19.9543751Z  
+2025-09-03T15:08:19.9544065Z  fixing permissions on existing directory /var/lib/postgresql/data ... ok
+2025-09-03T15:08:19.9544710Z  creating subdirectories ... ok
+2025-09-03T15:08:19.9545045Z  selecting dynamic shared memory implementation ... posix
+2025-09-03T15:08:19.9545404Z  selecting default max_connections ... 100
+2025-09-03T15:08:19.9545710Z  selecting default shared_buffers ... 128MB
+2025-09-03T15:08:19.9546009Z  selecting default time zone ... Etc/UTC
+2025-09-03T15:08:19.9546298Z  creating configuration files ... ok
+2025-09-03T15:08:19.9546580Z  running bootstrap script ... ok
+2025-09-03T15:08:19.9546888Z  performing post-bootstrap initialization ... ok
+2025-09-03T15:08:19.9547214Z  syncing data to disk ... ok
+2025-09-03T15:08:19.9547460Z  
+2025-09-03T15:08:19.9547643Z  
+2025-09-03T15:08:19.9547884Z  Success. You can now start the database server using:
+2025-09-03T15:08:19.9548193Z  
+2025-09-03T15:08:19.9548439Z      pg_ctl -D /var/lib/postgresql/data -l logfile start
+2025-09-03T15:08:19.9548747Z  
+2025-09-03T15:08:19.9549618Z  waiting for server to start....2025-09-03 15:06:26.879 UTC [47] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+2025-09-03T15:08:19.9550473Z  2025-09-03 15:06:26.880 UTC [47] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2025-09-03T15:08:19.9551017Z  2025-09-03 15:06:26.884 UTC [50] LOG:  database system was shut down at 2025-09-03 15:06:26 UTC
+2025-09-03T15:08:19.9551510Z  2025-09-03 15:06:26.888 UTC [47] LOG:  database system is ready to accept connections
+2025-09-03T15:08:19.9551883Z   done
+2025-09-03T15:08:19.9552076Z  server started
+2025-09-03T15:08:19.9552293Z  CREATE DATABASE
+2025-09-03T15:08:19.9552500Z  
+2025-09-03T15:08:19.9552680Z  
+2025-09-03T15:08:19.9553024Z  /usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/*
+2025-09-03T15:08:19.9553422Z  
+2025-09-03T15:08:19.9553777Z  waiting for server to shut down....2025-09-03 15:06:27.135 UTC [47] LOG:  received fast shutdown request
+2025-09-03T15:08:19.9554497Z  2025-09-03 15:06:27.137 UTC [47] LOG:  aborting any active transactions
+2025-09-03T15:08:19.9555041Z  2025-09-03 15:06:27.144 UTC [47] LOG:  background worker "logical replication launcher" (PID 53) exited with exit code 1
+2025-09-03T15:08:19.9555548Z  2025-09-03 15:06:27.144 UTC [48] LOG:  shutting down
+2025-09-03T15:08:19.9555930Z  2025-09-03 15:06:27.145 UTC [48] LOG:  checkpoint starting: shutdown immediate
+2025-09-03T15:08:19.9556789Z  2025-09-03 15:06:27.174 UTC [48] LOG:  checkpoint complete: wrote 922 buffers (5.6%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.023 s, sync=0.004 s, total=0.030 s; sync files=301, longest=0.002 s, average=0.001 s; distance=4239 kB, estimate=4239 kB
+2025-09-03T15:08:19.9557641Z  2025-09-03 15:06:27.186 UTC [47] LOG:  database system is shut down
+2025-09-03T15:08:19.9557959Z   done
+2025-09-03T15:08:19.9558151Z  server stopped
+2025-09-03T15:08:19.9558351Z  
+2025-09-03T15:08:19.9558595Z  PostgreSQL init process complete; ready for start up.
+2025-09-03T15:08:19.9558911Z  
+2025-09-03T15:08:19.9566044Z Stop and remove container: 9bffb35661964b78a15db58aeec45ed6_postgres15_5e6707
+2025-09-03T15:08:19.9570993Z ##[command]/usr/bin/docker rm --force a806db5d9da9c08f7531068785be4912088b1e15181d348394195c8915a0e853
+2025-09-03T15:08:20.1990069Z a806db5d9da9c08f7531068785be4912088b1e15181d348394195c8915a0e853
+2025-09-03T15:08:20.2028677Z Print service container logs: 7d65003bde54415786fc70b86a530ae3_redis7_4a6e8a
+2025-09-03T15:08:20.2029997Z ##[command]/usr/bin/docker logs --details 186fe66a1f8169d4c65db0c26aae8cd956dfb7b83a48d1fc465a2ad0935a09ff
+2025-09-03T15:08:20.2187702Z  1:C 03 Sep 2025 15:06:29.154 # WARNING Memory overcommit must be enabled! Without it, a background save or replication may fail under low memory condition. Being disabled, it can also cause failures without low memory condition, see https://github.com/jemalloc/jemalloc/issues/1328. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+2025-09-03T15:08:20.2191339Z  1:C 03 Sep 2025 15:06:29.154 * oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+2025-09-03T15:08:20.2192507Z  1:C 03 Sep 2025 15:06:29.154 * Redis version=7.4.5, bits=64, commit=00000000, modified=0, pid=1, just started
+2025-09-03T15:08:20.2194446Z  1:C 03 Sep 2025 15:06:29.154 # Warning: no config file specified, using the default config. In order to specify a config file use redis-server /path/to/redis.conf
+2025-09-03T15:08:20.2195937Z  1:M 03 Sep 2025 15:06:29.154 * monotonic clock: POSIX clock_gettime
+2025-09-03T15:08:20.2196658Z  1:M 03 Sep 2025 15:06:29.155 * Running mode=standalone, port=6379.
+2025-09-03T15:08:20.2197304Z  1:M 03 Sep 2025 15:06:29.156 * Server initialized
+2025-09-03T15:08:20.2198040Z  1:M 03 Sep 2025 15:06:29.156 * Ready to accept connections tcp
+2025-09-03T15:08:20.2207660Z Stop and remove container: 7d65003bde54415786fc70b86a530ae3_redis7_4a6e8a
+2025-09-03T15:08:20.2209003Z ##[command]/usr/bin/docker rm --force 186fe66a1f8169d4c65db0c26aae8cd956dfb7b83a48d1fc465a2ad0935a09ff
+2025-09-03T15:08:20.3437253Z 186fe66a1f8169d4c65db0c26aae8cd956dfb7b83a48d1fc465a2ad0935a09ff
+2025-09-03T15:08:20.3475397Z Remove container network: github_network_02dd5dc1ee4040c993802bab340234e9
+2025-09-03T15:08:20.3479863Z ##[command]/usr/bin/docker network rm github_network_02dd5dc1ee4040c993802bab340234e9
+2025-09-03T15:08:20.4293923Z github_network_02dd5dc1ee4040c993802bab340234e9
+2025-09-03T15:08:20.4364989Z Cleaning up orphan processes

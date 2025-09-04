@@ -1848,7 +1848,7 @@ async def get_problem_keywords(
         tasks = result.all()
 
         # 简单的关键词统计（模拟实现）
-        keyword_counts = {}
+        keyword_counts: Dict[str, int] = {}
         common_keywords = [
             "网络",
             "断网",

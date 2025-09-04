@@ -2122,7 +2122,7 @@ async def get_offline_marked_tasks(
     """
     try:
         # 构建基础查询
-        query = select(RepairTask).where(RepairTask.is_offline_marked == True)
+        query = select(RepairTask).where(RepairTask.is_offline_marked.is_(True))
 
         # 权限筛选
         if current_user.role == UserRole.MEMBER:
@@ -2218,7 +2218,7 @@ async def export_comprehensive_data(
     """
     try:
         import json
-        import tempfile
+        # import tempfile  # removed unused import
         from io import BytesIO
 
         import pandas as pd
@@ -2439,7 +2439,7 @@ async def export_comprehensive_data(
         if export_type == "offline":
             offline_query = (
                 select(RepairTask)
-                .where(RepairTask.is_offline_marked == True)
+                .where(RepairTask.is_offline_marked.is_(True))
                 .options(
                     selectinload(RepairTask.member),
                     selectinload(RepairTask.offline_marker),

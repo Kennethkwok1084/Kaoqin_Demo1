@@ -588,7 +588,8 @@ async def test_matching_optimization(
         }
 
         logger.info(
-            f"Matching optimization test completed by user {current_user.id}: {results['test_summary']}"
+            f"Matching optimization test completed by user {current_user.id}: "
+            f"{results['test_summary']}"
         )
 
         return create_response(data=results, message="A/B表匹配优化测试完成")

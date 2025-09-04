@@ -2080,22 +2080,23 @@ class RushTaskMarkingService:
                 raise ValueError(f"任务 {task_id} 不存在")
 
             # 应用小组惩罚
-            affected_members = await self.batch_apply_group_penalties([task], penalty_type)
+            batch_result = await self.batch_apply_group_penalties([task.id], penalty_type, operator_id)
+            affected_member_ids = batch_result.get("affected_member_ids", [])
 
             await self.db.commit()
 
             logger.info(
                 f"Group penalty applied by operator {operator_id} "
                 f"for task {task_id}: {penalty_type}, "
-                f"affected {len(affected_members)} members"
+                f"affected {len(affected_member_ids)} members"
             )
 
             return {
                 "success": True,
                 "task_id": task_id,
                 "penalty_type": penalty_type,
-                "affected_members": affected_members,
-                "affected_count": len(affected_members),
+                "affected_members": affected_member_ids,
+                "affected_count": len(affected_member_ids),
                 "operator_id": operator_id,
                 "penalty_minutes": self._get_penalty_minutes(penalty_type),
             }
@@ -2257,10 +2258,11 @@ class RushTaskMarkingService:
         Returns:
             扣时分钟数
         """
+        from app.core.config import settings
         penalty_map = {
-            "late_response": int(self.LATE_RESPONSE_PENALTY),  # 30分钟
-            "late_completion": int(self.LATE_COMPLETION_PENALTY),  # 30分钟
-            "negative_review": int(self.NEGATIVE_REVIEW_PENALTY),  # 60分钟
+            "late_response": settings.LATE_RESPONSE_PENALTY_MINUTES,  # 30分钟
+            "late_completion": settings.LATE_COMPLETION_PENALTY_MINUTES,  # 30分钟
+            "negative_review": settings.NEGATIVE_REVIEW_PENALTY_MINUTES,  # 60分钟
         }
 
         return int(penalty_map.get(penalty_type, 0))
