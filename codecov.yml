@@ -1,0 +1,55 @@
+# Codecov Configuration
+# https://docs.codecov.io/docs/codecov-yaml
+
+codecov:
+  token: 26d30ed2-6b6d-4c8a-bda0-6488df9b1ddd
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+
+  status:
+    project:
+      default:
+        target: 40%  # 项目总体覆盖率目标 (当前31%，设定合理增长目标)
+        threshold: 1%
+        base: auto
+        flags:
+          - backend
+    patch:
+      default:
+        target: 50%  # 新补丁代码覆盖率目标
+        threshold: 5%
+        base: auto
+        flags:
+          - backend
+
+  ignore:
+    - "backend/tests/**/*"
+    - "backend/alembic/**/*"
+    - "backend/scripts/**/*"
+    - "backend/init_remote_db.py"
+    - "backend/run_remote_migration.py"
+    - "backend/seed_data.py"
+    - "*/migrations/*"
+    - "*/test_*"
+    - "**/test_*"
+    - "frontend/**/*"
+    - "frontend-new/**/*"
+
+flags:
+  backend:
+    paths:
+      - backend/
+    carryforward: false
+
+comment:
+  layout: "reach,diff,flags,tree,betaprofiling"
+  behavior: default
+  require_changes: false
+  require_base: no
+  require_head: yes
+  branches:
+    - main
+    - develop

@@ -1,5 +1,11 @@
 # 考勤管理系统
 
+[![CI/CD](https://github.com/KangJianLin/Kaoqin_Demo/actions/workflows/ci.yml/badge.svg)](https://github.com/KangJianLin/Kaoqin_Demo/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/KangJianLin/Kaoqin_Demo/branch/main/graph/badge.svg)](https://codecov.io/gh/KangJianLin/Kaoqin_Demo)
+[![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.116+-green.svg)](https://fastapi.tiangolo.com/)
+[![Vue 3](https://img.shields.io/badge/Vue-3.0+-brightgreen.svg)](https://vuejs.org/)
+
 ## 项目简介
 
 这是一个现代化的考勤管理系统，专为高校网络维护团队设计。系统提供完整的任务管理、工时统计和考勤分析功能，支持报修任务、监控任务和协助任务的全生命周期管理。

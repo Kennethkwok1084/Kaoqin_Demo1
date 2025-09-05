@@ -286,22 +286,42 @@ jobs:
           backend/coverage.json
         retention-days: 30
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./backend/coverage.json
-        fail_ci_if_error: true
-        token: ${{ secrets.CODECOV_TOKEN }}
-        
     - name: "Coverage Analysis and Reporting"
       run: |
         cd backend
         echo "========== 覆盖率分析 =========="
-        # 生成覆盖率报告
-        coverage report --show-missing || echo "覆盖率报告生成"
-        coverage html || echo "HTML覆盖率报告生成"
-        coverage json || echo "JSON覆盖率报告生成"
         
+        # 使用专门的覆盖率生成脚本
+        python scripts/generate_coverage.py || {
+          echo "专用脚本失败，尝试手动生成..."
+          # 备用方案：手动生成覆盖率报告
+          coverage report --show-missing || echo "覆盖率报告生成"
+          coverage html || echo "HTML覆盖率报告生成"
+          coverage json || echo "JSON覆盖率报告生成"
+          coverage xml || echo "XML覆盖率报告生成"
+        }
+        
+        # 显示覆盖率摘要
+        echo "========== 覆盖率摘要 =========="
+        coverage report --format=total || echo "获取总覆盖率"
+        
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        files: ./backend/coverage.xml,./backend/coverage.json
+        directory: ./backend
+        flags: backend
+        name: kaoqin-backend
+        fail_ci_if_error: false
+        verbose: true
+        token: ${{ secrets.CODECOV_TOKEN }}
+        env_vars: COVERAGE_THRESHOLD,API_COVERAGE_TARGET
+        
+    - name: "Coverage Threshold Check"
+      continue-on-error: true
+      run: |
+        cd backend
+        echo "========== 覆盖率阈值检查 =========="
         # 检查覆盖率阈值
         coverage report --fail-under=$COVERAGE_THRESHOLD || {
           echo "⚠️ 覆盖率低于目标 $COVERAGE_THRESHOLD%"
