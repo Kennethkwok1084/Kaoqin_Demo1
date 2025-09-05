@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_async_session
 from app.core.security import get_password_hash
 from app.main import app as fastapi_app
-from app.models.attendance import Attendance
+from app.models.attendance import AttendanceRecord, AttendanceException, MonthlyAttendanceSummary
 from app.models.member import Member, UserRole
 from app.models.task import RepairTask, TaskStatus
 from tests.database_config import test_config
@@ -307,39 +307,42 @@ async def e2e_sample_repair_tasks(
 @pytest_asyncio.fixture
 async def e2e_sample_attendance_records(
     e2e_session: AsyncSession, e2e_test_users: Dict[str, Member]
-) -> List[Attendance]:
+) -> List[MonthlyAttendanceSummary]:
     """创建样本考勤记录"""
     records = []
 
     # 当月考勤记录
-    current_month_record = Attendance(
-        member_id=e2e_test_users["student"].id,
-        year=datetime.now().year,
-        month=datetime.now().month,
-        total_work_hours=800,
-        base_work_hours=720,
-        bonus_hours=120,
-        penalty_hours=40,
-        task_count=18,
-        completed_task_count=16,
-        created_at=datetime.now(),
-        updated_at=datetime.now(),
+    current_month_record = MonthlyAttendanceSummary(
+        **{
+            "member_id": e2e_test_users["student"].id,
+            "year": datetime.now().year,
+            "month": datetime.now().month,
+            "total_hours": 800,
+            "repair_task_hours": 720,
+            "monitoring_hours": 50,
+            "assistance_hours": 30,
+            "task_completion_count": 18,
+        }
     )
+    current_month_record.created_at = datetime.now()
+    current_month_record.updated_at = datetime.now()
 
     # 上月考勤记录
     last_month = datetime.now().replace(day=1) - timedelta(days=1)
-    last_month_record = Attendance(
-        member_id=e2e_test_users["student"].id,
-        year=last_month.year,
-        month=last_month.month,
-        total_work_hours=750,
-        base_work_hours=700,
-        bonus_hours=100,
-        penalty_hours=50,
-        task_count=15,
-        completed_task_count=15,
-        created_at=last_month,
-        updated_at=last_month,
+    last_month_record = MonthlyAttendanceSummary(
+        **{
+            "member_id": e2e_test_users["student"].id,
+            "year": last_month.year,
+            "month": last_month.month,
+            "total_hours": 750,
+            "repair_task_hours": 700,
+            "monitoring_hours": 25,
+            "assistance_hours": 25,
+            "task_completion_count": 15,
+        }
+    )
+    last_month_record.created_at = last_month
+    last_month_record.updated_at = last_month
     )
 
     records = [current_month_record, last_month_record]
