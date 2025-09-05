@@ -34,11 +34,11 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         # Re-raise the exception to be handled by FastAPI's exception handler
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=get_message("DATABASE_ERROR_CONNECTION")
+            detail=get_message("DATABASE_ERROR_CONNECTION"),
         )
     finally:
         # Additional cleanup if needed
-        if session and hasattr(session, 'is_closed') and not session.is_closed:
+        if session and hasattr(session, "is_closed") and not session.is_closed:
             try:
                 await session.close()
             except Exception as e:
@@ -116,7 +116,7 @@ async def get_current_user(
         logger.error(f"Database error during user authentication: {e}")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=get_message("DATABASE_ERROR_QUERY")
+            detail=get_message("DATABASE_ERROR_QUERY"),
         )
     except HTTPException:
         # Re-raise HTTP exceptions as-is

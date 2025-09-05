@@ -235,11 +235,14 @@ async def validation_exception_handler(
 async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle unexpected exceptions with enhanced error categorization."""
     import traceback
+
     from sqlalchemy.exc import SQLAlchemyError
-    
+
     # Log the error with full context
-    logger.error(f"Unexpected error in {request.method} {request.url}: {str(exc)}", exc_info=exc)
-    
+    logger.error(
+        f"Unexpected error in {request.method} {request.url}: {str(exc)}", exc_info=exc
+    )
+
     # Enhanced error categorization for better debugging
     error_context = {
         "path": str(request.url),
@@ -247,7 +250,7 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
         "exception_type": exc.__class__.__name__,
         "exception_module": exc.__class__.__module__,
     }
-    
+
     # Handle specific exception types
     if isinstance(exc, SQLAlchemyError):
         # Database-related errors
@@ -256,8 +259,14 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={
                 "success": False,
-                "message": "Database service temporarily unavailable" if not settings.DEBUG else str(exc),
-                "details": error_context if settings.DEBUG else {"error_type": "database"},
+                "message": (
+                    "Database service temporarily unavailable"
+                    if not settings.DEBUG
+                    else str(exc)
+                ),
+                "details": (
+                    error_context if settings.DEBUG else {"error_type": "database"}
+                ),
                 "error_code": "DatabaseError",
             },
         )
@@ -280,12 +289,18 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={
                 "success": False,
-                "message": "Service temporarily unavailable" if not settings.DEBUG else str(exc),
-                "details": error_context if settings.DEBUG else {"error_type": "connection"},
+                "message": (
+                    "Service temporarily unavailable"
+                    if not settings.DEBUG
+                    else str(exc)
+                ),
+                "details": (
+                    error_context if settings.DEBUG else {"error_type": "connection"}
+                ),
                 "error_code": "ConnectionError",
             },
         )
-    
+
     # Generic exception handling
     if settings.DEBUG or settings.TESTING:
         # In debug/testing mode, return detailed error info
@@ -296,7 +311,9 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
                 "message": str(exc),
                 "details": {
                     **error_context,
-                    "traceback": traceback.format_exc().split('\n')[-20:],  # Last 20 lines
+                    "traceback": traceback.format_exc().split("\n")[
+                        -20:
+                    ],  # Last 20 lines
                 },
                 "error_code": exc.__class__.__name__,
             },
@@ -308,7 +325,9 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
             content={
                 "success": False,
                 "message": "Internal server error",
-                "details": {"error_id": hash(str(exc)) % 1000000},  # Error ID for support
+                "details": {
+                    "error_id": hash(str(exc)) % 1000000
+                },  # Error ID for support
                 "error_code": "InternalServerError",
             },
         )

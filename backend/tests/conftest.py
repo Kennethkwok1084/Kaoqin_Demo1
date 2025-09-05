@@ -126,14 +126,14 @@ async def async_session(
             autocommit=False,
         )
         yield session
-        
+
         # Only commit if session is still valid and active
-        if session and hasattr(session, 'in_transaction') and session.in_transaction():
+        if session and hasattr(session, "in_transaction") and session.in_transaction():
             await session.commit()
     except Exception as e:
         logger.error(f"Session error: {e}")
         # Always rollback on exception to prevent transaction leaks
-        if session and hasattr(session, 'in_transaction') and session.in_transaction():
+        if session and hasattr(session, "in_transaction") and session.in_transaction():
             try:
                 await session.rollback()
             except Exception as rollback_error:
@@ -141,7 +141,7 @@ async def async_session(
         raise
     finally:
         # Ensure session is properly closed
-        if session and hasattr(session, 'close'):
+        if session and hasattr(session, "close"):
             try:
                 await session.close()
             except Exception as close_error:
@@ -343,7 +343,7 @@ def sample_weak_password_change():
 def event_loop():
     """Create a new event loop for each test function with enhanced cleanup."""
     import logging
-    
+
     logger = logging.getLogger(__name__)
     policy = asyncio.get_event_loop_policy()
     loop = policy.new_event_loop()
@@ -368,14 +368,16 @@ def event_loop():
                             loop.run_until_complete(
                                 asyncio.wait_for(
                                     asyncio.gather(*pending, return_exceptions=True),
-                                    timeout=2.0  # 2 second timeout for CI
+                                    timeout=2.0,  # 2 second timeout for CI
                                 )
                             )
                         except asyncio.TimeoutError:
-                            logger.warning("Task cancellation timed out in event loop cleanup")
+                            logger.warning(
+                                "Task cancellation timed out in event loop cleanup"
+                            )
                         except Exception as e:
                             logger.error(f"Task cleanup error: {e}")
-                            
+
             except RuntimeError as e:
                 if "no current event loop" not in str(e).lower():
                     logger.error(f"Event loop cleanup error: {e}")
