@@ -343,7 +343,6 @@ async def e2e_sample_attendance_records(
     )
     last_month_record.created_at = last_month
     last_month_record.updated_at = last_month
-    )
 
     records = [current_month_record, last_month_record]
 

@@ -26,7 +26,7 @@ from app.services.attendance_service import AttendanceService
 from app.services.stats_service import StatisticsService
 from app.services.work_hours_service import WorkHoursCalculationService
 from app.api.v1 import attendance, dashboard, members, statistics, tasks, system
-from app.api.deps import get_current_user, get_admin_user, get_active_user
+from app.api.deps import get_current_user, get_admin_user, get_current_active_user
 
 
 class TestAPIEndpointsCoverage:

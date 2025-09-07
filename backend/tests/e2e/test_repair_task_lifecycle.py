@@ -13,7 +13,7 @@ from typing import Dict, List
 import pytest
 from httpx import AsyncClient
 
-from app.models.task import TaskStatus, UrgencyLevel
+from app.models.task import TaskStatus, TaskPriority
 
 
 class TestRepairTaskLifecycle:
