@@ -17,9 +17,9 @@ def run_command(command, description):
     print(f"正在执行: {description}")
     print(f"命令: {command}")
     print(f"{'='*60}")
-    
+
     result = subprocess.run(command, shell=True, capture_output=True, text=True)
-    
+
     if result.returncode != 0:
         print(f"❌ 错误: {description} 失败")
         print(f"错误输出: {result.stderr}")
@@ -31,10 +31,12 @@ def run_command(command, description):
         return True
 
 
-def generate_coverage_report(test_level="basic", output_formats=None, exclude_files=None):
+def generate_coverage_report(
+    test_level="basic", output_formats=None, exclude_files=None
+):
     """
     生成覆盖率报告
-    
+
     Args:
         test_level: 测试级别 ("basic", "unit", "integration", "all")
         output_formats: 输出格式列表 (["html", "xml", "json", "term"])
@@ -42,35 +44,35 @@ def generate_coverage_report(test_level="basic", output_formats=None, exclude_fi
     """
     if output_formats is None:
         output_formats = ["html", "term-missing", "json"]
-    
+
     if exclude_files is None:
         exclude_files = [
             "tests/unit/test_coverage_improvement_strategy.py",
-            "tests/e2e/test_repair_task_lifecycle.py"
+            "tests/e2e/test_repair_task_lifecycle.py",
         ]
-    
+
     # 构建pytest命令
     base_cmd = "python -m pytest --cov=app"
-    
+
     # 添加覆盖率报告格式
     for fmt in output_formats:
         base_cmd += f" --cov-report={fmt}"
-    
+
     # 添加排除文件
     for exclude_file in exclude_files:
         base_cmd += f" --ignore={exclude_file}"
-    
+
     # 根据测试级别选择测试路径
     test_paths = {
         "basic": ["tests/unit/test_simple_coverage.py"],
         "unit": ["tests/unit/"],
         "integration": ["tests/integration/"],
-        "all": ["tests/"]
+        "all": ["tests/"],
     }
-    
+
     test_path = " ".join(test_paths.get(test_level, ["tests/"]))
     full_cmd = f"{base_cmd} {test_path} -v"
-    
+
     return run_command(full_cmd, f"运行 {test_level} 级别的覆盖率测试")
 
 
@@ -80,10 +82,11 @@ def open_html_report():
     if html_report.exists():
         print(f"\n📊 HTML覆盖率报告已生成: {html_report.absolute()}")
         print("你可以用浏览器打开这个文件查看详细的覆盖率报告")
-        
+
         # 尝试自动打开浏览器
         try:
             import webbrowser
+
             webbrowser.open(f"file://{html_report.absolute()}")
             print("✅ 已在浏览器中打开报告")
         except Exception as e:
@@ -98,15 +101,16 @@ def show_coverage_summary():
     if coverage_file.exists():
         try:
             import json
-            with open(coverage_file, 'r') as f:
+
+            with open(coverage_file, "r") as f:
                 coverage_data = json.load(f)
-            
+
             print(f"\n📈 覆盖率摘要:")
             print(f"总覆盖率: {coverage_data['totals']['percent_covered']:.2f}%")
             print(f"测试的语句数: {coverage_data['totals']['covered_lines']}")
             print(f"总语句数: {coverage_data['totals']['num_statements']}")
             print(f"缺失语句数: {coverage_data['totals']['missing_lines']}")
-            
+
         except Exception as e:
             print(f"❌ 读取覆盖率数据失败: {e}")
 
@@ -114,58 +118,49 @@ def show_coverage_summary():
 def main():
     parser = argparse.ArgumentParser(description="运行代码覆盖率测试")
     parser.add_argument(
-        "--level", 
-        choices=["basic", "unit", "integration", "all"], 
+        "--level",
+        choices=["basic", "unit", "integration", "all"],
         default="basic",
-        help="测试级别 (默认: basic)"
+        help="测试级别 (默认: basic)",
     )
     parser.add_argument(
-        "--format", 
-        nargs="+", 
+        "--format",
+        nargs="+",
         choices=["html", "xml", "json", "term", "term-missing"],
         default=["html", "term-missing", "json"],
-        help="输出格式 (默认: html term-missing json)"
+        help="输出格式 (默认: html term-missing json)",
     )
-    parser.add_argument(
-        "--open", 
-        action="store_true",
-        help="完成后自动打开HTML报告"
-    )
-    parser.add_argument(
-        "--summary", 
-        action="store_true",
-        help="显示覆盖率摘要"
-    )
-    
+    parser.add_argument("--open", action="store_true", help="完成后自动打开HTML报告")
+    parser.add_argument("--summary", action="store_true", help="显示覆盖率摘要")
+
     args = parser.parse_args()
-    
+
     print(f"🚀 开始运行 {args.level} 级别的覆盖率测试...")
-    
+
     # 切换到项目目录
     os.chdir(Path(__file__).parent)
-    
+
     # 运行覆盖率测试
     success = generate_coverage_report(
-        test_level=args.level,
-        output_formats=args.format
+        test_level=args.level, output_formats=args.format
     )
-    
+
     if success:
         print(f"\n✅ 覆盖率测试完成!")
-        
+
         if args.summary:
             show_coverage_summary()
-        
+
         if args.open:
             open_html_report()
-        
+
         print(f"\n📁 生成的报告文件:")
         report_files = [
             ("HTML报告", "htmlcov/index.html"),
             ("JSON报告", "coverage.json"),
-            ("XML报告", "coverage.xml")
+            ("XML报告", "coverage.xml"),
         ]
-        
+
         for name, path in report_files:
             if Path(path).exists():
                 print(f"  - {name}: {path}")

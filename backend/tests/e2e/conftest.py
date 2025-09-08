@@ -20,7 +20,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_async_session
 from app.core.security import get_password_hash
 from app.main import app as fastapi_app
-from app.models.attendance import AttendanceRecord, AttendanceException, MonthlyAttendanceSummary
+from app.models.attendance import (
+    AttendanceException,
+    AttendanceRecord,
+    MonthlyAttendanceSummary,
+)
 from app.models.member import Member, UserRole
 from app.models.task import RepairTask, TaskStatus
 from tests.database_config import test_config

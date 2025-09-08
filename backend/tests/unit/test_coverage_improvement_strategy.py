@@ -6,27 +6,28 @@
 
 import asyncio
 import json
+from datetime import date, datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 import pytest_asyncio
-from datetime import datetime, timedelta, date
-from unittest.mock import AsyncMock, MagicMock, patch
+from fastapi import status
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
-from fastapi import status
 
+from app.api.deps import get_admin_user, get_current_active_user, get_current_user
+from app.api.v1 import attendance, dashboard, members, statistics, system, tasks
 from app.core.config import settings
 from app.core.database import get_async_session
 from app.core.exceptions import *
 from app.main import app as fastapi_app
+from app.models.attendance import AttendanceException, AttendanceRecord
 from app.models.member import Member, UserRole
 from app.models.task import RepairTask, TaskStatus, TaskType
-from app.models.attendance import AttendanceRecord, AttendanceException
-from app.services.task_service import TaskService
 from app.services.attendance_service import AttendanceService
 from app.services.stats_service import StatisticsService
+from app.services.task_service import TaskService
 from app.services.work_hours_service import WorkHoursCalculationService
-from app.api.v1 import attendance, dashboard, members, statistics, tasks, system
-from app.api.deps import get_current_user, get_admin_user, get_current_active_user
 
 
 class TestAPIEndpointsCoverage:
@@ -41,7 +42,7 @@ class TestAPIEndpointsCoverage:
             email="test@example.com",
             full_name="Test User",
             role=UserRole.MEMBER,
-            is_active=True
+            is_active=True,
         )
 
     @pytest.fixture
@@ -51,48 +52,64 @@ class TestAPIEndpointsCoverage:
             id=2,
             username="admin_user",
             email="admin@example.com",
-            full_name="Admin User", 
+            full_name="Admin User",
             role=UserRole.ADMIN,
-            is_active=True
+            is_active=True,
         )
 
     @pytest.mark.asyncio
     async def test_attendance_api_endpoints(self, mock_user):
         """测试考勤API端点"""
-        with patch('app.api.deps.get_current_user', return_value=mock_user):
-            with patch('app.services.attendance_service.AttendanceService.check_in') as mock_checkin:
-                mock_checkin.return_value = {"status": "success", "time": datetime.now()}
-                
-                async with AsyncClient(app=fastapi_app, base_url="http://test") as client:
+        with patch("app.api.deps.get_current_user", return_value=mock_user):
+            with patch(
+                "app.services.attendance_service.AttendanceService.check_in"
+            ) as mock_checkin:
+                mock_checkin.return_value = {
+                    "status": "success",
+                    "time": datetime.now(),
+                }
+
+                async with AsyncClient(
+                    app=fastapi_app, base_url="http://test"
+                ) as client:
                     # 测试签到
                     response = await client.post("/api/v1/attendance/checkin")
                     assert response.status_code in [200, 422]  # 可能因为缺少数据而422
 
                     # 测试签退
-                    with patch('app.services.attendance_service.AttendanceService.check_out') as mock_checkout:
-                        mock_checkout.return_value = {"status": "success", "time": datetime.now()}
+                    with patch(
+                        "app.services.attendance_service.AttendanceService.check_out"
+                    ) as mock_checkout:
+                        mock_checkout.return_value = {
+                            "status": "success",
+                            "time": datetime.now(),
+                        }
                         response = await client.post("/api/v1/attendance/checkout")
                         assert response.status_code in [200, 422]
 
-    @pytest.mark.asyncio  
+    @pytest.mark.asyncio
     async def test_dashboard_api_endpoints(self, mock_admin_user):
         """测试仪表板API端点"""
-        with patch('app.api.deps.get_current_user', return_value=mock_admin_user):
-            with patch('app.services.stats_service.StatisticsService.get_overview_statistics') as mock_stats:
+        with patch("app.api.deps.get_current_user", return_value=mock_admin_user):
+            with patch(
+                "app.services.stats_service.StatisticsService.get_overview_statistics"
+            ) as mock_stats:
                 mock_stats.return_value = {
                     "total_tasks": 100,
                     "completed_tasks": 80,
-                    "total_members": 20
+                    "total_members": 20,
                 }
-                
-                async with AsyncClient(app=fastapi_app, base_url="http://test") as client:
+
+                async with AsyncClient(
+                    app=fastapi_app, base_url="http://test"
+                ) as client:
                     response = await client.get("/api/v1/dashboard/overview")
                     assert response.status_code in [200, 422, 500]
 
     @pytest.mark.asyncio
     async def test_members_api_endpoints(self, mock_admin_user):
         """测试成员管理API端点"""
-        with patch('app.api.deps.get_admin_user', return_value=mock_admin_user):
+        with patch("app.api.deps.get_admin_user", return_value=mock_admin_user):
             async with AsyncClient(app=fastapi_app, base_url="http://test") as client:
                 # 测试获取成员列表
                 response = await client.get("/api/v1/members/")
@@ -101,9 +118,9 @@ class TestAPIEndpointsCoverage:
                 # 测试创建成员
                 member_data = {
                     "username": "new_user",
-                    "email": "new@example.com", 
+                    "email": "new@example.com",
                     "full_name": "New User",
-                    "password": "test123"
+                    "password": "test123",
                 }
                 response = await client.post("/api/v1/members/", json=member_data)
                 assert response.status_code in [200, 201, 422, 500]
@@ -111,7 +128,7 @@ class TestAPIEndpointsCoverage:
     @pytest.mark.asyncio
     async def test_statistics_api_endpoints(self, mock_admin_user):
         """测试统计API端点"""
-        with patch('app.api.deps.get_current_user', return_value=mock_admin_user):
+        with patch("app.api.deps.get_current_user", return_value=mock_admin_user):
             async with AsyncClient(app=fastapi_app, base_url="http://test") as client:
                 # 测试获取统计概览
                 response = await client.get("/api/v1/statistics/overview")
@@ -124,7 +141,7 @@ class TestAPIEndpointsCoverage:
     @pytest.mark.asyncio
     async def test_tasks_api_endpoints(self, mock_user):
         """测试任务API端点"""
-        with patch('app.api.deps.get_current_user', return_value=mock_user):
+        with patch("app.api.deps.get_current_user", return_value=mock_user):
             async with AsyncClient(app=fastapi_app, base_url="http://test") as client:
                 # 测试获取任务列表
                 response = await client.get("/api/v1/tasks/repair")
@@ -134,7 +151,7 @@ class TestAPIEndpointsCoverage:
                 task_data = {
                     "title": "Test Task",
                     "description": "Test Description",
-                    "task_type": "ONLINE"
+                    "task_type": "ONLINE",
                 }
                 response = await client.post("/api/v1/tasks/repair", json=task_data)
                 assert response.status_code in [200, 201, 422, 500]
@@ -154,20 +171,22 @@ class TestServiceLayerCoverage:
             await service.create_repair_task(None, {})
 
         # 测试异常情况
-        with patch.object(service, '_generate_task_id', side_effect=Exception("Test error")):
+        with patch.object(
+            service, "_generate_task_id", side_effect=Exception("Test error")
+        ):
             try:
                 await service.create_repair_task(1, {"title": "Test"})
             except Exception:
                 pass  # 捕获异常以提高覆盖率
 
-    @pytest.mark.asyncio 
+    @pytest.mark.asyncio
     async def test_attendance_service_edge_cases(self):
         """测试AttendanceService边缘情况"""
         mock_session = AsyncMock()
         service = AttendanceService(mock_session)
 
         # 测试边缘情况
-        with patch.object(service, '_validate_attendance_time', return_value=True):
+        with patch.object(service, "_validate_attendance_time", return_value=True):
             try:
                 await service.check_in(999, "test location")  # 不存在的用户ID
             except Exception:
@@ -182,9 +201,9 @@ class TestServiceLayerCoverage:
         # 测试各种参数组合
         test_cases = [
             (None, 2024, 1),  # 无效member_id
-            (1, 2019, 1),     # 无效year
-            (1, 2024, 13),    # 无效month
-            (-1, 2024, 1),    # 负数member_id
+            (1, 2019, 1),  # 无效year
+            (1, 2024, 13),  # 无效month
+            (-1, 2024, 1),  # 负数member_id
         ]
 
         for member_id, year, month in test_cases:
@@ -200,9 +219,9 @@ class TestServiceLayerCoverage:
         service = StatisticsService(mock_session)
 
         # 测试缓存功能
-        with patch.object(service, '_get_cache_key', return_value="test_key"):
-            with patch.object(service, '_get_from_cache', return_value=None):
-                with patch.object(service, '_set_cache') as mock_set:
+        with patch.object(service, "_get_cache_key", return_value="test_key"):
+            with patch.object(service, "_get_from_cache", return_value=None):
+                with patch.object(service, "_set_cache") as mock_set:
                     try:
                         await service.get_overview_statistics()
                         # 验证缓存设置被调用
@@ -231,12 +250,19 @@ class TestCoreModulesCoverage:
         """测试配置设置访问"""
         # 测试所有配置属性
         config_attrs = [
-            'PROJECT_NAME', 'VERSION', 'DESCRIPTION',
-            'DATABASE_URL', 'REDIS_URL', 'SECRET_KEY',
-            'ACCESS_TOKEN_EXPIRE_MINUTES', 'ALGORITHM',
-            'CORS_ORIGINS', 'DEBUG', 'ENVIRONMENT'
+            "PROJECT_NAME",
+            "VERSION",
+            "DESCRIPTION",
+            "DATABASE_URL",
+            "REDIS_URL",
+            "SECRET_KEY",
+            "ACCESS_TOKEN_EXPIRE_MINUTES",
+            "ALGORITHM",
+            "CORS_ORIGINS",
+            "DEBUG",
+            "ENVIRONMENT",
         ]
-        
+
         for attr in config_attrs:
             try:
                 value = getattr(settings, attr, None)
@@ -256,7 +282,7 @@ class TestCoreModulesCoverage:
             AuthenticationError,
             BusinessLogicError,
             ExternalServiceError,
-            RateLimitExceededError
+            RateLimitExceededError,
         ]
 
         for exc_class in exceptions_to_test:
@@ -266,7 +292,7 @@ class TestCoreModulesCoverage:
                 # 访问异常属性
                 str(exc)
                 repr(exc)
-                if hasattr(exc, 'error_code'):
+                if hasattr(exc, "error_code"):
                     exc.error_code
             except Exception:
                 pass
@@ -278,9 +304,9 @@ class TestCoreModulesCoverage:
             username="test",
             email="test@example.com",
             full_name="Test User",
-            role=UserRole.ADMIN
+            role=UserRole.ADMIN,
         )
-        
+
         # 访问所有属性和方法
         member.is_admin
         member.is_group_leader
@@ -293,9 +319,9 @@ class TestCoreModulesCoverage:
             title="Test Task",
             description="Test",
             task_type=TaskType.ONLINE,
-            status=TaskStatus.PENDING
+            status=TaskStatus.PENDING,
         )
-        
+
         # 访问属性和方法
         str(task)
         repr(task)
@@ -309,8 +335,8 @@ class TestDatabaseOperationsCoverage:
     @pytest.mark.asyncio
     async def test_database_session_operations(self):
         """测试数据库会话操作"""
-        from app.core.database import get_async_session, create_async_engine
-        
+        from app.core.database import create_async_engine, get_async_session
+
         # 测试会话创建
         try:
             async for session in get_async_session():
@@ -324,7 +350,7 @@ class TestDatabaseOperationsCoverage:
     async def test_database_utilities(self):
         """测试数据库工具函数"""
         from app.core.database import check_database_connection, init_database
-        
+
         # 测试数据库连接检查
         try:
             await check_database_connection()
@@ -344,15 +370,17 @@ class TestUtilityFunctionsCoverage:
     def test_security_utilities(self):
         """测试安全工具函数"""
         from app.core.security import (
-            verify_password, get_password_hash, 
-            create_access_token, decode_access_token
+            create_access_token,
+            decode_access_token,
+            get_password_hash,
+            verify_password,
         )
-        
+
         # 测试密码哈希
         password = "test123"
         hashed = get_password_hash(password)
         assert verify_password(password, hashed)
-        
+
         # 测试JWT token
         token_data = {"sub": "test@example.com"}
         token = create_access_token(token_data)
@@ -361,31 +389,31 @@ class TestUtilityFunctionsCoverage:
     def test_response_utilities(self):
         """测试响应工具函数"""
         from app.core.messages import ResponseHandler
-        
+
         handler = ResponseHandler()
-        
+
         # 测试各种响应类型
         success_response = handler.success("Test success")
         error_response = handler.error("Test error")
         validation_response = handler.validation_error(["Error 1", "Error 2"])
-        
+
         assert success_response["success"] == True
         assert error_response["success"] == False
 
     def test_cache_operations(self):
         """测试缓存操作"""
         from app.core.cache import CacheManager
-        
+
         cache = CacheManager()
-        
+
         # 测试缓存方法
         cache.generate_key("test", {"param": "value"})
-        
+
         # 测试缓存操作（模拟）
-        with patch.object(cache, 'redis_client') as mock_redis:
+        with patch.object(cache, "redis_client") as mock_redis:
             mock_redis.get.return_value = None
             cache.get("test_key")
-            
+
             cache.set("test_key", "test_value", 300)
             mock_redis.set.assert_called()
 
@@ -397,35 +425,38 @@ class TestIntegrationScenariosCoverage:
     async def test_complete_workflow_scenarios(self):
         """测试完整工作流场景"""
         mock_session = AsyncMock()
-        
+
         # 模拟完整的任务-考勤-统计流程
         task_service = TaskService(mock_session)
         attendance_service = AttendanceService(mock_session)
         stats_service = StatisticsService(mock_session)
-        
+
         # 创建模拟数据
         mock_task = RepairTask(
             id=1,
             title="Test Task",
             task_type=TaskType.ONLINE,
-            status=TaskStatus.IN_PROGRESS
+            status=TaskStatus.IN_PROGRESS,
         )
-        
+
         mock_attendance = AttendanceRecord(
-            id=1,
-            member_id=1,
-            attendance_date=date.today(),
-            work_hours=8.0
+            id=1, member_id=1, attendance_date=date.today(), work_hours=8.0
         )
 
         # 测试服务间的交互
-        with patch.object(task_service, 'get_repair_task', return_value=mock_task):
-            with patch.object(attendance_service, 'get_attendance_record', return_value=mock_attendance):
+        with patch.object(task_service, "get_repair_task", return_value=mock_task):
+            with patch.object(
+                attendance_service,
+                "get_attendance_record",
+                return_value=mock_attendance,
+            ):
                 try:
                     # 执行业务逻辑
                     task = await task_service.get_repair_task(1)
                     if task:
-                        attendance = await attendance_service.get_attendance_record(1, date.today())
+                        attendance = await attendance_service.get_attendance_record(
+                            1, date.today()
+                        )
                         if attendance:
                             await stats_service.get_member_performance_report(1)
                 except Exception:
@@ -435,18 +466,21 @@ class TestIntegrationScenariosCoverage:
     async def test_error_handling_scenarios(self):
         """测试错误处理场景"""
         mock_session = AsyncMock()
-        
+
         # 模拟各种错误场景
         error_scenarios = [
             DatabaseError("Database connection failed"),
             ValidationError("Invalid input data"),
             NotFoundError("Resource not found"),
             PermissionDeniedError("Access denied"),
-            BusinessLogicError("Business rule violation")
+            BusinessLogicError("Business rule violation"),
         ]
 
         for error in error_scenarios:
-            with patch('app.services.task_service.TaskService.create_repair_task', side_effect=error):
+            with patch(
+                "app.services.task_service.TaskService.create_repair_task",
+                side_effect=error,
+            ):
                 service = TaskService(mock_session)
                 try:
                     await service.create_repair_task(1, {"title": "Test"})
@@ -459,34 +493,34 @@ class TestIntegrationScenariosCoverage:
         for role in UserRole:
             str(role)
             role.value
-            
+
         for status in TaskStatus:
             str(status)
             status.value
-            
+
         for task_type in TaskType:
-            str(task_type) 
+            str(task_type)
             task_type.value
 
     @pytest.mark.asyncio
     async def test_concurrent_operations(self):
         """测试并发操作"""
         mock_session = AsyncMock()
-        
+
         # 模拟并发场景
         services = [
             TaskService(mock_session),
             AttendanceService(mock_session),
             StatisticsService(mock_session),
-            WorkHoursService(mock_session)
+            WorkHoursService(mock_session),
         ]
 
         # 并发执行多个操作
         tasks = []
         for i, service in enumerate(services):
-            if hasattr(service, 'get_overview_statistics'):
+            if hasattr(service, "get_overview_statistics"):
                 tasks.append(service.get_overview_statistics())
-            elif hasattr(service, 'calculate_monthly_work_hours'):
+            elif hasattr(service, "calculate_monthly_work_hours"):
                 try:
                     tasks.append(service.calculate_monthly_work_hours(1, 2024, 1))
                 except:
@@ -503,11 +537,12 @@ class TestIntegrationScenariosCoverage:
         # 测试配置文件加载
         try:
             from app.core.config import Settings
+
             settings = Settings()
-            
+
             # 访问配置属性
             for attr_name in dir(settings):
-                if not attr_name.startswith('_'):
+                if not attr_name.startswith("_"):
                     try:
                         getattr(settings, attr_name)
                     except Exception:
@@ -518,15 +553,21 @@ class TestIntegrationScenariosCoverage:
     def test_logging_and_monitoring(self):
         """测试日志和监控功能"""
         import logging
-        
+
         # 测试日志功能
         logger = logging.getLogger(__name__)
         logger.info("Test info message")
-        logger.warning("Test warning message") 
+        logger.warning("Test warning message")
         logger.error("Test error message")
 
         # 测试不同日志级别
-        for level in [logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR, logging.CRITICAL]:
+        for level in [
+            logging.DEBUG,
+            logging.INFO,
+            logging.WARNING,
+            logging.ERROR,
+            logging.CRITICAL,
+        ]:
             logger.log(level, f"Test message at level {level}")
 
 

@@ -3,20 +3,22 @@
 针对低覆盖率的服务层模块，提供真正的业务逻辑测试
 重点覆盖：
 - task_service.py (35.6% -> 目标70%)
-- work_hours_service.py (37.7% -> 目标70%) 
+- work_hours_service.py (37.7% -> 目标70%)
 - attendance_service.py (11.5% -> 目标60%)
 """
 
-import pytest
 from datetime import datetime, timedelta
+
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.security import get_password_hash
+from app.models.attendance import AttendanceExceptionStatus, AttendanceRecord
 from app.models.member import Member, UserRole
-from app.models.task import RepairTask, TaskStatus, TaskCategory, TaskType
-from app.models.attendance import AttendanceRecord, AttendanceExceptionStatus
+from app.models.task import RepairTask, TaskCategory, TaskStatus, TaskType
+from app.services.attendance_service import AttendanceService
 from app.services.task_service import TaskService
 from app.services.work_hours_service import WorkHoursCalculationService
-from app.services.attendance_service import AttendanceService
-from app.core.security import get_password_hash
 
 
 @pytest.mark.asyncio
@@ -36,7 +38,7 @@ class TestTaskServiceRealCoverage:
             password_hash=get_password_hash("UserPassword123!"),
             role=UserRole.MEMBER,
             is_active=True,
-            is_verified=True
+            is_verified=True,
         )
         async_session.add(user)
         await async_session.commit()
@@ -57,7 +59,7 @@ class TestTaskServiceRealCoverage:
             "location": "实验室A101",
             "problem_description": "系统故障需要修复",
             "expected_completion_time": datetime.now() + timedelta(hours=24),
-            "assignee_id": user.id
+            "assignee_id": user.id,
         }
 
         # 执行任务创建
@@ -83,11 +85,13 @@ class TestTaskServiceRealCoverage:
             "reporter_name": "",  # 空报告人
             "reporter_contact": "invalid_phone",  # 无效电话
             "location": "测试位置",
-            "problem_description": "问题描述"
+            "problem_description": "问题描述",
         }
 
         # 验证创建失败并抛出适当异常
-        with pytest.raises(ValueError, match="标题不能为空|报告人不能为空|联系方式格式错误"):
+        with pytest.raises(
+            ValueError, match="标题不能为空|报告人不能为空|联系方式格式错误"
+        ):
             await task_service.create_repair_task(invalid_task_data)
 
     async def test_task_status_workflow(self, async_session: AsyncSession):
@@ -103,7 +107,7 @@ class TestTaskServiceRealCoverage:
             password_hash=get_password_hash("UserPassword123!"),
             role=UserRole.MEMBER,
             is_active=True,
-            is_verified=True
+            is_verified=True,
         )
         async_session.add(user)
         await async_session.commit()
@@ -120,7 +124,7 @@ class TestTaskServiceRealCoverage:
             reporter_contact="13800138001",
             location="工作流位置",
             problem_description="工作流问题",
-            expected_completion_time=datetime.now() + timedelta(hours=24)
+            expected_completion_time=datetime.now() + timedelta(hours=24),
         )
         async_session.add(task)
         await async_session.commit()
@@ -144,10 +148,10 @@ class TestTaskServiceRealCoverage:
             "completion_notes": "任务已成功完成",
             "solution_description": "更换了故障硬件",
             "actual_work_hours": 2.5,
-            "materials_used": ["硬盘", "内存条"]
+            "materials_used": ["硬盘", "内存条"],
         }
         await task_service.complete_task(task.id, completion_data)
-        
+
         updated_task = await task_service.get_task_by_id(task.id)
         assert updated_task.status == TaskStatus.COMPLETED
         assert updated_task.completed_at is not None
@@ -170,7 +174,7 @@ class TestTaskServiceRealCoverage:
             password_hash=get_password_hash("UserPassword123!"),
             role=UserRole.MEMBER,
             is_active=True,
-            is_verified=True
+            is_verified=True,
         )
         async_session.add(user)
         await async_session.commit()
@@ -185,7 +189,7 @@ class TestTaskServiceRealCoverage:
                 "task_type": TaskType.ONLINE,
                 "status": TaskStatus.PENDING,
                 "location": "实验室A101",
-                "problem_description": "网络设备故障"
+                "problem_description": "网络设备故障",
             },
             {
                 "title": "打印机维修",
@@ -194,7 +198,7 @@ class TestTaskServiceRealCoverage:
                 "task_type": TaskType.OFFLINE,
                 "status": TaskStatus.IN_PROGRESS,
                 "location": "办公室B201",
-                "problem_description": "硬件机械故障"
+                "problem_description": "硬件机械故障",
             },
             {
                 "title": "系统安全检查",
@@ -203,8 +207,8 @@ class TestTaskServiceRealCoverage:
                 "task_type": TaskType.ONLINE,
                 "status": TaskStatus.COMPLETED,
                 "location": "服务器机房",
-                "problem_description": "安全检查任务"
-            }
+                "problem_description": "安全检查任务",
+            },
         ]
 
         created_tasks = []
@@ -214,25 +218,29 @@ class TestTaskServiceRealCoverage:
                 reporter_name="搜索测试报告人",
                 reporter_contact="13800138002",
                 expected_completion_time=datetime.now() + timedelta(hours=24),
-                **task_data
+                **task_data,
             )
             async_session.add(task)
             created_tasks.append(task)
-        
+
         await async_session.commit()
 
         task_service = TaskService(async_session)
 
         # 测试关键词搜索
         search_results = await task_service.search_tasks(
-            keyword="网络",
-            assignee_id=user.id
+            keyword="网络", assignee_id=user.id
         )
         assert len(search_results) >= 1
-        assert any("网络" in task.title or "网络" in task.description for task in search_results)
+        assert any(
+            "网络" in task.title or "网络" in task.description
+            for task in search_results
+        )
 
         # 测试状态过滤
-        pending_tasks = await task_service.get_tasks_by_status(TaskStatus.PENDING, user.id)
+        pending_tasks = await task_service.get_tasks_by_status(
+            TaskStatus.PENDING, user.id
+        )
         assert len(pending_tasks) >= 1
         assert all(task.status == TaskStatus.PENDING for task in pending_tasks)
 
@@ -243,8 +251,7 @@ class TestTaskServiceRealCoverage:
 
         # 测试位置搜索
         lab_tasks = await task_service.search_tasks(
-            keyword="实验室",
-            assignee_id=user.id
+            keyword="实验室", assignee_id=user.id
         )
         assert len(lab_tasks) >= 1
         assert any("实验室" in task.location for task in lab_tasks)
@@ -254,17 +261,17 @@ class TestTaskServiceRealCoverage:
             keyword="故障",
             status=TaskStatus.PENDING,
             task_type=TaskType.ONLINE,
-            assignee_id=user.id
+            assignee_id=user.id,
         )
         assert all(
-            task.status == TaskStatus.PENDING and 
-            task.task_type == TaskType.ONLINE and
-            ("故障" in task.title or "故障" in task.problem_description)
+            task.status == TaskStatus.PENDING
+            and task.task_type == TaskType.ONLINE
+            and ("故障" in task.title or "故障" in task.problem_description)
             for task in complex_results
         )
 
 
-@pytest.mark.asyncio 
+@pytest.mark.asyncio
 class TestWorkHoursServiceRealCoverage:
     """工时服务真正功能测试 - 覆盖工时计算核心逻辑"""
 
@@ -281,7 +288,7 @@ class TestWorkHoursServiceRealCoverage:
             password_hash=get_password_hash("UserPassword123!"),
             role=UserRole.MEMBER,
             is_active=True,
-            is_verified=True
+            is_verified=True,
         )
         async_session.add(user)
         await async_session.commit()
@@ -305,7 +312,7 @@ class TestWorkHoursServiceRealCoverage:
             started_at=datetime.now() - timedelta(hours=2),
             completed_at=datetime.now() - timedelta(hours=1),
             expected_completion_time=datetime.now() + timedelta(hours=1),
-            actual_work_hours=1.5
+            actual_work_hours=1.5,
         )
         async_session.add(online_task)
         await async_session.commit()
@@ -313,7 +320,7 @@ class TestWorkHoursServiceRealCoverage:
 
         # 计算基础工时
         base_hours = await work_hours_service.calculate_base_work_hours(online_task.id)
-        assert base_hours == 40/60  # 在线任务基础40分钟 = 0.67小时
+        assert base_hours == 40 / 60  # 在线任务基础40分钟 = 0.67小时
 
         # 测试离线任务工时计算
         offline_task = RepairTask(
@@ -331,16 +338,20 @@ class TestWorkHoursServiceRealCoverage:
             started_at=datetime.now() - timedelta(hours=4),
             completed_at=datetime.now() - timedelta(hours=2),
             expected_completion_time=datetime.now(),
-            actual_work_hours=2.5
+            actual_work_hours=2.5,
         )
         async_session.add(offline_task)
         await async_session.commit()
         await async_session.refresh(offline_task)
 
-        base_hours_offline = await work_hours_service.calculate_base_work_hours(offline_task.id)
-        assert base_hours_offline == 100/60  # 离线任务基础100分钟 = 1.67小时
+        base_hours_offline = await work_hours_service.calculate_base_work_hours(
+            offline_task.id
+        )
+        assert base_hours_offline == 100 / 60  # 离线任务基础100分钟 = 1.67小时
 
-    async def test_calculate_work_hours_with_bonuses_penalties(self, async_session: AsyncSession):
+    async def test_calculate_work_hours_with_bonuses_penalties(
+        self, async_session: AsyncSession
+    ):
         """测试工时奖励和惩罚计算逻辑"""
         # 创建测试用户
         user = Member(
@@ -353,7 +364,7 @@ class TestWorkHoursServiceRealCoverage:
             password_hash=get_password_hash("UserPassword123!"),
             role=UserRole.MEMBER,
             is_active=True,
-            is_verified=True
+            is_verified=True,
         )
         async_session.add(user)
         await async_session.commit()
@@ -381,19 +392,21 @@ class TestWorkHoursServiceRealCoverage:
             quality_rating=5,  # 优秀评级
             is_rush_task=True,  # 紧急任务
             has_positive_feedback=True,  # 正面反馈
-            completion_ahead_of_schedule=True  # 提前完成
+            completion_ahead_of_schedule=True,  # 提前完成
         )
         async_session.add(high_quality_task)
         await async_session.commit()
         await async_session.refresh(high_quality_task)
 
         # 计算包含奖励的工时
-        total_hours_with_bonus = await work_hours_service.calculate_final_work_hours(high_quality_task.id)
-        base_hours = 40/60  # 基础40分钟
-        
+        total_hours_with_bonus = await work_hours_service.calculate_final_work_hours(
+            high_quality_task.id
+        )
+        base_hours = 40 / 60  # 基础40分钟
+
         # 验证奖励逻辑
         expected_bonus_minutes = 15 + 30  # 紧急任务奖励15分钟 + 正面反馈奖励30分钟
-        expected_total = base_hours + expected_bonus_minutes/60
+        expected_total = base_hours + expected_bonus_minutes / 60
         assert abs(total_hours_with_bonus - expected_total) < 0.01
 
         # 测试延迟完成任务（惩罚）
@@ -416,19 +429,25 @@ class TestWorkHoursServiceRealCoverage:
             quality_rating=2,  # 差评
             has_negative_feedback=True,  # 负面反馈
             late_start=True,  # 延迟开始
-            late_completion=True  # 延迟完成
+            late_completion=True,  # 延迟完成
         )
         async_session.add(delayed_task)
         await async_session.commit()
         await async_session.refresh(delayed_task)
 
         # 计算包含惩罚的工时
-        total_hours_with_penalty = await work_hours_service.calculate_final_work_hours(delayed_task.id)
-        base_hours_offline = 100/60  # 基础100分钟
-        
+        total_hours_with_penalty = await work_hours_service.calculate_final_work_hours(
+            delayed_task.id
+        )
+        base_hours_offline = 100 / 60  # 基础100分钟
+
         # 验证惩罚逻辑
-        expected_penalty_minutes = 30 + 30 + 60  # 延迟开始30分钟 + 延迟完成30分钟 + 负面反馈60分钟
-        expected_total_with_penalty = max(0, base_hours_offline - expected_penalty_minutes/60)
+        expected_penalty_minutes = (
+            30 + 30 + 60
+        )  # 延迟开始30分钟 + 延迟完成30分钟 + 负面反馈60分钟
+        expected_total_with_penalty = max(
+            0, base_hours_offline - expected_penalty_minutes / 60
+        )
         assert abs(total_hours_with_penalty - expected_total_with_penalty) < 0.01
 
     async def test_batch_recalculate_work_hours(self, async_session: AsyncSession):
@@ -446,11 +465,11 @@ class TestWorkHoursServiceRealCoverage:
                 password_hash=get_password_hash("UserPassword123!"),
                 role=UserRole.MEMBER,
                 is_active=True,
-                is_verified=True
+                is_verified=True,
             )
             async_session.add(user)
             users.append(user)
-        
+
         await async_session.commit()
         for user in users:
             await async_session.refresh(user)
@@ -463,24 +482,26 @@ class TestWorkHoursServiceRealCoverage:
                     title=f"批量重算任务{user_idx}_{task_idx}",
                     description=f"需要重新计算工时的任务{user_idx}_{task_idx}",
                     category=TaskCategory.REPAIR,
-                    task_type=TaskType.ONLINE if task_idx % 2 == 0 else TaskType.OFFLINE,
+                    task_type=(
+                        TaskType.ONLINE if task_idx % 2 == 0 else TaskType.OFFLINE
+                    ),
                     status=TaskStatus.COMPLETED,
                     assignee_id=user.id,
                     reporter_name=f"批量报告人{user_idx}_{task_idx}",
                     reporter_contact=f"1380013800{user_idx + 7}",
                     location=f"批量位置{user_idx}_{task_idx}",
                     problem_description=f"批量问题{user_idx}_{task_idx}",
-                    created_at=datetime.now() - timedelta(days=task_idx+1),
-                    completed_at=datetime.now() - timedelta(hours=task_idx+1),
+                    created_at=datetime.now() - timedelta(days=task_idx + 1),
+                    completed_at=datetime.now() - timedelta(hours=task_idx + 1),
                     expected_completion_time=datetime.now() + timedelta(hours=24),
                     actual_work_hours=(task_idx + 1) * 1.5,
                     # 设置一些初始的错误工时值
                     calculated_work_hours=(task_idx + 1) * 0.5,  # 故意设置错误值
-                    needs_recalculation=True
+                    needs_recalculation=True,
                 )
                 async_session.add(task)
                 tasks_to_recalculate.append(task)
-        
+
         await async_session.commit()
 
         work_hours_service = WorkHoursCalculationService(async_session)
@@ -488,8 +509,7 @@ class TestWorkHoursServiceRealCoverage:
         # 执行批量重算
         task_ids = [task.id for task in tasks_to_recalculate]
         recalculation_result = await work_hours_service.batch_recalculate_work_hours(
-            task_ids=task_ids,
-            recalculation_reason="测试批量重算功能"
+            task_ids=task_ids, recalculation_reason="测试批量重算功能"
         )
 
         # 验证重算结果
@@ -502,13 +522,15 @@ class TestWorkHoursServiceRealCoverage:
             await async_session.refresh(task)
             # 验证工时已更新且不再需要重算
             assert task.needs_recalculation is False
-            assert task.calculated_work_hours != (task.actual_work_hours * 0.5)  # 不再是错误值
-            
+            assert task.calculated_work_hours != (
+                task.actual_work_hours * 0.5
+            )  # 不再是错误值
+
             # 验证工时计算符合规则
             if task.task_type == TaskType.ONLINE:
-                assert task.calculated_work_hours >= 40/60  # 至少基础工时
+                assert task.calculated_work_hours >= 40 / 60  # 至少基础工时
             else:
-                assert task.calculated_work_hours >= 100/60  # 至少基础工时
+                assert task.calculated_work_hours >= 100 / 60  # 至少基础工时
 
 
 @pytest.mark.asyncio
@@ -528,7 +550,7 @@ class TestAttendanceServiceRealCoverage:
             password_hash=get_password_hash("UserPassword123!"),
             role=UserRole.MEMBER,
             is_active=True,
-            is_verified=True
+            is_verified=True,
         )
         async_session.add(user)
         await async_session.commit()
@@ -543,7 +565,7 @@ class TestAttendanceServiceRealCoverage:
             member_id=user.id,
             check_in_time=checkin_time,
             location="办公室",
-            device_info="测试设备"
+            device_info="测试设备",
         )
 
         assert attendance_record is not None
@@ -553,11 +575,11 @@ class TestAttendanceServiceRealCoverage:
         assert attendance_record.check_in_time == checkin_time
 
         # 测试签退
-        checkout_time = datetime.now().replace(hour=18, minute=0, second=0, microsecond=0)
+        checkout_time = datetime.now().replace(
+            hour=18, minute=0, second=0, microsecond=0
+        )
         updated_record = await attendance_service.check_out(
-            member_id=user.id,
-            check_out_time=checkout_time,
-            location="办公室"
+            member_id=user.id, check_out_time=checkout_time, location="办公室"
         )
 
         assert updated_record.check_out_time == checkout_time
@@ -568,12 +590,12 @@ class TestAttendanceServiceRealCoverage:
         # 测试重复签到（应该失败）
         with pytest.raises(ValueError, match="今日已签到|重复签到"):
             await attendance_service.check_in(
-                member_id=user.id,
-                check_in_time=datetime.now(),
-                location="办公室"
+                member_id=user.id, check_in_time=datetime.now(), location="办公室"
             )
 
-    async def test_calculate_monthly_attendance_stats(self, async_session: AsyncSession):
+    async def test_calculate_monthly_attendance_stats(
+        self, async_session: AsyncSession
+    ):
         """测试月度考勤统计计算逻辑"""
         # 创建测试用户
         user = Member(
@@ -586,7 +608,7 @@ class TestAttendanceServiceRealCoverage:
             password_hash=get_password_hash("UserPassword123!"),
             role=UserRole.MEMBER,
             is_active=True,
-            is_verified=True
+            is_verified=True,
         )
         async_session.add(user)
         await async_session.commit()
@@ -595,11 +617,11 @@ class TestAttendanceServiceRealCoverage:
         # 创建一个月的考勤记录
         now = datetime.now()
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        
+
         attendance_records = []
         for day in range(1, 22):  # 21个工作日
             record_date = month_start.replace(day=day)
-            
+
             # 模拟不同的考勤情况
             if day <= 18:  # 18天正常出勤
                 status = AttendanceStatus.PRESENT
@@ -629,20 +651,18 @@ class TestAttendanceServiceRealCoverage:
                 check_in_time=check_in,
                 check_out_time=check_out,
                 work_hours=work_hours,
-                notes=f"第{day}天考勤"
+                notes=f"第{day}天考勤",
             )
             async_session.add(record)
             attendance_records.append(record)
-        
+
         await async_session.commit()
 
         attendance_service = AttendanceService(async_session)
 
         # 计算月度统计
         monthly_stats = await attendance_service.calculate_monthly_attendance_stats(
-            member_id=user.id,
-            year=now.year,
-            month=now.month
+            member_id=user.id, year=now.year, month=now.month
         )
 
         # 验证统计结果
@@ -680,7 +700,7 @@ class TestAttendanceServiceRealCoverage:
             password_hash=get_password_hash("UserPassword123!"),
             role=UserRole.MEMBER,
             is_active=True,
-            is_verified=True
+            is_verified=True,
         )
         async_session.add(user)
         await async_session.commit()
@@ -695,8 +715,8 @@ class TestAttendanceServiceRealCoverage:
                 date=(now - timedelta(days=5)).date(),
                 status=AttendanceStatus.PRESENT,
                 check_in_time=now - timedelta(days=5, hours=15),  # 9:00
-                check_out_time=now - timedelta(days=5, hours=6),   # 18:00
-                work_hours=8.0
+                check_out_time=now - timedelta(days=5, hours=6),  # 18:00
+                work_hours=8.0,
             ),
             # 异常：工作时间过长
             AttendanceRecord(
@@ -704,8 +724,8 @@ class TestAttendanceServiceRealCoverage:
                 date=(now - timedelta(days=4)).date(),
                 status=AttendanceStatus.PRESENT,
                 check_in_time=now - timedelta(days=4, hours=17),  # 7:00
-                check_out_time=now - timedelta(days=4, hours=2),   # 22:00
-                work_hours=15.0  # 工作15小时
+                check_out_time=now - timedelta(days=4, hours=2),  # 22:00
+                work_hours=15.0,  # 工作15小时
             ),
             # 异常：工作时间过短
             AttendanceRecord(
@@ -714,26 +734,26 @@ class TestAttendanceServiceRealCoverage:
                 status=AttendanceStatus.PRESENT,
                 check_in_time=now - timedelta(days=3, hours=13),  # 11:00
                 check_out_time=now - timedelta(days=3, hours=11),  # 13:00
-                work_hours=2.0  # 工作2小时
+                work_hours=2.0,  # 工作2小时
             ),
             # 异常：深夜签到
             AttendanceRecord(
                 member_id=user.id,
                 date=(now - timedelta(days=2)).date(),
                 status=AttendanceStatus.PRESENT,
-                check_in_time=now - timedelta(days=2, hours=1),   # 23:00
-                check_out_time=now - timedelta(days=2, hours=0.5), # 23:30
-                work_hours=0.5
+                check_in_time=now - timedelta(days=2, hours=1),  # 23:00
+                check_out_time=now - timedelta(days=2, hours=0.5),  # 23:30
+                work_hours=0.5,
             ),
             # 异常：签退时间早于签到时间
             AttendanceRecord(
                 member_id=user.id,
                 date=(now - timedelta(days=1)).date(),
                 status=AttendanceStatus.PRESENT,
-                check_in_time=now - timedelta(days=1, hours=6),   # 18:00
-                check_out_time=now - timedelta(days=1, hours=15), # 9:00 (第二天)
-                work_hours=-9.0  # 负数工时
-            )
+                check_in_time=now - timedelta(days=1, hours=6),  # 18:00
+                check_out_time=now - timedelta(days=1, hours=15),  # 9:00 (第二天)
+                work_hours=-9.0,  # 负数工时
+            ),
         ]
 
         for record in anomaly_records:
@@ -746,14 +766,14 @@ class TestAttendanceServiceRealCoverage:
         anomalies = await attendance_service.detect_attendance_anomalies(
             member_id=user.id,
             start_date=(now - timedelta(days=7)).date(),
-            end_date=now.date()
+            end_date=now.date(),
         )
 
         # 验证检测到的异常
         assert len(anomalies) >= 4  # 至少检测到4个异常
 
         anomaly_types = [anomaly["type"] for anomaly in anomalies]
-        
+
         # 验证不同类型的异常都被检测到
         assert "EXCESSIVE_WORK_HOURS" in anomaly_types  # 工作时间过长
         assert "INSUFFICIENT_WORK_HOURS" in anomaly_types  # 工作时间过短
