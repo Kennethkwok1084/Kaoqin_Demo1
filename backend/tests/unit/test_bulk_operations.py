@@ -91,7 +91,7 @@ class TestLargeScaleBulkOperations:
                     id=task_id,
                     task_id=f"BULK_RUSH_{task_id}",
                     title=f"批量爆单任务 {task_id}",
-                    member_id=1,
+                    member_id=test_user.id,
                     task_type=TaskType.ONLINE,
                     status=TaskStatus.COMPLETED,
                     work_minutes=40,
@@ -188,7 +188,7 @@ class TestLargeScaleBulkOperations:
             work_hours_service,
             "calculate_monthly_work_hours",
             return_value={
-                "member_id": 1,
+                "member_id=test_user.id,
                 "total_hours": 25.5,
                 "is_full_attendance": True,
             },
@@ -329,7 +329,7 @@ class TestConcurrentBulkOperations:
                 id=task_id,
                 task_id=f"CONFLICT_{task_id}",
                 title=f"冲突测试任务{task_id}",
-                member_id=1,
+                member_id=test_user.id,
                 status=TaskStatus.COMPLETED,
             )
             for task_id in shared_task_ids
@@ -389,7 +389,7 @@ class TestConcurrentBulkOperations:
         self, work_hours_service, mock_db
     ):
         """测试并发工时计算一致性"""
-        member_id = 1
+        member_id=test_user.id
         year, month = 2024, 3
 
         # Mock 相同的任务数据

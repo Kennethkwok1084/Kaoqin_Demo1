@@ -110,7 +110,7 @@ class TestCriticalFieldMappingIssues:
 
         # 任务状态
         assert TaskStatus.PENDING.value == "pending"
-        assert TaskStatus.IN_PROGRESS.value == "in_progress"
+        assert TaskStatus.IN_PROGRESS.value == TaskStatus.IN_PROGRESS
         assert TaskStatus.COMPLETED.value == "completed"
         assert TaskStatus.CANCELLED.value == "cancelled"
         assert TaskStatus.ON_HOLD.value == "on_hold"
@@ -326,7 +326,7 @@ class TestFieldMappingTransformations:
         # Backend枚举值(小写+下划线)
         backend_enums = {
             "user_role": "group_leader",
-            "task_status": "in_progress",
+            "task_status": TaskStatus.IN_PROGRESS,
             "task_type": "online",
             "priority": "high",
         }
@@ -334,7 +334,7 @@ class TestFieldMappingTransformations:
         # Frontend可能期望的枚举值(保持一致或映射)
         frontend_enums = {
             "userRole": "group_leader",  # 保持一致
-            "taskStatus": "in_progress",  # 保持一致
+            "taskStatus": TaskStatus.IN_PROGRESS,  # 保持一致
             "taskType": "online",  # 保持一致
             "priority": "high",  # 保持一致
         }

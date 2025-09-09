@@ -337,7 +337,7 @@ class TestRepairTaskLifecycle:
         task_id = task["id"]
 
         # 2. 验证状态流转：PENDING -> ASSIGNED
-        assignment_data = {"assigned_member_id": 1}  # 假设存在ID为1的成员
+        assignment_data = {"assigned_member_id=test_user.id}  # 假设存在ID为1的成员
 
         assign_response = await e2e_client.put(
             f"/api/v1/tasks/repair/{task_id}/assign",

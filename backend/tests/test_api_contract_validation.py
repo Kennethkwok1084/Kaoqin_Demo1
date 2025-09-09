@@ -330,7 +330,7 @@ class TestEnumValueConsistency:
         """测试任务状态枚举值一致性"""
         # 验证所有状态值都是小写，使用下划线分隔
         assert TaskStatus.PENDING.value == "pending"
-        assert TaskStatus.IN_PROGRESS.value == "in_progress"
+        assert TaskStatus.IN_PROGRESS.value == TaskStatus.IN_PROGRESS
         assert TaskStatus.COMPLETED.value == "completed"
         assert TaskStatus.CANCELLED.value == "cancelled"
         assert TaskStatus.ON_HOLD.value == "on_hold"

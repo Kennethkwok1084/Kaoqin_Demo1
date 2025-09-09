@@ -168,7 +168,7 @@ class TestRemainingGetOperationsComplete:
     ):
         """测试获取成员详情 - GET /api/v1/members/{id}"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id = test_user.id
 
         response = await async_client.get(
             f"/api/v1/members/{member_id}", headers=headers
@@ -184,7 +184,7 @@ class TestRemainingGetOperationsComplete:
     ):
         """测试获取成员活动日志 - GET /api/v1/members/{id}/activity-log"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id = test_user.id
 
         response = await async_client.get(
             f"/api/v1/members/{member_id}/activity-log", headers=headers
@@ -200,7 +200,7 @@ class TestRemainingGetOperationsComplete:
     ):
         """测试获取成员绩效 - GET /api/v1/members/{id}/performance"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id = test_user.id
 
         response = await async_client.get(
             f"/api/v1/members/{member_id}/performance", headers=headers
@@ -216,7 +216,7 @@ class TestRemainingGetOperationsComplete:
     ):
         """测试获取成员权限 - GET /api/v1/members/{id}/permissions"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id = test_user.id
 
         response = await async_client.get(
             f"/api/v1/members/{member_id}/permissions", headers=headers
@@ -232,7 +232,7 @@ class TestRemainingGetOperationsComplete:
     ):
         """测试获取成员统计 - GET /api/v1/members/{id}/statistics"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id = test_user.id
 
         response = await async_client.get(
             f"/api/v1/members/{member_id}/statistics", headers=headers
@@ -391,7 +391,7 @@ class TestRemainingPostOperationsComplete:
     ):
         """测试完善成员资料 - POST /api/v1/members/{id}/complete-profile"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id = test_user.id
         profile_data = {
             "phone": "13800138000",
             "address": "测试地址",

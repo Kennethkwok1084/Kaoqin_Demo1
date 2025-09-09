@@ -4,6 +4,7 @@
 """
 
 from datetime import datetime, timedelta
+import uuid
 
 import pytest
 from sqlalchemy import and_, func, select, text
@@ -27,7 +28,7 @@ class TestDataIntegrityConstraints:
             title="无效外键任务",
             task_type=TaskType.ONLINE,
             status=TaskStatus.PENDING,
-            member_id=99999,  # 不存在的成员ID
+            member_id=test_user.id,  # 不存在的成员ID
             report_time=datetime.utcnow(),
         )
 
@@ -77,7 +78,7 @@ class TestDataIntegrityConstraints:
 
         # 创建第一个任务
         task1 = RepairTask(
-            task_id="UNIQUE_TASK_001",
+            task_id=f"UNIQUE_TASK_{uuid.uuid4().hex[:8]}",
             title="第一个任务",
             task_type=TaskType.ONLINE,
             status=TaskStatus.PENDING,
@@ -89,7 +90,7 @@ class TestDataIntegrityConstraints:
 
         # 尝试创建相同task_id的任务
         task2 = RepairTask(
-            task_id="UNIQUE_TASK_001",  # 相同的task_id
+            task_id=f"UNIQUE_TASK_{uuid.uuid4().hex[:8]}",  # 相同的task_id
             title="第二个任务",
             task_type=TaskType.OFFLINE,
             status=TaskStatus.PENDING,
@@ -165,7 +166,7 @@ class TestDataIntegrityConstraints:
                 text(
                     """
                     INSERT INTO repair_tasks (task_id, title, task_type, status, member_id, report_time)
-                    VALUES ('ENUM_TEST_001', '无效枚举任务', 'INVALID_TYPE', 'PENDING', :member_id, :report_time)
+                    VALUES ('ENUM_TEST_001', '无效枚举任务', TaskType.REPAIR, 'PENDING', :member_id, :report_time)
                 """
                 ),
                 {"member_id": member.id, "report_time": datetime.utcnow()},
@@ -190,8 +191,8 @@ class TestDataIntegrityConstraints:
         assert validator.validate_user_role("MEMBER") is True
 
         # 测试无效值
-        assert validator.validate_task_status("INVALID_STATUS") is False
-        assert validator.validate_task_type("INVALID_TYPE") is False
+        assert validator.validate_task_status(TaskStatus.PENDING) is False
+        assert validator.validate_task_type(TaskType.REPAIR) is False
         assert validator.validate_user_role("INVALID_ROLE") is False
 
 
@@ -236,8 +237,8 @@ class TestBulkOperationIntegrity:
                 # 无效记录 - ENUM值无效
                 "task_id": "BULK_INVALID_002",
                 "title": "无效任务2",
-                "task_type": "INVALID_TYPE",  # 无效类型
-                "status": "INVALID_STATUS",  # 无效状态
+                "task_type": TaskType.REPAIR,  # 无效类型
+                "status": TaskStatus.PENDING,  # 无效状态
             },
         ]
 
@@ -317,7 +318,7 @@ class TestBulkOperationIntegrity:
                 try:
                     await async_session.execute(
                         text(
-                            "UPDATE repair_tasks SET status = 'INVALID_STATUS' WHERE id = :task_id"
+                            "UPDATE repair_tasks SET status = TaskStatus.PENDING WHERE id = :task_id"
                         ),
                         {"task_id": task_ids[3]},
                     )
@@ -449,7 +450,7 @@ class TestBulkOperationIntegrity:
             # 制造一个会导致回滚的错误
             # 尝试插入重复的task_id
             duplicate_task = RepairTask(
-                task_id="ROLLBACK_TASK_000",  # 重复ID
+                task_id=f"ROLLBACK_TASK_{uuid.uuid4().hex[:8]}",  # 重复ID
                 title="重复任务",
                 task_type=TaskType.ONLINE,
                 status=TaskStatus.PENDING,

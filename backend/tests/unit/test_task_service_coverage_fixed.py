@@ -128,7 +128,7 @@ class TestTaskServiceFixed:
             "monitoring_type": "网络监控",
             "start_time": start_time,
             "end_time": end_time,
-            "member_id": 1,
+            "member_id=test_user.id,
         }
 
         # Mock database operations
@@ -162,7 +162,7 @@ class TestTaskServiceFixed:
             "title": "Invalid monitoring",
             "start_time": start_time,
             "end_time": end_time,
-            "member_id": 1,
+            "member_id=test_user.id,
         }
 
         async_session.rollback = AsyncMock()
@@ -186,7 +186,7 @@ class TestTaskServiceFixed:
             "assisted_person": "张工程师",
             "start_time": start_time,
             "end_time": end_time,
-            "member_id": 1,
+            "member_id=test_user.id,
         }
 
         # Mock database operations
@@ -220,7 +220,7 @@ class TestTaskServiceFixed:
             task_id="T001",
             title="Test Task",
             status=TaskStatus.PENDING,
-            member_id=1,
+            member_id=test_user.id,
             description="Initial task description",
         )
 
@@ -364,7 +364,7 @@ class TestTaskServiceFixed:
         """Test getting member task summary"""
         service = TaskService(async_session)
 
-        member_id = 1
+        member_id=test_user.id
         year = 2025
         month = 1
 
@@ -635,7 +635,7 @@ class TestTaskServiceFixed:
             "title": "Zero duration task",
             "start_time": start_time,
             "end_time": end_time,
-            "member_id": 1,
+            "member_id=test_user.id,
         }
 
         async_session.rollback = AsyncMock()
@@ -671,7 +671,7 @@ def sample_repair_task():
         priority=TaskPriority.MEDIUM,
         task_type=TaskType.ONLINE,
         status=TaskStatus.PENDING,
-        member_id=1,
+        member_id=test_user.id,
         report_time=datetime.utcnow(),
         base_work_minutes=40,
         work_minutes=40,
@@ -686,7 +686,7 @@ def sample_monitoring_task():
 
     return MonitoringTask(
         id=1,
-        member_id=1,
+        member_id=test_user.id,
         title="Network Monitoring",
         description="Monitor network status",
         location="Server room",

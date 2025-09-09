@@ -487,7 +487,7 @@ class TestCompleteAPICoverage:
 
         # 2. 创建考勤记录
         create_record_data = {
-            "member_id": 1,
+            "member_id=test_user.id,
             "check_in_time": datetime.now().isoformat(),
             "work_type": "REPAIR",
         }

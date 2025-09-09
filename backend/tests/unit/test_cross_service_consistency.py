@@ -532,7 +532,7 @@ class TestServiceIntegrationErrorHandling:
         self, task_service, work_hours_service, stats_service, mock_db
     ):
         """测试级联失败处理"""
-        member_id = 1
+        member_id = test_user.id
         year, month = 2024, 3
 
         # 模拟任务服务失败
@@ -594,7 +594,7 @@ class TestServiceIntegrationErrorHandling:
         self, work_hours_service, stats_service, mock_db
     ):
         """测试数据一致性恢复机制"""
-        member_id = 1
+        member_id = test_user.id
         year, month = 2024, 3
 
         # 模拟数据不一致场景
@@ -665,7 +665,7 @@ class TestServiceIntegrationErrorHandling:
         self, task_service, work_hours_service, stats_service, mock_db
     ):
         """测试跨服务事务一致性"""
-        member_id = 1
+        member_id = test_user.id
         task_id = "TRANS_TEST_001"
 
         # 模拟跨服务事务：任务完成 -> 工时计算 -> 统计更新

@@ -243,7 +243,7 @@ class TestAttendanceCompleteAPI:
     ):
         """测试考勤记录创建"""
         record_data = {
-            "member_id": 1,
+            "member_id=test_user.id,
             "check_in_time": "2024-12-01T09:00:00",
             "check_out_time": "2024-12-01T18:00:00",
             "work_location": "办公室",

@@ -211,7 +211,7 @@ class TestTasksCRUD:
         assert data["id"] == task.id
         assert data["title"] == "详情测试任务"
         assert data["task_number"] == "T202501290001"
-        assert data["status"] == "in_progress"
+        assert data["status"] == TaskStatus.IN_PROGRESS
         assert data["assigned_to"] == test_member_user.id
         assert data["reporter_name"] == "测试报告人"
         assert data["reporter_contact"] == "13812345678"
@@ -294,7 +294,10 @@ class TestTasksCRUD:
         db_session.refresh(task)
 
         # 开始任务
-        start_data = {"status": "in_progress", "completion_note": "开始处理任务"}
+        start_data = {
+            "status": TaskStatus.IN_PROGRESS,
+            "completion_note": "开始处理任务",
+        }
 
         response = client.patch(
             f"/api/tasks/repair/{task.id}/status",
@@ -304,7 +307,7 @@ class TestTasksCRUD:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "in_progress"
+        assert data["status"] == TaskStatus.IN_PROGRESS
 
         # 完成任务
         complete_data = {

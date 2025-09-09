@@ -323,7 +323,7 @@ class TestBatchAttendanceOperationsAPI:
             "attendance_records": [
                 {
                     "id": 1,
-                    "member_id": 1,
+                    "member_id=test_user.id,
                     "date": "2024-12-15",
                     "check_in_time": "09:00:00",
                     "check_out_time": "18:00:00",

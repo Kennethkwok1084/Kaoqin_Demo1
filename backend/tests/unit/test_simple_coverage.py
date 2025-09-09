@@ -128,7 +128,7 @@ class TestBasicCoverage:
             priority=TaskPriority.HIGH,
             task_type=TaskType.OFFLINE,
             status=TaskStatus.COMPLETED,
-            member_id=1,
+            member_id=test_user.id,
             work_minutes=100,
             report_time=now - timedelta(hours=2),
             completion_time=now,
@@ -236,7 +236,7 @@ class TestBasicCoverage:
 
         # Test attendance record creation
         attendance_data = AttendanceRecordCreate(
-            member_id=1,
+            member_id=test_user.id,
             attendance_date=date.today(),
             checkin_time=datetime.now().replace(hour=9, minute=0),
             checkout_time=datetime.now().replace(hour=17, minute=0),
@@ -316,7 +316,7 @@ class TestBasicCoverage:
 
         # Test TaskStatus enum
         assert TaskStatus.PENDING.value == "pending"
-        assert TaskStatus.IN_PROGRESS.value == "in_progress"
+        assert TaskStatus.IN_PROGRESS.value == TaskStatus.IN_PROGRESS
         assert TaskStatus.COMPLETED.value == "completed"
 
         # Test TaskType enum

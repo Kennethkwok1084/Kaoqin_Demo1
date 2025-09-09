@@ -95,7 +95,7 @@ class TestWorkHoursCalculationServiceBasic:
             task_type=TaskType.ONLINE,
             status=TaskStatus.COMPLETED,
             report_time=datetime.utcnow(),
-            member_id=1,
+            member_id=test_user.id,
         )
         task.tags = []
         task.is_rush_order = False
@@ -111,7 +111,7 @@ class TestWorkHoursCalculationServiceBasic:
             task_type=TaskType.ONLINE,
             status=TaskStatus.COMPLETED,
             report_time=datetime.utcnow(),
-            member_id=1,
+            member_id=test_user.id,
         )
         task.tags = []
         task.is_rush_order = True
@@ -204,7 +204,7 @@ class TestCalculateTaskWorkMinutes(TestWorkHoursCalculationServiceBasic):
             task_type=TaskType.OFFLINE,
             status=TaskStatus.COMPLETED,
             report_time=datetime.utcnow(),
-            member_id=1,
+            member_id=test_user.id,
         )
         task.tags = []
         task.is_rush_order = False
@@ -466,7 +466,7 @@ class TestMonthlyCalculations(TestWorkHoursCalculationServiceBasic):
         """测试更新月度总结 - 更新现有记录"""
         # Mock现有记录
         existing_summary = MonthlyAttendanceSummary(
-            member_id=1,
+            member_id=test_user.id,
             year=2025,
             month=1,
             repair_work_minutes=100,
@@ -600,7 +600,7 @@ class TestStatisticsAndReports(TestWorkHoursCalculationServiceBasic):
         # Mock查询结果
         summaries = [
             MagicMock(
-                member_id=1,
+                member_id=test_user.id,
                 repair_work_minutes=200,
                 monitoring_work_minutes=100,
                 assistance_work_minutes=50,

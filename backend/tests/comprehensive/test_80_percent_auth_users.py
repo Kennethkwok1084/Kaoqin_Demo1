@@ -167,7 +167,7 @@ class TestMemberManagementAPI:
     ):
         """测试获取指定成员信息"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id = test_user.id
         response = await async_client.get(
             f"/api/v1/members/{member_id}", headers=headers
         )
@@ -188,7 +188,7 @@ class TestMemberManagementAPI:
     ):
         """测试更新指定成员信息"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id = test_user.id
         update_data = {
             "name": "更新的成员名",
             "email": "updated_member@example.com",
@@ -230,7 +230,7 @@ class TestMemberManagementAPI:
     ):
         """测试获取成员权限"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id = test_user.id
         response = await async_client.get(
             f"/api/v1/members/{member_id}/permissions", headers=headers
         )
@@ -250,7 +250,7 @@ class TestMemberManagementAPI:
     ):
         """测试更新成员角色"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id = test_user.id
         roles_data = {
             "roles": ["member", "team_leader"],
             "effective_date": datetime.now().isoformat(),
@@ -272,7 +272,7 @@ class TestMemberManagementAPI:
     ):
         """测试获取成员活动日志"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id = test_user.id
         params = {
             "page": 1,
             "size": 20,
@@ -297,7 +297,7 @@ class TestMemberManagementAPI:
     ):
         """测试获取成员统计信息"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id = test_user.id
         params = {"period": "month", "year": 2024, "month": 12}
         response = await async_client.get(
             f"/api/v1/members/{member_id}/statistics", params=params, headers=headers
@@ -318,7 +318,7 @@ class TestMemberManagementAPI:
     ):
         """测试获取成员绩效报告"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id = test_user.id
         params = {"report_type": "monthly", "year": 2024, "month": 12}
         response = await async_client.get(
             f"/api/v1/members/{member_id}/performance", params=params, headers=headers
@@ -337,7 +337,7 @@ class TestMemberManagementAPI:
     ):
         """测试更新成员团队分配"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id = test_user.id
         teams_data = {
             "teams": [1, 2, 3],
             "primary_team": 1,
@@ -360,7 +360,7 @@ class TestMemberManagementAPI:
     ):
         """测试完善成员资料"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id = test_user.id
         profile_data = {
             "personal_info": {
                 "phone": "13800138000",

@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from httpx import AsyncClient
+from fastapi import HTTPException
 
 from app.main import app
 from app.models.attendance import AttendanceRecord
@@ -257,7 +258,7 @@ class TestEfficiencyAnalysisAPI(TestStatisticsAPIBasic):
             mock_db.execute.return_value = mock_result
 
             response = await client.get(
-                "/api/v1/statistics/efficiency?member_id=1",
+                "/api/v1/statistics/efficiency?member_id=test_user.id",
                 headers={"Authorization": "Bearer admin_token"},
             )
 
@@ -654,7 +655,7 @@ class TestAttendanceStatisticsAPI(TestStatisticsAPIBasic):
                 "attendance_rate": 95.5,
                 "member_statistics": [
                     {
-                        "member_id": 1,
+                        "member_id=test_user.id,
                         "name": "张三",
                         "work_days": 20,
                         "work_hours": 150,
@@ -696,7 +697,7 @@ class TestAttendanceStatisticsAPI(TestStatisticsAPIBasic):
 
             mock_attendance_service = AsyncMock()
             mock_attendance_service.get_member_statistics.return_value = {
-                "member_id": 1,
+                "member_id=test_user.id,
                 "name": "张三",
                 "work_days": 20,
                 "work_hours": 150,
@@ -706,7 +707,7 @@ class TestAttendanceStatisticsAPI(TestStatisticsAPIBasic):
             mock_service.return_value = mock_attendance_service
 
             response = await client.get(
-                "/api/v1/statistics/attendance?member_id=1&year=2025&month=1",
+                "/api/v1/statistics/attendance?member_id=test_user.id&year=2025&month=1",
                 headers={"Authorization": "Bearer admin_token"},
             )
 
@@ -777,7 +778,7 @@ class TestWorkHoursOverviewAPI(TestStatisticsAPIBasic):
             mock_db.execute.side_effect = mock_results
 
             response = await client.get(
-                "/api/v1/statistics/work-hours/overview?member_id=1&start_date=2025-01-01&end_date=2025-01-31",
+                "/api/v1/statistics/work-hours/overview?member_id=test_user.id&start_date=2025-01-01&end_date=2025-01-31",
                 headers={"Authorization": "Bearer leader_token"},
             )
 

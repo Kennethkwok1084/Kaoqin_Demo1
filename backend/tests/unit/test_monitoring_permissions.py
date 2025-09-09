@@ -641,7 +641,7 @@ class TestMonitoringTaskAccessControl:
     ):
         """测试管理员可以查看所有监控任务"""
         all_tasks = [
-            MonitoringTask(id=1, member_id=1, location="机房A"),
+            MonitoringTask(id=1, member_id=test_user.id, location="机房A"),
             MonitoringTask(id=2, member_id=2, location="机房B"),
             MonitoringTask(id=3, member_id=3, location="机房C"),
         ]

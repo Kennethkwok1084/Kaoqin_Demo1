@@ -261,14 +261,14 @@ class TestTaskService:
             mock_task.title = f"Task {i}"
             mock_task.reporter_name = "Test Reporter"
             mock_task.reporter_contact = "123456789"
-            mock_task.member_id = 1
+            mock_task.member_id = test_user.id
             mock_tasks.append(mock_task)
 
         mock_result = Mock()
         mock_result.scalars.return_value.all.return_value = mock_tasks
 
         with patch.object(async_session, "execute", return_value=mock_result):
-            tasks = await service.get_tasks_by_member(member_id=1)
+            tasks = await service.get_tasks_by_member(member_id=test_user.id)
 
             assert len(tasks) == 2
             assert all(task.member_id == 1 for task in tasks)

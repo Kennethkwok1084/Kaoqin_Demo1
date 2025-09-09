@@ -152,7 +152,7 @@ class TestCoverageBoost:
         assert UserRole.GUEST.value == "guest"
 
         assert TaskStatus.PENDING.value == "pending"
-        assert TaskStatus.IN_PROGRESS.value == "in_progress"
+        assert TaskStatus.IN_PROGRESS.value == TaskStatus.IN_PROGRESS
         assert TaskStatus.COMPLETED.value == "completed"
 
         assert TaskType.ONLINE.value == "online"

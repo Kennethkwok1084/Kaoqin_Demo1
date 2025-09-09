@@ -372,7 +372,7 @@ class TestMemberProfileAndSettingsAPI:
     ):
         """测试获取成员资料"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id = test_user.id
         params = {"include_statistics": True, "include_recent_activity": True}
 
         response = await async_client.get(
@@ -394,7 +394,7 @@ class TestMemberProfileAndSettingsAPI:
     ):
         """测试更新成员设置"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id = test_user.id
         settings_data = {
             "notifications": {"email": True, "sms": False, "push": True},
             "preferences": {
@@ -421,7 +421,7 @@ class TestMemberProfileAndSettingsAPI:
     ):
         """测试获取成员活动记录"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id = test_user.id
         params = {
             "date_from": "2024-12-01",
             "date_to": "2024-12-31",

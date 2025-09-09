@@ -682,7 +682,9 @@ class TestErrorHandling(TestTaskServiceBasic):
         mock_db.execute.side_effect = Exception("Database connection lost")
 
         with pytest.raises(Exception, match="Database connection lost"):
-            await service.get_member_task_summary(member_id=1, year=2025, month=1)
+            await service.get_member_task_summary(
+                member_id=test_user.id, year=2025, month=1
+            )
 
     @pytest.mark.asyncio
     async def test_concurrent_task_modification(

@@ -231,7 +231,7 @@ class TestTasksAdvancedAPI:
         mapping_data = {
             "mapping_rules": {
                 "新建": "pending",
-                "进行中": "in_progress",
+                "进行中": TaskStatus.IN_PROGRESS,
                 "已完成": "completed",
                 "已取消": "cancelled",
             },
@@ -431,7 +431,7 @@ class TestTasksComprehensiveCoverage:
         """测试任务搜索和过滤"""
         search_params = {
             "keyword": "测试",
-            "status": "in_progress",
+            "status": TaskStatus.IN_PROGRESS,
             "priority": "high",
             "assignee_id": 1,
             "date_from": "2024-12-01",

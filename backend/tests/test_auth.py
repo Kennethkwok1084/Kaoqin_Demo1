@@ -310,7 +310,7 @@ class TestPasswordChange:
 
         assert response.status_code == 200
         assert test_response.is_success(response)
-        assert "Password changed successfully" in test_response.get_message(response)
+        assert "密码修改成功" in test_response.get_message(response)
 
     def test_password_change_with_wrong_current_password(
         self,

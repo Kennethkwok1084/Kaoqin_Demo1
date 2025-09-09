@@ -22,7 +22,7 @@ class TestWorkHoursManagementAPI:
             "size": 20,
             "date_from": "2024-12-01",
             "date_to": "2024-12-31",
-            "member_id": 1,
+            "member_id=test_user.id,
         }
         response = await async_client.get(
             "/api/v1/work-hours", params=params, headers=headers
@@ -53,7 +53,7 @@ class TestWorkHoursManagementAPI:
             "updates": [
                 {
                     "task_id": 1,
-                    "member_id": 1,
+                    "member_id=test_user.id,
                     "hours": 8.0,
                     "date": "2024-12-15",
                     "description": "完成模块开发",
@@ -296,7 +296,7 @@ class TestWorkHoursCarryoverAPI:
     ):
         """测试获取指定成员的工时结转汇总"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id=test_user.id
         params = {"year": 2024, "include_history": True}
         response = await async_client.get(
             f"/api/v1/work-hours/carryover/summary/{member_id}",
@@ -321,7 +321,7 @@ class TestWorkHoursCarryoverAPI:
     ):
         """测试获取指定成员的工时结转预测"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id=test_user.id
         params = {"projection_months": 3, "scenario": "current_trend"}
         response = await async_client.get(
             f"/api/v1/work-hours/carryover/projection/{member_id}",
@@ -351,7 +351,7 @@ class TestWorkHoursCarryoverAPI:
         batch_data = {
             "carryover_requests": [
                 {
-                    "member_id": 1,
+                    "member_id=test_user.id,
                     "carryover_hours": 8.0,
                     "carryover_type": "overtime",
                     "reason": "项目加班",

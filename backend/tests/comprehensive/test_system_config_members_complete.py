@@ -262,7 +262,7 @@ class TestMembersAdvancedAPI:
         self, async_client: AsyncClient, auth_headers, token
     ):
         """测试成员角色管理"""
-        member_id = 1
+        member_id = test_user.id
         role_data = {
             "role": "group_leader",
             "permissions": ["manage_tasks", "view_reports"],
@@ -287,7 +287,7 @@ class TestMembersAdvancedAPI:
         self, async_client: AsyncClient, auth_headers, token
     ):
         """测试成员权限检查"""
-        member_id = 1
+        member_id = test_user.id
         params = {"permission": "manage_tasks", "resource_id": None}
 
         response = await async_client.get(
@@ -309,7 +309,7 @@ class TestMembersAdvancedAPI:
         self, async_client: AsyncClient, auth_headers, token
     ):
         """测试成员活动日志"""
-        member_id = 1
+        member_id = test_user.id
         params = {
             "action_type": "login",
             "date_from": "2024-12-01",
@@ -336,7 +336,7 @@ class TestMembersAdvancedAPI:
         self, async_client: AsyncClient, auth_headers, token
     ):
         """测试成员统计信息"""
-        member_id = 1
+        member_id = test_user.id
         params = {
             "period": "month",
             "include_work_hours": True,
@@ -362,7 +362,7 @@ class TestMembersAdvancedAPI:
         self, async_client: AsyncClient, auth_headers, token
     ):
         """测试成员绩效报告"""
-        member_id = 1
+        member_id = test_user.id
         params = {"report_type": "monthly", "year": 2024, "month": 12}
 
         response = await async_client.get(
@@ -384,7 +384,7 @@ class TestMembersAdvancedAPI:
         self, async_client: AsyncClient, auth_headers, token
     ):
         """测试成员档案完善"""
-        member_id = 1
+        member_id = test_user.id
         profile_data = {
             "phone": "13800138000",
             "email": "test@example.com",
@@ -412,7 +412,7 @@ class TestMembersAdvancedAPI:
         self, async_client: AsyncClient, auth_headers, token
     ):
         """测试成员团队分配"""
-        member_id = 1
+        member_id = test_user.id
         team_data = {
             "team_ids": [1, 2],
             "primary_team_id": 1,

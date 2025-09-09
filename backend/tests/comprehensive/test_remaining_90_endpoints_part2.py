@@ -259,7 +259,7 @@ class TestRemainingPutOperationsComplete:
     ):
         """测试更新成员信息 - PUT /api/v1/{member_id}"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id = test_user.id
         update_data = {
             "name": "更新的用户名",
             "department": "新部门",
@@ -343,7 +343,7 @@ class TestRemainingPutOperationsComplete:
     ):
         """测试更新成员团队 - PUT /api/v1/members/{id}/teams"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id = test_user.id
         teams_data = {
             "team_ids": [1, 2, 3],
             "primary_team": 1,
@@ -366,7 +366,7 @@ class TestRemainingPutOperationsComplete:
         headers = auth_headers(token)
         repair_id = 1
         repair_data = {
-            "status": "in_progress",
+            "status": TaskStatus.IN_PROGRESS,
             "priority": "high",
             "estimated_hours": 4.0,
         }
@@ -419,7 +419,7 @@ class TestRemainingMiscEndpoints:
     ):
         """测试获取工时结转汇总 - GET /api/v1/work-hours/carryover/summary/{member_id}"""
         headers = auth_headers(token)
-        member_id = 1
+        member_id = test_user.id
 
         response = await async_client.get(
             f"/api/v1/work-hours/carryover/summary/{member_id}", headers=headers

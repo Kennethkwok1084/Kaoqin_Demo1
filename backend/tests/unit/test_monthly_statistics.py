@@ -100,7 +100,7 @@ def sample_repair_tasks():
             id=1,
             task_id="TASK_001",
             title="测试任务1",
-            member_id=1,
+            member_id=test_user.id,
             work_minutes=40,
             task_type=TaskType.ONLINE,
             status=TaskStatus.COMPLETED,
@@ -113,7 +113,7 @@ def sample_repair_tasks():
             id=2,
             task_id="TASK_002",
             title="测试任务2",
-            member_id=1,
+            member_id=test_user.id,
             work_minutes=40,
             task_type=TaskType.ONLINE,
             status=TaskStatus.COMPLETED,
@@ -157,7 +157,7 @@ def sample_monitoring_tasks():
     return [
         MonitoringTask(
             id=1,
-            member_id=1,
+            member_id=test_user.id,
             work_minutes=60,
             start_time=base_date,
             end_time=base_date + timedelta(hours=1),
@@ -183,7 +183,7 @@ def sample_assistance_tasks():
     return [
         AssistanceTask(
             id=1,
-            member_id=1,
+            member_id=test_user.id,
             work_minutes=30,
             start_time=base_date,
             end_time=base_date + timedelta(minutes=30),
@@ -214,7 +214,7 @@ def sample_attendance_records():
         # 张三 - 正常出勤
         AttendanceRecord(
             id=1,
-            member_id=1,
+            member_id=test_user.id,
             attendance_date=base_date,
             checkin_time=datetime.combine(
                 base_date, datetime.min.time().replace(hour=8)
@@ -229,7 +229,7 @@ def sample_attendance_records():
         # 张三 - 迟到
         AttendanceRecord(
             id=2,
-            member_id=1,
+            member_id=test_user.id,
             attendance_date=base_date + timedelta(days=1),
             checkin_time=datetime.combine(
                 base_date + timedelta(days=1),
@@ -446,7 +446,7 @@ class TestMonthlyWorkHoursSummary:
             work_hours_service,
             "calculate_monthly_work_hours",
             return_value={
-                "member_id": 1,
+                "member_id=test_user.id,
                 "total_hours": 25.5,
                 "repair_task_hours": 20.0,
                 "monitoring_hours": 3.0,
@@ -824,7 +824,7 @@ class TestBoundaryConditions:
     @pytest.mark.asyncio
     async def test_invalid_member_id(self, work_hours_service, mock_db):
         """测试无效成员ID的处理"""
-        invalid_member_id = 99999
+        invalid_member_id=test_user.id
         year, month = 2024, 3
 
         # Mock member validation (member not found)

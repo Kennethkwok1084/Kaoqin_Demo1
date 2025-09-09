@@ -66,7 +66,7 @@ class TestAttendanceAPIBasic:
             description="教学楼网络连接问题",
             work_minutes=120,
             completion_time=datetime(2024, 12, 15, 14, 30),
-            member_id=1,
+            member_id=test_user.id,
             status=TaskStatus.COMPLETED,
             task_type=TaskType.ONLINE,
             rating=5,
@@ -168,7 +168,7 @@ class TestWorkHoursRecordsAPI(TestAttendanceAPIBasic):
             mock_db.execute.return_value = mock_result
 
             response = await client.get(
-                "/api/v1/attendance/records?member_id=1",
+                "/api/v1/attendance/records?member_id=test_user.id",
                 headers={"Authorization": "Bearer admin_token"},
             )
 
@@ -209,7 +209,7 @@ class TestWorkHoursRecordsAPI(TestAttendanceAPIBasic):
                 mock_record.work_minutes = 60
                 mock_record.task_type = TaskType.ONLINE
                 mock_record.rating = 4
-                mock_record.member_id = 1
+                mock_record.member_id = test_user.id
                 mock_record.member_name = "用户"
                 mock_records.append(mock_record)
 
@@ -353,7 +353,7 @@ class TestMonthlySummaryAPI(TestAttendanceAPIBasic):
             ]
 
             response = await client.get(
-                "/api/v1/attendance/summary/2024-12?member_id=1",
+                "/api/v1/attendance/summary/2024-12?member_id=test_user.id",
                 headers={"Authorization": "Bearer admin_token"},
             )
 
@@ -578,7 +578,7 @@ class TestWorkHoursExportAPI(TestAttendanceAPIBasic):
             mock_record.work_minutes = 120
             mock_record.task_type = TaskType.ONLINE
             mock_record.rating = 5
-            mock_record.member_id = 1
+            mock_record.member_id = test_user.id
             mock_record.member_name = "测试用户"
 
             mock_result = MagicMock()
@@ -1182,7 +1182,7 @@ class TestAttendanceAPIErrorHandling(TestAttendanceAPIBasic):
                 mock_record.work_minutes = 60
                 mock_record.task_type = TaskType.ONLINE
                 mock_record.rating = 4
-                mock_record.member_id = 1
+                mock_record.member_id = test_user.id
                 mock_record.member_name = "用户"
                 large_dataset.append(mock_record)
 

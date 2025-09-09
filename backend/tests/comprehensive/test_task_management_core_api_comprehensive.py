@@ -45,7 +45,7 @@ class TestTaskManagementCoreAPI:
             "title": "更新的维修任务",
             "description": "更新的任务描述",
             "priority": "high",
-            "status": "in_progress",
+            "status": TaskStatus.IN_PROGRESS,
             "assignee_id": 2,
             "estimated_hours": 8.5,
         }
@@ -217,7 +217,7 @@ class TestRepairManagementAPI:
         headers = auth_headers(token)
         task_id = 1
         update_data = {
-            "repair_status": "in_progress",
+            "repair_status": TaskStatus.IN_PROGRESS,
             "repair_notes": "维修进行中",
             "estimated_completion": (datetime.now() + timedelta(hours=24)).isoformat(),
             "parts_needed": ["零件A", "零件B"],

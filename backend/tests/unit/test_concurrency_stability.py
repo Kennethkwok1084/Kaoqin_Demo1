@@ -76,7 +76,7 @@ class TestConcurrentRushTaskMarking:
                 id=task_id,
                 task_id=f"SHARED_{task_id}",
                 title=f"共享任务{task_id}",
-                member_id=1,
+                member_id=test_user.id,
                 status=TaskStatus.COMPLETED,
                 work_minutes=40,
             )
@@ -261,7 +261,7 @@ class TestConcurrentWorkHoursCalculation:
         self, work_hours_service, mock_db
     ):
         """测试同一成员的并发月度工时计算"""
-        member_id = 1
+        member_id = test_user.id
         year, month = 2024, 3
 
         # 模拟相同的任务数据

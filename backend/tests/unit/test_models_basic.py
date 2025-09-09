@@ -12,7 +12,7 @@ def test_create_rush_order_tag() -> None:
 
 def test_attendance_record_instantiation() -> None:
     record = AttendanceRecord(
-        member_id=1,
+        member_id=test_user.id,
         attendance_date=date.today(),
         work_hours=0.0,
         status="未签到",

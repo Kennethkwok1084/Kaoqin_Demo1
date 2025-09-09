@@ -221,7 +221,7 @@ class TestStatisticsAPI:
         required_fields = [
             "total",
             "completed",
-            "in_progress",
+            TaskStatus.IN_PROGRESS,
             "pending",
             "completion_rate",
             "total_work_hours",

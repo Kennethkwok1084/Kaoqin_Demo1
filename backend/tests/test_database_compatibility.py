@@ -112,7 +112,7 @@ class TestSQLiteEnumValidator:
 
         # 大小写兼容
         assert SQLiteEnumValidator.validate_task_status("pending") is True
-        assert SQLiteEnumValidator.validate_task_status("in_progress") is True
+        assert SQLiteEnumValidator.validate_task_status(TaskStatus.IN_PROGRESS) is True
 
         # 无效值
         assert SQLiteEnumValidator.validate_task_status("INVALID") is False

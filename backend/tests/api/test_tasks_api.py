@@ -706,7 +706,7 @@ class TestTaskUpdateAPI(TestTasksAPIBasic):
     @pytest.mark.asyncio
     async def test_update_task_status_basic(self, client, sample_repair_task):
         """测试更新任务状态基础功能"""
-        update_data = {"status": "in_progress", "note": "开始处理网络故障"}
+        update_data = {"status": TaskStatus.IN_PROGRESS, "note": "开始处理网络故障"}
 
         with (
             patch("app.api.deps.get_db") as mock_get_db,

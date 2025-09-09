@@ -19,7 +19,15 @@ from app.api.deps import get_admin_user, get_current_active_user, get_current_us
 from app.api.v1 import attendance, dashboard, members, statistics, system, tasks
 from app.core.config import settings
 from app.core.database import get_async_session
-from app.core.exceptions import *
+from app.core.exceptions import (
+    ValidationError,
+    NotFoundError,
+    PermissionDeniedError,
+    DatabaseError,
+    AuthenticationError,
+    BusinessLogicError,
+    ExternalServiceError,
+)
 from app.main import app as fastapi_app
 from app.models.attendance import AttendanceException, AttendanceRecord
 from app.models.member import Member, UserRole
@@ -27,6 +35,7 @@ from app.models.task import RepairTask, TaskStatus, TaskType
 from app.services.attendance_service import AttendanceService
 from app.services.stats_service import StatisticsService
 from app.services.task_service import TaskService
+from app.services.work_hours_service import WorkHoursService
 from app.services.work_hours_service import WorkHoursCalculationService
 
 
@@ -440,7 +449,7 @@ class TestIntegrationScenariosCoverage:
         )
 
         mock_attendance = AttendanceRecord(
-            id=1, member_id=1, attendance_date=date.today(), work_hours=8.0
+            id=1, member_id=test_user.id, attendance_date=date.today(), work_hours=8.0
         )
 
         # 测试服务间的交互
