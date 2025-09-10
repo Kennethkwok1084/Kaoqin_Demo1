@@ -20,13 +20,13 @@ from app.api.v1 import attendance, dashboard, members, statistics, system, tasks
 from app.core.config import settings
 from app.core.database import get_async_session
 from app.core.exceptions import (
-    ValidationError,
-    NotFoundError,
-    PermissionDeniedError,
-    DatabaseError,
     AuthenticationError,
     BusinessLogicError,
+    DatabaseError,
     ExternalServiceError,
+    NotFoundError,
+    PermissionDeniedError,
+    ValidationError,
 )
 from app.main import app as fastapi_app
 from app.models.attendance import AttendanceException, AttendanceRecord
@@ -35,8 +35,10 @@ from app.models.task import RepairTask, TaskStatus, TaskType
 from app.services.attendance_service import AttendanceService
 from app.services.stats_service import StatisticsService
 from app.services.task_service import TaskService
-from app.services.work_hours_service import WorkHoursService
-from app.services.work_hours_service import WorkHoursCalculationService
+from app.services.work_hours_service import (
+    WorkHoursCalculationService,
+    WorkHoursService,
+)
 
 
 class TestAPIEndpointsCoverage:

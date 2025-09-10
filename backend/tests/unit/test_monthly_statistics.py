@@ -446,7 +446,7 @@ class TestMonthlyWorkHoursSummary:
             work_hours_service,
             "calculate_monthly_work_hours",
             return_value={
-                "member_id=test_user.id,
+                "member_id": test_user.id,
                 "total_hours": 25.5,
                 "repair_task_hours": 20.0,
                 "monitoring_hours": 3.0,
@@ -824,7 +824,7 @@ class TestBoundaryConditions:
     @pytest.mark.asyncio
     async def test_invalid_member_id(self, work_hours_service, mock_db):
         """测试无效成员ID的处理"""
-        invalid_member_id=test_user.id
+        invalid_member_id = test_user.id
         year, month = 2024, 3
 
         # Mock member validation (member not found)

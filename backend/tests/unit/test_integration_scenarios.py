@@ -71,7 +71,7 @@ class TestEndToEndBusinessFlows:
         task_data = {
             "task_id": "INTEGRATION_001",
             "title": "集成测试任务",
-            "member_id=test_user.id,
+            "member_id": test_user.id,
             "task_type": TaskType.ONLINE,
             "status": TaskStatus.PENDING,
         }
@@ -130,7 +130,7 @@ class TestEndToEndBusinessFlows:
     ):
         """测试成员绩效评估完整流程"""
 
-        member_id=test_user.id
+        member_id = test_user.id
         year, month = 2024, 3
 
         # 阶段1: 计算月度工时
@@ -234,7 +234,7 @@ class TestServiceInteractionIntegration:
     ):
         """测试考勤服务与工时计算服务的集成"""
 
-        member_id=test_user.id
+        member_id = test_user.id
         attendance_date = date(2024, 3, 15)
 
         # 阶段1: 创建考勤记录
@@ -303,7 +303,7 @@ class TestServiceInteractionIntegration:
             {
                 "task_id": "CONSIST_001",
                 "title": "一致性测试任务1",
-                "member_id=test_user.id,
+                "member_id": test_user.id,
                 "work_minutes": 60,
                 "status": TaskStatus.COMPLETED,
                 "rating": 5,
@@ -311,7 +311,7 @@ class TestServiceInteractionIntegration:
             {
                 "task_id": "CONSIST_002",
                 "title": "一致性测试任务2",
-                "member_id=test_user.id,
+                "member_id": test_user.id,
                 "work_minutes": 80,
                 "status": TaskStatus.COMPLETED,
                 "rating": 4,
@@ -319,7 +319,7 @@ class TestServiceInteractionIntegration:
             {
                 "task_id": "CONSIST_003",
                 "title": "一致性测试任务3",
-                "member_id=test_user.id,
+                "member_id": test_user.id,
                 "work_minutes": 0,
                 "status": TaskStatus.PENDING,
                 "rating": None,
@@ -378,7 +378,7 @@ class TestBusinessRuleIntegrity:
     ):
         """测试工时计算业务规则的完整性"""
 
-        member_id=test_user.id
+        member_id = test_user.id
         year, month = 2024, 3
 
         # 创建包含各种业务场景的任务 - 使用实际对象而不是Mock
@@ -500,7 +500,7 @@ class TestErrorHandlingIntegration:
     ):
         """测试级联错误处理机制"""
 
-        member_id=test_user.id
+        member_id = test_user.id
         year, month = 2024, 3
 
         # 阶段1: 工时服务遇到数据库错误
@@ -563,7 +563,7 @@ class TestErrorHandlingIntegration:
             work_hours_service,
             "calculate_monthly_work_hours",
             return_value={
-                "member_id=test_user.id,
+                "member_id": test_user.id,
                 "year": 2024,
                 "month": 3,
                 "repair_task_hours": 0.0,

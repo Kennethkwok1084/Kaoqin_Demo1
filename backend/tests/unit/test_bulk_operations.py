@@ -188,7 +188,7 @@ class TestLargeScaleBulkOperations:
             work_hours_service,
             "calculate_monthly_work_hours",
             return_value={
-                "member_id=test_user.id,
+                "member_id": test_user.id,
                 "total_hours": 25.5,
                 "is_full_attendance": True,
             },
@@ -389,7 +389,7 @@ class TestConcurrentBulkOperations:
         self, work_hours_service, mock_db
     ):
         """测试并发工时计算一致性"""
-        member_id=test_user.id
+        member_id = test_user.id
         year, month = 2024, 3
 
         # Mock 相同的任务数据

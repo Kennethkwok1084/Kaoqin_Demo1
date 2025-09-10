@@ -5,8 +5,9 @@ CI问题修复脚本
 """
 
 import os
-import yaml
 from pathlib import Path
+
+import yaml
 
 
 def fix_github_workflow():

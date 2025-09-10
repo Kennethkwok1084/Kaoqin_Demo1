@@ -128,7 +128,7 @@ class TestTaskServiceFixed:
             "monitoring_type": "网络监控",
             "start_time": start_time,
             "end_time": end_time,
-            "member_id=test_user.id,
+            "member_id": test_user.id,
         }
 
         # Mock database operations
@@ -162,7 +162,7 @@ class TestTaskServiceFixed:
             "title": "Invalid monitoring",
             "start_time": start_time,
             "end_time": end_time,
-            "member_id=test_user.id,
+            "member_id": test_user.id,
         }
 
         async_session.rollback = AsyncMock()
@@ -186,7 +186,7 @@ class TestTaskServiceFixed:
             "assisted_person": "张工程师",
             "start_time": start_time,
             "end_time": end_time,
-            "member_id=test_user.id,
+            "member_id": test_user.id,
         }
 
         # Mock database operations
@@ -364,7 +364,7 @@ class TestTaskServiceFixed:
         """Test getting member task summary"""
         service = TaskService(async_session)
 
-        member_id=test_user.id
+        member_id = test_user.id
         year = 2025
         month = 1
 
@@ -635,7 +635,7 @@ class TestTaskServiceFixed:
             "title": "Zero duration task",
             "start_time": start_time,
             "end_time": end_time,
-            "member_id=test_user.id,
+            "member_id": test_user.id,
         }
 
         async_session.rollback = AsyncMock()

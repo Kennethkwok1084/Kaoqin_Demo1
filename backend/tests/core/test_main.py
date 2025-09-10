@@ -3,31 +3,32 @@ Comprehensive tests for main.py - FastAPI application startup, configuration, mi
 """
 
 import json
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from fastapi import FastAPI, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.testclient import TestClient
-from httpx import AsyncClient, ASGITransport
-from starlette.exceptions import HTTPException as StarletteHTTPException
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.exc import SQLAlchemyError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.core.config import settings
+from app.core.exceptions import BaseCustomException, ValidationError
 from app.main import (
+    add_security_headers,
+    api_health_check,
     app,
     create_app,
-    custom_openapi,
-    lifespan,
-    add_security_headers,
     custom_exception_handler,
-    http_exception_handler,
-    validation_exception_handler,
+    custom_openapi,
     global_exception_handler,
     health_check,
-    api_health_check,
+    http_exception_handler,
+    lifespan,
     root,
+    validation_exception_handler,
 )
-from app.core.exceptions import BaseCustomException, ValidationError
-from app.core.config import settings
 
 
 class TestApplicationSetup:

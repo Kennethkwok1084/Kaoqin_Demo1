@@ -2,71 +2,57 @@
 Comprehensive tests for exceptions.py - Custom exception handling and error response formatting
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
-from fastapi import HTTPException, status
-from sqlalchemy.exc import IntegrityError, OperationalError
-from pydantic import ValidationError as PydanticValidationError
 
-from app.core.exceptions import (
-    # Base exceptions
-    BaseCustomException,
-    # Authentication exceptions
+import pytest
+from fastapi import HTTPException, status
+from pydantic import ValidationError as PydanticValidationError
+from sqlalchemy.exc import IntegrityError, OperationalError
+
+from app.core.exceptions import (  # Base exceptions; Authentication exceptions; Validation exceptions; Business logic exceptions; File processing exceptions; Database exceptions; Rate limiting exceptions; Configuration exceptions; External service exceptions; Permission exceptions; Data consistency exceptions; Concurrency exceptions; Bulk operation exceptions; Performance exceptions; Utility functions
+    AttendanceCalculationError,
     AuthenticationError,
     AuthorizationError,
-    InvalidTokenError,
-    TokenExpiredError,
-    InvalidCredentialsError,
-    # Validation exceptions
-    ValidationError,
-    DuplicateResourceError,
-    ResourceNotFoundError,
-    # Business logic exceptions
-    BusinessLogicError,
-    TaskProcessingError,
-    WorkHourCalculationError,
-    AttendanceCalculationError,
-    InvalidTaskStatusError,
-    InvalidDateRangeError,
-    # File processing exceptions
-    FileProcessingError,
-    InvalidFileFormatError,
-    FileSizeExceededError,
-    ExcelImportError,
-    DataMatchingError,
-    # Database exceptions
-    DatabaseError,
-    DatabaseConnectionError,
-    DatabaseIntegrityError,
-    # Rate limiting exceptions
-    RateLimitExceededError,
-    # Configuration exceptions
-    ConfigurationError,
-    MissingConfigurationError,
-    # External service exceptions
-    ExternalServiceError,
-    EmailServiceError,
-    RedisServiceError,
-    # Permission exceptions
-    PermissionDeniedError,
-    # Data consistency exceptions
-    DataConsistencyError,
-    ServiceIntegrationError,
-    # Concurrency exceptions
-    ConcurrencyConflictError,
-    ResourceLockError,
-    # Bulk operation exceptions
-    BulkOperationError,
+    BaseCustomException,
     BatchSizeExceededError,
-    # Performance exceptions
-    PerformanceDegradationError,
-    TimeoutError,
+    BulkOperationError,
+    BusinessLogicError,
+    ConcurrencyConflictError,
+    ConfigurationError,
+    DatabaseConnectionError,
+    DatabaseError,
+    DatabaseIntegrityError,
+    DataConsistencyError,
+    DataMatchingError,
+    DuplicateResourceError,
+    EmailServiceError,
+    ExcelImportError,
+    ExternalServiceError,
+    FileProcessingError,
+    FileSizeExceededError,
+    InvalidCredentialsError,
+    InvalidDateRangeError,
+    InvalidFileFormatError,
+    InvalidTaskStatusError,
+    InvalidTokenError,
+    MissingConfigurationError,
     OperationTimeoutError,
-    # Utility functions
+    PerformanceDegradationError,
+    PermissionDeniedError,
+    RateLimitExceededError,
+    RedisServiceError,
+    ResourceLockError,
+    ResourceNotFoundError,
+    ServiceIntegrationError,
+    TaskProcessingError,
+    TimeoutError,
+    TokenExpiredError,
+    ValidationError,
+    WorkHourCalculationError,
     create_http_exception,
+    get_error_response,
     handle_database_error,
     handle_validation_error,
-    get_error_response,
     is_client_error,
     is_server_error,
 )

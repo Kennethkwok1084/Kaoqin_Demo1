@@ -8,8 +8,8 @@ from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from httpx import AsyncClient
 from fastapi import HTTPException
+from httpx import AsyncClient
 
 from app.main import app
 from app.models.attendance import AttendanceRecord
@@ -655,7 +655,7 @@ class TestAttendanceStatisticsAPI(TestStatisticsAPIBasic):
                 "attendance_rate": 95.5,
                 "member_statistics": [
                     {
-                        "member_id=test_user.id,
+                        "member_id": test_user.id,
                         "name": "张三",
                         "work_days": 20,
                         "work_hours": 150,
@@ -697,7 +697,7 @@ class TestAttendanceStatisticsAPI(TestStatisticsAPIBasic):
 
             mock_attendance_service = AsyncMock()
             mock_attendance_service.get_member_statistics.return_value = {
-                "member_id=test_user.id,
+                "member_id": test_user.id,
                 "name": "张三",
                 "work_days": 20,
                 "work_hours": 150,

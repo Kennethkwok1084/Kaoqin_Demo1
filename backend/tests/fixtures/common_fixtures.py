@@ -4,13 +4,14 @@
 """
 
 import uuid
-from datetime import datetime, date, timedelta
+from datetime import date, datetime, timedelta
+
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.member import Member, UserRole
-from app.models.task import RepairTask, TaskType, TaskStatus, TaskCategory, TaskPriority
 from app.models.attendance import AttendanceRecord
+from app.models.member import Member, UserRole
+from app.models.task import RepairTask, TaskCategory, TaskPriority, TaskStatus, TaskType
 
 
 @pytest.fixture
