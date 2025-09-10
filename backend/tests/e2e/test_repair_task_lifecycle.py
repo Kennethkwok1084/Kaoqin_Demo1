@@ -13,7 +13,7 @@ from typing import Dict, List
 import pytest
 from httpx import AsyncClient
 
-from app.models.task import TaskPriority, TaskStatus
+from app.models.task import TaskPriority, TaskStatus, UrgencyLevel
 
 
 class TestRepairTaskLifecycle:
@@ -310,6 +310,7 @@ class TestRepairTaskLifecycle:
         e2e_user_tokens: Dict[str, str],
         e2e_auth_headers,
         e2e_helper,
+        test_user,
     ):
         """测试任务状态流转验证"""
 

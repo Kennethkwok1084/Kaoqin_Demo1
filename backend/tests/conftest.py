@@ -116,36 +116,54 @@ async def async_session(
     test_engine, setup_database
 ) -> AsyncGenerator[AsyncSession, None]:
     """Create async database session for testing with proper isolation and error handling."""
+    connection = None
+    transaction = None
     session = None
+    
     try:
-        # Create a new session for each test to ensure isolation
+        # Use a transaction that can be rolled back for each test
+        connection = await test_engine.connect()
+        transaction = await connection.begin()
+        
+        # Create session bound to the transaction
         session = AsyncSession(
-            test_engine,
+            bind=connection,
             expire_on_commit=False,
-            autoflush=False,  # Prevent automatic flushing that can cause async issues
+            autoflush=False,
             autocommit=False,
         )
+        
         yield session
-
-        # Only commit if session is still valid and active
-        if session and hasattr(session, "in_transaction") and session.in_transaction():
-            await session.commit()
+        
     except Exception as e:
         logger.error(f"Session error: {e}")
-        # Always rollback on exception to prevent transaction leaks
-        if session and hasattr(session, "in_transaction") and session.in_transaction():
+        # Always rollback on exception
+        if transaction and not transaction.is_active:
             try:
-                await session.rollback()
+                await transaction.rollback()
             except Exception as rollback_error:
-                logger.error(f"Session rollback failed: {rollback_error}")
+                logger.error(f"Transaction rollback failed: {rollback_error}")
         raise
     finally:
-        # Ensure session is properly closed
-        if session and hasattr(session, "close"):
+        # Clean up in reverse order
+        if session:
             try:
                 await session.close()
             except Exception as close_error:
                 logger.error(f"Session close failed: {close_error}")
+        
+        if transaction:
+            try:
+                if transaction.is_active:
+                    await transaction.rollback()
+            except Exception as trans_error:
+                logger.error(f"Transaction cleanup failed: {trans_error}")
+        
+        if connection:
+            try:
+                await connection.close()
+            except Exception as conn_error:
+                logger.error(f"Connection close failed: {conn_error}")
 
 
 @pytest.fixture
@@ -177,38 +195,28 @@ async def client_with_db(
 
 
 @pytest_asyncio.fixture
-async def test_user() -> Member:
-    """Create a test user directly using the test engine."""
-    from tests.database_config import test_config
+async def test_user(async_session: AsyncSession) -> Member:
+    """Create a test user using the shared async session."""
+    user = Member(
+        username="test_user",
+        name="测试用户",
+        student_id="2021001001",
+        group_id=1,
+        class_name="计算机科学与技术2101",
+        email="test@example.com",
+        password_hash=get_password_hash("TestPassword123!"),
+        role=UserRole.MEMBER,
+        is_active=True,
+        is_verified=True,
+    )
 
-    # Create the test user in the same database that the API will use
-    engine = await test_config.create_test_engine()
+    async_session.add(user)
+    await async_session.commit()
+    await async_session.refresh(user)
 
-    async with AsyncSession(engine, expire_on_commit=False) as session:
-        user = Member(
-            username="test_user",
-            name="测试用户",
-            student_id="2021001001",
-            group_id=1,
-            class_name="计算机科学与技术2101",
-            email="test@example.com",
-            password_hash=get_password_hash("TestPassword123!"),
-            role=UserRole.MEMBER,
-            is_active=True,
-            is_verified=True,
-        )
+    yield user
 
-        session.add(user)
-        await session.commit()
-        await session.refresh(user)
-
-        yield user
-
-        # Cleanup - delete the user after test
-        await session.delete(user)
-        await session.commit()
-
-    await engine.dispose()
+    # Cleanup is handled by the async_session fixture
 
 
 @pytest_asyncio.fixture
@@ -345,51 +353,50 @@ def event_loop():
     import logging
 
     logger = logging.getLogger(__name__)
-    policy = asyncio.get_event_loop_policy()
-    loop = policy.new_event_loop()
-    asyncio.set_event_loop(loop)
-
+    
+    # Save the current event loop policy
+    original_policy = asyncio.get_event_loop_policy()
+    
+    # Create a new event loop
+    loop = None
     try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         yield loop
+        
     finally:
-        # Enhanced cleanup for CI/CD environments
-        try:
-            # Cancel all pending tasks with timeout
+        # Clean up tasks and close loop safely
+        if loop and not loop.is_closed():
             try:
+                # Cancel all remaining tasks
                 pending = asyncio.all_tasks(loop)
                 if pending:
                     for task in pending:
                         if not task.done() and not task.cancelled():
                             task.cancel()
-
-                    # Wait for all tasks to complete cancellation with timeout
-                    if pending:
-                        try:
-                            loop.run_until_complete(
-                                asyncio.wait_for(
-                                    asyncio.gather(*pending, return_exceptions=True),
-                                    timeout=2.0,  # 2 second timeout for CI
-                                )
+                    
+                    # Give tasks a moment to cancel gracefully
+                    try:
+                        loop.run_until_complete(
+                            asyncio.wait_for(
+                                asyncio.gather(*pending, return_exceptions=True),
+                                timeout=1.0
                             )
-                        except asyncio.TimeoutError:
-                            logger.warning(
-                                "Task cancellation timed out in event loop cleanup"
-                            )
-                        except Exception as e:
-                            logger.error(f"Task cleanup error: {e}")
-
-            except RuntimeError as e:
-                if "no current event loop" not in str(e).lower():
-                    logger.error(f"Event loop cleanup error: {e}")
-
-        except Exception as e:
-            logger.error(f"Event loop cleanup failed: {e}")
-        finally:
-            try:
-                if not loop.is_closed():
-                    loop.close()
+                        )
+                    except (asyncio.TimeoutError, RuntimeError) as e:
+                        logger.debug(f"Task cleanup timeout/error (expected): {e}")
+                
+                # Close the loop
+                loop.close()
+                
             except Exception as e:
-                logger.error(f"Event loop close failed: {e}")
+                logger.error(f"Event loop cleanup error: {e}")
+                
+        # Reset to original policy
+        try:
+            asyncio.set_event_loop_policy(original_policy)
+        except Exception as e:
+            logger.error(f"Failed to restore event loop policy: {e}")
 
 
 # Test configuration

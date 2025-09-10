@@ -57,7 +57,20 @@ class TestAttendanceAPIBasic:
         )
 
     @pytest.fixture
-    def sample_repair_task(self):
+    def test_user(self):
+        """创建测试用户"""
+        return Member(
+            id=3,
+            username="test_user",
+            student_id="20210003",
+            name="测试用户",
+            email="test@test.com",
+            role=UserRole.MEMBER,
+            is_active=True,
+        )
+
+    @pytest.fixture
+    def sample_repair_task(self, test_user):
         """创建示例报修任务"""
         return RepairTask(
             id=1,
@@ -127,7 +140,7 @@ class TestWorkHoursRecordsAPI(TestAttendanceAPIBasic):
             app.dependency_overrides.clear()
 
     @pytest.mark.asyncio
-    async def test_get_work_hours_records_with_filters(self, client, regular_user):
+    async def test_get_work_hours_records_with_filters(self, client, regular_user, test_user):
         """测试带过滤条件的工时记录查询"""
         with (
             patch("app.api.deps.get_db") as mock_get_db,
@@ -152,7 +165,7 @@ class TestWorkHoursRecordsAPI(TestAttendanceAPIBasic):
             assert isinstance(data, list)
 
     @pytest.mark.asyncio
-    async def test_get_work_hours_records_admin_view_others(self, client, admin_user):
+    async def test_get_work_hours_records_admin_view_others(self, client, admin_user, test_user):
         """测试管理员查看其他人的工时记录"""
         with (
             patch("app.api.deps.get_db") as mock_get_db,
@@ -168,7 +181,7 @@ class TestWorkHoursRecordsAPI(TestAttendanceAPIBasic):
             mock_db.execute.return_value = mock_result
 
             response = await client.get(
-                "/api/v1/attendance/records?member_id=test_user.id",
+                f"/api/v1/attendance/records?member_id={test_user.id}",
                 headers={"Authorization": "Bearer admin_token"},
             )
 
@@ -188,7 +201,7 @@ class TestWorkHoursRecordsAPI(TestAttendanceAPIBasic):
             assert response.status_code == 403
 
     @pytest.mark.asyncio
-    async def test_get_work_hours_records_pagination(self, client, regular_user):
+    async def test_get_work_hours_records_pagination(self, client, regular_user, test_user):
         """测试工时记录分页功能"""
         with (
             patch("app.api.deps.get_db") as mock_get_db,
@@ -328,7 +341,7 @@ class TestMonthlySummaryAPI(TestAttendanceAPIBasic):
 
     @pytest.mark.asyncio
     async def test_get_monthly_summary_admin_view_others(
-        self, client, admin_user, regular_user
+        self, client, admin_user, regular_user, test_user
     ):
         """测试管理员查看其他人的月度汇总"""
         with (
@@ -353,7 +366,7 @@ class TestMonthlySummaryAPI(TestAttendanceAPIBasic):
             ]
 
             response = await client.get(
-                "/api/v1/attendance/summary/2024-12?member_id=test_user.id",
+                f"/api/v1/attendance/summary/2024-12?member_id={test_user.id}",
                 headers={"Authorization": "Bearer admin_token"},
             )
 
@@ -557,7 +570,7 @@ class TestWorkHoursExportAPI(TestAttendanceAPIBasic):
     """测试工时数据导出API"""
 
     @pytest.mark.asyncio
-    async def test_export_work_hours_basic(self, client, admin_user):
+    async def test_export_work_hours_basic(self, client, admin_user, test_user):
         """测试导出工时数据基础功能"""
         with (
             patch("app.api.deps.get_db") as mock_get_db,
@@ -1159,7 +1172,7 @@ class TestAttendanceAPIErrorHandling(TestAttendanceAPIBasic):
             assert response.status_code in [200, 422]
 
     @pytest.mark.asyncio
-    async def test_memory_usage_with_large_datasets(self, client, admin_user):
+    async def test_memory_usage_with_large_datasets(self, client, admin_user, test_user):
         """测试大数据集内存使用"""
         with (
             patch("app.api.deps.get_db") as mock_get_db,

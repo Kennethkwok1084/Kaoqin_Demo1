@@ -49,6 +49,17 @@ class TestStatisticsAPIBasic:
         )
 
     @pytest.fixture
+    def test_user(self):
+        """创建测试用户"""
+        return Member(
+            id=3,
+            username="test_user",
+            student_id="20210003",
+            name="测试用户",
+            role=UserRole.MEMBER,
+        )
+
+    @pytest.fixture
     def admin_user(self):
         """创建管理员用户"""
         return Member(
@@ -239,7 +250,7 @@ class TestEfficiencyAnalysisAPI(TestStatisticsAPIBasic):
             assert data["data"]["members"][1]["name"] == "李四"
 
     @pytest.mark.asyncio
-    async def test_efficiency_analysis_with_member_filter(self, client, admin_user):
+    async def test_efficiency_analysis_with_member_filter(self, client, admin_user, test_user):
         """测试按成员过滤的效率分析"""
         with (
             patch("app.api.deps.get_db") as mock_get_db,
@@ -258,7 +269,7 @@ class TestEfficiencyAnalysisAPI(TestStatisticsAPIBasic):
             mock_db.execute.return_value = mock_result
 
             response = await client.get(
-                "/api/v1/statistics/efficiency?member_id=test_user.id",
+                f"/api/v1/statistics/efficiency?member_id={test_user.id}",
                 headers={"Authorization": "Bearer admin_token"},
             )
 
@@ -634,7 +645,7 @@ class TestAttendanceStatisticsAPI(TestStatisticsAPIBasic):
     """测试考勤统计API"""
 
     @pytest.mark.asyncio
-    async def test_get_attendance_statistics_basic(self, client, admin_user):
+    async def test_get_attendance_statistics_basic(self, client, admin_user, test_user):
         """测试获取考勤统计基础功能"""
         with (
             patch("app.api.deps.get_db") as mock_get_db,
@@ -683,7 +694,7 @@ class TestAttendanceStatisticsAPI(TestStatisticsAPIBasic):
             assert len(data["data"]["member_statistics"]) == 2
 
     @pytest.mark.asyncio
-    async def test_attendance_statistics_with_member_filter(self, client, admin_user):
+    async def test_attendance_statistics_with_member_filter(self, client, admin_user, test_user):
         """测试按成员过滤的考勤统计"""
         with (
             patch("app.api.deps.get_db") as mock_get_db,
@@ -707,7 +718,7 @@ class TestAttendanceStatisticsAPI(TestStatisticsAPIBasic):
             mock_service.return_value = mock_attendance_service
 
             response = await client.get(
-                "/api/v1/statistics/attendance?member_id=test_user.id&year=2025&month=1",
+                f"/api/v1/statistics/attendance?member_id={test_user.id}&year=2025&month=1",
                 headers={"Authorization": "Bearer admin_token"},
             )
 
@@ -757,7 +768,7 @@ class TestWorkHoursOverviewAPI(TestStatisticsAPIBasic):
             assert data["data"]["avg_work_minutes"] == 80.0
 
     @pytest.mark.asyncio
-    async def test_work_hours_overview_with_filters(self, client, group_leader_user):
+    async def test_work_hours_overview_with_filters(self, client, group_leader_user, test_user):
         """测试带过滤条件的工时概览"""
         with (
             patch("app.api.deps.get_db") as mock_get_db,
@@ -778,7 +789,7 @@ class TestWorkHoursOverviewAPI(TestStatisticsAPIBasic):
             mock_db.execute.side_effect = mock_results
 
             response = await client.get(
-                "/api/v1/statistics/work-hours/overview?member_id=test_user.id&start_date=2025-01-01&end_date=2025-01-31",
+                f"/api/v1/statistics/work-hours/overview?member_id={test_user.id}&start_date=2025-01-01&end_date=2025-01-31",
                 headers={"Authorization": "Bearer leader_token"},
             )
 

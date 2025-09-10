@@ -20,7 +20,7 @@ from app.services.import_service import DataImportService
 class TestDataIntegrityConstraints:
     """数据完整性约束测试"""
 
-    async def test_foreign_key_constraints(self, async_session):
+    async def test_foreign_key_constraints(self, async_session, test_user):
         """测试外键约束完整性"""
         # 测试任务-成员外键约束
         invalid_task = RepairTask(
@@ -28,7 +28,7 @@ class TestDataIntegrityConstraints:
             title="无效外键任务",
             task_type=TaskType.ONLINE,
             status=TaskStatus.PENDING,
-            member_id=test_user.id,  # 不存在的成员ID
+            member_id=999999,  # 不存在的成员ID
             report_time=datetime.utcnow(),
         )
 

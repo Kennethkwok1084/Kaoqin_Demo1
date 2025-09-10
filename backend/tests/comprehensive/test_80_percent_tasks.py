@@ -9,6 +9,8 @@ from typing import Any, Dict
 import pytest
 from httpx import AsyncClient
 
+from app.models.task import TaskStatus
+
 
 @pytest.mark.asyncio
 class TestTaskManagementCoreAPI:
@@ -36,7 +38,7 @@ class TestTaskManagementCoreAPI:
             pytest.fail(f"Unexpected status code: {response.status_code}")
 
     async def test_put_task_repair_by_id(
-        self, async_client: AsyncClient, auth_headers, token
+        self, async_client: AsyncClient, auth_headers, token, test_user
     ):
         """测试更新指定维修任务"""
         headers = auth_headers(token)

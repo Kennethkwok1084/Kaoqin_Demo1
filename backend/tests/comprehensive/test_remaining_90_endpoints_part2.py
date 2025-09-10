@@ -9,6 +9,8 @@ from typing import Any, Dict, List
 import pytest
 from httpx import AsyncClient
 
+from app.models.task import TaskStatus
+
 
 @pytest.mark.asyncio
 class TestRemainingPostOperationsPart2:
@@ -255,7 +257,7 @@ class TestRemainingPutOperationsComplete:
             pytest.fail(f"Unexpected status code: {response.status_code}")
 
     async def test_put_member_id_complete(
-        self, async_client: AsyncClient, auth_headers, token
+        self, async_client: AsyncClient, auth_headers, token, test_user
     ):
         """测试更新成员信息 - PUT /api/v1/{member_id}"""
         headers = auth_headers(token)
@@ -339,7 +341,7 @@ class TestRemainingPutOperationsComplete:
             pytest.fail(f"Unexpected status code: {response.status_code}")
 
     async def test_put_members_id_teams_complete(
-        self, async_client: AsyncClient, auth_headers, token
+        self, async_client: AsyncClient, auth_headers, token, test_user
     ):
         """测试更新成员团队 - PUT /api/v1/members/{id}/teams"""
         headers = auth_headers(token)
@@ -415,7 +417,7 @@ class TestRemainingMiscEndpoints:
             pytest.fail(f"Unexpected status code: {response.status_code}")
 
     async def test_get_work_hours_carryover_summary_complete(
-        self, async_client: AsyncClient, auth_headers, token
+        self, async_client: AsyncClient, auth_headers, token, test_user
     ):
         """测试获取工时结转汇总 - GET /api/v1/work-hours/carryover/summary/{member_id}"""
         headers = auth_headers(token)

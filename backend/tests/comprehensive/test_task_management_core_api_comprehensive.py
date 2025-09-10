@@ -9,6 +9,8 @@ from typing import Any, Dict
 import pytest
 from httpx import AsyncClient
 
+from app.models.task import TaskStatus
+
 
 @pytest.mark.asyncio
 class TestTaskManagementCoreAPI:

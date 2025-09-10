@@ -163,7 +163,7 @@ class TestMemberManagementAPI:
     """成员管理API测试套件"""
 
     async def test_get_member_by_id(
-        self, async_client: AsyncClient, auth_headers, token
+        self, async_client: AsyncClient, auth_headers, token, test_user
     ):
         """测试获取指定成员信息"""
         headers = auth_headers(token)
@@ -184,7 +184,7 @@ class TestMemberManagementAPI:
             pytest.fail(f"Unexpected status code: {response.status_code}")
 
     async def test_put_member_by_id(
-        self, async_client: AsyncClient, auth_headers, token
+        self, async_client: AsyncClient, auth_headers, token, test_user
     ):
         """测试更新指定成员信息"""
         headers = auth_headers(token)
@@ -226,7 +226,7 @@ class TestMemberManagementAPI:
             pytest.fail(f"Unexpected status code: {response.status_code}")
 
     async def test_get_member_permissions(
-        self, async_client: AsyncClient, auth_headers, token
+        self, async_client: AsyncClient, auth_headers, token, test_user
     ):
         """测试获取成员权限"""
         headers = auth_headers(token)
@@ -246,7 +246,7 @@ class TestMemberManagementAPI:
             pytest.fail(f"Unexpected status code: {response.status_code}")
 
     async def test_put_member_roles(
-        self, async_client: AsyncClient, auth_headers, token
+        self, async_client: AsyncClient, auth_headers, token, test_user
     ):
         """测试更新成员角色"""
         headers = auth_headers(token)
@@ -268,7 +268,7 @@ class TestMemberManagementAPI:
             pytest.fail(f"Unexpected status code: {response.status_code}")
 
     async def test_get_member_activity_log(
-        self, async_client: AsyncClient, auth_headers, token
+        self, async_client: AsyncClient, auth_headers, token, test_user
     ):
         """测试获取成员活动日志"""
         headers = auth_headers(token)
@@ -293,7 +293,7 @@ class TestMemberManagementAPI:
             pytest.fail(f"Unexpected status code: {response.status_code}")
 
     async def test_get_member_statistics(
-        self, async_client: AsyncClient, auth_headers, token
+        self, async_client: AsyncClient, auth_headers, token, test_user
     ):
         """测试获取成员统计信息"""
         headers = auth_headers(token)
@@ -314,7 +314,7 @@ class TestMemberManagementAPI:
             pytest.fail(f"Unexpected status code: {response.status_code}")
 
     async def test_get_member_performance(
-        self, async_client: AsyncClient, auth_headers, token
+        self, async_client: AsyncClient, auth_headers, token, test_user
     ):
         """测试获取成员绩效报告"""
         headers = auth_headers(token)
@@ -333,7 +333,7 @@ class TestMemberManagementAPI:
             pytest.fail(f"Unexpected status code: {response.status_code}")
 
     async def test_put_member_teams(
-        self, async_client: AsyncClient, auth_headers, token
+        self, async_client: AsyncClient, auth_headers, token, test_user
     ):
         """测试更新成员团队分配"""
         headers = auth_headers(token)
@@ -356,7 +356,7 @@ class TestMemberManagementAPI:
             pytest.fail(f"Unexpected status code: {response.status_code}")
 
     async def test_post_member_complete_profile(
-        self, async_client: AsyncClient, auth_headers, token
+        self, async_client: AsyncClient, auth_headers, token, test_user
     ):
         """测试完善成员资料"""
         headers = auth_headers(token)
