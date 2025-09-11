@@ -29,20 +29,29 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     try:
         async for session in get_async_session():
             yield session
+            # Session yielded successfully - no additional error handling needed
+            break
     except Exception as e:
         logger.error(f"Database session dependency error: {e}")
-        # Re-raise the exception to be handled by FastAPI's exception handler
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=get_message("DATABASE_ERROR_CONNECTION"),
-        )
-    finally:
-        # Additional cleanup if needed
-        if session and hasattr(session, "is_closed") and not session.is_closed:
+        # Ensure session is properly cleaned up on error
+        if session:
             try:
                 await session.close()
-            except Exception as e:
-                logger.error(f"Database session cleanup error: {e}")
+            except:
+                pass  # Ignore cleanup errors
+        # Convert connection errors to appropriate HTTP status
+        error_msg = str(e).lower()
+        if "connection" in error_msg or "timeout" in error_msg or "lost" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=get_message("SYSTEM_ERROR_DATABASE_CONNECTION"),
+            )
+        else:
+            # Generic database error
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=get_message("SYSTEM_ERROR_DATABASE"),
+            )
 
 
 def get_sync_db() -> Generator[Session, None, None]:

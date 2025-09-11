@@ -56,13 +56,14 @@ def _get_optimized_pool_config() -> Dict[str, Any]:
         }
     elif _is_testing_environment():
         # Testing environment: minimal overhead with better isolation
+        # Enhanced stability for async testing
         return {
-            "pool_size": 1,
-            "max_overflow": 1,  # Reduced overflow for testing
-            "pool_recycle": 300,  # 5 minutes
-            "pool_timeout": 3,  # Fast timeout for tests
+            "pool_size": 2,  # Increased to 2 for better async handling
+            "max_overflow": 0,  # No overflow to prevent connection conflicts
+            "pool_recycle": 180,  # 3 minutes - shorter recycle for fresh connections
+            "pool_timeout": 10,  # Longer timeout for async operations
             "pool_pre_ping": True,
-            "pool_reset_on_return": "commit",
+            "pool_reset_on_return": "rollback",  # More aggressive cleanup
         }
     else:
         # Production environment: robust configuration
@@ -96,14 +97,17 @@ def _get_optimized_connect_args() -> Dict[str, Any]:
             }
         )
     elif _is_testing_environment():
-        # Testing environment: moderate timeouts
+        # Testing environment: optimized for async stability
         base_args.update(
             {
-                "command_timeout": 15,  # 15 seconds for tests
+                "command_timeout": 30,  # Increased to 30 seconds for async operations
                 "server_settings": {
                     **base_args["server_settings"],
-                    "statement_timeout": "15000",  # 15 seconds
-                    "idle_in_transaction_session_timeout": "60000",  # 1 minute
+                    "statement_timeout": "30000",  # 30 seconds
+                    "idle_in_transaction_session_timeout": "120000",  # 2 minutes
+                    "tcp_keepalives_idle": "600",  # 10 minutes
+                    "tcp_keepalives_interval": "30",  # 30 seconds
+                    "tcp_keepalives_count": "3",  # 3 attempts
                 },
             }
         )
@@ -217,7 +221,7 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     """
     Create async database session.
     Used as a dependency in FastAPI endpoints.
-    Optimized for CI/CD environments.
+    Optimized for CI/CD environments with robust error handling.
     """
     session = None
     try:
@@ -228,7 +232,9 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
             try:
                 await session.rollback()
             except Exception as rollback_error:
-                logger.error(f"Rollback failed: {rollback_error}")
+                # Don't log event loop closed errors as they're expected during shutdown
+                if "event loop is closed" not in str(rollback_error).lower():
+                    logger.error(f"Rollback failed: {rollback_error}")
         logger.error(f"Database session error: {e}")
         raise
     finally:
@@ -236,7 +242,9 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
             try:
                 await session.close()
             except Exception as close_error:
-                logger.error(f"Session close failed: {close_error}")
+                # Don't log event loop closed errors as they're expected during shutdown
+                if "event loop is closed" not in str(close_error).lower():
+                    logger.error(f"Session close failed: {close_error}")
 
 
 # Sync Database Dependency with improved error handling

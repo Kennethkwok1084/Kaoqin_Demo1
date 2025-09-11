@@ -43,6 +43,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Skip all external connections in testing mode
     if settings.TESTING:
         logger.info("Running in testing mode - skipping external service connections")
+        # Initialize minimal cache for testing
+        await init_cache()
+        logger.info("Cache initialized")
     else:
         # Initialize database if in development mode
         if settings.DEBUG:

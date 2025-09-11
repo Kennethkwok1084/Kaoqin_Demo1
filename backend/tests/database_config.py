@@ -37,12 +37,21 @@ class DatabaseTestConfig:
     async def create_test_engine(self):
         """创建测试数据库引擎"""
         if self.use_postgresql:
-            # PostgreSQL配置
+            # PostgreSQL配置 - 为测试环境优化
             engine = create_async_engine(
                 self.test_database_url,
                 echo=False,
                 pool_pre_ping=True,
-                pool_recycle=3600,
+                pool_recycle=300,  # 5分钟回收连接
+                pool_size=5,       # 较小的连接池
+                max_overflow=0,    # 不允许溢出连接
+                pool_timeout=30,   # 连接超时
+                # 为测试环境添加额外配置
+                connect_args={
+                    "server_settings": {
+                        "application_name": "attendence_test",
+                    }
+                }
             )
         else:
             # SQLite配置

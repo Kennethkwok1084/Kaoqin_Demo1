@@ -20,6 +20,7 @@ from app.core.security import get_password_hash
 from app.main import app as fastapi_app
 from app.models.base import Base
 from app.models.member import Member, UserRole
+from app.api.deps import get_db
 from tests.database_config import (
     test_config,
 )
@@ -27,10 +28,19 @@ from tests.database_config import (
 # Setup logging for tests
 logger = logging.getLogger(__name__)
 
-# Force SQLite usage for tests unless explicitly configured otherwise
-# This ensures consistent test database configuration across all test types
-if not os.getenv("DATABASE_URL") and not os.getenv("POSTGRES_TEST"):
-    os.environ["FORCE_SQLITE_TESTS"] = "true"
+# Use PostgreSQL for tests by default to match production environment
+if not os.getenv("DATABASE_URL") and not os.getenv("FORCE_SQLITE_TESTS"):
+    os.environ["POSTGRES_TEST"] = "true"
+    # Set PostgreSQL test connection parameters
+    os.environ["TEST_DB_HOST"] = "localhost"
+    os.environ["TEST_DB_USER"] = "kwok"
+    os.environ["TEST_DB_PASSWORD"] = "Onjuju1084"
+    os.environ["TEST_DB_NAME"] = "attendence_dev"
+
+# Set test environment variables early
+os.environ["TESTING"] = "true"
+os.environ["DEBUG"] = "true"
+os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only"
 
 # Set the test database URL early, before app import
 os.environ["DATABASE_URL"] = test_config.test_database_url
@@ -40,6 +50,12 @@ import app.models.attendance  # noqa: F401
 import app.models.base  # noqa: F401
 import app.models.member  # noqa: F401
 import app.models.task  # noqa: F401
+
+# Import and patch settings for testing before app import
+from app.core.config import settings
+settings.TESTING = True
+settings.DEBUG = False
+settings.DATABASE_URL = test_config.test_database_url
 
 # Import database testing configuration
 
@@ -72,7 +88,7 @@ AsyncTestClient = AsyncClient
 
 
 # Use new database testing configuration with consistent scopes
-@pytest_asyncio.fixture(scope="function", autouse=False)
+@pytest_asyncio.fixture(scope="function", autouse=True)
 async def test_engine():
     """Create test database engine using new configuration."""
     engine = None
@@ -90,7 +106,7 @@ async def test_engine():
                 logger.error(f"Test engine disposal failed: {e}")
 
 
-@pytest_asyncio.fixture(scope="function", autouse=False)
+@pytest_asyncio.fixture(scope="function", autouse=True)
 async def setup_database(test_engine):
     """Setup test database using new configuration."""
     try:
@@ -116,54 +132,42 @@ async def async_session(
     test_engine, setup_database
 ) -> AsyncGenerator[AsyncSession, None]:
     """Create async database session for testing with proper isolation and error handling."""
-    connection = None
-    transaction = None
     session = None
 
     try:
-        # Use a transaction that can be rolled back for each test
-        connection = await test_engine.connect()
-        transaction = await connection.begin()
-
-        # Create session bound to the transaction
+        # Create a simple session without complex transaction management
+        # This avoids connection_lost issues when sharing with the application
         session = AsyncSession(
-            bind=connection,
+            test_engine,
             expire_on_commit=False,
-            autoflush=False,
+            autoflush=True,  # Allow autoflush for better compatibility
             autocommit=False,
         )
 
         yield session
 
+        # Commit any pending changes
+        if session.in_transaction():
+            await session.commit()
+
     except Exception as e:
         logger.error(f"Session error: {e}")
-        # Always rollback on exception
-        if transaction and not transaction.is_active:
+        # Rollback on exception
+        if session and session.in_transaction():
             try:
-                await transaction.rollback()
+                await session.rollback()
             except Exception as rollback_error:
-                logger.error(f"Transaction rollback failed: {rollback_error}")
+                logger.error(f"Session rollback failed: {rollback_error}")
         raise
     finally:
-        # Clean up in reverse order
+        # Clean up session
         if session:
             try:
                 await session.close()
             except Exception as close_error:
-                logger.error(f"Session close failed: {close_error}")
-
-        if transaction:
-            try:
-                if transaction.is_active:
-                    await transaction.rollback()
-            except Exception as trans_error:
-                logger.error(f"Transaction cleanup failed: {trans_error}")
-
-        if connection:
-            try:
-                await connection.close()
-            except Exception as conn_error:
-                logger.error(f"Connection close failed: {conn_error}")
+                # Don't log event loop closed errors
+                if "event loop is closed" not in str(close_error).lower():
+                    logger.error(f"Session close failed: {close_error}")
 
 
 @pytest.fixture
@@ -179,12 +183,12 @@ async def client_with_db(
 ) -> AsyncGenerator[TestClient, None]:
     """Create test client with database session override."""
 
-    async def override_get_async_session():
+    async def override_get_db():
         yield async_session
 
     # Store original overrides and restore after test
     original_overrides = fastapi_app.dependency_overrides.copy()
-    fastapi_app.dependency_overrides[get_async_session] = override_get_async_session
+    fastapi_app.dependency_overrides[get_db] = override_get_db
 
     with TestClient(fastapi_app) as test_client:
         yield test_client
@@ -399,15 +403,7 @@ def event_loop():
             logger.error(f"Failed to restore event loop policy: {e}")
 
 
-# Test configuration
-@pytest.fixture(autouse=True)
-def setup_test_environment():
-    """Setup test environment variables."""
-    os.environ["TESTING"] = "true"
-    os.environ["DEBUG"] = "true"
-    os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only"
-    yield
-    # Cleanup is automatic when test ends
+# Test configuration - Environment already set at module level
 
 
 class TestResponse:

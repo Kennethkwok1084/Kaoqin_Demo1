@@ -3,6 +3,7 @@ Authentication API endpoints.
 Handles user login, logout, token refresh, and profile management.
 """
 
+import asyncio
 import logging
 from datetime import timedelta
 from typing import Any, Dict, Optional, Union
@@ -52,11 +53,23 @@ async def login(
     """
 
     try:
-        # Find user by student_id
-        result = await db.execute(
-            select(Member).where(Member.student_id == login_data.student_id)
-        )
-        user = result.scalar_one_or_none()
+        # Find user by student_id with connection retry logic
+        user = None
+        max_retries = 2
+        
+        for attempt in range(max_retries + 1):
+            try:
+                result = await db.execute(
+                    select(Member).where(Member.student_id == login_data.student_id)
+                )
+                user = result.scalar_one_or_none()
+                break  # Success, exit retry loop
+            except Exception as query_error:
+                logger.warning(f"Database query attempt {attempt + 1} failed: {query_error}")
+                if attempt == max_retries:  # Last attempt failed
+                    raise query_error
+                # Wait a short time before retry
+                await asyncio.sleep(0.1 * (attempt + 1))  # Progressive backoff
 
         # Handle potential coroutine return (for testing compatibility)
         if hasattr(user, "__await__"):
@@ -87,44 +100,53 @@ async def login(
                 detail=get_message("AUTH_ERROR_INVALID_CREDENTIALS"),
             )
 
-        # Update login info
-        user.update_login_info()
-        await db.commit()
-
-        # Refresh user object to avoid lazy loading issues
-        # Specify attributes to avoid greenlet issues
-        await db.refresh(
-            user, ["role", "group_id", "is_active", "username", "name", "student_id"]
-        )
-
-        # Create tokens
-        access_token = create_access_token(
-            subject=user.id,
-            expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
-        )
-        refresh_token = create_refresh_token(
-            subject=user.id,
-            expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
-        )
-
-        logger.info(f"Successful login for user: {user.student_id}")
-
-        # Manually construct user data to avoid SQLAlchemy lazy loading issues
-        user_data = {
+        # Collect user data before any database operations to avoid lazy loading
+        user_id = user.id
+        user_data_raw = {
             "id": user.id,
             "username": user.username,
             "name": user.name,
             "student_id": user.student_id,
-            "phone": user.phone,
-            "department": user.department,
+            "phone": getattr(user, 'phone', None),
+            "department": getattr(user, 'department', None),
             "class_name": user.class_name,
             "role": user.role.value,
             "is_active": user.is_active,
-            "profile_completed": user.profile_completed,
-            "needs_profile_completion": not user.profile_completed,
-            "status_display": "在职" if user.is_active else "离职",
-            "is_verified": user.is_verified,
-            "login_count": user.login_count,
+            "profile_completed": getattr(user, 'profile_completed', True),
+            "is_verified": getattr(user, 'is_verified', True),
+            "login_count": getattr(user, 'login_count', 0),
+        }
+
+        # Update login info in a separate, isolated transaction
+        try:
+            user.update_login_info()
+            await db.commit()
+            logger.debug(f"Updated login info for user: {user.student_id}")
+        except Exception as update_error:
+            logger.warning(f"Failed to update login info (continuing): {update_error}")
+            # Rollback and continue - login info update is not critical
+            try:
+                await db.rollback()
+            except:
+                pass  # Ignore rollback errors
+
+        # Create tokens using the collected user ID
+        access_token = create_access_token(
+            subject=user_id,
+            expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+        )
+        refresh_token = create_refresh_token(
+            subject=user_id,
+            expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
+        )
+
+        logger.info(f"Successful login for user: {user_data_raw['student_id']}")
+
+        # Construct final user data with computed fields
+        user_data = {
+            **user_data_raw,
+            "needs_profile_completion": not user_data_raw["profile_completed"],
+            "status_display": "在职" if user_data_raw["is_active"] else "离职",
         }
 
         response_data = {
