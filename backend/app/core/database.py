@@ -135,27 +135,16 @@ def _get_async_engine_args() -> Dict[str, Any]:
         "execution_options": {"compiled_cache": {}},
     }
 
-    if "sqlite" in db_url:
-        # SQLite-specific configuration
-        from sqlalchemy.pool import StaticPool
+    # PostgreSQL-only configuration with optimizations
+    pool_config = _get_optimized_pool_config()
+    connect_args = _get_optimized_connect_args()
 
-        base_args.update(
-            {
-                "poolclass": StaticPool,
-                "connect_args": {"check_same_thread": False},
-            }
-        )
-    else:
-        # PostgreSQL-specific configuration with optimizations
-        pool_config = _get_optimized_pool_config()
-        connect_args = _get_optimized_connect_args()
-
-        base_args.update(
-            {
-                **pool_config,
-                "connect_args": connect_args,
-            }
-        )
+    base_args.update(
+        {
+            **pool_config,
+            "connect_args": connect_args,
+        }
+    )
 
     return base_args
 
@@ -183,25 +172,14 @@ def _get_sync_engine_args() -> Dict[str, Any]:
         "pool_pre_ping": True,
     }
 
-    if "sqlite" in db_url:
-        # SQLite-specific configuration
-        from sqlalchemy.pool import StaticPool
+    # PostgreSQL-only sync configuration with optimizations
+    pool_config = _get_optimized_pool_config()
 
-        base_args.update(
-            {
-                "poolclass": StaticPool,
-                "connect_args": {"check_same_thread": False},
-            }
-        )
-    else:
-        # PostgreSQL-specific configuration with optimizations
-        pool_config = _get_optimized_pool_config()
-
-        # Remove async-specific options for sync engine
-        sync_pool_config = {
-            k: v for k, v in pool_config.items() if k != "pool_pre_ping"
-        }
-        base_args.update(sync_pool_config)
+    # Remove async-specific options for sync engine
+    sync_pool_config = {
+        k: v for k, v in pool_config.items() if k != "pool_pre_ping"
+    }
+    base_args.update(sync_pool_config)
 
     return base_args
 
@@ -497,7 +475,7 @@ def get_environment_info() -> Dict[str, Any]:
         "is_ci": _is_ci_environment(),
         "is_testing": _is_testing_environment(),
         "database_url": (
-            get_database_url().split("@")[-1] if "@" in get_database_url() else "sqlite"
+            get_database_url().split("@")[-1] if "@" in get_database_url() else "postgresql"
         ),
         "pool_config": _get_optimized_pool_config(),
         "debug_mode": settings.DEBUG,

@@ -169,7 +169,14 @@ const handleLogin = async () => {
     await loginFormRef.value.validate()
     isLoading.value = true
 
-    await authStore.login(loginForm as any)
+    // 修复：将username映射到后端需要的student_id字段
+    const loginData = {
+      student_id: loginForm.username,  // 将username映射为student_id
+      password: loginForm.password,
+      remember_me: loginForm.remember_me
+    }
+
+    await authStore.login(loginData)
     ElMessage.success('登录成功')
   } catch (error: any) {
     console.error('登录失败:', error)

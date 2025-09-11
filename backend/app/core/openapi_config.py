@@ -63,9 +63,9 @@ def get_openapi_config() -> Dict:
 - 📅 **考勤记录** - 基于任务完成的考勤统计
 
 ### 🏗️ 系统架构
-- **后端**: FastAPI + SQLAlchemy + PostgreSQL/SQLite
+- **后端**: FastAPI + SQLAlchemy + PostgreSQL
 - **认证**: JWT Bearer Token
-- **数据库**: 支持PostgreSQL和SQLite
+- **数据库**: PostgreSQL
 - **缓存**: Redis (可选)
 - **API规范**: OpenAPI 3.1 + 统一响应格式
 

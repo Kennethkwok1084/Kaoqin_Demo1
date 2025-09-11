@@ -64,21 +64,17 @@ class Settings(BaseSettings):
         if explicit_db_url:
             return explicit_db_url
 
-        # Check if we're in any testing/CI environment and use appropriate database
+        # PostgreSQL-only configuration based on environment
         if os.getenv("CI") == "true" or os.getenv("GITHUB_ACTIONS") == "true":
-            # CI environment: only use SQLite if PostgreSQL is not explicitly configured
-            if os.getenv("POSTGRES_TEST") == "false":
-                return "sqlite+aiosqlite:///./ci_test_attendence.db"
-            else:
-                # Default to PostgreSQL service in CI
-                return "postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence"
+            # CI environment - PostgreSQL service
+            return "postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence"
         elif os.getenv("TESTING") == "true":
-            return "sqlite+aiosqlite:///./test_attendence.db"
-        elif os.getenv("POSTGRES_TEST") == "true":
-            return (
-                "postgresql+asyncpg://postgres:postgres@localhost:5432/"
-                "test_attendence"
-            )
+            # Testing environment - local PostgreSQL
+            test_host = os.getenv("TEST_DB_HOST", "localhost")
+            test_user = os.getenv("TEST_DB_USER", "kwok")
+            test_password = os.getenv("TEST_DB_PASSWORD", "Onjuju1084")
+            test_database = os.getenv("TEST_DB_NAME", "attendence_dev")
+            return f"postgresql+asyncpg://{test_user}:{test_password}@{test_host}:5432/{test_database}"
 
         # Fallback to development PostgreSQL if no environment variable is set
         return "postgresql+asyncpg://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev"
@@ -95,20 +91,17 @@ class Settings(BaseSettings):
         if explicit_db_url:
             return explicit_db_url
 
-        # Check if we're in any testing/CI environment and use appropriate database
+        # PostgreSQL-only sync configuration based on environment
         if os.getenv("CI") == "true" or os.getenv("GITHUB_ACTIONS") == "true":
-            # CI environment: only use SQLite if PostgreSQL is not explicitly configured
-            if os.getenv("POSTGRES_TEST") == "false":
-                return "sqlite:///./ci_test_attendence.db"
-            else:
-                # Default to PostgreSQL service in CI
-                return "postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence"
+            # CI environment - PostgreSQL service (sync)
+            return "postgresql://postgres:postgres@localhost:5432/test_attendence"
         elif os.getenv("TESTING") == "true":
-            return "sqlite:///./test_attendence.db"
-        elif os.getenv("POSTGRES_TEST") == "true":
-            return (
-                "postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence"
-            )
+            # Testing environment - local PostgreSQL (sync)
+            test_host = os.getenv("TEST_DB_HOST", "localhost")
+            test_user = os.getenv("TEST_DB_USER", "kwok")
+            test_password = os.getenv("TEST_DB_PASSWORD", "Onjuju1084")
+            test_database = os.getenv("TEST_DB_NAME", "attendence_dev")
+            return f"postgresql://{test_user}:{test_password}@{test_host}:5432/{test_database}"
 
         # Default fallback for sync database URL
         return "postgresql://kwok:Onjuju1084@192.168.31.124:5432/attendence_dev"
