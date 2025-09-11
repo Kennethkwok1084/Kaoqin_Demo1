@@ -119,12 +119,12 @@ async def async_session(
     connection = None
     transaction = None
     session = None
-    
+
     try:
         # Use a transaction that can be rolled back for each test
         connection = await test_engine.connect()
         transaction = await connection.begin()
-        
+
         # Create session bound to the transaction
         session = AsyncSession(
             bind=connection,
@@ -132,9 +132,9 @@ async def async_session(
             autoflush=False,
             autocommit=False,
         )
-        
+
         yield session
-        
+
     except Exception as e:
         logger.error(f"Session error: {e}")
         # Always rollback on exception
@@ -151,14 +151,14 @@ async def async_session(
                 await session.close()
             except Exception as close_error:
                 logger.error(f"Session close failed: {close_error}")
-        
+
         if transaction:
             try:
                 if transaction.is_active:
                     await transaction.rollback()
             except Exception as trans_error:
                 logger.error(f"Transaction cleanup failed: {trans_error}")
-        
+
         if connection:
             try:
                 await connection.close()
@@ -353,17 +353,17 @@ def event_loop():
     import logging
 
     logger = logging.getLogger(__name__)
-    
+
     # Save the current event loop policy
     original_policy = asyncio.get_event_loop_policy()
-    
+
     # Create a new event loop
     loop = None
     try:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         yield loop
-        
+
     finally:
         # Clean up tasks and close loop safely
         if loop and not loop.is_closed():
@@ -374,24 +374,24 @@ def event_loop():
                     for task in pending:
                         if not task.done() and not task.cancelled():
                             task.cancel()
-                    
+
                     # Give tasks a moment to cancel gracefully
                     try:
                         loop.run_until_complete(
                             asyncio.wait_for(
                                 asyncio.gather(*pending, return_exceptions=True),
-                                timeout=1.0
+                                timeout=1.0,
                             )
                         )
                     except (asyncio.TimeoutError, RuntimeError) as e:
                         logger.debug(f"Task cleanup timeout/error (expected): {e}")
-                
+
                 # Close the loop
                 loop.close()
-                
+
             except Exception as e:
                 logger.error(f"Event loop cleanup error: {e}")
-                
+
         # Reset to original policy
         try:
             asyncio.set_event_loop_policy(original_policy)

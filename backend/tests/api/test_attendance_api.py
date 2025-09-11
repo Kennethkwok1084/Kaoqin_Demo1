@@ -140,7 +140,9 @@ class TestWorkHoursRecordsAPI(TestAttendanceAPIBasic):
             app.dependency_overrides.clear()
 
     @pytest.mark.asyncio
-    async def test_get_work_hours_records_with_filters(self, client, regular_user, test_user):
+    async def test_get_work_hours_records_with_filters(
+        self, client, regular_user, test_user
+    ):
         """测试带过滤条件的工时记录查询"""
         with (
             patch("app.api.deps.get_db") as mock_get_db,
@@ -165,7 +167,9 @@ class TestWorkHoursRecordsAPI(TestAttendanceAPIBasic):
             assert isinstance(data, list)
 
     @pytest.mark.asyncio
-    async def test_get_work_hours_records_admin_view_others(self, client, admin_user, test_user):
+    async def test_get_work_hours_records_admin_view_others(
+        self, client, admin_user, test_user
+    ):
         """测试管理员查看其他人的工时记录"""
         with (
             patch("app.api.deps.get_db") as mock_get_db,
@@ -201,7 +205,9 @@ class TestWorkHoursRecordsAPI(TestAttendanceAPIBasic):
             assert response.status_code == 403
 
     @pytest.mark.asyncio
-    async def test_get_work_hours_records_pagination(self, client, regular_user, test_user):
+    async def test_get_work_hours_records_pagination(
+        self, client, regular_user, test_user
+    ):
         """测试工时记录分页功能"""
         with (
             patch("app.api.deps.get_db") as mock_get_db,
@@ -1172,7 +1178,9 @@ class TestAttendanceAPIErrorHandling(TestAttendanceAPIBasic):
             assert response.status_code in [200, 422]
 
     @pytest.mark.asyncio
-    async def test_memory_usage_with_large_datasets(self, client, admin_user, test_user):
+    async def test_memory_usage_with_large_datasets(
+        self, client, admin_user, test_user
+    ):
         """测试大数据集内存使用"""
         with (
             patch("app.api.deps.get_db") as mock_get_db,
