@@ -21,6 +21,10 @@ OPENAPI_TAGS = [
         "description": "任务管理API - 维修任务、监控任务、协助任务的完整生命周期管理",
     },
     {
+        "name": "Dashboard",
+        "description": "仪表板API - 统计概览、数据可视化、实时监控和快捷操作",
+    },
+    {
         "name": "Statistics",
         "description": "统计报表API - 工时统计、效率分析、月度报表等数据分析功能",
     },

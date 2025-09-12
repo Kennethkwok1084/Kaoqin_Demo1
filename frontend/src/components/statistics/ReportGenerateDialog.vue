@@ -105,6 +105,7 @@
 import { ref, reactive, watch } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { statisticsApi } from '@/api/statistics'
+import { membersApi } from '@/api/members'
 import type { ReportTemplate, Member } from '@/types/statistics'
 
 interface Props {
@@ -155,20 +156,13 @@ watch(dialogVisible, visible => {
 
 const loadMembers = async () => {
   try {
-    // 这里应该调用获取成员列表的API
-    // const response = await membersApi.getMembers()
-    // members.value = (response as any)?.data || []
-
-    // 临时模拟数据
-    members.value = [
-      { id: 1, name: '张三', department: 'network_maintenance' },
-      { id: 2, name: '李四', department: 'system_operations' },
-      { id: 3, name: '王五', department: 'security_management' },
-      { id: 4, name: '赵六', department: 'technical_support' }
-    ] as Member[]
+    // 调用API获取成员列表
+    const response = await membersApi.getMembers()
+    members.value = (response as any)?.data || []
   } catch (error) {
     console.error('加载成员列表失败:', error)
     ElMessage.error('加载成员列表失败')
+    members.value = []
   }
 }
 

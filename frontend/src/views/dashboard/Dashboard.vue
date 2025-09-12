@@ -282,6 +282,7 @@ import {
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { statisticsApi } from '@/api/statistics'
+import { dashboardApi } from '@/api/dashboard'
 import type {
   DashboardStats,
   TaskDistribution,
@@ -300,22 +301,22 @@ const tableLoading = ref(false)
 const trendPeriod = ref('30')
 
 const dashboardStats = reactive<DashboardStats>({
-  totalTasks: 156,
-  completedTasks: 98,
-  pendingTasks: 45,
-  overdueTasks: 13,
-  totalMembers: 24,
-  activeMembers: 20,
-  totalWorkHours: 3240,
-  monthlyWorkHours: 840,
-  attendanceRate: 0.92,
-  completionRate: 0.78
+  totalTasks: 0,
+  completedTasks: 0,
+  pendingTasks: 0,
+  overdueTasks: 0,
+  totalMembers: 0,
+  activeMembers: 0,
+  totalWorkHours: 0,
+  monthlyWorkHours: 0,
+  attendanceRate: 0,
+  completionRate: 0
 })
 
 const taskDistribution = ref<TaskDistribution>({
-  repair: 45,
-  monitoring: 32,
-  assistance: 21
+  repair: 0,
+  monitoring: 0,
+  assistance: 0
 })
 const workHoursTrend = ref<WorkHoursTrend[]>([])
 const memberPerformance = ref<MemberPerformance[]>([])
@@ -486,33 +487,11 @@ const getEfficiencyColor = (efficiency: number): string => {
 // 加载数据的方法
 const loadDashboardStats = async () => {
   try {
-    // 调用统计API获取真实数据
-    const statsResponse = await statisticsApi.getOverview()
+    // 调用API获取仪表板统计数据
+    const statsData = await dashboardApi.getStats()
 
     // 更新仪表板统计数据
-    Object.assign(dashboardStats, {
-      totalTasks: statsResponse.tasks?.total || 0,
-      completedTasks: statsResponse.tasks?.completed || 0,
-      pendingTasks: statsResponse.tasks?.pending || 0,
-      overdueTasks: statsResponse.tasks?.overdue || 0,
-      totalMembers: statsResponse.members?.total || 0,
-      activeMembers: statsResponse.members?.active || 0,
-      totalWorkHours: Math.round(statsResponse.tasks?.total_work_hours || 0),
-      monthlyWorkHours: Math.round(
-        (statsResponse.tasks?.avg_work_hours || 0) * 30
-      ),
-      attendanceRate:
-        (statsResponse.attendance?.total_records || 0) > 0
-          ? 1 -
-            (statsResponse.attendance?.late_checkins || 0) /
-              (statsResponse.attendance?.total_records || 1)
-          : 0.92,
-      completionRate:
-        (statsResponse.tasks?.total || 0) > 0
-          ? (statsResponse.tasks?.completed || 0) /
-            (statsResponse.tasks?.total || 1)
-          : 0.78
-    })
+    Object.assign(dashboardStats, statsData)
   } catch (error) {
     console.error('加载统计数据失败:', error)
     ElMessage.error('加载仪表板数据失败')
@@ -521,16 +500,11 @@ const loadDashboardStats = async () => {
 
 const loadTaskDistribution = async () => {
   try {
-    // 获取任务统计数据
-    const statsResponse = await statisticsApi.getOverview()
-    const categories = statsResponse.categories || {}
+    // 获取任务分布数据
+    const distributionData = await dashboardApi.getTaskDistribution()
 
     // 更新任务分布数据
-    taskDistribution.value = {
-      repair: categories.repair || 0,
-      monitoring: categories.monitoring || 0,
-      assistance: categories.assistance || 0
-    }
+    taskDistribution.value = distributionData
 
     await nextTick()
     initTaskDistributionChart()
@@ -543,25 +517,15 @@ const loadTaskDistribution = async () => {
 const loadWorkHoursTrend = async () => {
   try {
     chartsLoading.value = true
-    // 生成模拟数据
-    const days = parseInt(trendPeriod.value)
-    const trendData: WorkHoursTrend[] = []
-
-    for (let i = days - 1; i >= 0; i--) {
-      const date = new Date()
-      date.setDate(date.getDate() - i)
-      trendData.push({
-        date: date.toISOString().split('T')[0],
-        hours: Math.floor(Math.random() * 30) + 20,
-        target: 40
-      })
-    }
-
-    workHoursTrend.value = trendData
+    // 调用API获取工时趋势数据
+    const data = await dashboardApi.getWorkHoursTrend(parseInt(trendPeriod.value))
+    workHoursTrend.value = data || []
     await nextTick()
     initWorkHoursChart()
   } catch (error) {
     console.error('加载工时趋势失败:', error)
+    ElMessage.error('加载工时趋势数据失败')
+    workHoursTrend.value = []
   } finally {
     chartsLoading.value = false
   }
@@ -570,51 +534,13 @@ const loadWorkHoursTrend = async () => {
 const loadMemberPerformance = async () => {
   try {
     tableLoading.value = true
-    // 模拟数据
-    memberPerformance.value = [
-      {
-        memberId: 1,
-        memberName: '张三',
-        completedTasks: 15,
-        workHours: 120,
-        attendanceRate: 0.95,
-        efficiency: 85
-      },
-      {
-        memberId: 2,
-        memberName: '李四',
-        completedTasks: 12,
-        workHours: 98,
-        attendanceRate: 0.92,
-        efficiency: 78
-      },
-      {
-        memberId: 3,
-        memberName: '王五',
-        completedTasks: 18,
-        workHours: 135,
-        attendanceRate: 0.98,
-        efficiency: 92
-      },
-      {
-        memberId: 4,
-        memberName: '赵六',
-        completedTasks: 10,
-        workHours: 88,
-        attendanceRate: 0.88,
-        efficiency: 72
-      },
-      {
-        memberId: 5,
-        memberName: '孙七',
-        completedTasks: 14,
-        workHours: 110,
-        attendanceRate: 0.94,
-        efficiency: 80
-      }
-    ]
+    // 调用API获取成员绩效数据
+    const data = await dashboardApi.getMemberPerformance()
+    memberPerformance.value = data || []
   } catch (error) {
     console.error('加载成员绩效失败:', error)
+    ElMessage.error('加载成员绩效数据失败')
+    memberPerformance.value = []
   } finally {
     tableLoading.value = false
   }
@@ -622,60 +548,25 @@ const loadMemberPerformance = async () => {
 
 const loadRecentActivities = async () => {
   try {
-    // 模拟数据
-    recentActivities.value = [
-      {
-        id: 1,
-        type: 'task_completed',
-        title: '任务完成',
-        description: '张三完成了网络故障修复任务',
-        timestamp: new Date(Date.now() - 3600000).toISOString()
-      },
-      {
-        id: 2,
-        type: 'task_assigned',
-        title: '任务分配',
-        description: '新任务已分配给李四',
-        timestamp: new Date(Date.now() - 7200000).toISOString()
-      },
-      {
-        id: 3,
-        type: 'attendance',
-        title: '考勤异常',
-        description: '王五今日迟到30分钟',
-        timestamp: new Date(Date.now() - 14400000).toISOString()
-      }
-    ]
+    // 调用API获取最近活动数据
+    const data = await dashboardApi.getRecentActivities(10)
+    recentActivities.value = data || []
   } catch (error) {
     console.error('加载最近活动失败:', error)
+    ElMessage.error('加载最近活动数据失败')
+    recentActivities.value = []
   }
 }
 
 const loadAlerts = async () => {
   try {
-    // 模拟数据
-    alerts.value = [
-      {
-        id: 1,
-        type: 'overdue',
-        level: 'high',
-        title: '任务超期',
-        message: '有3个任务已超期',
-        timestamp: new Date().toISOString(),
-        resolved: false
-      },
-      {
-        id: 2,
-        type: 'system',
-        level: 'medium',
-        title: '系统提醒',
-        message: '备份任务需要执行',
-        timestamp: new Date().toISOString(),
-        resolved: false
-      }
-    ]
+    // 调用API获取系统警告数据
+    const data = await dashboardApi.getAlerts(false)
+    alerts.value = data || []
   } catch (error) {
     console.error('加载警告信息失败:', error)
+    ElMessage.error('加载系统警告数据失败')
+    alerts.value = []
   }
 }
 
