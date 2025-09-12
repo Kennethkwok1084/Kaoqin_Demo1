@@ -1309,19 +1309,10 @@ class DataImportService:
             # 确保member_id被正确设置
             if member and hasattr(member, "id"):
                 task_data["assigned_to"] = member.id
-            elif not task_data.get("assigned_to"):
-                # 如果没有匹配的成员且task_data中也没有assigned_to，尝试根据reporter信息查找成员
-                matched_member = await self._find_member_by_reporter_info(
-                    task_data.get("reporter_name"), task_data.get("reporter_contact")
+            else:
+                task_data["assigned_to"] = await self._resolve_member_id(
+                    task_data.get("assigned_to")
                 )
-                if matched_member:
-                    task_data["assigned_to"] = matched_member.id
-                else:
-                    # 如果仍然找不到成员，创建一个默认成员或使用系统默认成员
-                    default_member = await self._get_or_create_default_member()
-                    task_data["assigned_to"] = (
-                        default_member.id if default_member else 1
-                    )  # 使用系统默认成员ID
 
             task_data["import_batch_id"] = import_batch_id
 
@@ -1398,6 +1389,44 @@ class DataImportService:
         except Exception as e:
             logger.warning(f"Error finding member by reporter info: {str(e)}")
             return None
+
+    async def _resolve_member_id(self, assigned_to: Any) -> int:
+        """根据导入字段解析成员ID"""
+        try:
+            if isinstance(assigned_to, int):
+                return assigned_to
+
+            if isinstance(assigned_to, str):
+                # 纯数字字符串直接作为ID处理
+                if assigned_to.isdigit():
+                    id_query = select(Member).where(
+                        and_(Member.is_active.is_(True), Member.id == int(assigned_to))
+                    )
+                    result = await self.db.execute(id_query)
+                    member = result.scalar_one_or_none()
+                    if member:
+                        return member.id
+
+                # 处理 "姓名(信息处)" 格式
+                name = assigned_to.split("(")[0].split("（")[0].strip()
+                clean_name = self.ab_matching_service._clean_name(name)
+                if clean_name:
+                    name_query = select(Member).where(
+                        and_(
+                            Member.is_active.is_(True),
+                            Member.name == clean_name,
+                        )
+                    )
+                    result = await self.db.execute(name_query)
+                    member = result.scalar_one_or_none()
+                    if member:
+                        return member.id
+
+        except Exception as e:  # pragma: no cover
+            logger.warning(f"Error resolving member ID: {str(e)}")
+
+        default_member = await self._get_or_create_default_member()
+        return default_member.id if default_member else 1
 
     async def _get_or_create_default_member(self) -> Optional[Member]:
         """获取或创建默认成员"""
@@ -1483,25 +1512,9 @@ class DataImportService:
         try:
             # 生成任务编号
             task_id = await self._generate_task_id()
-
-            # 确保member_id不为None
-            member_id = import_data.get("assigned_to")
-            if member_id is None:
-                # 尝试根据reporter信息查找成员
-                matched_member = await self._find_member_by_reporter_info(
-                    import_data.get("reporter_name"),
-                    import_data.get("reporter_contact"),
-                )
-                if matched_member:
-                    member_id = matched_member.id
-                else:
-                    # 获取或创建默认成员
-                    default_member = await self._get_or_create_default_member()
-                    member_id = default_member.id if default_member else 1
-
-            # 确保member_id是有效的
-            if member_id is None:
-                member_id = 1  # 最后的安全网，使用系统默认ID
+            member_id = await self._resolve_member_id(
+                import_data.get("assigned_to")
+            )
 
             logger.info(f"Creating task with member_id: {member_id}")
 
