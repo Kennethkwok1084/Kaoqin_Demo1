@@ -18,7 +18,9 @@ export const dashboardApi = {
    */
   async getStats(): Promise<DashboardStats> {
     const response = await http.get<DashboardStats>('/dashboard/stats')
-    return response.data
+    // 处理包装的响应格式
+    const data = response.data as any
+    return typeof data === 'object' && 'data' in data ? data.data : data
   },
 
   /**
@@ -28,7 +30,9 @@ export const dashboardApi = {
     const response = await http.get<TaskDistribution>(
       '/dashboard/task-distribution'
     )
-    return response.data
+    // 处理包装的响应格式
+    const data = response.data as any
+    return typeof data === 'object' && 'data' in data ? data.data : data
   },
 
   /**
@@ -39,7 +43,9 @@ export const dashboardApi = {
     const response = await http.get<WorkHoursTrend[]>(
       `/dashboard/work-hours-trend?days=${days}`
     )
-    return response.data
+    // 处理包装的响应格式
+    const data = response.data as any
+    return Array.isArray(data) ? data : (data?.data || [])
   },
 
   /**
@@ -50,7 +56,9 @@ export const dashboardApi = {
     const response = await http.get<MemberPerformance[]>(
       `/dashboard/member-performance?limit=${limit}`
     )
-    return response.data
+    // 处理包装的响应格式
+    const data = response.data as any
+    return Array.isArray(data) ? data : (data?.data || [])
   },
 
   /**
@@ -61,7 +69,9 @@ export const dashboardApi = {
     const response = await http.get<RecentActivity[]>(
       `/dashboard/recent-activities?limit=${limit}`
     )
-    return response.data
+    // 处理包装的响应格式
+    const data = response.data as any
+    return Array.isArray(data) ? data : (data?.data || [])
   },
 
   /**
@@ -72,7 +82,9 @@ export const dashboardApi = {
     const response = await http.get<MonthlyReport[]>(
       `/dashboard/monthly-reports?months=${months}`
     )
-    return response.data
+    // 处理包装的响应格式
+    const data = response.data as any
+    return Array.isArray(data) ? data : (data?.data || [])
   },
 
   /**
@@ -83,7 +95,9 @@ export const dashboardApi = {
     const response = await http.get<AlertItem[]>(
       `/dashboard/alerts?resolved=${resolved}`
     )
-    return response.data
+    // 处理包装的响应格式
+    const data = response.data as any
+    return Array.isArray(data) ? data : (data?.data || [])
   },
 
   /**

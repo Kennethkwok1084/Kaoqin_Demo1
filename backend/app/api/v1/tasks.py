@@ -949,7 +949,7 @@ async def delete_repair_task(
         task_title = task.title
 
         # 删除任务
-        await db.delete(task)
+        db.delete(task)
         await db.commit()
 
         logger.warning(
@@ -971,7 +971,7 @@ async def delete_repair_task(
         )
 
 
-@router.delete("/batch-delete", response_model=Dict[str, Any])
+@router.post("/batch-delete", response_model=Dict[str, Any])
 async def batch_delete_tasks(
     request_data: Dict[str, Any],
     current_user: Member = Depends(get_current_active_admin),
@@ -1028,7 +1028,7 @@ async def batch_delete_tasks(
         for task in deletable_tasks:
             try:
                 deleted_tasks.append(f"{task.title} ({task.task_id})")
-                await db.delete(task)
+                db.delete(task)
                 deleted_count += 1
             except Exception as e:
                 logger.warning(f"Failed to delete task {task.id}: {str(e)}")

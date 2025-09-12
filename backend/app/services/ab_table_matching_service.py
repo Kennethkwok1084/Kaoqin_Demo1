@@ -632,12 +632,22 @@ class ABTableMatchingService:
             return 0.0
 
     def _clean_name(self, name: str) -> str:
-        """清理姓名字符串"""
+        """清理姓名字符串（优化版，支持带括号的名字）"""
         if not name:
             return ""
-
+        
+        # 首先尝试提取括号前的名字部分
+        # 例如："郑泰跃(信息处)" -> "郑泰跃"
+        name = name.strip()
+        
+        # 处理中文括号和英文括号
+        if '(' in name:
+            name = name.split('(')[0].strip()
+        elif '（' in name:
+            name = name.split('（')[0].strip()
+        
         # 移除空格和特殊字符，保留中文、英文、·符号
-        cleaned = self._name_clean_pattern.sub("", name.strip())
+        cleaned = self._name_clean_pattern.sub("", name)
         return cleaned.lower()
 
     def _clean_phone(self, phone: str) -> str:
@@ -664,7 +674,7 @@ class ABTableMatchingService:
         return self._name_similarity_score(name1, name2) >= threshold
 
     def _name_similarity_score(self, name1: str, name2: str) -> float:
-        """计算姓名相似度得分（优化版）"""
+        """计算姓名相似度得分（优化版，支持模糊匹配）"""
         if not name1 or not name2:
             return 0.0
 
@@ -679,9 +689,22 @@ class ABTableMatchingService:
         # 完全匹配
         if name1 == name2:
             score = 1.0
-        # 包含关系
+        # 包含关系（支持前缀匹配）
         elif name1 in name2 or name2 in name1:
-            score = 0.8
+            # 计算包含度，越接近完全包含分数越高
+            min_len = min(len(name1), len(name2))
+            max_len = max(len(name1), len(name2))
+            score = 0.75 + (min_len / max_len) * 0.15  # 0.75-0.9分
+        # 中文姓名特殊处理：如果都是2-4个字的中文名
+        elif self._is_chinese_name(name1) and self._is_chinese_name(name2):
+            # 如果姓氏相同，提高基础分数
+            if len(name1) >= 2 and len(name2) >= 2 and name1[0] == name2[0]:
+                base_score = 0.3
+            else:
+                base_score = 0.0
+            # 计算编辑距离相似度
+            edit_similarity = self._optimized_levenshtein_similarity(name1, name2)
+            score = base_score + edit_similarity * 0.7
         # 长度差异过大的早期终止
         elif abs(len(name1) - len(name2)) > max(len(name1), len(name2)) * 0.7:
             score = 0.0
@@ -692,6 +715,14 @@ class ABTableMatchingService:
         # 缓存结果
         self._name_cache[cache_key] = score
         return score
+    
+    def _is_chinese_name(self, name: str) -> bool:
+        """判断是否为中文姓名"""
+        if not name or len(name) < 2 or len(name) > 5:
+            return False
+        # 检查是否主要由中文字符组成
+        chinese_chars = sum(1 for c in name if '\u4e00' <= c <= '\u9fff')
+        return chinese_chars >= len(name) * 0.8
 
     def _phones_match(self, phone1: str, phone2: str, strict: bool = True) -> bool:
         """判断两个电话号码是否匹配"""
@@ -836,8 +867,11 @@ class ABTableMatchingService:
         }
 
     def _extract_name(self, record: Dict[str, Any]) -> str:
-        """从记录中提取姓名"""
+        """从记录中提取姓名（优化版，支持更多字段）"""
         name_fields = [
+            "处理人",      # 添加处理人字段
+            "处理人员",    # 添加处理人员字段
+            "维修人员",    # 添加维修人员字段
             "name",
             "姓名",
             "reporter_name",

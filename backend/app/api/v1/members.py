@@ -81,7 +81,7 @@ async def get_members(
             query = query.where(Member.class_name.ilike(f"%{class_name}%"))
 
         # 获取总数
-        count_query = select(func.count(Member.id)).select_from(query.subquery())
+        count_query = select(func.count()).select_from(query.subquery())
         result = await db.execute(count_query)
         total = result.scalar()
 
