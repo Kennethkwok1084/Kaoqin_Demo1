@@ -53,6 +53,7 @@ import app.models.task  # noqa: F401
 
 # Import and patch settings for testing before app import
 from app.core.config import settings
+
 settings.TESTING = True
 settings.DEBUG = False
 settings.DATABASE_URL = test_config.test_database_url
@@ -88,43 +89,21 @@ AsyncTestClient = AsyncClient
 
 
 # Use new database testing configuration with consistent scopes
-@pytest_asyncio.fixture(scope="function", autouse=True)
+@pytest_asyncio.fixture(scope="session")
 async def test_engine():
     """Create test database engine using new configuration."""
-    engine = None
+    engine = await test_config.create_test_engine()
     try:
-        engine = await test_config.create_test_engine()
         yield engine
-    except Exception as e:
-        logger.error(f"Test engine creation failed: {e}")
-        raise
     finally:
-        if engine:
-            try:
-                await engine.dispose()
-            except Exception as e:
-                logger.error(f"Test engine disposal failed: {e}")
+        await engine.dispose()
 
 
-@pytest_asyncio.fixture(scope="function", autouse=True)
+@pytest_asyncio.fixture(scope="function")
 async def setup_database(test_engine):
     """Setup test database using new configuration."""
-    try:
-        await test_config.setup_test_database(test_engine)
-        yield
-    except Exception as e:
-        logger.error(f"Database setup failed: {e}")
-        raise
-    finally:
-        # Cleanup after each test function
-        try:
-            # Clean up any test data that may have been created
-            async with test_engine.begin() as conn:
-                # Only clean up if we're in test mode
-                if os.getenv("TESTING") == "true":
-                    pass  # Let the transaction rollback handle cleanup
-        except Exception as e:
-            logger.error(f"Database cleanup failed: {e}")
+    await test_config.setup_test_database(test_engine)
+    yield
 
 
 @pytest_asyncio.fixture(scope="function")
