@@ -4440,8 +4440,10 @@ async def import_maintenance_orders(
                     or data.get("assignee_name")
                     or data.get("handler_name")
                     or data.get("processor_name")
+                    or data.get("处理人")
+                    or data.get("负责人")
+                    or data.get("责任人")
                 )
-
                 if assignee_name:
                     # 清理姓名，移除括号及其内容，以及其他常见的后缀
                     import re
@@ -4533,6 +4535,8 @@ async def import_maintenance_orders(
                                     f"No matching member found for: '{assignee_name}' "
                                     f"(cleaned: '{clean_name}')"
                                 )
+                else:
+                    logger.warning(f"导入记录缺少处理人: {data}")
 
                 # 处理时间字段
                 import_report_time = data.get("report_time") or data.get("report_date")

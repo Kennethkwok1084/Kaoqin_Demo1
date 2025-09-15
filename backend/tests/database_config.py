@@ -8,7 +8,6 @@ import asyncio
 import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.pool import StaticPool
 
 import app.models  # noqa: F401
 import app.models.attendance  # noqa: F401
@@ -20,9 +19,7 @@ import app.models.member  # noqa: F401
 import app.models.task  # noqa: F401
 from app.core.database_compatibility import (
     DatabaseCompatibilityChecker,
-    DatabaseType,
     get_test_database_url,
-    should_use_postgresql_tests,
 )
 from app.models.base import Base
 
@@ -32,37 +29,23 @@ class DatabaseTestConfig:
 
     def __init__(self):
         self.test_database_url = get_test_database_url()
-        self.use_postgresql = should_use_postgresql_tests()
 
     async def create_test_engine(self):
-        """创建测试数据库引擎"""
-        if self.use_postgresql:
-            # PostgreSQL配置 - 为测试环境优化
-            engine = create_async_engine(
-                self.test_database_url,
-                echo=False,
-                pool_pre_ping=True,
-                pool_recycle=300,  # 5分钟回收连接
-                pool_size=5,       # 较小的连接池
-                max_overflow=0,    # 不允许溢出连接
-                pool_timeout=30,   # 连接超时
-                # 为测试环境添加额外配置
-                connect_args={
-                    "server_settings": {
-                        "application_name": "attendence_test",
-                    }
+        """创建测试数据库引擎（PostgreSQL）"""
+        engine = create_async_engine(
+            self.test_database_url,
+            echo=False,
+            pool_pre_ping=True,
+            pool_recycle=300,  # 5分钟回收连接
+            pool_size=5,  # 较小的连接池
+            max_overflow=0,  # 不允许溢出连接
+            pool_timeout=30,  # 连接超时
+            connect_args={
+                "server_settings": {
+                    "application_name": "attendence_test",
                 }
-            )
-        else:
-            # SQLite配置
-            engine = create_async_engine(
-                self.test_database_url,
-                echo=False,
-                connect_args={
-                    "check_same_thread": False,
-                },
-                poolclass=StaticPool,
-            )
+            },
+        )
         return engine
 
     async def setup_test_database(self, engine):
@@ -70,6 +53,55 @@ class DatabaseTestConfig:
         async with engine.begin() as conn:
             # 删除所有表
             await conn.run_sync(Base.metadata.drop_all)
+
+            # 删除可能存在的ENUM类型
+            enum_types = [
+                "userrole",
+                "taskstatus",
+                "taskcategory",
+                "taskpriority",
+                "tasktype",
+                "tasktagtype",
+                "attendanceexceptionstatus",
+            ]
+            for enum_type in enum_types:
+                await conn.execute(text(f"DROP TYPE IF EXISTS {enum_type} CASCADE"))
+
+            # 创建所需的ENUM类型
+            await conn.execute(
+                text(
+                    "CREATE TYPE userrole AS ENUM ('admin','group_leader','member','guest')"
+                )
+            )
+            await conn.execute(
+                text(
+                    "CREATE TYPE taskstatus AS ENUM ('pending','in_progress','completed','cancelled','on_hold')"
+                )
+            )
+            await conn.execute(
+                text(
+                    "CREATE TYPE taskcategory AS ENUM ('network_repair','hardware_repair','software_support','software_issue','monitoring','assistance','other')"
+                )
+            )
+            await conn.execute(
+                text(
+                    "CREATE TYPE taskpriority AS ENUM ('low','medium','high','urgent')"
+                )
+            )
+            await conn.execute(
+                text("CREATE TYPE tasktype AS ENUM ('online','offline','repair')")
+            )
+            await conn.execute(
+                text(
+                    "CREATE TYPE tasktagtype AS ENUM ('rush_order','non_default_rating','timeout_response','timeout_processing','bad_rating','bonus','penalty','category')"
+                )
+            )
+            await conn.execute(
+                text(
+                    "CREATE TYPE attendanceexceptionstatus AS ENUM ('pending','approved','rejected')"
+                )
+            )
+
             # 创建所有表
             await conn.run_sync(Base.metadata.create_all)
 
@@ -121,19 +153,3 @@ async def db_session(test_engine, setup_database):
 async def db_compatibility_checker(db_session):
     """数据库兼容性检查器fixture"""
     return DatabaseCompatibilityChecker(db_session)
-
-
-# PostgreSQL专属测试标记
-postgresql_only = pytest.mark.skipif(
-    not should_use_postgresql_tests(), reason="PostgreSQL-specific test"
-)
-
-# SQLite专属测试标记
-sqlite_only = pytest.mark.skipif(
-    should_use_postgresql_tests(), reason="SQLite-specific test"
-)
-
-# 数据库无关测试标记
-database_agnostic = pytest.mark.parametrize(
-    "db_type", [DatabaseType.SQLITE, DatabaseType.POSTGRESQL], indirect=True
-)
