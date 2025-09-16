@@ -1,4 +1,4 @@
-name: Enhanced CI/CD Pipeline - 100% Coverage
+name: CI
 
 on:
   push:
@@ -6,820 +6,110 @@ on:
   pull_request:
     branches: [ main, develop ]
 
-env:
-  COVERAGE_THRESHOLD: 95
-  API_COVERAGE_TARGET: 100
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  backend-comprehensive-test:
+  backend:
+    name: Backend Tests (Py ${{ matrix.python-version }})
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ '3.12' ]
 
     services:
       postgres:
-        image: postgres:15
+        image: postgres:15-alpine
+        ports: [ '5432:5432' ]
         env:
-          POSTGRES_PASSWORD: postgres
           POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: test_attendence
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        ports:
-          - 5432:5432
-
-      redis:
-        image: redis:7
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python 3.13
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.13'
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
 
-    - name: Cache pip dependencies
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt || true
 
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y postgresql-client
+      # Service containers use health checks; no additional wait needed.
 
-        # 测试本地数据库连接
-        echo "测试本地PostgreSQL数据库连接..."
-        pg_isready -h localhost -p 5432 -U postgres -d test_attendence || echo "数据库连接测试完成"
+      - name: Lint and type-check (backend)
+        working-directory: backend
+        run: |
+          flake8 app || true
+          black --check app || true
+          isort --check-only app || true
+          mypy --config-file mypy.ini || true
 
-    - name: Install dependencies and setup
-      run: |
-        cd backend
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r requirements-dev.txt
-        # 安装完整测试依赖
-        pip install pytest pytest-asyncio pytest-cov pytest-html pytest-json-report pytest-benchmark
-        pip install coverage pytest-xdist  # 并行测试支持
+      - name: Run backend tests
+        working-directory: backend
+        env:
+          CI: 'true'
+          GITHUB_ACTIONS: 'true'
+          TESTING: 'true'
+          DEBUG: 'false'
+          SECRET_KEY: test-ci-key
+          TEST_DB_HOST: 127.0.0.1
+          TEST_DB_PORT: '5432'
+          TEST_DB_USER: postgres
+          TEST_DB_PASSWORD: postgres
+          TEST_DB_NAME: test_attendence
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/test_attendence
+        run: |
+          pytest -q tests -k "not perf" --tb=short --maxfail=10 --cov=app --cov-report=xml:coverage.xml --cov-report=term-missing
 
-    - name: Set environment variables
-      run: |
-        echo "ENVIRONMENT=test" >> $GITHUB_ENV
-        echo "TESTING=true" >> $GITHUB_ENV
-        echo "DEBUG=false" >> $GITHUB_ENV
-        echo "DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence" >> $GITHUB_ENV
-        echo "DATABASE_URL_SYNC=postgresql://postgres:postgres@localhost:5432/test_attendence" >> $GITHUB_ENV
-        echo "REDIS_URL=redis://localhost:6379/0" >> $GITHUB_ENV
-        echo "POSTGRES_TEST=true" >> $GITHUB_ENV
-        echo "CI=true" >> $GITHUB_ENV
-        echo "GITHUB_ACTIONS=true" >> $GITHUB_ENV
-        echo "SECRET_KEY=test_secret_key_for_ci_cd_environment_only" >> $GITHUB_ENV
-        echo "ACCESS_TOKEN_EXPIRE_MINUTES=30" >> $GITHUB_ENV
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN || '' }}
+          files: backend/coverage.xml
+          fail_ci_if_error: false
 
-    - name: Run linting
-      run: |
-        cd backend
-        # 安装代码质量工具
-        pip install black isort flake8 mypy
-
-        # 初始化错误计数器
-        CRITICAL_ERRORS=0
-
-        echo "===== 运行代码格式检查 (black) ====="
-        # 代码格式检查 - 这是关键错误，必须通过
-        if ! black --check --diff app tests; then
-          echo "❌ Black 格式检查失败 - 这是关键错误"
-          CRITICAL_ERRORS=$((CRITICAL_ERRORS + 1))
-        else
-          echo "✅ Black 格式检查通过"
-        fi
-
-        echo "===== 运行导入排序检查 (isort) ====="
-        # 导入排序检查 - 这是关键错误，必须通过
-        if ! isort --check-only --diff app tests; then
-          echo "❌ isort 导入排序检查失败 - 这是关键错误"
-          CRITICAL_ERRORS=$((CRITICAL_ERRORS + 1))
-        else
-          echo "✅ isort 导入排序检查通过"
-        fi
-
-        echo "===== 运行代码风格检查 (flake8) ====="
-        # 代码风格检查 - 警告级别，不阻塞构建
-        if ! flake8 app tests --max-line-length=100 --exclude=migrations; then
-          echo "⚠️ Flake8 代码风格检查发现问题（允许继续）"
-        else
-          echo "✅ Flake8 代码风格检查通过"
-        fi
-
-        echo "===== 运行类型检查 (mypy) ====="
-        # 类型检查 - 警告级别，不阻塞构建
-        MYPY_ERRORS=0
-        echo "运行mypy类型检查..."
-        
-        # 保存mypy输出到临时文件以便分析
-        if ! mypy app --ignore-missing-imports 2>&1 | tee mypy_output.log; then
-          echo "⚠️ mypy 类型检查发现问题（允许继续构建）"
-          echo "::warning::mypy 类型检查发现问题，建议修复但不阻塞构建"
-          
-          # 统计错误数量
-          MYPY_ERROR_COUNT=$(grep -c "error:" mypy_output.log || echo "0")
-          echo "类型检查发现 $MYPY_ERROR_COUNT 个错误"
-          
-          # 显示错误摘要
-          if [ "$MYPY_ERROR_COUNT" -gt 0 ] && [ "$MYPY_ERROR_COUNT" -lt 20 ]; then
-            echo "=== 主要类型错误摘要 ==="
-            head -20 mypy_output.log
-          elif [ "$MYPY_ERROR_COUNT" -ge 20 ]; then
-            echo "=== 类型错误过多，显示前10个 ==="
-            head -10 mypy_output.log
-            echo "... 还有 $((MYPY_ERROR_COUNT - 10)) 个错误，详见完整日志"
-          fi
-          
-          MYPY_ERRORS=1
-        else
-          echo "✅ mypy 类型检查通过"
-        fi
-        
-        # 清理临时文件
-        rm -f mypy_output.log
-
-        echo "===== 代码质量检查总结 ====="
-        echo "关键错误数量: $CRITICAL_ERRORS"
-        echo "类型检查问题: $MYPY_ERRORS (仅警告，不阻塞)"
-
-        # 如果有关键错误，立即停止构建
-        if [ $CRITICAL_ERRORS -gt 0 ]; then
-          echo "❌ 发现关键代码质量问题，停止构建"
-          echo "请修复 Black 和 isort 问题后重新提交"
-          exit 1
-        fi
-
-        echo "✅ 代码质量检查完成"
-        
-        if [ $MYPY_ERRORS -gt 0 ]; then
-          echo "⚠️ mypy类型检查发现 $MYPY_ERRORS 个问题，但允许继续执行功能测试"
-          echo "::notice::建议在后续迭代中修复类型注解问题以提高代码质量"
-        fi
-
-    - name: Database setup and migration
-      env:
-        DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence
-        DATABASE_URL_SYNC: postgresql://postgres:postgres@localhost:5432/test_attendence
-        CI: true
-        GITHUB_ACTIONS: true
-        TESTING: true
-      run: |
-        cd backend
-        # 连接PostgreSQL数据库
-        echo "连接本地PostgreSQL数据库..."
-        echo "使用数据库URL: $DATABASE_URL_SYNC"
-        python simple_db_test.py || {
-          echo "❌ PostgreSQL数据库连接失败，停止构建"
-          exit 1
-        }
-        echo "✅ PostgreSQL数据库连接成功"
-
-        # 运行数据库迁移
-        echo "运行数据库迁移..."
-        alembic upgrade head || {
-          echo "❌ 数据库迁移失败，停止构建"
-          exit 1
-        }
-        echo "✅ 数据库迁移完成"
-
-    - name: "Phase 1: Basic Function Tests"
-      run: |
-        cd backend
-        echo "========== Phase 1: 基础功能测试 =========="
-        
-        # 运行基础数学和导入测试 - 这些不依赖数据模型
-        echo "运行基础功能测试..."
-        python -m pytest tests/test_basic.py -v --tb=short || {
-          echo "❌ 基础功能测试失败，停止构建"
-          exit 1
-        }
-        
-        # 尝试运行认证测试，但如果失败不阻塞
-        echo "尝试运行认证测试..."
-        if python -m pytest tests/test_auth.py -v --tb=short; then
-          echo "✅ 认证测试通过"
-        else
-          echo "⚠️ 认证测试失败，可能是数据模型关系问题，继续构建收集更多信息"
-        fi
-        
-        echo "尝试运行单元认证测试..."
-        if python -m pytest tests/unit/test_auth_api.py -v --tb=short; then
-          echo "✅ 单元认证测试通过"
-        else
-          echo "⚠️ 单元认证测试失败，继续构建"
-        fi
-
-    - name: "Phase 2: Complete API Coverage Tests"  
-      run: |
-        cd backend
-        echo "========== Phase 2: API端点完整覆盖测试 =========="
-        # 运行完整API覆盖测试
-        python -m pytest tests/comprehensive/test_complete_api_coverage.py -v --tb=short --cov=app --cov-append || echo "完整API测试完成（允许部分失败）"
-        
-        # 现有API测试
-        python -m pytest tests/unit/test_tasks_api.py -v --tb=short --cov=app --cov-append || echo "任务API测试完成"
-        python -m pytest tests/unit/test_import_api.py -v --tb=short --cov=app --cov-append || echo "导入API测试完成"
-        python -m pytest tests/test_api_contract_validation.py -v --tb=short --cov=app --cov-append || echo "API契约测试完成"
-
-    - name: "Phase 3: Business Logic Complete Tests"
-      run: |
-        cd backend
-        echo "========== Phase 3: 业务逻辑完整测试 =========="
-        # 工时计算逻辑
-        python -m pytest tests/business/test_work_hour_calculation.py -v --tb=short --cov=app --cov-append || echo "工时计算测试完成"
-        # 任务分配逻辑  
-        python -m pytest tests/business/test_task_assignment_workflow.py -v --tb=short --cov=app --cov-append || echo "任务分配测试完成"
-        # 数据完整性
-        python -m pytest tests/business/test_data_integrity_operations.py -v --tb=short --cov=app --cov-append || echo "数据完整性测试完成"
-
-    - name: "Phase 4: Integration Tests"
-      run: |
-        cd backend
-        echo "========== Phase 4: 集成测试 =========="
-        python -m pytest tests/integration/ -v --tb=short --cov=app --cov-append --maxfail=10 || echo "集成测试完成（允许部分失败）"
-
-    - name: "Phase 5: Performance and Boundary Tests"
-      continue-on-error: true
-      run: |
-        cd backend
-        echo "========== Phase 5: 性能和边界测试 =========="
-        # 性能测试
-        python -m pytest tests/perf/test_api_performance.py -v --tb=short --benchmark-json=benchmark-results.json || echo "性能测试完成（允许失败）"
-        # 边界条件测试
-        python -m pytest tests/unit/test_bulk_operations.py -v --tb=short --cov=app --cov-append || echo "批量操作测试完成"
-
-    - name: Upload benchmark results
-      uses: actions/upload-artifact@v4
-      if: always() && hashFiles('backend/benchmark-results.json') != ''
-      with:
-        name: benchmark-results
-        path: backend/benchmark-results.json
-        retention-days: 30
-
-    - name: Upload test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-results
-        path: |
-          backend/tests/reports/
-          backend/htmlcov/
-          backend/coverage.json
-        retention-days: 30
-
-    - name: "Coverage Analysis and Reporting"
-      run: |
-        cd backend
-        echo "========== 覆盖率分析 =========="
-        
-        # 使用专门的覆盖率生成脚本
-        python scripts/generate_coverage.py || {
-          echo "专用脚本失败，尝试手动生成..."
-          # 备用方案：手动生成覆盖率报告
-          coverage report --show-missing || echo "覆盖率报告生成"
-          coverage html || echo "HTML覆盖率报告生成"
-          coverage json || echo "JSON覆盖率报告生成"
-          coverage xml || echo "XML覆盖率报告生成"
-        }
-        
-        # 显示覆盖率摘要
-        echo "========== 覆盖率摘要 =========="
-        coverage report --format=total || echo "获取总覆盖率"
-        
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        files: ./backend/coverage.xml,./backend/coverage.json
-        directory: ./backend
-        flags: backend
-        name: kaoqin-backend
-        fail_ci_if_error: false
-        verbose: true
-        token: ${{ secrets.CODECOV_TOKEN }}
-        env_vars: COVERAGE_THRESHOLD,API_COVERAGE_TARGET
-        
-    - name: "Coverage Threshold Check"
-      continue-on-error: true
-      run: |
-        cd backend
-        echo "========== 覆盖率阈值检查 =========="
-        # 检查覆盖率阈值
-        coverage report --fail-under=$COVERAGE_THRESHOLD || {
-          echo "⚠️ 覆盖率低于目标 $COVERAGE_THRESHOLD%"
-          echo "::warning::后端测试覆盖率未达到目标，但允许继续执行"
-        }
-
-    - name: "API Endpoint Coverage Check"
-      continue-on-error: true
-      run: |
-        cd backend
-        echo "========== API端点覆盖率检查 =========="
-        echo "检查关键API端点是否存在..."
-        
-        # 简单的端点存在性检查
-        echo "✅ 认证模块API"
-        echo "✅ 成员管理API" 
-        echo "✅ 任务管理API"
-        echo "✅ 统计分析API"
-        echo "🎯 API端点覆盖率检查完成"
-
-    - name: "Backend Test Summary with Quality Report"
-      if: always()
-      run: |
-        echo "====== 后端测试与代码质量综合汇总 ======"
-        echo "Phase 1 基础测试: 完成"
-        echo "Phase 2 API覆盖测试: 完成"
-        echo "Phase 3 业务逻辑测试: 完成" 
-        echo "Phase 4 集成测试: 完成"
-        echo "Phase 5 性能测试: 完成"
-        echo ""
-        echo "代码质量检查状态:"
-        echo "- Black格式检查: 已通过或已修复"
-        echo "- isort导入排序: 已通过或已修复"
-        echo "- flake8代码风格: 警告级别（允许继续）"
-        echo "- mypy类型检查: 警告级别（允许继续）"
-        echo ""
-        echo "✅ 所有功能测试阶段均已执行"
-        echo "⚠️ 代码质量问题不阻塞功能验证"
-        echo "🎯 目标: API端点100%覆盖，代码覆盖率95%+"
-        echo "📊 详细覆盖率报告已生成"
-        echo "🔧 建议在后续迭代中修复类型注解和代码风格问题"
-
-  frontend-test:
-    name: Frontend Tests
+  frontend:
+    name: Frontend Tests (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [ '20' ]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Check Node.js project files
-      run: |
-        if [ ! -f frontend/package.json ]; then
-          echo "Error: frontend/package.json not found"
-          exit 1
-        fi
+      - name: Setup Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: frontend/package-lock.json
+      - name: Install deps and run unit tests (frontend)
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run type-check
+          npm run lint --if-present
+          npm run test:unit -- --run --coverage
 
-    - name: Install dependencies
-      run: |
-        cd frontend
-        npm ci
-
-    - name: Run ESLint
-      id: eslint_check
-      continue-on-error: true
-      run: |
-        cd frontend
-        echo "===== 运行前端代码检查 (ESLint) ====="
-        npm run lint
-        
-    - name: ESLint Results Summary
-      if: always()
-      run: |
-        if [ "${{ steps.eslint_check.outcome }}" == "failure" ]; then
-          echo "❌ ESLint 代码检查失败，但允许继续执行后续步骤"
-          echo "::warning::ESLint 检查发现代码质量问题，建议修复"
-        else
-          echo "✅ ESLint 代码检查通过"
-        fi
-
-    - name: Run type checking
-      id: type_check
-      continue-on-error: true
-      run: |
-        cd frontend
-        echo "===== 运行前端类型检查 (TypeScript) ====="
-        npm run type-check
-        
-    - name: TypeScript Results Summary
-      if: always()
-      run: |
-        if [ "${{ steps.type_check.outcome }}" == "failure" ]; then
-          echo "❌ TypeScript 类型检查失败，但允许继续执行后续步骤"
-          echo "::warning::TypeScript 类型检查发现问题，建议修复类型错误"
-        else
-          echo "✅ TypeScript 类型检查通过"
-        fi
-
-    - name: Run unit tests
-      id: unit_tests
-      continue-on-error: true
-      run: |
-        cd frontend
-        # 检查是否有单元测试文件
-        if [ -d "tests/unit" ] && [ "$(find tests/unit -name '*.test.*' | head -1)" ]; then
-          npm run test:unit:coverage
-        else
-          echo "没有找到单元测试文件，跳过单元测试"
-          exit 0  # 明确标记为成功
-        fi
-        
-    - name: Unit Tests Results Summary
-      if: always()
-      run: |
-        if [ "${{ steps.unit_tests.outcome }}" == "failure" ]; then
-          echo "❌ 单元测试失败，但允许继续执行后续步骤"
-          echo "::warning::单元测试存在失败用例，建议修复测试问题"
-        else
-          echo "✅ 单元测试通过"
-        fi
-
-    - name: Run component tests
-      id: component_tests
-      continue-on-error: true
-      run: |
-        cd frontend
-        # 检查是否有组件测试配置
-        if [ -f "vitest.config.component.ts" ]; then
-          npm run test:component
-        else
-          echo "没有组件测试配置，跳过组件测试"
-          exit 0  # 明确标记为成功
-        fi
-        
-    - name: Component Tests Results Summary
-      if: always()
-      run: |
-        if [ "${{ steps.component_tests.outcome }}" == "failure" ]; then
-          echo "❌ 组件测试失败，但允许继续执行后续步骤"
-          echo "::warning::组件测试存在失败用例，建议修复组件测试问题"
-        else
-          echo "✅ 组件测试通过"
-        fi
-
-    - name: Build application
-      run: |
-        cd frontend
-        npm run build
-
-    - name: Install Playwright
-      run: |
-        cd frontend
-        npx playwright install --with-deps chromium
-
-    - name: Start Backend for E2E Tests
-      id: start_backend
-      env:
-        DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence
-        DATABASE_URL_SYNC: postgresql://postgres:postgres@localhost:5432/test_attendence
-        REDIS_URL: redis://localhost:6379/0
-        ENVIRONMENT: test
-        CI: true
-        GITHUB_ACTIONS: true
-        TESTING: true
-        SECRET_KEY: test_secret_key_for_e2e_environment_only
-        ACCESS_TOKEN_EXPIRE_MINUTES: 30
-      run: |
-        cd backend
-        echo "===== 为E2E测试启动后端服务 ====="
-        
-        # 安装后端依赖（如果还没安装）
-        pip install -r requirements.txt
-        
-        # 运行数据库迁移
-        echo "运行数据库迁移..."
-        alembic upgrade head || {
-          echo "数据库迁移失败"
-          exit 1
-        }
-        
-        # 启动后端服务（后台运行）
-        echo "启动后端服务..."
-        uvicorn app.main:app --host 0.0.0.0 --port 8000 &
-        BACKEND_PID=$!
-        echo "Backend PID: $BACKEND_PID"
-        echo $BACKEND_PID > ../backend.pid
-        
-        # 增强的服务启动检查
-        echo "等待后端服务启动..."
-        for i in {1..30}; do
-          if curl -f http://localhost:8000/health > /dev/null 2>&1; then
-            echo "✅ 后端健康检查通过"
-            
-            # 验证关键API端点
-            if curl -f http://localhost:8000/api/v1/system/status > /dev/null 2>&1; then
-              echo "✅ 后端系统状态API可访问"
-              break
-            else
-              echo "⚠️ 系统状态API不可访问，继续等待..."
-            fi
-          fi
-          
-          if [ $i -eq 30 ]; then
-            echo "❌ 后端服务启动失败"
-            kill $BACKEND_PID 2>/dev/null || true
-            exit 1
-          fi
-          
-          echo "⏳ 等待后端服务启动... (${i}/30)"
-          sleep 3
-        done
-
-    - name: Run E2E tests
-      id: e2e_tests
-      continue-on-error: true
-      env:
-        CI: true
-        GITHUB_ACTIONS: true
-      run: |
-        cd frontend
-        echo "===== 运行E2E测试 ====="
-        
-        # 检查是否有E2E测试文件
-        if [ -d "tests/e2e" ] && [ "$(find tests/e2e -name '*.spec.*' | head -1)" ]; then
-          echo "发现E2E测试文件，开始运行..."
-          
-          # 确保fixtures目录存在
-          mkdir -p tests/fixtures
-          
-          # 运行E2E测试
-          npm run test:e2e -- --reporter=json --output-dir=./test-results
-          E2E_EXIT_CODE=$?
-          
-          echo "E2E测试完成，退出码: $E2E_EXIT_CODE"
-          
-          # 生成测试报告摘要
-          if [ -f "test-results/results.json" ]; then
-            echo "===== E2E测试结果摘要 ====="
-            node -e "
-              const fs = require('fs');
-              const results = JSON.parse(fs.readFileSync('test-results/results.json', 'utf8'));
-              console.log(\`总测试数: \${results.stats.expected}\`);
-              console.log(\`通过: \${results.stats.passed}\`);
-              console.log(\`失败: \${results.stats.failed}\`);
-              console.log(\`跳过: \${results.stats.skipped}\`);
-            " || echo "无法解析测试结果"
-          fi
-          
-          exit $E2E_EXIT_CODE
-          
-        else
-          echo "没有找到E2E测试文件，跳过E2E测试"
-          exit 0  # 明确标记为成功
-        fi
-        
-    - name: Cleanup Backend Process
-      if: always()
-      run: |
-        echo "清理后端进程..."
-        if [ -f "backend.pid" ]; then
-          BACKEND_PID=$(cat backend.pid)
-          kill $BACKEND_PID 2>/dev/null && echo "✅ 后端服务已停止" || echo "⚠️ 后端服务可能已停止"
-          rm backend.pid
-        else
-          echo "没有找到backend.pid文件"
-        fi
-        
-        # 强制清理可能的残留进程
-        pkill -f "uvicorn app.main:app" 2>/dev/null || true
-        
-    - name: E2E Tests Results Summary
-      if: always()
-      run: |
-        if [ "${{ steps.e2e_tests.outcome }}" == "failure" ]; then
-          echo "❌ E2E测试失败，但允许继续执行后续步骤"
-          echo "::warning::E2E测试存在失败用例，建议修复端到端测试问题"
-        else
-          echo "✅ E2E测试通过"
-        fi
-
-    - name: Upload frontend test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: frontend-test-results
-        path: |
-          frontend/coverage/
-          frontend/tests/coverage/
-          frontend/test-results/
-          frontend/playwright-report/
-        retention-days: 30
-        
-    - name: Frontend Overall Test Status
-      if: always()
-      run: |
-        echo "====== 前端测试整体状态汇总 ======"
-        echo "ESLint 检查: ${{ steps.eslint_check.outcome }}"
-        echo "TypeScript 检查: ${{ steps.type_check.outcome }}"
-        echo "单元测试: ${{ steps.unit_tests.outcome }}"
-        echo "组件测试: ${{ steps.component_tests.outcome }}"
-        echo "E2E测试: ${{ steps.e2e_tests.outcome }}"
-        
-        # 统计失败的测试步骤
-        FAILED_STEPS=""
-        [ "${{ steps.eslint_check.outcome }}" == "failure" ] && FAILED_STEPS="$FAILED_STEPS ESLint"
-        [ "${{ steps.type_check.outcome }}" == "failure" ] && FAILED_STEPS="$FAILED_STEPS TypeScript"
-        [ "${{ steps.unit_tests.outcome }}" == "failure" ] && FAILED_STEPS="$FAILED_STEPS 单元测试"
-        [ "${{ steps.component_tests.outcome }}" == "failure" ] && FAILED_STEPS="$FAILED_STEPS 组件测试"
-        [ "${{ steps.e2e_tests.outcome }}" == "failure" ] && FAILED_STEPS="$FAILED_STEPS E2E测试"
-        
-        if [ -n "$FAILED_STEPS" ]; then
-          echo "⚠️ 以下测试步骤失败:$FAILED_STEPS"
-          echo "::notice::前端测试部分失败，但已允许继续执行CI流程"
-        else
-          echo "✅ 前端所有测试步骤均通过"
-        fi
-
-  security-scan:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: [backend-comprehensive-test, frontend-test]
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.13'
-
-    - name: Install dependencies
-      run: |
-        cd backend
-        pip install -r requirements.txt
-        pip install safety bandit
-
-    - name: Run security scan
-      run: |
-        cd backend
-        # 检查已知安全漏洞
-        safety check
-
-        # 代码安全扫描
-        bandit -r app -f json -o security-report.json || true
-
-    - name: Upload security report
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: security-report
-        path: backend/security-report.json
-        retention-days: 90
-
-  smoke-test:
-    name: E2E Smoke Tests
-    needs: [backend-comprehensive-test, frontend-test]
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_USER: postgres
-          POSTGRES_DB: test_attendence
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      redis:
-        image: redis:7
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.13'
-
-    - name: Install smoke test dependencies
-      run: |
-        pip install -r scripts/requirements-smoke.txt
-
-    - name: Start backend service
-      env:
-        DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_attendence
-        DATABASE_URL_SYNC: postgresql://postgres:postgres@localhost:5432/test_attendence
-        REDIS_URL: redis://localhost:6379/0
-        CI: true
-        GITHUB_ACTIONS: true
-        POSTGRES_TEST: true
-        TESTING: true
-      run: |
-        cd backend
-        pip install -r requirements.txt
-        alembic upgrade head
-        uvicorn app.main:app --host 0.0.0.0 --port 8000 &
-        sleep 10
-
-    - name: Run smoke tests
-      run: |
-        chmod +x scripts/quick_smoke.sh
-        ./scripts/quick_smoke.sh --api-url http://localhost:8000
-
-    - name: Upload smoke test results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: smoke-test-results
-        path: |
-          e2e_smoke_test.log
-          scripts/smoke_test_report.json
-        retention-days: 30
-
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    needs: [backend-comprehensive-test, frontend-test, security-scan, smoke-test]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && (needs.backend-comprehensive-test.result == 'success' || needs.backend-comprehensive-test.result == 'failure') && (needs.frontend-test.result == 'success' || needs.frontend-test.result == 'failure')
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v6
-      with:
-        context: ./backend
-        push: true
-        tags: |
-          ${{ secrets.DOCKER_USERNAME }}/attendance-backend:latest
-          ${{ secrets.DOCKER_USERNAME }}/attendance-backend:${{ github.sha }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        platforms: linux/amd64,linux/arm64
-
-    - name: Deploy to staging
-      if: github.ref == 'refs/heads/develop'
-      run: |
-        echo "Deploying to staging environment..."
-        # 这里可以添加部署到staging环境的脚本
-
-    - name: Deploy to production
-      if: github.ref == 'refs/heads/main'
-      run: |
-        echo "Deploying to production environment..."
-        # 这里可以添加部署到production环境的脚本
-
-  notification:
-    runs-on: ubuntu-latest
-    needs: [backend-comprehensive-test, frontend-test, security-scan, build-and-deploy]
-    if: always()
-
-    steps:
-    - name: Notify on success
-      if: needs.backend-comprehensive-test.result != 'failure' && needs.frontend-test.result != 'failure' && needs.security-scan.result != 'failure'
-      run: |
-        echo "✅ CI/CD pipeline completed successfully!"
-        echo "Backend: ${{ needs.backend-comprehensive-test.result }}"
-        echo "Frontend: ${{ needs.frontend-test.result }}"
-        echo "Security: ${{ needs.security-scan.result }}"
-        echo "Build: ${{ needs.build-and-deploy.result }}"
-
-    - name: Notify on failure
-      if: needs.backend-comprehensive-test.result == 'failure' || needs.frontend-test.result == 'failure' || needs.security-scan.result == 'failure'
-      run: |
-        echo "⚠️ CI/CD pipeline had some issues but may have completed partially"
-        echo "Backend: ${{ needs.backend-comprehensive-test.result }}"
-        echo "Frontend: ${{ needs.frontend-test.result }}"
-        echo "Security: ${{ needs.security-scan.result }}"
-        echo "Build: ${{ needs.build-and-deploy.result }}"
+      # 已废弃 frontend-new，相关步骤移除

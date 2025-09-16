@@ -10,7 +10,6 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 import app.models  # noqa: F401
-import app.models.attendance  # noqa: F401
 
 # Import all models to ensure they are registered with Base metadata
 # Import in correct order to avoid forward reference issues
@@ -62,7 +61,6 @@ class DatabaseTestConfig:
                 "taskpriority",
                 "tasktype",
                 "tasktagtype",
-                "attendanceexceptionstatus",
             ]
             for enum_type in enum_types:
                 await conn.execute(text(f"DROP TYPE IF EXISTS {enum_type} CASCADE"))

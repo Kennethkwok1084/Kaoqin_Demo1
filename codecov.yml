@@ -36,7 +36,6 @@ coverage:
     - "*/test_*"
     - "**/test_*"
     - "frontend/**/*"
-    - "frontend-new/**/*"
 
 flags:
   backend:

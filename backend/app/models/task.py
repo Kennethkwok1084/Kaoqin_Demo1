@@ -4,7 +4,7 @@ Includes repair tasks, monitoring tasks, and assistance tasks.
 """
 
 import enum
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from sqlalchemy import (
@@ -66,6 +66,7 @@ class TaskType(enum.Enum):
     ONLINE = "online"  # 线上任务 (40分钟)
     OFFLINE = "offline"  # 线下任务 (100分钟)
     REPAIR = "repair"  # 维修任务 (兼容旧代码)
+    ASSISTANCE = "assistance"  # 协助任务
 
 
 class TaskTagType(enum.Enum):
@@ -250,7 +251,7 @@ class RepairTask(BaseModel):
         if "report_time" not in kwargs:
             from datetime import datetime
 
-            kwargs["report_time"] = datetime.utcnow()
+            kwargs["report_time"] = datetime.now(timezone.utc)
 
         super().__init__(**kwargs)
 
@@ -453,9 +454,11 @@ class RepairTask(BaseModel):
         if response_time or status != TaskStatus.PENDING:
             return False
 
-        hours_since_report = (
-            datetime.utcnow() - (report_time or datetime.utcnow())
-        ).total_seconds() / 3600
+        now = datetime.now(timezone.utc)
+        report_dt = report_time or now
+        if report_dt.tzinfo is None:
+            report_dt = report_dt.replace(tzinfo=timezone.utc)
+        hours_since_report = (now - report_dt).total_seconds() / 3600
         return bool(hours_since_report > 24)
 
     @property
@@ -471,9 +474,11 @@ class RepairTask(BaseModel):
         if completion_time or not response_time:
             return False
 
-        hours_since_response = (
-            datetime.utcnow() - response_time
-        ).total_seconds() / 3600
+        now = datetime.now(timezone.utc)
+        response_dt = response_time
+        if response_dt.tzinfo is None:
+            response_dt = response_dt.replace(tzinfo=timezone.utc)
+        hours_since_response = (now - response_dt).total_seconds() / 3600
         return bool(hours_since_response > 48)
 
     @property
@@ -727,7 +732,7 @@ class RepairTask(BaseModel):
 
         self.is_offline_marked = True
         self.offline_marked_by = marker_id
-        self.offline_marked_at = datetime.utcnow()
+        self.offline_marked_at = datetime.now(timezone.utc)
 
         if inspection_result:
             self.offline_inspection_result = inspection_result

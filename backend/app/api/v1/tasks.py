@@ -4,7 +4,7 @@
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -353,78 +353,151 @@ async def get_all_tasks(
         if assigned_to:
             conditions.append(RepairTask.member_id == assigned_to)
 
-        # 处理类型筛选 - 目前只支持repair类型，其他类型返回空
-        if type and type != "repair":
-            # 如果筛选非repair类型，直接返回空结果
+        # 处理类型筛选 - 支持repair和assistance类型
+        task_types_to_query = []
+        if not type or type == "all":
+            task_types_to_query = ["repair", "assistance"]
+        elif type == "repair":
+            task_types_to_query = ["repair"]
+        elif type == "assistance":
+            task_types_to_query = ["assistance"]
+        else:
+            # 不支持的类型，返回空结果
             return create_response(
                 data={"items": [], "total": 0, "page": page, "pageSize": pageSize},
-                message="当前仅支持维修任务查询",
+                message=f"不支持的任务类型: {type}",
             )
 
+        # 根据类型查询不同任务
+        all_tasks = []
+        total = 0
+
         # 查询维修任务
-        repair_query = select(RepairTask).options(joinedload(RepairTask.member))
+        if "repair" in task_types_to_query:
+            repair_query = select(RepairTask).options(joinedload(RepairTask.member))
 
-        if conditions:
-            repair_query = repair_query.where(and_(*conditions))
+            if conditions:
+                repair_query = repair_query.where(and_(*conditions))
 
-        # 排序
+            # 排序
+            if sortBy == "createdAt":
+                if sortOrder == "desc":
+                    repair_query = repair_query.order_by(desc(RepairTask.created_at))
+                else:
+                    repair_query = repair_query.order_by(RepairTask.created_at)
+
+            repair_result = await db.execute(repair_query)
+            repair_tasks = repair_result.scalars().unique().all()
+
+            # 转换维修任务为统一格式
+            for task in repair_tasks:
+                all_tasks.append({
+                    "id": task.id,
+                    "type": "repair",
+                    "title": task.title,
+                    "description": task.description or "",
+                    "status": task.status.value,
+                    "priority": task.priority.value if task.priority else "medium",
+                    "assigneeId": task.member.id if task.member else None,
+                    "assigneeName": task.member.name if task.member else None,
+                    "reporterId": 1,
+                    "reporterName": task.reporter_name or "",
+                    "location": task.location or "",
+                    "contactInfo": task.reporter_contact or "",
+                    "estimatedHours": task.base_work_minutes / 60 if task.base_work_minutes else 0,
+                    "actualHours": task.actual_work_minutes / 60 if task.actual_work_minutes else 0,
+                    "createdAt": task.created_at.isoformat() if task.created_at else None,
+                    "updatedAt": task.updated_at.isoformat() if task.updated_at else None,
+                    "dueDate": task.scheduled_start.isoformat() if task.scheduled_start else None
+                })
+
+            # 获取维修任务总数
+            repair_count_query = select(func.count(RepairTask.id))
+            if conditions:
+                repair_count_query = repair_count_query.where(and_(*conditions))
+            repair_count_result = await db.execute(repair_count_query)
+            total += repair_count_result.scalar() or 0
+
+        # 查询协助任务
+        if "assistance" in task_types_to_query:
+            from app.models.task import AssistanceTask
+
+            assistance_query = select(AssistanceTask).options(joinedload(AssistanceTask.member))
+
+            # 协助任务的搜索条件（适配AssistanceTask字段）
+            assistance_conditions = []
+            if search:
+                search_term = f"%{search}%"
+                assistance_conditions.append(
+                    or_(
+                        AssistanceTask.title.ilike(search_term),
+                        AssistanceTask.description.ilike(search_term),
+                        AssistanceTask.assisted_department.ilike(search_term),
+                        AssistanceTask.assisted_person.ilike(search_term),
+                    )
+                )
+
+            if task_status:
+                assistance_conditions.append(AssistanceTask.status == task_status)
+
+            if assigned_to:
+                assistance_conditions.append(AssistanceTask.member_id == assigned_to)
+
+            if assistance_conditions:
+                assistance_query = assistance_query.where(and_(*assistance_conditions))
+
+            # 排序
+            if sortBy == "createdAt":
+                if sortOrder == "desc":
+                    assistance_query = assistance_query.order_by(desc(AssistanceTask.start_time))
+                else:
+                    assistance_query = assistance_query.order_by(AssistanceTask.start_time)
+
+            assistance_result = await db.execute(assistance_query)
+            assistance_tasks = assistance_result.scalars().unique().all()
+
+            # 转换协助任务为统一格式
+            for task in assistance_tasks:
+                all_tasks.append({
+                    "id": task.id,
+                    "type": "assistance",
+                    "title": task.title,
+                    "description": task.description or "",
+                    "status": task.status.value,
+                    "priority": "medium",  # 协助任务默认中等优先级
+                    "assigneeId": task.member.id if task.member else None,
+                    "assigneeName": task.member.name if task.member else None,
+                    "reporterId": task.member.id if task.member else None,
+                    "reporterName": task.assisted_person or "",
+                    "location": task.assisted_department or "",
+                    "contactInfo": "",
+                    "estimatedHours": task.work_minutes / 60 if task.work_minutes else 0,
+                    "actualHours": task.work_minutes / 60 if task.work_minutes else 0,
+                    "createdAt": task.start_time.isoformat() if task.start_time else None,
+                    "updatedAt": task.end_time.isoformat() if task.end_time else None,
+                    "dueDate": task.end_time.isoformat() if task.end_time else None
+                })
+
+            # 获取协助任务总数
+            assistance_count_query = select(func.count(AssistanceTask.id))
+            if assistance_conditions:
+                assistance_count_query = assistance_count_query.where(and_(*assistance_conditions))
+            assistance_count_result = await db.execute(assistance_count_query)
+            total += assistance_count_result.scalar() or 0
+
+        # 排序和分页处理合并后的结果
         if sortBy == "createdAt":
-            if sortOrder == "desc":
-                repair_query = repair_query.order_by(desc(RepairTask.created_at))
-            else:
-                repair_query = repair_query.order_by(RepairTask.created_at)
+            all_tasks.sort(
+                key=lambda x: x["createdAt"] or "",
+                reverse=(sortOrder == "desc")
+            )
 
         # 分页
-        repair_query = repair_query.offset(offset).limit(pageSize)
+        start_idx = offset
+        end_idx = offset + pageSize
+        tasks = all_tasks[start_idx:end_idx]
 
-        # 执行查询
-        repair_result = await db.execute(repair_query)
-        repair_tasks = repair_result.scalars().unique().all()
-
-        # 获取总数
-        count_query = select(func.count(RepairTask.id))
-        if conditions:
-            count_query = count_query.where(and_(*conditions))
-
-        count_result = await db.execute(count_query)
-        total = count_result.scalar() or 0
-
-        # 转换为统一格式
-        tasks = []
-        for task in repair_tasks:
-            task_data = {
-                "id": task.id,
-                "type": "repair",
-                "title": task.title,
-                "description": task.description or "",
-                "status": task.status.value,
-                "priority": task.priority.value if task.priority else "medium",
-                "assigneeId": task.member.id if task.member else None,
-                "assigneeName": task.member.name if task.member else None,
-                "reporterId": 1,  # 默认值，因为RepairTask没有reporter_id字段
-                "reporterName": task.reporter_name or "",
-                "location": task.location or "",
-                "contactInfo": task.reporter_contact or "",
-                "estimatedHours": (
-                    task.base_work_minutes / 60 if task.base_work_minutes else 0
-                ),
-                "actualHours": (
-                    (task.work_minutes or 0) / 60 if task.work_minutes else None
-                ),
-                "startedAt": (
-                    task.response_time.isoformat() if task.response_time else None
-                ),
-                "completedAt": (
-                    task.completion_time.isoformat() if task.completion_time else None
-                ),
-                "dueDate": task.created_at.isoformat(),  # 临时使用创建时间作为截止时间
-                "createdAt": task.created_at.isoformat(),
-                "updatedAt": task.updated_at.isoformat(),
-                "tags": [],
-                "attachments": [],
-                "comments": [],
-            }
-            tasks.append(task_data)
+        # 任务数据已经在前面格式化好了，直接使用
 
         return create_response(
             data={"items": tasks, "total": total, "page": page, "pageSize": pageSize},
@@ -4393,8 +4466,11 @@ async def import_maintenance_orders(
     """
     try:
         from app.services.task_service import TaskService
+        # 复用AB智能匹配服务中的姓名清洗逻辑，确保像 “姓名+(信息处)” 可被正确识别
+        from app.services.ab_table_matching_service import ABTableMatchingService
 
         task_service = TaskService(db)
+        ab_match_service = ABTableMatchingService(db)
 
         # 解析导入数据
         maintenance_data = import_data.get("maintenance_orders", [])
@@ -4445,26 +4521,20 @@ async def import_maintenance_orders(
                     or data.get("责任人")
                 )
                 if assignee_name:
-                    # 清理姓名，移除括号及其内容，以及其他常见的后缀
+                    # 使用AB匹配服务的清洗规则：
+                    # - 去除括号及内容
+                    # - 去除非中文/英文/·的符号（含半/全角+、/、|等）
+                    # - 统一大小写（对中文无影响，英文不敏感匹配用 ilike 覆盖）
+                    clean_name = ab_match_service._clean_name(assignee_name)
+
+                    # 可选的后缀头衔去除（若表格包含职位后缀，这里额外兜底一次）
+                    # 注意：_clean_name 已经移除了非文字字符，这里只处理尾部汉字头衔
                     import re
-
-                    clean_name = assignee_name.strip()
-
-                    # 移除各种格式的括号及内容：() [] {} 〈〉 （）
-                    clean_name = re.sub(
-                        r"[\(\)（）\[\]{}〈〉].*?[\(\)（）\[\]{}〈〉]", "", clean_name
-                    )
-                    clean_name = re.sub(r"[\(\)（）\[\]{}〈〉].*", "", clean_name)
-
-                    # 移除常见的职务后缀
                     clean_name = re.sub(
                         r"(工程师|技术员|主管|经理|组长|部长|处长|科长)$",
                         "",
                         clean_name,
-                    )
-
-                    # 最终清理
-                    clean_name = clean_name.strip()
+                    ).strip()
 
                     if clean_name and len(clean_name) >= 2:  # 确保姓名至少2个字符
                         # 模糊匹配成员 - 尝试多种匹配策略
@@ -5193,7 +5263,7 @@ async def adjust_task_work_hours(
             "adjustment_amount": (task.work_minutes or 0) - (original_minutes or 0),
             "reason": reason,
             "adjusted_by": current_user.name,
-            "adjusted_at": datetime.utcnow().isoformat(),
+            "adjusted_at": datetime.now(timezone.utc).isoformat(),
             "breakdown": breakdown,
         }
 
@@ -6483,3 +6553,142 @@ async def health_check() -> Dict[str, Any]:
         },
         message="任务服务运行正常",
     )
+
+
+@router.post("/assistance/import", response_model=Dict[str, Any])
+async def import_assistance_tasks(
+    import_data: Dict[str, Any],
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    导入协助任务数据
+
+    Args:
+        import_data: 协助任务导入数据
+        current_user: 当前用户
+        db: 数据库会话
+
+    Returns:
+        Dict: 导入结果统计
+    """
+    try:
+        from datetime import datetime, timezone
+        from app.models.task import AssistanceTask, TaskStatus, TaskType
+        from app.services.work_hours_service import WorkHoursCalculationService
+
+        logger.info(f"Starting assistance tasks import by user {current_user.student_id}")
+
+        assistance_tasks = import_data.get("assistance_tasks", [])
+
+        if not assistance_tasks:
+            raise HTTPException(
+                status_code=400,
+                detail="没有提供协助任务数据"
+            )
+
+        result = {
+            "success": 0,
+            "failed": 0,
+            "matched_members": 0,
+            "total_duration": 0,
+            "errors": []
+        }
+
+        work_hours_service = WorkHoursCalculationService(db)
+
+        for idx, task_data in enumerate(assistance_tasks):
+            try:
+                # 验证必填字段
+                required_fields = ["assistance_date", "location", "task_description", "duration_minutes"]
+                missing_fields = [field for field in required_fields if not task_data.get(field)]
+
+                if missing_fields:
+                    error_msg = f"第{idx+1}行: 缺少必填字段: {', '.join(missing_fields)}"
+                    result["errors"].append(error_msg)
+                    result["failed"] += 1
+                    continue
+
+                # 解析协助日期
+                assistance_date = task_data.get("assistance_date")
+                if isinstance(assistance_date, str):
+                    from dateutil import parser
+                    assistance_date = parser.parse(assistance_date)
+                elif not isinstance(assistance_date, datetime):
+                    error_msg = f"第{idx+1}行: 协助日期格式不正确"
+                    result["errors"].append(error_msg)
+                    result["failed"] += 1
+                    continue
+
+                # 验证时长
+                duration_minutes = task_data.get("duration_minutes", 0)
+                if not isinstance(duration_minutes, (int, float)) or duration_minutes <= 0:
+                    error_msg = f"第{idx+1}行: 协助时长必须是大于0的数字"
+                    result["errors"].append(error_msg)
+                    result["failed"] += 1
+                    continue
+
+                # 处理提交人匹配（简化版）
+                submitter = task_data.get("submitter", "").strip()
+                matched_member = None
+                if submitter:
+                    # 尝试匹配现有成员
+                    member_query = select(Member).where(
+                        or_(
+                            Member.name.ilike(f"%{submitter}%"),
+                            Member.student_id.ilike(f"%{submitter}%")
+                        )
+                    )
+                    member_result = await db.execute(member_query)
+                    matched_member = member_result.scalar_one_or_none()
+
+                    if matched_member:
+                        result["matched_members"] += 1
+
+                # 创建协助任务
+                new_task = AssistanceTask(
+                    title=f"协助任务 - {task_data.get('location', '未知地点')}",
+                    description=task_data.get("task_description", ""),
+                    member_id=matched_member.id if matched_member else current_user.id,
+                    assisted_department=task_data.get("location", ""),
+                    assisted_person=submitter,
+                    start_time=assistance_date,
+                    end_time=assistance_date,
+                    work_minutes=int(duration_minutes),
+                    status=TaskStatus.COMPLETED  # 导入的协助任务默认为已完成
+                )
+
+                db.add(new_task)
+                await db.flush()  # 获取任务ID
+
+                # 计算工时
+                total_duration = duration_minutes
+                if task_data.get("custom_duration_minutes"):
+                    total_duration += int(task_data.get("custom_duration_minutes", 0))
+
+                result["total_duration"] += total_duration
+                result["success"] += 1
+
+            except Exception as e:
+                logger.error(f"Error processing assistance task {idx+1}: {str(e)}")
+                result["errors"].append(f"第{idx+1}行: 处理失败 - {str(e)}")
+                result["failed"] += 1
+                continue
+
+        # 提交事务
+        await db.commit()
+
+        logger.info(f"Assistance tasks import completed: {result}")
+
+        return create_response(
+            data=result,
+            message=f"协助任务导入完成，成功{result['success']}条，失败{result['failed']}条"
+        )
+
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Assistance tasks import error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"协助任务导入失败: {str(e)}"
+        )

@@ -9,9 +9,14 @@ from datetime import date, datetime
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_db
+from app.api.deps import (
+    get_current_user,
+    get_db,
+    get_current_active_group_leader,
+)
 from app.models.member import Member
 from app.models.task import TaskStatus
 
@@ -21,6 +26,70 @@ router = APIRouter()
 
 
 # 工时管理API - 基于任务完成的工时统计和展示
+
+
+def _resolve_cycle_period(
+    date_from: Optional[date],
+    date_to: Optional[date],
+    cycle_type: Optional[str] = None,
+    month: Optional[str] = None,
+    week_start: Optional[date] = None,
+) -> tuple[date, date]:
+    """根据cycle_type与可选参数计算周期起止日期。
+
+    - cycle_type: monthly | weekly | custom
+    - month: YYYY-MM（当cycle_type=monthly时可用）
+    - week_start: 周期开始日期（当cycle_type=weekly时可用）
+    - 若提供了date_from/date_to，则优先采用custom
+    """
+    from calendar import monthrange
+    from datetime import timedelta
+
+    # 若显式提供date_from/date_to，视为自定义周期
+    if date_from and date_to:
+        return date_from, date_to
+
+    today = datetime.now().date()
+    ctype = (cycle_type or "").lower()
+
+    if ctype == "monthly":
+        if month:
+            try:
+                year, mon = map(int, month.split("-"))
+            except Exception:
+                year, mon = today.year, today.month
+        else:
+            year, mon = today.year, today.month
+        first_day = date(year, mon, 1)
+        last_day = date(year, mon, monthrange(year, mon)[1])
+        return first_day, last_day
+
+    if ctype == "weekly":
+        if week_start:
+            start = week_start
+        else:
+            # 以周一为周期开始
+            weekday = today.weekday()  # Monday=0
+            start = today - timedelta(days=weekday)
+        end = start + timedelta(days=6)
+        return start, end
+
+    # 默认：当月
+    year, mon = today.year, today.month
+    first_day = date(year, mon, 1)
+    last_day = date(year, mon, monthrange(year, mon)[1])
+    return first_day, last_day
+
+
+def _get_export_dir() -> str:
+    """获取导出文件目录：使用全局上传目录下的 attendance_exports 子目录。"""
+    import os
+    from app.core.config import get_upload_path
+
+    base = get_upload_path()  # 默认 uploads
+    export_dir = os.path.join(base, "attendance_exports")
+    os.makedirs(export_dir, exist_ok=True)
+    return export_dir
 
 
 @router.get("/records", response_model=List[Dict[str, Any]], summary="获取工时记录")
@@ -80,7 +149,8 @@ async def get_work_hours_records(
                 RepairTask.member_id,
                 Member.name.label("member_name"),
             )
-            .join(Member)
+            # 显式指定关联条件，避免由于多个外键导致的JOIN歧义
+            .join(Member, RepairTask.member_id == Member.id)
             .where(
                 RepairTask.member_id == target_member_id,
                 RepairTask.status == TaskStatus.COMPLETED,
@@ -127,8 +197,360 @@ async def get_work_hours_records(
 
 
 @router.get(
-    "/summary/{month}", response_model=Dict[str, Any], summary="获取月度工时汇总"
+    "/cycle-summary",
+    response_model=Dict[str, Any],
+    summary="获取考勤周期内全员考勤汇总（管理员/组长）",
 )
+async def get_attendance_cycle_summary(
+    date_from: Optional[date] = Query(None, description="开始日期（custom模式）"),
+    date_to: Optional[date] = Query(None, description="结束日期（custom模式）"),
+    cycle_type: Optional[str] = Query(
+        None, description="周期类型：monthly/weekly/custom；默认按月"
+    ),
+    month: Optional[str] = Query(None, description="当cycle_type=monthly时使用，格式YYYY-MM"),
+    week_start: Optional[date] = Query(None, description="当cycle_type=weekly时使用，周起始日"),
+    page: int = Query(1, ge=1, description="页码"),
+    size: int = Query(20, ge=1, le=200, description="每页大小"),
+    current_user: Member = Depends(get_current_active_group_leader),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """
+    按周期（date_from ~ date_to）统计全员“基于任务”的工时汇总（不使用打卡）。
+    - repair_minutes / monitoring_minutes / assistance_minutes
+    - total_work_hours（小时） / average_daily_hours（小时）
+    - repair_tasks / monitoring_tasks / assistance_tasks / total_tasks
+    仅管理员/组长可查看全员。
+    """
+    try:
+        from calendar import monthrange
+        from sqlalchemy import func, select
+        from app.models.task import RepairTask, MonitoringTask, AssistanceTask, TaskStatus
+
+        # 解析周期
+        date_from, date_to = _resolve_cycle_period(
+            date_from, date_to, cycle_type, month, week_start
+        )
+
+        # 周期天数（包含端点）
+        period_days = (date_to - date_from).days + 1
+
+        # 先取所有在职成员，避免成员无任务时丢失
+        members_result = await db.execute(select(Member.id, Member.name).where(Member.is_active))
+        members = {mid: name for mid, name in members_result.fetchall()}
+
+        # 统计各类任务
+        def to_dict(rows: List[Any]) -> Dict[int, Dict[str, int]]:
+            d: Dict[int, Dict[str, int]] = {}
+            for mid, total_minutes, cnt in rows:
+                d[int(mid)] = {"minutes": int(total_minutes or 0), "count": int(cnt or 0)}
+            return d
+
+        # 报修任务（完成时间）
+        repair_rows = (
+            await db.execute(
+                select(
+                    RepairTask.member_id,
+                    func.sum(RepairTask.work_minutes),
+                    func.count(RepairTask.id),
+                )
+                .where(
+                    RepairTask.completion_time >= datetime.combine(date_from, datetime.min.time()),
+                    RepairTask.completion_time <= datetime.combine(date_to, datetime.max.time()),
+                    RepairTask.status == TaskStatus.COMPLETED,
+                )
+                .group_by(RepairTask.member_id)
+            )
+        ).fetchall()
+        repair_map = to_dict(repair_rows)
+
+        # 监控任务（结束时间）
+        monitoring_rows = (
+            await db.execute(
+                select(
+                    MonitoringTask.member_id,
+                    func.sum(MonitoringTask.work_minutes),
+                    func.count(MonitoringTask.id),
+                )
+                .where(
+                    MonitoringTask.end_time >= datetime.combine(date_from, datetime.min.time()),
+                    MonitoringTask.end_time <= datetime.combine(date_to, datetime.max.time()),
+                    MonitoringTask.status == TaskStatus.COMPLETED,
+                )
+                .group_by(MonitoringTask.member_id)
+            )
+        ).fetchall()
+        monitoring_map = to_dict(monitoring_rows)
+
+        # 协助任务（结束时间）
+        assistance_rows = (
+            await db.execute(
+                select(
+                    AssistanceTask.member_id,
+                    func.sum(AssistanceTask.work_minutes),
+                    func.count(AssistanceTask.id),
+                )
+                .where(
+                    AssistanceTask.end_time >= datetime.combine(date_from, datetime.min.time()),
+                    AssistanceTask.end_time <= datetime.combine(date_to, datetime.max.time()),
+                    AssistanceTask.status == TaskStatus.COMPLETED,
+                )
+                .group_by(AssistanceTask.member_id)
+            )
+        ).fetchall()
+        assistance_map = to_dict(assistance_rows)
+
+        # 组装记录并分页（先按成员姓名排序）
+        rows_all: List[Dict[str, Any]] = []
+        for mid, name in members.items():
+            rmin = repair_map.get(mid, {}).get("minutes", 0)
+            rcnt = repair_map.get(mid, {}).get("count", 0)
+            mmin = monitoring_map.get(mid, {}).get("minutes", 0)
+            mcnt = monitoring_map.get(mid, {}).get("count", 0)
+            amin = assistance_map.get(mid, {}).get("minutes", 0)
+            acnt = assistance_map.get(mid, {}).get("count", 0)
+
+            total_minutes = rmin + mmin + amin
+            total_hours = round(total_minutes / 60.0, 2)
+            average_daily_hours = round(total_hours / period_days, 2) if period_days > 0 else 0.0
+
+            rows_all.append(
+                {
+                    "member_id": mid,
+                    "member_name": name,
+                    "repair_minutes": rmin,
+                    "monitoring_minutes": mmin,
+                    "assistance_minutes": amin,
+                    "repair_tasks": rcnt,
+                    "monitoring_tasks": mcnt,
+                    "assistance_tasks": acnt,
+                    "total_tasks": rcnt + mcnt + acnt,
+                    "total_work_hours": total_hours,
+                    "average_daily_hours": average_daily_hours,
+                }
+            )
+
+        # 排序与分页
+        rows_all.sort(key=lambda x: x["member_name"])  # 按姓名升序
+        total_members = len(rows_all)
+        start = (page - 1) * size
+        end = start + size
+        records = rows_all[start:end]
+
+        return {
+            "success": True,
+            "message": "获取考勤周期汇总成功",
+            "data": {
+                "period": {
+                    "start_date": str(date_from),
+                    "end_date": str(date_to),
+                    "cycle_type": (cycle_type or "monthly"),
+                    "days": period_days,
+                },
+                "page": page,
+                "size": size,
+                "total_members": total_members,
+                "records": records,
+            },
+            "status_code": 200,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取考勤周期汇总失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="获取考勤周期汇总失败"
+        )
+
+
+@router.get("/cycle-export", summary="导出考勤周期内全员考勤汇总（管理员/组长）")
+async def export_attendance_cycle_summary(
+    date_from: Optional[date] = Query(None, description="开始日期（custom模式）"),
+    date_to: Optional[date] = Query(None, description="结束日期（custom模式）"),
+    cycle_type: Optional[str] = Query(
+        None, description="周期类型：monthly/weekly/custom；默认按月"
+    ),
+    month: Optional[str] = Query(None, description="当cycle_type=monthly时使用，格式YYYY-MM"),
+    week_start: Optional[date] = Query(None, description="当cycle_type=weekly时使用，周起始日"),
+    format: str = Query("excel", description="导出格式（excel/csv）"),
+    current_user: Member = Depends(get_current_active_group_leader),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """
+    导出周期内全员考勤汇总（与 /cycle-summary 聚合逻辑一致）。
+    返回生成的文件名与下载地址占位（与现有导出风格保持一致）。
+    """
+    try:
+        from datetime import datetime as dt
+        import pandas as pd
+        from sqlalchemy import func, select
+        from app.models.task import RepairTask, MonitoringTask, AssistanceTask, TaskStatus
+
+        # 解析周期
+        start_date, end_date = _resolve_cycle_period(
+            date_from, date_to, cycle_type, month, week_start
+        )
+
+        # 以任务口径统计
+        period_days = (end_date - start_date).days + 1
+
+        members_result = await db.execute(select(Member.id, Member.name).where(Member.is_active))
+        members = {mid: name for mid, name in members_result.fetchall()}
+
+        def to_dict(rows: List[Any]) -> Dict[int, Dict[str, int]]:
+            d: Dict[int, Dict[str, int]] = {}
+            for mid, total_minutes, cnt in rows:
+                d[int(mid)] = {"minutes": int(total_minutes or 0), "count": int(cnt or 0)}
+            return d
+
+        repair_rows = (
+            await db.execute(
+                select(
+                    RepairTask.member_id,
+                    func.sum(RepairTask.work_minutes),
+                    func.count(RepairTask.id),
+                )
+                .where(
+                    RepairTask.completion_time >= datetime.combine(start_date, datetime.min.time()),
+                    RepairTask.completion_time <= datetime.combine(end_date, datetime.max.time()),
+                    RepairTask.status == TaskStatus.COMPLETED,
+                )
+                .group_by(RepairTask.member_id)
+            )
+        ).fetchall()
+        repair_map = to_dict(repair_rows)
+
+        monitoring_rows = (
+            await db.execute(
+                select(
+                    MonitoringTask.member_id,
+                    func.sum(MonitoringTask.work_minutes),
+                    func.count(MonitoringTask.id),
+                )
+                .where(
+                    MonitoringTask.end_time >= datetime.combine(start_date, datetime.min.time()),
+                    MonitoringTask.end_time <= datetime.combine(end_date, datetime.max.time()),
+                    MonitoringTask.status == TaskStatus.COMPLETED,
+                )
+                .group_by(MonitoringTask.member_id)
+            )
+        ).fetchall()
+        monitoring_map = to_dict(monitoring_rows)
+
+        assistance_rows = (
+            await db.execute(
+                select(
+                    AssistanceTask.member_id,
+                    func.sum(AssistanceTask.work_minutes),
+                    func.count(AssistanceTask.id),
+                )
+                .where(
+                    AssistanceTask.end_time >= datetime.combine(start_date, datetime.min.time()),
+                    AssistanceTask.end_time <= datetime.combine(end_date, datetime.max.time()),
+                    AssistanceTask.status == TaskStatus.COMPLETED,
+                )
+                .group_by(AssistanceTask.member_id)
+            )
+        ).fetchall()
+        assistance_map = to_dict(assistance_rows)
+
+        export_data = []
+        for mid, name in members.items():
+            rmin = repair_map.get(mid, {}).get("minutes", 0)
+            rcnt = repair_map.get(mid, {}).get("count", 0)
+            mmin = monitoring_map.get(mid, {}).get("minutes", 0)
+            mcnt = monitoring_map.get(mid, {}).get("count", 0)
+            amin = assistance_map.get(mid, {}).get("minutes", 0)
+            acnt = assistance_map.get(mid, {}).get("count", 0)
+
+            total_minutes = rmin + mmin + amin
+            total_hours = round(total_minutes / 60.0, 2)
+            average_daily_hours = round(total_hours / period_days, 2) if period_days > 0 else 0.0
+
+            export_data.append(
+                {
+                    "成员ID": mid,
+                    "成员姓名": name,
+                    "报修工时(分钟)": rmin,
+                    "监控工时(分钟)": mmin,
+                    "协助工时(分钟)": amin,
+                    "报修任务(个)": rcnt,
+                    "监控任务(个)": mcnt,
+                    "协助任务(个)": acnt,
+                    "任务总数(个)": rcnt + mcnt + acnt,
+                    "累计工时(小时)": total_hours,
+                    "日均工时(小时)": average_daily_hours,
+                    "周期开始": str(start_date),
+                    "周期结束": str(end_date),
+                }
+            )
+
+        if not export_data:
+            return {
+                "success": True,
+                "message": "无可导出的考勤数据",
+                "total_records": 0,
+            }
+
+        df = pd.DataFrame(export_data)
+        timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
+        export_dir = _get_export_dir()
+        if format.lower() == "csv":
+            filename = f"attendance_cycle_summary_{timestamp}.csv"
+            import os
+            file_path = os.path.join(export_dir, filename)
+            df.to_csv(file_path, index=False, encoding="utf-8-sig")
+        else:
+            filename = f"attendance_cycle_summary_{timestamp}.xlsx"
+            import os
+            file_path = os.path.join(export_dir, filename)
+            df.to_excel(file_path, index=False, engine="openpyxl", sheet_name="考勤汇总")
+
+        return {
+            "success": True,
+            "message": "考勤汇总导出成功",
+            "filename": filename,
+            "total_records": len(export_data),
+            "download_url": f"/api/v1/attendance/download/{filename}",
+            "expires_at": (dt.now().timestamp() + 3600),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"导出考勤周期汇总失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="导出考勤周期汇总失败",
+        )
+
+
+@router.get("/download/{filename}", summary="下载考勤导出文件")
+async def download_attendance_export(filename: str) -> FileResponse:
+    """下载由导出接口生成的文件。限制在 attendance_exports 目录，并限制文件名前缀。"""
+    import os
+    import re
+
+    # 简单防路径穿越
+    if "/" in filename or ".." in filename:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="非法文件名")
+
+    # 限制可下载前缀
+    allowed_prefix = re.compile(r"^(attendance_cycle_summary_|work_hours_export_).+\.(csv|xlsx)$")
+    if not allowed_prefix.match(filename):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="不支持的文件类型")
+
+    export_dir = _get_export_dir()
+    file_path = os.path.join(export_dir, filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="文件不存在或已过期")
+
+    # 返回文件
+    return FileResponse(
+        file_path,
+        filename=filename,
+        media_type=("text/csv" if filename.endswith(".csv") else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+    )
 async def get_monthly_work_hours_summary(
     month: str = Path(..., description="月份，格式：YYYY-MM"),
     member_id: Optional[int] = Query(
@@ -458,7 +880,7 @@ async def export_work_hours_data(
                 RepairTask.member_id,
                 Member.name.label("member_name"),
             )
-            .join(Member)
+            .join(Member, RepairTask.member_id == Member.id)
             .where(
                 RepairTask.completion_time >= date_from_dt,
                 RepairTask.completion_time <= date_to_dt,
@@ -503,22 +925,21 @@ async def export_work_hours_data(
 
         df = pd.DataFrame(export_data)
 
-        # 生成文件
+        # 生成文件（统一写入 uploads/attendance_exports/）
         timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
+        export_dir = _get_export_dir()
         if format.lower() == "csv":
             filename = f"work_hours_export_{timestamp}.csv"
-            # 创建临时文件
-            with tempfile.NamedTemporaryFile(
-                mode="w", delete=False, suffix=".csv", encoding="utf-8-sig"
-            ) as tmp_file:
-                df.to_csv(tmp_file.name, index=False, encoding="utf-8-sig")
+            import os
+            file_path = os.path.join(export_dir, filename)
+            df.to_csv(file_path, index=False, encoding="utf-8-sig")
         else:
             filename = f"work_hours_export_{timestamp}.xlsx"
-            # 创建临时文件
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp_file:
-                df.to_excel(
-                    tmp_file.name, index=False, engine="openpyxl", sheet_name="工时统计"
-                )
+            import os
+            file_path = os.path.join(export_dir, filename)
+            df.to_excel(
+                file_path, index=False, engine="openpyxl", sheet_name="工时统计"
+            )
 
         return {
             "success": True,

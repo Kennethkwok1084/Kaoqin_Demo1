@@ -10,9 +10,30 @@
         <el-button type="primary" :icon="Plus" @click="showCreateDialog">
           {{ pageInfo.createButtonText }}
         </el-button>
-        <el-button :icon="Upload" @click="showImportDialog">
-          导入任务
-        </el-button>
+        <el-dropdown @command="handleImportCommand">
+          <el-button :icon="Upload">
+            导入任务
+            <el-icon class="el-icon--right">
+              <ArrowDown />
+            </el-icon>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="repair">
+                <el-icon><Tools /></el-icon>
+                导入报修任务 (A-B表匹配)
+              </el-dropdown-item>
+              <el-dropdown-item command="assistance">
+                <el-icon><User /></el-icon>
+                导入协助任务
+              </el-dropdown-item>
+              <el-dropdown-item command="monitoring" disabled>
+                <el-icon><Monitor /></el-icon>
+                导入监控任务 (敬请期待)
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
         <el-button :icon="Download" @click="exportTasks"> 导出任务 </el-button>
       </div>
     </div>
@@ -480,9 +501,15 @@
       @updated="loadTasks"
     />
 
-    <!-- 导入任务对话框 -->
+    <!-- 导入报修任务对话框 -->
     <ImportTaskDialog
       v-model="showImportTaskDialog"
+      @success="handleImportSuccess"
+    />
+
+    <!-- 导入协助任务对话框 -->
+    <ImportAssistanceDialog
+      v-model="showImportAssistanceDialog"
       @success="handleImportSuccess"
     />
   </div>
@@ -507,7 +534,9 @@ import {
   Clock,
   Document,
   CircleCheck,
-  Warning
+  Warning,
+  Tools,
+  Monitor
 } from '@element-plus/icons-vue'
 import { tasksApi } from '@/api/tasks'
 import type { Task, TaskListParams, TaskStats } from '@/types/task'
@@ -524,6 +553,7 @@ import {
 import TaskFormDialog from '@/components/tasks/TaskFormDialog.vue'
 import TaskDetailDialog from '@/components/tasks/TaskDetailDialog.vue'
 import ImportTaskDialog from '@/components/tasks/ImportTaskDialog.vue'
+import ImportAssistanceDialog from '@/components/tasks/ImportAssistanceDialog.vue'
 
 const router = useRouter()
 
@@ -608,6 +638,7 @@ const sortConfig = reactive({
 const showTaskDialog = ref(false)
 const showDetailDialog = ref(false)
 const showImportTaskDialog = ref(false)
+const showImportAssistanceDialog = ref(false)
 const currentTask = ref<Task | null>(null)
 const currentTaskId = ref<number | null>(null)
 
@@ -915,8 +946,18 @@ const batchDelete = async () => {
 }
 
 // 导入导出
-const showImportDialog = () => {
-  showImportTaskDialog.value = true
+const handleImportCommand = (command: string) => {
+  switch (command) {
+    case 'repair':
+      showImportTaskDialog.value = true
+      break
+    case 'assistance':
+      showImportAssistanceDialog.value = true
+      break
+    case 'monitoring':
+      ElMessage.info('监控任务导入功能开发中，敬请期待')
+      break
+  }
 }
 
 const exportTasks = async () => {

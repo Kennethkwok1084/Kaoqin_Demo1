@@ -51,7 +51,7 @@ export const tasksApi = {
    * 获取任务详情
    */
   async getTask(id: number): Promise<Task> {
-    const response = await http.get(`/tasks/${id}`)
+    const response = await http.get(`/tasks/repair/${id}`)
     return response.data.data
   },
 
@@ -108,7 +108,7 @@ export const tasksApi = {
       success: boolean
       message: string
       data: Task
-    }>(`/tasks/${id}`, data)
+    }>(`/tasks/repair/${id}`, data)
     return response.data.data || (response.data as any)
   },
 
@@ -116,7 +116,7 @@ export const tasksApi = {
    * 删除任务
    */
   async deleteTask(id: number): Promise<void> {
-    await http.delete(`/tasks/${id}`)
+    await http.delete(`/tasks/repair/${id}`)
   },
 
   /**
@@ -130,12 +130,12 @@ export const tasksApi = {
    * 分配任务
    */
   async assignTask(id: number, assigneeId: number): Promise<Task> {
-    const response = await http.post<{
+    const response = await http.put<{
       success: boolean
       message: string
       data: Task
-    }>(`/tasks/${id}/assign`, {
-      assigneeId
+    }>(`/tasks/repair/${id}/assign`, {
+      member_id: assigneeId
     })
     return response.data.data || (response.data as any)
   },
@@ -218,33 +218,40 @@ export const tasksApi = {
    * 添加任务评论
    */
   async addComment(taskId: number, content: string): Promise<TaskComment> {
-    const response = await http.post<{
-      success: boolean
-      message: string
-      data: TaskComment
-    }>(`/tasks/${taskId}/comments`, {
-      content
-    })
-    return response.data.data || (response.data as any)
+    try {
+      const response = await http.post<{
+        success: boolean
+        message: string
+        data: TaskComment
+      }>(`/tasks/${taskId}/comments`, {
+        content
+      })
+      return response.data.data || (response.data as any)
+    } catch (error) {
+      console.warn('Add comment API not implemented')
+      throw new Error('添加评论功能暂未实现')
+    }
   },
 
   /**
    * 删除任务评论
    */
   async deleteComment(taskId: number, commentId: number): Promise<void> {
-    await http.delete(`/tasks/${taskId}/comments/${commentId}`)
+    try {
+      await http.delete(`/tasks/${taskId}/comments/${commentId}`)
+    } catch (error) {
+      console.warn('Delete comment API not implemented')
+      throw new Error('删除评论功能暂未实现')
+    }
   },
 
   /**
    * 获取任务评论列表
    */
   async getComments(taskId: number): Promise<TaskComment[]> {
-    const response = await http.get<{
-      success: boolean
-      message: string
-      data: TaskComment[]
-    }>(`/tasks/${taskId}/comments`)
-    return response.data.data || (response.data as any) || []
+    // API暂未实现，直接返回空数组
+    console.warn('Comments API not implemented, returning empty array')
+    return []
   },
 
   /**
@@ -267,12 +274,9 @@ export const tasksApi = {
    * 获取任务工时记录
    */
   async getWorkLogs(taskId: number): Promise<TaskWorkLog[]> {
-    const response = await http.get<{
-      success: boolean
-      message: string
-      data: TaskWorkLog[]
-    }>(`/tasks/${taskId}/work-logs`)
-    return response.data.data || (response.data as any) || []
+    // API暂未实现，直接返回空数组
+    console.warn('Work logs API not implemented, returning empty array')
+    return []
   },
 
   /**
@@ -283,19 +287,29 @@ export const tasksApi = {
     description: string,
     hours: number
   ): Promise<TaskWorkLog> {
-    const response = await http.post<{
-      success: boolean
-      message: string
-      data: TaskWorkLog
-    }>(`/tasks/${taskId}/work-logs`, { description, hours })
-    return response.data.data || (response.data as any)
+    try {
+      const response = await http.post<{
+        success: boolean
+        message: string
+        data: TaskWorkLog
+      }>(`/tasks/${taskId}/work-logs`, { description, hours })
+      return response.data.data || (response.data as any)
+    } catch (error) {
+      console.warn('Add work log API not implemented')
+      throw new Error('添加工时记录功能暂未实现')
+    }
   },
 
   /**
    * 删除工时记录
    */
   async deleteWorkLog(taskId: number, logId: number): Promise<void> {
-    await http.delete(`/tasks/${taskId}/work-logs/${logId}`)
+    try {
+      await http.delete(`/tasks/${taskId}/work-logs/${logId}`)
+    } catch (error) {
+      console.warn('Delete work log API not implemented')
+      throw new Error('删除工时记录功能暂未实现')
+    }
   },
 
   /**
@@ -305,26 +319,36 @@ export const tasksApi = {
     taskId: number,
     file: File
   ): Promise<{ id: number; fileName: string; fileUrl: string }> {
-    const formData = new FormData()
-    formData.append('file', file)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
 
-    const response = await http.post<{
-      success: boolean
-      message: string
-      data: { id: number; fileName: string; fileUrl: string }
-    }>(`/tasks/${taskId}/attachments`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
-    return response.data.data || (response.data as any)
+      const response = await http.post<{
+        success: boolean
+        message: string
+        data: { id: number; fileName: string; fileUrl: string }
+      }>(`/tasks/${taskId}/attachments`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      return response.data.data || (response.data as any)
+    } catch (error) {
+      console.warn('Upload attachment API not implemented')
+      throw new Error('上传附件功能暂未实现')
+    }
   },
 
   /**
    * 删除任务附件
    */
   async deleteAttachment(taskId: number, attachmentId: number): Promise<void> {
-    await http.delete(`/tasks/${taskId}/attachments/${attachmentId}`)
+    try {
+      await http.delete(`/tasks/${taskId}/attachments/${attachmentId}`)
+    } catch (error) {
+      console.warn('Delete attachment API not implemented')
+      throw new Error('删除附件功能暂未实现')
+    }
   },
 
   /**
@@ -335,10 +359,15 @@ export const tasksApi = {
     attachmentId: number,
     fileName: string
   ): Promise<void> {
-    await (http as any).download(
-      `/tasks/${taskId}/attachments/${attachmentId}/download`,
-      fileName
-    )
+    try {
+      await (http as any).download(
+        `/tasks/${taskId}/attachments/${attachmentId}/download`,
+        fileName
+      )
+    } catch (error) {
+      console.warn('Download attachment API not implemented')
+      throw new Error('下载附件功能暂未实现')
+    }
   },
 
   /**
@@ -478,6 +507,38 @@ export const tasksApi = {
    */
   async getWorkTimeDetail(taskId: number): Promise<TaskWorkLog[]> {
     return this.getWorkLogs(taskId)
+  },
+
+  /**
+   * 导入协助任务
+   */
+  async importAssistanceTasks(data: {
+    assistance_tasks: any[]
+  }): Promise<{
+    success: number
+    failed: number
+    matched_members: number
+    total_duration: number
+    errors: string[]
+  }> {
+    const response = await http.post<{
+      success: boolean
+      message: string
+      data: {
+        success: number
+        failed: number
+        matched_members: number
+        total_duration: number
+        errors: string[]
+      }
+    }>('/tasks/assistance/import', data)
+    return response.data.data || {
+      success: 0,
+      failed: 0,
+      matched_members: 0,
+      total_duration: 0,
+      errors: []
+    }
   }
 }
 

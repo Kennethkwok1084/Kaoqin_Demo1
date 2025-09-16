@@ -11,14 +11,84 @@ import type {
 } from '@/types/attendance'
 
 export const attendanceApi = {
+  // 获取考勤周期汇总（基于任务口径，全员）
+  async getCycleSummary(params: {
+    cycle_type?: 'monthly' | 'weekly' | 'custom'
+    month?: string // YYYY-MM
+    week_start?: string // YYYY-MM-DD
+    date_from?: string // YYYY-MM-DD
+    date_to?: string // YYYY-MM-DD
+    page?: number
+    size?: number
+  }): Promise<{
+    success: boolean
+    message: string
+    data: {
+      period: { start_date: string; end_date: string; cycle_type: string; days: number }
+      page: number
+      size: number
+      total_members: number
+      records: Array<{
+        member_id: number
+        member_name: string
+        repair_minutes: number
+        monitoring_minutes: number
+        assistance_minutes: number
+        repair_tasks: number
+        monitoring_tasks: number
+        assistance_tasks: number
+        total_tasks: number
+        total_work_hours: number
+        average_daily_hours: number
+      }>
+    }
+    status_code: number
+  }> {
+    const response = await http.get('/attendance/cycle-summary', { params })
+    return response.data
+  },
+
+  // 导出考勤周期汇总
+  async exportCycleSummary(params: {
+    cycle_type?: 'monthly' | 'weekly' | 'custom'
+    month?: string
+    week_start?: string
+    date_from?: string
+    date_to?: string
+    format?: 'excel' | 'csv'
+  }): Promise<{
+    success: boolean
+    message: string
+    filename: string
+    total_records: number
+    download_url: string
+    expires_at: number
+  }> {
+    const response = await http.get('/attendance/cycle-export', { params })
+    return response.data
+  },
+
+  // 下载导出文件（可直接 window.open(download_url)）
+  async downloadExport(filename: string): Promise<Blob> {
+    const response = await http.get(`/attendance/download/${filename}`, {
+      responseType: 'blob'
+    })
+    return response.data
+  },
   // 获取工时记录列表
   async getWorkHoursRecords(
     params?: WorkHoursListParams
   ): Promise<WorkHoursRecord[]> {
-    const response = await http.get<WorkHoursRecord[]>('/attendance/records', {
-      params
-    })
-    return response.data
+    try {
+      const response = await http.get<WorkHoursRecord[]>('/attendance/records', {
+        params
+      })
+      return response.data || []
+    } catch (error) {
+      console.error('获取工时记录失败:', error)
+      // 返回空数组而不是抛出错误，让页面继续正常运行
+      return []
+    }
   },
 
   // 获取指定成员的工时记录
@@ -34,10 +104,21 @@ export const attendanceApi = {
 
   // 获取今日工时概览
   async getTodayWorkHoursSummary(): Promise<WorkHoursSummary> {
-    const response = await http.get<WorkHoursSummary>(
-      '/attendance/today-summary'
-    )
-    return response.data
+    try {
+      const response = await http.get<WorkHoursSummary>(
+        '/attendance/today-summary'
+      )
+      return response.data
+    } catch (error) {
+      console.error('获取今日工时概览失败:', error)
+      // 返回默认的空概览数据
+      return {
+        totalHours: 0,
+        completedTasks: 0,
+        ongoingTasks: 0,
+        efficiency: 0
+      } as WorkHoursSummary
+    }
   },
 
   // 获取月度工时汇总
@@ -105,73 +186,5 @@ export const attendanceApi = {
     return response.data
   },
 
-  // 考勤纠正 (占位符实现)
-  async correctAttendance(params: {
-    recordId: number
-    type: string
-    reason: string
-  }): Promise<{ success: boolean; message: string }> {
-    const response = await http.post('/attendance/correct', params)
-    return response.data
-  },
-
-  // 获取签到地点 (占位符实现)
-  async getCheckInLocations(): Promise<
-    Array<{ id: number; name: string; address: string }>
-  > {
-    const response = await http.get('/attendance/check-in-locations')
-    return response.data || []
-  },
-
-  // 签到 (占位符实现)
-  async checkIn(params: {
-    location: string
-    latitude?: number
-    longitude?: number
-  }): Promise<{ success: boolean; message: string }> {
-    const response = await http.post('/attendance/check-in', params)
-    return response.data
-  },
-
-  // 签退 (占位符实现)
-  async checkOut(params: {
-    location: string
-    workSummary?: string
-  }): Promise<{ success: boolean; message: string }> {
-    const response = await http.post('/attendance/check-out', params)
-    return response.data
-  },
-
-  // 获取今日考勤状态 (占位符实现)
-  async getTodayAttendanceStatus(): Promise<{
-    hasCheckedIn: boolean
-    hasCheckedOut: boolean
-    checkInTime?: string
-    checkOutTime?: string
-  }> {
-    const response = await http.get('/attendance/today-status')
-    return response.data
-  },
-
-  // 创建请假申请 (占位符实现)
-  async createLeaveApplication(params: {
-    type: string
-    startDate: string
-    endDate: string
-    reason: string
-  }): Promise<{ success: boolean; message: string }> {
-    const response = await http.post('/attendance/leave-application', params)
-    return response.data
-  },
-
-  // 创建加班申请 (占位符实现)
-  async createOvertimeApplication(params: {
-    date: string
-    startTime: string
-    endTime: string
-    reason: string
-  }): Promise<{ success: boolean; message: string }> {
-    const response = await http.post('/attendance/overtime-application', params)
-    return response.data
-  }
+}
 }
