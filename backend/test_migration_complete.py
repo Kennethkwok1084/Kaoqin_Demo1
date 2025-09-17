@@ -32,9 +32,6 @@ async def test_clean_migration():
             # 删除所有用户表
             tables_to_drop = [
                 "task_tag_associations",
-                "monthly_attendance_summaries",
-                "attendance_exceptions",
-                "attendance_records",
                 "assistance_tasks",
                 "monitoring_tasks",
                 "repair_tasks",
@@ -54,7 +51,6 @@ async def test_clean_migration():
                 "taskpriority",
                 "tasktype",
                 "tasktagtype",
-                "attendanceexceptionstatus",
             ]
 
             for enum_type in enum_types:
@@ -105,9 +101,6 @@ async def test_clean_migration():
                 "repair_tasks",
                 "monitoring_tasks",
                 "assistance_tasks",
-                "attendance_records",
-                "attendance_exceptions",
-                "monthly_attendance_summaries",
                 "task_tag_associations",
                 "alembic_version",
             }
@@ -125,7 +118,7 @@ async def test_clean_migration():
                     """
                 SELECT typname
                 FROM pg_type
-                WHERE typname IN ('userrole', 'taskstatus', 'taskcategory', 'taskpriority', 'tasktype', 'tasktagtype', 'attendanceexceptionstatus')
+                WHERE typname IN ('userrole', 'taskstatus', 'taskcategory', 'taskpriority', 'tasktype', 'tasktagtype')
                 ORDER BY typname
             """
                 )
@@ -141,7 +134,6 @@ async def test_clean_migration():
                 "taskpriority",
                 "tasktype",
                 "tasktagtype",
-                "attendanceexceptionstatus",
             }
 
             missing_enums = expected_enums - set(enums)

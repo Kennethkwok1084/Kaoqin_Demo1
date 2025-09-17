@@ -2969,45 +2969,74 @@ async def get_members_carryover_status(
     权限：组长及以上可查看
     """
     try:
-        # 获取所有月度汇总记录
-        from app.models.attendance import MonthlyAttendanceSummary
+        # 任务口径：按成员统计该月工时（分钟），并分页
+        from app.models.task import RepairTask, MonitoringTask, AssistanceTask, TaskStatus
 
-        query = (
-            select(MonthlyAttendanceSummary)
-            .where(
-                and_(
-                    MonthlyAttendanceSummary.year == year,
-                    MonthlyAttendanceSummary.month == month,
-                )
+        # 月起止
+        from calendar import monthrange
+        month_start = datetime(year, month, 1)
+        month_end = datetime(year, month, monthrange(year, month)[1], 23, 59, 59)
+
+        # 成员列表
+        members_result = await db.execute(select(Member.id, Member.name).where(Member.is_active))
+        members = {mid: name for mid, name in members_result.fetchall()}
+
+        def to_dict(rows):
+            d = {}
+            for mid, total_minutes in rows:
+                d[int(mid)] = int(total_minutes or 0)
+            return d
+
+        rep_rows = (
+            await db.execute(
+                select(RepairTask.member_id, func.sum(RepairTask.work_minutes)).where(
+                    RepairTask.completion_time >= month_start,
+                    RepairTask.completion_time <= month_end,
+                    RepairTask.status == TaskStatus.COMPLETED,
+                ).group_by(RepairTask.member_id)
             )
-            .options(selectinload(MonthlyAttendanceSummary.member))
-        )
+        ).fetchall()
+        mon_rows = (
+            await db.execute(
+                select(MonitoringTask.member_id, func.sum(MonitoringTask.work_minutes)).where(
+                    MonitoringTask.end_time >= month_start,
+                    MonitoringTask.end_time <= month_end,
+                    MonitoringTask.status == TaskStatus.COMPLETED,
+                ).group_by(MonitoringTask.member_id)
+            )
+        ).fetchall()
+        ass_rows = (
+            await db.execute(
+                select(AssistanceTask.member_id, func.sum(AssistanceTask.work_minutes)).where(
+                    AssistanceTask.end_time >= month_start,
+                    AssistanceTask.end_time <= month_end,
+                    AssistanceTask.status == TaskStatus.COMPLETED,
+                ).group_by(AssistanceTask.member_id)
+            )
+        ).fetchall()
 
-        # 获取总数
-        count_query = select(func.count()).select_from(query.subquery())
-        count_result = await db.execute(count_query)
-        total = count_result.scalar() or 0
+        rep_map, mon_map, ass_map = map(to_dict, (rep_rows, mon_rows, ass_rows))
 
-        # 分页查询
-        query = query.order_by(desc(MonthlyAttendanceSummary.total_hours))
-        query = query.offset((page - 1) * size).limit(size)
+        rows_all = []
+        for mid, name in members.items():
+            total_minutes = rep_map.get(mid, 0) + mon_map.get(mid, 0) + ass_map.get(mid, 0)
+            rows_all.append(
+                {
+                    "member_id": mid,
+                    "member_name": name,
+                    "period": f"{year:04d}-{month:02d}",
+                    "total_hours": round(total_minutes / 60.0, 2),
+                    "carried_hours": 0.0,
+                    "remaining_hours": 0.0,
+                    "carryover_info": {},
+                }
+            )
 
-        result = await db.execute(query)
-        summaries = result.scalars().all()
-
-        # 格式化数据
-        members_data = []
-        for summary in summaries:
-            member_info = {
-                "member_id": summary.member_id,
-                "member_name": summary.member.name if summary.member else None,
-                "period": summary.month_string,
-                "total_hours": summary.total_hours or 0.0,
-                "carried_hours": summary.carried_hours or 0.0,
-                "remaining_hours": summary.remaining_hours or 0.0,
-                "carryover_info": summary.get_carryover_info(),
-            }
-            members_data.append(member_info)
+        rows_all.sort(key=lambda x: x["total_hours"], reverse=True)
+        total = len(rows_all)
+        start = (page - 1) * size
+        end = start + size
+        members_data = rows_all[start:end]
 
         return create_response(
             message=f"获取 {year}-{month:02d} 成员结转状态成功，共 {total} 条记录",

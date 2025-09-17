@@ -20,7 +20,7 @@ from app.api.deps import (
     get_current_user,
     get_db,
 )
-from app.models.attendance import AttendanceRecord
+# Removed AttendanceRecord usage after going task-only for attendance
 from app.models.member import Member, UserRole
 from app.models.task import RepairTask, TaskStatus, TaskType
 from app.services.attendance_service import AttendanceService
@@ -169,38 +169,41 @@ async def get_statistics_overview(
                 year=current_month_start.year + 1, month=1
             )
 
-        attendance_query = select(
-            func.count().label("total_attendance"),
-            func.sum(
-                case((AttendanceRecord.is_late_checkin.is_(True), 1), else_=0)
-            ).label("late_checkins"),
-            func.sum(
-                case((AttendanceRecord.is_early_checkout.is_(True), 1), else_=0)
-            ).label("early_checkouts"),
-            func.avg(AttendanceRecord.work_hours).label("avg_work_hours"),
-            func.sum(AttendanceRecord.work_hours).label("total_work_hours"),
-        ).where(
-            and_(
-                AttendanceRecord.attendance_date >= current_month_start.date(),
-                AttendanceRecord.attendance_date < next_month.date(),
-            )
+        # 替换为任务口径当月工时统计
+        rep_month = select(func.sum(RepairTask.work_minutes)).where(
+            RepairTask.completion_time >= current_month_start,
+            RepairTask.completion_time < next_month,
+            RepairTask.status == TaskStatus.COMPLETED,
+        )
+        # 使用显式导入的模型进行统计
+        from app.models.task import MonitoringTask, AssistanceTask
+
+        mon_month = select(func.sum(MonitoringTask.work_minutes)).where(
+            MonitoringTask.end_time >= current_month_start,
+            MonitoringTask.end_time < next_month,
+            MonitoringTask.status == TaskStatus.COMPLETED,
+        )
+        ass_month = select(func.sum(AssistanceTask.work_minutes)).where(
+            AssistanceTask.end_time >= current_month_start,
+            AssistanceTask.end_time < next_month,
+            AssistanceTask.status == TaskStatus.COMPLETED,
         )
 
-        attendance_result = await db.execute(attendance_query)
-        attendance_stats = (
-            attendance_result.first()
-            or type(
-                "DefaultRow",
-                (),
-                {
-                    "total_attendance": 0,
-                    "late_checkins": 0,
-                    "early_checkouts": 0,
-                    "avg_work_hours": 0.0,
-                    "total_work_hours": 0.0,
-                },
-            )()
-        )
+        rep_minutes = (await db.execute(rep_month)).scalar() or 0
+        mon_minutes = (await db.execute(mon_month)).scalar() or 0
+        ass_minutes = (await db.execute(ass_month)).scalar() or 0
+        total_minutes_month = rep_minutes + mon_minutes + ass_minutes
+        attendance_stats = type(
+            "TaskMonthRow",
+            (),
+            {
+                "total_attendance": 0,
+                "late_checkins": 0,
+                "early_checkouts": 0,
+                "avg_work_hours": round((total_minutes_month / 60.0) / max(1, monthrange(datetime.utcnow().year, datetime.utcnow().month)[1]), 2),
+                "total_work_hours": round(total_minutes_month / 60.0, 2),
+            },
+        )()
 
         # 近期趋势（最近7天每天的任务创建数）
         seven_days_ago = date_to - timedelta(days=7)
@@ -1227,7 +1230,7 @@ async def get_work_hours_analysis(
     权限：组长及以上可查看
     """
     try:
-        from app.models.attendance import MonthlyAttendanceSummary
+        # MonthlyAttendanceSummary removed; consider using task-based summary instead
 
         analysis_data = {
             "analysis_type": analysis_type,

@@ -14,11 +14,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import BaseModel
 
 if TYPE_CHECKING:
-    from app.models.attendance import (
-        AttendanceException,
-        AttendanceRecord,
-        MonthlyAttendanceSummary,
-    )
     from app.models.task import AssistanceTask, MonitoringTask, RepairTask
 
 
@@ -157,27 +152,7 @@ class Member(BaseModel):
         lazy="dynamic",
     )
 
-    attendance_records: Mapped[List["AttendanceRecord"]] = relationship(
-        "AttendanceRecord",
-        back_populates="member",
-        cascade="all, delete-orphan",
-        lazy="dynamic",
-    )
-
-    attendance_exceptions: Mapped[List["AttendanceException"]] = relationship(
-        "AttendanceException",
-        back_populates="member",
-        foreign_keys="AttendanceException.member_id",
-        cascade="all, delete-orphan",
-        lazy="dynamic",
-    )
-
-    monthly_summaries: Mapped[List["MonthlyAttendanceSummary"]] = relationship(
-        "MonthlyAttendanceSummary",
-        back_populates="member",
-        cascade="all, delete-orphan",
-        lazy="dynamic",
-    )
+    # removed attendance-related relationships (records/exceptions/summaries)
 
     # 约束
     __table_args__ = (
