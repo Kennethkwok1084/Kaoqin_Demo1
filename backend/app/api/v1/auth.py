@@ -10,7 +10,9 @@ from typing import Any, Dict, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import select
+from datetime import date
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import create_response, get_current_user, get_db
@@ -25,7 +27,7 @@ from app.core.security import (
     verify_password,
     verify_token,
 )
-from app.models.member import Member
+from app.models.member import Member, UserRole
 from app.schemas.auth import (
     ChangePasswordRequest,
     LoginRequest,
@@ -36,6 +38,56 @@ from app.schemas.auth import (
 logger = logging.getLogger(__name__)
 router = APIRouter()
 security = HTTPBearer()
+
+
+async def ensure_default_admin(db: AsyncSession) -> None:
+    """Ensure there is at least one administrator account."""
+    try:
+        result = await db.execute(select(func.count(Member.id)))
+        member_count = result.scalar_one()
+        if member_count:
+            return
+
+        def build_admin(role_value: Any) -> Member:
+            return Member(
+                username="admin",
+                name="系统管理员",
+                student_id="admin",
+                class_name="系统管理员",
+                password_hash=get_password_hash("123456"),
+                role=role_value,
+                is_active=True,
+                profile_completed=True,
+                is_verified=True,
+                join_date=date.today(),
+            )
+
+        # 首选使用枚举对象，若数据库枚举取值大小写不一致，再回退为字符串 value
+        admin_user = build_admin(UserRole.ADMIN)
+        try:
+            db.add(admin_user)
+            await db.commit()
+        except Exception as primary_error:
+            await db.rollback()
+            if "invalid input value for enum" not in str(primary_error):
+                raise
+
+            # 以枚举的原始字符串值重试一次（兼容历史小写定义）
+            admin_user = build_admin(UserRole.ADMIN.value)
+            db.add(admin_user)
+            try:
+                await db.commit()
+            except Exception as secondary_error:
+                await db.rollback()
+                raise secondary_error
+
+        logger.info("Default administrator account created (username=admin)")
+    except Exception as e:
+        logger.error(f"Failed to ensure default admin: {e}")
+        try:
+            await db.rollback()
+        except Exception:
+            pass
 
 
 @router.post("/login", response_model=Dict[str, Any])
@@ -53,6 +105,9 @@ async def login(
     """
 
     try:
+        # Ensure default admin exists if member table is empty
+        await ensure_default_admin(db)
+
         # Find user by student_id with connection retry logic
         user = None
         max_retries = 2

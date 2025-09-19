@@ -235,8 +235,12 @@ async def get_attendance_cycle_summary(
         period_days = (date_to - date_from).days + 1
 
         # 先取所有在职成员，避免成员无任务时丢失
-        members_result = await db.execute(select(Member.id, Member.name).where(Member.is_active))
-        members = {mid: name for mid, name in members_result.fetchall()}
+        members_result = await db.execute(
+            select(Member.id, Member.name, Member.group_id).where(Member.is_active)
+        )
+        members: Dict[int, Dict[str, Any]] = {}
+        for mid, name, group_id in members_result.fetchall():
+            members[int(mid)] = {"name": name, "group_id": group_id}
 
         # 统计各类任务
         def to_dict(rows: List[Any]) -> Dict[int, Dict[str, int]]:
@@ -301,7 +305,9 @@ async def get_attendance_cycle_summary(
 
         # 组装记录并分页（先按成员姓名排序）
         rows_all: List[Dict[str, Any]] = []
-        for mid, name in members.items():
+        for mid, info in members.items():
+            name = info.get("name")
+            group_id = info.get("group_id")
             rmin = repair_map.get(mid, {}).get("minutes", 0)
             rcnt = repair_map.get(mid, {}).get("count", 0)
             mmin = monitoring_map.get(mid, {}).get("minutes", 0)
@@ -317,6 +323,8 @@ async def get_attendance_cycle_summary(
                 {
                     "member_id": mid,
                     "member_name": name,
+                    "group_id": group_id,
+                    "group_name": (f"第{group_id}组" if group_id else None),
                     "repair_minutes": rmin,
                     "monitoring_minutes": mmin,
                     "assistance_minutes": amin,
@@ -394,8 +402,12 @@ async def export_attendance_cycle_summary(
         # 以任务口径统计
         period_days = (end_date - start_date).days + 1
 
-        members_result = await db.execute(select(Member.id, Member.name).where(Member.is_active))
-        members = {mid: name for mid, name in members_result.fetchall()}
+        members_result = await db.execute(
+            select(Member.id, Member.name, Member.group_id).where(Member.is_active)
+        )
+        members: Dict[int, Dict[str, Any]] = {}
+        for mid, name, group_id in members_result.fetchall():
+            members[int(mid)] = {"name": name, "group_id": group_id}
 
         def to_dict(rows: List[Any]) -> Dict[int, Dict[str, int]]:
             d: Dict[int, Dict[str, int]] = {}
@@ -455,7 +467,9 @@ async def export_attendance_cycle_summary(
         assistance_map = to_dict(assistance_rows)
 
         export_data = []
-        for mid, name in members.items():
+        for mid, info in members.items():
+            name = info.get("name")
+            group_id = info.get("group_id")
             rmin = repair_map.get(mid, {}).get("minutes", 0)
             rcnt = repair_map.get(mid, {}).get("count", 0)
             mmin = monitoring_map.get(mid, {}).get("minutes", 0)
@@ -471,6 +485,7 @@ async def export_attendance_cycle_summary(
                 {
                     "成员ID": mid,
                     "成员姓名": name,
+                    "成员小组": (f"第{group_id}组" if group_id else "未分组"),
                     "报修工时(分钟)": rmin,
                     "监控工时(分钟)": mmin,
                     "协助工时(分钟)": amin,

@@ -192,9 +192,12 @@
               @change="filterAttendanceData"
             >
               <el-option label="全部小组" value="" />
-              <el-option label="第一组" value="1" />
-              <el-option label="第二组" value="2" />
-              <el-option label="第三组" value="3" />
+              <el-option
+                v-for="option in groupOptions"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              />
             </el-select>
           </el-col>
           <el-col :span="6">
@@ -246,7 +249,7 @@
                 </el-avatar>
                 <div>
                   <div class="member-name">{{ row.member_name }}</div>
-                  <div class="member-group">第{{ row.group_id || 0 }}组</div>
+                  <div class="member-group">{{ formatGroupLabel(row.group_id) }}</div>
                 </div>
               </div>
             </template>
@@ -386,6 +389,7 @@ import {
 } from '@element-plus/icons-vue'
 import { attendanceApi } from '@/api/attendance'
 import dayjs from 'dayjs'
+import type { WorkHoursCycleRecord } from '@/types/attendance'
 
 // 考勤记录类型定义
 interface AttendanceRecord {
@@ -393,6 +397,7 @@ interface AttendanceRecord {
   member_id: number
   member_name: string
   group_id?: number
+  group_name?: string
   month: string
   repair_task_hours: number
   monitoring_hours: number
@@ -412,6 +417,13 @@ interface AttendanceOverview {
   assistance_hours: number
   average_hours: number
 }
+
+interface GroupOption {
+  value: string
+  label: string
+}
+
+const GROUP_UNASSIGNED_VALUE = '__NO_GROUP__'
 
 // 响应式数据
 const loading = ref(false)
@@ -436,6 +448,8 @@ const attendanceOverview = reactive<AttendanceOverview>({
 
 // 考勤记录列表
 const attendanceList = ref<AttendanceRecord[]>([])
+
+const groupOptions = ref<GroupOption[]>([])
 
 // 筛选条件
 const filters = reactive({
@@ -464,7 +478,15 @@ const filteredAttendanceList = computed(() => {
 
   // 小组过滤
   if (filters.group_id) {
-    filtered = filtered.filter(item => item.group_id === parseInt(filters.group_id))
+    if (filters.group_id === GROUP_UNASSIGNED_VALUE) {
+      filtered = filtered.filter(
+        item => item.group_id === null || item.group_id === undefined
+      )
+    } else {
+      filtered = filtered.filter(
+        item => String(item.group_id ?? '') === filters.group_id
+      )
+    }
   }
 
   // 绩效等级过滤
@@ -519,6 +541,13 @@ const getPerformanceLevel = (totalHours: number): string => {
   return '待改进'
 }
 
+const formatGroupLabel = (groupId?: number | null): string => {
+  if (groupId === null || groupId === undefined) {
+    return '未分组'
+  }
+  return `第${groupId}组`
+}
+
 // 获取绩效标签类型
 const getPerformanceTagType = (totalHours: number): 'success' | 'warning' | 'info' | 'danger' => {
   if (totalHours >= 80) return 'success'
@@ -543,6 +572,31 @@ const formatDateTime = (dateTime: string | Date) => {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+const updateGroupOptions = (records: AttendanceRecord[]) => {
+  const map = new Map<string, string>()
+  records.forEach(record => {
+    const gid = record.group_id ?? null
+    const value = gid === null ? GROUP_UNASSIGNED_VALUE : String(gid)
+    if (!map.has(value)) {
+      const label = gid === null ? '未分组' : formatGroupLabel(gid)
+      map.set(value, label)
+    }
+  })
+
+  const entries = Array.from(map.entries()).sort((a, b) => {
+    if (a[0] === GROUP_UNASSIGNED_VALUE) return 1
+    if (b[0] === GROUP_UNASSIGNED_VALUE) return -1
+    return Number(a[0]) - Number(b[0])
+  })
+
+  groupOptions.value = entries.map(([value, label]) => ({ value, label }))
+
+  const availableValues = new Set(entries.map(([value]) => value))
+  if (filters.group_id && !availableValues.has(filters.group_id)) {
+    filters.group_id = ''
+  }
 }
 
 // 加载考勤数据
@@ -578,21 +632,29 @@ const loadAttendanceData = async (isRetry = false) => {
     attendanceOverview.assistance_hours = recs.reduce((s: number, r: any) => s + (r.assistance_minutes || 0) / 60, 0)
     attendanceOverview.average_hours = attendanceOverview.total_members > 0 ? attendanceOverview.total_hours / attendanceOverview.total_members : 0
 
-    attendanceList.value = recs.map((r: any) => ({
-      id: r.member_id,
-      member_id: r.member_id,
-      member_name: r.member_name,
-      group_id: undefined,
-      month: '',
-      repair_task_hours: (r.repair_minutes || 0) / 60,
-      monitoring_hours: (r.monitoring_minutes || 0) / 60,
-      assistance_hours: (r.assistance_minutes || 0) / 60,
-      carried_hours: 0,
-      total_hours: r.total_work_hours || 0,
-      remaining_hours: 0,
-      updated_at: new Date().toISOString(),
-      avatar: ''
-    }))
+    const mappedRecords = recs.map((r: WorkHoursCycleRecord) => {
+      const groupId = r.group_id ?? null
+      return {
+        id: r.member_id,
+        member_id: r.member_id,
+        member_name: r.member_name,
+        group_id: groupId,
+        group_name:
+          r.group_name ?? (groupId === null ? '未分组' : formatGroupLabel(groupId)),
+        month: '',
+        repair_task_hours: (r.repair_minutes || 0) / 60,
+        monitoring_hours: (r.monitoring_minutes || 0) / 60,
+        assistance_hours: (r.assistance_minutes || 0) / 60,
+        carried_hours: 0,
+        total_hours: r.total_work_hours || 0,
+        remaining_hours: 0,
+        updated_at: new Date().toISOString(),
+        avatar: ''
+      } as AttendanceRecord
+    })
+
+    attendanceList.value = mappedRecords
+    updateGroupOptions(mappedRecords)
 
     // 成功加载时清除错误状态
     apiError.value = ''

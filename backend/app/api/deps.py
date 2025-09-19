@@ -31,6 +31,14 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             yield session
             # Session yielded successfully - no additional error handling needed
             break
+    except HTTPException:
+        # Preserve upstream HTTP exceptions (e.g., 401/403).
+        if session:
+            try:
+                await session.close()
+            except Exception:
+                pass
+        raise
     except Exception as e:
         logger.error(f"Database session dependency error: {e}")
         # Ensure session is properly cleaned up on error

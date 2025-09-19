@@ -503,6 +503,7 @@ class WorkHoursCalculationService:
             )
             existing_result = await self.db.execute(existing_query)
             summary = existing_result.scalar_one_or_none()
+            created = False
 
             if summary:
                 # 更新现有记录
@@ -510,6 +511,7 @@ class WorkHoursCalculationService:
                     if hasattr(summary, key) and not key.endswith("_count"):
                         setattr(summary, key, value)
                 summary.updated_at = datetime.utcnow()
+                summary.set_created(False)
             else:
                 # 创建新记录 - 只传递兼容的字段
                 summary_data = {
@@ -527,9 +529,13 @@ class WorkHoursCalculationService:
                     if hasattr(summary, key):
                         setattr(summary, key, value)
                 self.db.add(summary)
+                summary.set_created(True)
+                created = True
 
             await self.db.commit()
             await self.db.refresh(summary)
+            if not created:
+                summary.set_created(False)
 
             logger.info(
                 f"Updated monthly summary for member {member_id}, {year}-{month:02d}"

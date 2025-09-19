@@ -7,7 +7,8 @@ import type {
   WorkHoursSummary,
   MonthlyWorkHoursReport,
   WorkHoursStats,
-  WorkHoursChart
+  WorkHoursChart,
+  WorkHoursCycleRecord
 } from '@/types/attendance'
 
 export const attendanceApi = {
@@ -28,19 +29,7 @@ export const attendanceApi = {
       page: number
       size: number
       total_members: number
-      records: Array<{
-        member_id: number
-        member_name: string
-        repair_minutes: number
-        monitoring_minutes: number
-        assistance_minutes: number
-        repair_tasks: number
-        monitoring_tasks: number
-        assistance_tasks: number
-        total_tasks: number
-        total_work_hours: number
-        average_daily_hours: number
-      }>
+      records: WorkHoursCycleRecord[]
     }
     status_code: number
   }> {
@@ -185,6 +174,4 @@ export const attendanceApi = {
     )
     return response.data
   },
-
-}
 }

@@ -1,7 +1,4 @@
-"""
-FastAPI application entry point.
-Main application factory and configuration.
-"""
+"""FastAPI application entry point."""
 
 import logging
 import logging.config
@@ -28,10 +25,13 @@ from app.core.openapi_config import (
     is_protected_path,
 )
 from app.core.security import get_security_headers
+from app.core.runtime import APP_START_TIME
 
 # Configure logging
 logging.config.dictConfig(get_log_config())
 logger = logging.getLogger(__name__)
+
+# 应用启动时间在 app.core.runtime 中维护
 
 
 @asynccontextmanager

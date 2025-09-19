@@ -121,7 +121,12 @@ class TaskTag(BaseModel):
 
     # Tag type for categorization
     tag_type: Mapped[TaskTagType] = mapped_column(
-        PgEnum(TaskTagType, name="tasktagtype", create_type=False),
+        PgEnum(
+            TaskTagType,
+            name="tasktagtype",
+            create_type=False,
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
         default=TaskTagType.CATEGORY,
         nullable=False,
         comment="Tag type for categorization and work hour calculation",
@@ -292,21 +297,36 @@ class RepairTask(BaseModel):
 
     # Task categorization
     category: Mapped[TaskCategory] = mapped_column(
-        PgEnum(TaskCategory, name="taskcategory", create_type=False),
+        PgEnum(
+            TaskCategory,
+            name="taskcategory",
+            create_type=False,
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
         default=TaskCategory.NETWORK_REPAIR,
         nullable=False,
         comment="Task category",
     )
 
     priority: Mapped[TaskPriority] = mapped_column(
-        PgEnum(TaskPriority, name="taskpriority", create_type=False),
+        PgEnum(
+            TaskPriority,
+            name="taskpriority",
+            create_type=False,
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
         default=TaskPriority.MEDIUM,
         nullable=False,
         comment="Task priority",
     )
 
     status: Mapped[TaskStatus] = mapped_column(
-        PgEnum(TaskStatus, name="taskstatus", create_type=False),
+        PgEnum(
+            TaskStatus,
+            name="taskstatus",
+            create_type=False,
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
         default=TaskStatus.PENDING,
         nullable=False,
         index=True,
@@ -314,7 +334,12 @@ class RepairTask(BaseModel):
     )
 
     task_type: Mapped[TaskType] = mapped_column(
-        PgEnum(TaskType, name="tasktype", create_type=False),
+        PgEnum(
+            TaskType,
+            name="tasktype",
+            create_type=False,
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
         default=TaskType.ONLINE,
         nullable=False,
         comment="Task type (online/offline)",
@@ -855,7 +880,12 @@ class MonitoringTask(BaseModel):
 
     # Status
     status: Mapped[TaskStatus] = mapped_column(
-        PgEnum(TaskStatus, name="taskstatus", create_type=False),
+        PgEnum(
+            TaskStatus,
+            name="taskstatus",
+            create_type=False,
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
         default=TaskStatus.COMPLETED,
         nullable=False,
         comment="Task status",
@@ -931,7 +961,12 @@ class AssistanceTask(BaseModel):
 
     # Status
     status: Mapped[TaskStatus] = mapped_column(
-        PgEnum(TaskStatus, name="taskstatus", create_type=False),
+        PgEnum(
+            TaskStatus,
+            name="taskstatus",
+            create_type=False,
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
         default=TaskStatus.PENDING,  # 改为待审核状态
         nullable=False,
         comment="Task status",

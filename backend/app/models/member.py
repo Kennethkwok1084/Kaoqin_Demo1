@@ -93,7 +93,12 @@ class Member(BaseModel):
 
     # 状态和权限
     role: Mapped[UserRole] = mapped_column(
-        ENUM(UserRole, name="userrole", create_type=False),
+        ENUM(
+            UserRole,
+            name="userrole",
+            create_type=False,
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
         default=UserRole.MEMBER,
         nullable=False,
         comment="用户角色",
@@ -278,6 +283,7 @@ class Member(BaseModel):
             "phone": self.phone,
             "department": self.department,
             "class_name": self.class_name,
+            "group_id": self.group_id,
             "join_date": (
                 self.join_date.isoformat()
                 if self.join_date

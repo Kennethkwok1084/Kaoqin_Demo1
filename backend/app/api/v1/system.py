@@ -1,13 +1,14 @@
-"""
-系统设置API端点
-提供系统设置的统一管理接口，匹配前端期望的API路径
-"""
+"""系统设置 API，提供系统配置与运行信息。"""
 
 import logging
+import os
+import platform
+from datetime import datetime, timedelta
 from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi import status as http_status
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
@@ -17,12 +18,93 @@ from app.api.deps import (
     get_current_user,
     get_db,
 )
+from app.core.config import settings
+from app.core.runtime import APP_START_TIME
 from app.models.member import Member
+from app.models.task import RepairTask, TaskStatus
 from app.services.system_config_service import SystemConfigService
+
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+
+def _format_timedelta(delta: timedelta) -> str:
+    """将 timedelta 转换为人类可读的中文描述。"""
+    total_seconds = int(delta.total_seconds())
+    if total_seconds < 0:
+        total_seconds = 0
+
+    days, rem = divmod(total_seconds, 86400)
+    hours, rem = divmod(rem, 3600)
+    minutes, seconds = divmod(rem, 60)
+
+    parts = []
+    if days:
+        parts.append(f"{days}天")
+    if hours:
+        parts.append(f"{hours}小时")
+    if minutes:
+        parts.append(f"{minutes}分钟")
+    if not parts:
+        parts.append(f"{seconds}秒")
+    return " ".join(parts)
+
+
+@router.get("/info", response_model=Dict[str, Any])
+async def get_system_info(
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """获取系统运行信息。"""
+
+    try:
+        # 数据库版本
+        db_version_result = await db.execute(text("SELECT version()"))
+        database_version = db_version_result.scalar() or "未知"
+        database_version = str(database_version).split("\n")[0]
+
+        # 活跃用户（在职成员）
+        active_users_result = await db.execute(
+            select(func.count(Member.id)).where(Member.is_active.is_(True))
+        )
+        active_users = active_users_result.scalar() or 0
+
+        # 任务统计
+        total_tasks_result = await db.execute(select(func.count(RepairTask.id)))
+        total_tasks = total_tasks_result.scalar() or 0
+
+        completed_tasks_result = await db.execute(
+            select(func.count(RepairTask.id)).where(
+                RepairTask.status == TaskStatus.COMPLETED
+            )
+        )
+        completed_tasks = completed_tasks_result.scalar() or 0
+
+        # 系统运行时间
+        uptime_delta = datetime.utcnow() - APP_START_TIME
+
+        system_info = {
+            "version": settings.APP_VERSION,
+            "buildTime": os.getenv("BUILD_TIMESTAMP")
+            or os.getenv("BUILD_TIME")
+            or APP_START_TIME.isoformat() + "Z",
+            "pythonVersion": platform.python_version(),
+            "databaseVersion": database_version,
+            "uptime": _format_timedelta(uptime_delta),
+            "activeUsers": active_users,
+            "totalTasks": total_tasks,
+            "completedTasks": completed_tasks,
+        }
+
+        return create_response(data=system_info, message="成功获取系统信息")
+
+    except Exception as exc:
+        logger.error(f"Get system info error: {exc}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取系统信息失败: {exc}",
+        )
 
 @router.get("/settings", response_model=Dict[str, Any])
 async def get_system_settings(

@@ -149,6 +149,22 @@ export interface WorkHoursSummary {
   participation_rate: number
 }
 
+export interface WorkHoursCycleRecord {
+  member_id: number
+  member_name: string
+  group_id?: number | null
+  group_name?: string | null
+  repair_minutes: number
+  monitoring_minutes: number
+  assistance_minutes: number
+  repair_tasks: number
+  monitoring_tasks: number
+  assistance_tasks: number
+  total_tasks: number
+  total_work_hours: number
+  average_daily_hours: number
+}
+
 export interface WorkHoursListParams {
   page?: number
   size?: number

@@ -453,6 +453,7 @@ import {
   Monitor,
   Refresh
 } from '@element-plus/icons-vue'
+import { systemApi, type SystemInfo } from '@/api/system'
 
 // 响应式数据
 const activeSection = ref('basic')
@@ -538,15 +539,15 @@ const backupHistory = ref([
 ])
 
 // 系统信息
-const systemInfo = reactive({
-  version: 'v1.0.0',
-  buildTime: '2025-08-01 08:00:00',
-  pythonVersion: '3.12.0',
-  databaseVersion: 'PostgreSQL 15.3',
-  uptime: '2天 15小时 32分钟',
-  activeUsers: 15,
-  totalTasks: 1248,
-  completedTasks: 1089
+const systemInfo = reactive<SystemInfo>({
+  version: '-',
+  buildTime: '-',
+  pythonVersion: '-',
+  databaseVersion: '-',
+  uptime: '-',
+  activeUsers: 0,
+  totalTasks: 0,
+  completedTasks: 0
 })
 
 // 方法
@@ -687,8 +688,18 @@ const restartSystem = () => {
     })
 }
 
+const loadSystemInfo = async () => {
+  try {
+    const data = await systemApi.getSystemInfo()
+    Object.assign(systemInfo, data)
+  } catch (error) {
+    console.error('获取系统信息失败:', error)
+    ElMessage.error('获取系统信息失败')
+  }
+}
+
 onMounted(() => {
-  // 初始化设置数据
+  loadSystemInfo()
 })
 </script>
 
