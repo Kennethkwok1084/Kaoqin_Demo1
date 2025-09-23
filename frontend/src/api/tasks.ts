@@ -43,7 +43,7 @@ export const tasksApi = {
       }
     }
 
-    const response = await http.get('/tasks', { params: queryParams })
+    const response = await http.get('/tasks/repair', { params: queryParams })
     return response.data.data || { items: [], total: 0, page: 1, pageSize: 20 }
   },
 

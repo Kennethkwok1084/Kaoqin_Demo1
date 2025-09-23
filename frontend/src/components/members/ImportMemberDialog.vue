@@ -66,6 +66,7 @@
                   admin/group_leader/member/guest（默认：member）
                 </li>
                 <li><code>部门</code> - 部门名称（默认：信息化建设处）</li>
+                <li><code>组别</code> - 正整数，填写如<code>1</code>或<code>第1组</code></li>
               </ul>
             </div>
           </el-card>
@@ -104,6 +105,12 @@
           </el-table-column>
           <el-table-column prop="phone" label="手机号" width="120" />
           <el-table-column prop="class_name" label="班级" width="150" />
+          <el-table-column prop="group_id" label="小组" width="100">
+            <template #default="{ row }">
+              <span v-if="row.group_id">第{{ row.group_id }}组</span>
+              <el-tag v-else type="info" size="small">未分组</el-tag>
+            </template>
+          </el-table-column>
           <el-table-column prop="role" label="角色" width="100">
             <template #default="{ row }">
               {{ getRoleLabel(row.role || 'member') }}
@@ -360,7 +367,10 @@ const parseExcelFile = async (file: File) => {
           电话: 'phone',
           角色: 'role',
           部门: 'department',
-          班级: 'class_name'
+          班级: 'class_name',
+          组别: 'group_id',
+          小组: 'group_id',
+          分组: 'group_id'
         }
 
         const parsedData = rows
@@ -399,6 +409,14 @@ const parseExcelFile = async (file: File) => {
                     访客: 'guest'
                   }
                   item[field] = roleMap[value] || value.toLowerCase()
+                } else if (field === 'group_id') {
+                  const digits = value.replace(/[^0-9]/g, '')
+                  if (digits) {
+                    const parsed = Number(digits)
+                    if (Number.isInteger(parsed)) {
+                      item[field] = parsed
+                    }
+                  }
                 } else {
                   item[field] = value
                 }
@@ -471,6 +489,12 @@ const parseExcelFile = async (file: File) => {
               }
             }
 
+            if (item.group_id !== undefined && item.group_id !== null) {
+              if (!Number.isInteger(item.group_id) || item.group_id < 1) {
+                errors.push('组别必须填写正整数，例如 1 表示第1组')
+              }
+            }
+
             item._valid = errors.length === 0
             item._errors = errors
 
@@ -518,7 +542,8 @@ const handleImport = async () => {
           phone: undefined, // 显式设置为undefined
           username: undefined, // 显式设置为undefined
           role: 'member', // 默认角色
-          department: '信息化建设处' // 默认部门
+          department: '信息化建设处', // 默认部门
+          group_id: undefined
         }
 
         // 只有在有效值的情况下才赋值
@@ -547,6 +572,15 @@ const handleImport = async () => {
 
         if (item.department && item.department.trim() !== '') {
           member.department = item.department.trim()
+        }
+
+        if (
+          item.group_id !== undefined &&
+          item.group_id !== null &&
+          Number.isInteger(item.group_id) &&
+          item.group_id >= 1
+        ) {
+          member.group_id = item.group_id
         }
 
         return member
@@ -636,10 +670,11 @@ const handleImport = async () => {
 const downloadTemplate = () => {
   // 创建模板数据
   const templateData = [
-    ['姓名', '班级', '学号', '用户名', '手机号', '角色', '部门'],
+    ['姓名', '班级', '组别', '学号', '用户名', '手机号', '角色', '部门'],
     [
       '张三',
       '计算机科学与技术2101',
+      '第1组',
       '20210001',
       'zhangsan',
       '13800138001',
@@ -649,6 +684,7 @@ const downloadTemplate = () => {
     [
       '李四',
       '网络工程2101',
+      '2',
       '20210002',
       'lisi',
       '13800138002',

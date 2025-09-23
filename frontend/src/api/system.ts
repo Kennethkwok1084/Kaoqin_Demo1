@@ -14,6 +14,7 @@ export interface SystemInfo {
 export const systemApi = {
   async getSystemInfo(): Promise<SystemInfo> {
     const response = await http.get<SystemInfo>('/system/info')
-    return response.data
+    // 后端统一返回 { success, message, data }，这里取出真实数据
+    return (response.data as any)?.data ?? (response.data as unknown as SystemInfo)
   }
 }

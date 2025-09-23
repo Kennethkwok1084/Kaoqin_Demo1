@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi import status as http_status
-from sqlalchemy import and_, desc, func, or_, select
+from sqlalchemy import and_, delete, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
@@ -680,15 +680,133 @@ async def get_tasks_stats(
 # ============= 维修任务管理 =============
 
 
-@router.get("/repair-list", response_model=Dict[str, Any])
-async def get_repair_list() -> Dict[str, Any]:
+@router.get("/repair", response_model=Dict[str, Any])
+async def get_repair_tasks(
+    page: int = Query(1, ge=1, description="页码"),
+    pageSize: int = Query(20, ge=1, le=100, description="每页数量"),
+    status: Optional[str] = Query(None, description="任务状态筛选"),
+    member_id: Optional[int] = Query(None, description="成员筛选"),
+    search: Optional[str] = Query(None, description="搜索关键词"),
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
     """
-    获取维修任务列表 - 测试端点（重命名路径）
+    获取维修任务列表
+    权限：管理员和组长可查看所有任务，普通用户只能查看自己的任务
     """
-    return create_response(
-        data={"items": [], "total": 0, "page": 1, "size": 20, "pages": 0},
-        message="成功获取维修任务列表，共 0 条记录",
-    )
+    try:
+        offset = (page - 1) * pageSize
+
+        # 构建查询
+        query = select(RepairTask).options(joinedload(RepairTask.member))
+
+        # 权限过滤：非管理员只能看到自己的任务
+        if current_user.role not in [UserRole.ADMIN, UserRole.GROUP_LEADER]:
+            query = query.where(RepairTask.member_id == current_user.id)
+
+        # 状态筛选
+        if status:
+            try:
+                status_enum = TaskStatus(status)
+                query = query.where(RepairTask.status == status_enum)
+            except ValueError:
+                pass  # 忽略无效状态
+
+        # 成员筛选
+        if member_id:
+            query = query.where(RepairTask.member_id == member_id)
+
+        # 搜索筛选
+        if search:
+            query = query.where(
+                or_(
+                    RepairTask.title.contains(search),
+                    RepairTask.description.contains(search),
+                    RepairTask.location.contains(search)
+                )
+            )
+
+        # 分页查询
+        query = (
+            query.offset(offset)
+            .limit(pageSize)
+            .order_by(desc(RepairTask.created_at))
+        )
+        result = await db.execute(query)
+        tasks = result.scalars().unique().all()
+
+        # 获取总数
+        count_query = select(func.count(RepairTask.id))
+
+        # 应用相同的筛选条件
+        if current_user.role not in [UserRole.ADMIN, UserRole.GROUP_LEADER]:
+            count_query = count_query.where(RepairTask.member_id == current_user.id)
+        if status:
+            try:
+                status_enum = TaskStatus(status)
+                count_query = count_query.where(RepairTask.status == status_enum)
+            except ValueError:
+                pass
+        if member_id:
+            count_query = count_query.where(RepairTask.member_id == member_id)
+        if search:
+            count_query = count_query.where(
+                or_(
+                    RepairTask.title.contains(search),
+                    RepairTask.description.contains(search),
+                    RepairTask.location.contains(search)
+                )
+            )
+
+        count_result = await db.execute(count_query)
+        total = count_result.scalar() or 0
+
+        # 格式化任务数据
+        items = []
+        for task in tasks:
+            task_data = {
+                "id": task.id,
+                "title": task.title,
+                "description": task.description,
+                "location": task.location,
+                "contact_person": task.reporter_contact,
+                "contact_phone": task.reporter_phone,
+                "status": task.status.value if task.status else "pending",
+                "priority": task.priority.value if task.priority else "medium",
+                "category": task.category.value if task.category else "hardware",
+                "member_id": task.member_id,
+                "member_name": task.member.name if task.member else None,
+                "is_urgent": task.priority == TaskPriority.URGENT if task.priority else False,
+                "is_online": task.task_type == TaskType.ONLINE if task.task_type else True,
+                "work_minutes": task.work_minutes,
+                "created_at": task.created_at.strftime('%Y-%m-%dT%H:%M:%SZ') if task.created_at else None,
+                "updated_at": task.updated_at.strftime('%Y-%m-%dT%H:%M:%SZ') if task.updated_at else None,
+                "completed_at": task.completion_time.strftime('%Y-%m-%dT%H:%M:%SZ') if task.completion_time else None,
+                "rating": task.rating,
+                "rating_comment": task.feedback,
+            }
+            items.append(task_data)
+
+        # 计算页数
+        pages = (total + pageSize - 1) // pageSize
+
+        return create_response(
+            data={
+                "items": items,
+                "total": total,
+                "page": page,
+                "size": pageSize,
+                "pages": pages
+            },
+            message=f"成功获取维修任务列表，共 {total} 条记录"
+        )
+
+    except Exception as e:
+        logger.error(f"获取维修任务列表失败: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取维修任务列表失败: {str(e)}"
+        )
 
 
 @router.get("/repair/{task_id}", response_model=Dict[str, Any])
@@ -1022,7 +1140,8 @@ async def delete_repair_task(
         task_title = task.title
 
         # 删除任务
-        db.delete(task)
+        delete_stmt = delete(RepairTask).where(RepairTask.id == task_id)
+        await db.execute(delete_stmt)
         await db.commit()
 
         logger.warning(

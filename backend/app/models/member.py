@@ -284,6 +284,7 @@ class Member(BaseModel):
             "department": self.department,
             "class_name": self.class_name,
             "group_id": self.group_id,
+            "group_name": f"第{self.group_id}组" if self.group_id else None,
             "join_date": (
                 self.join_date.isoformat()
                 if self.join_date

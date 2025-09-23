@@ -100,6 +100,14 @@
         <el-table-column prop="phone" label="手机号" width="130" />
         <el-table-column prop="department" label="部门" width="140" />
         <el-table-column prop="class_name" label="班级" width="120" />
+        <el-table-column label="小组" width="110">
+          <template #default="{ row }">
+            <el-tag v-if="row.group_id" type="info" effect="plain">
+              {{ getGroupLabel(row.group_id, row.group_name) }}
+            </el-tag>
+            <span v-else class="text-gray">未分组</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="role" label="角色" width="100">
           <template #default="{ row }">
             <el-tag :type="getRoleTagType(row.role) as any">
@@ -165,8 +173,10 @@
 
   <!-- 创建成员对话框 -->
   <CreateMemberDialog
-    v-model:visible="createDialogVisible"
-    @success="handleCreateSuccess"
+    v-model:visible="memberFormVisible"
+    :mode="memberFormMode"
+    :member="editingMember"
+    @success="handleFormSuccess"
   />
 
   <!-- 批量导入对话框 -->
@@ -174,16 +184,74 @@
     v-model:visible="importDialogVisible"
     @success="handleImportSuccess"
   />
+
+  <!-- 成员详情对话框 -->
+  <el-dialog
+    v-model="detailDialogVisible"
+    title="成员详情"
+    width="520px"
+    destroy-on-close
+  >
+    <el-skeleton v-if="detailLoading" :rows="6" animated />
+    <el-descriptions
+      v-else-if="detailMember"
+      :column="1"
+      border
+      label-class-name="detail-label"
+      content-class-name="detail-content"
+    >
+      <el-descriptions-item label="ID">
+        {{ detailMember.id }}
+      </el-descriptions-item>
+      <el-descriptions-item label="用户名">
+        {{ detailMember.username }}
+      </el-descriptions-item>
+      <el-descriptions-item label="姓名">
+        {{ detailMember.name }}
+      </el-descriptions-item>
+      <el-descriptions-item label="学号">
+        {{ detailMember.student_id || '—' }}
+      </el-descriptions-item>
+      <el-descriptions-item label="手机号">
+        {{ detailMember.phone || '—' }}
+      </el-descriptions-item>
+      <el-descriptions-item label="部门">
+        {{ detailMember.department || '—' }}
+      </el-descriptions-item>
+      <el-descriptions-item label="班级">
+        {{ detailMember.class_name || '—' }}
+      </el-descriptions-item>
+      <el-descriptions-item label="小组">
+        {{ getGroupLabel(detailMember.group_id, detailMember.group_name) }}
+      </el-descriptions-item>
+      <el-descriptions-item label="角色">
+        {{ getRoleText(detailMember.role) }}
+      </el-descriptions-item>
+      <el-descriptions-item label="状态">
+        {{ detailMember.status_display }}
+      </el-descriptions-item>
+      <el-descriptions-item label="入职日期">
+        {{ detailMember.join_date || '—' }}
+      </el-descriptions-item>
+      <el-descriptions-item label="最后登录">
+        {{ detailMember.last_login ? formatDateTime(detailMember.last_login) : '从未登录' }}
+      </el-descriptions-item>
+    </el-descriptions>
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="detailDialogVisible = false">关闭</el-button>
+      </div>
+    </template>
+  </el-dialog>
 </template>
 
-///
-<reference types="node" />
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, Upload, Refresh } from '@element-plus/icons-vue'
 import {
   getMembers,
+  getMember,
   deleteMember,
   type Member,
   type MemberListParams
@@ -197,8 +265,13 @@ const loading = ref(false)
 const members = ref<Member[]>([])
 const selectedMembers = ref<Member[]>([])
 const searchQuery = ref('')
-const createDialogVisible = ref(false)
+const memberFormVisible = ref(false)
+const memberFormMode = ref<'create' | 'edit'>('create')
+const editingMember = ref<Member | null>(null)
 const importDialogVisible = ref(false)
+const detailDialogVisible = ref(false)
+const detailLoading = ref(false)
+const detailMember = ref<Member | null>(null)
 
 // 筛选条件
 const filters = reactive({
@@ -261,9 +334,11 @@ const loadMembers = async () => {
 }
 
 // 搜索处理
-let searchTimer: NodeJS.Timeout
+let searchTimer: ReturnType<typeof setTimeout> | null = null
 const handleSearch = () => {
-  clearTimeout(searchTimer)
+  if (searchTimer) {
+    clearTimeout(searchTimer)
+  }
   searchTimer = setTimeout(() => {
     pagination.page = 1
     loadMembers()
@@ -271,9 +346,11 @@ const handleSearch = () => {
 }
 
 // 筛选处理
-let filterTimer: NodeJS.Timeout
+let filterTimer: ReturnType<typeof setTimeout> | null = null
 const handleFilter = () => {
-  clearTimeout(filterTimer)
+  if (filterTimer) {
+    clearTimeout(filterTimer)
+  }
   filterTimer = setTimeout(() => {
     pagination.page = 1
     loadMembers()
@@ -299,35 +376,64 @@ const handleSelectionChange = (selection: Member[]) => {
 
 // 操作处理
 const handleCreate = () => {
-  createDialogVisible.value = true
+  memberFormMode.value = 'create'
+  editingMember.value = null
+  memberFormVisible.value = true
 }
 
 const handleImport = () => {
   importDialogVisible.value = true
 }
 
-const handleCreateSuccess = () => {
+const handleFormSuccess = (updatedMember?: Member) => {
   loadMembers()
-  ElMessage.success('成员创建成功')
+  if (updatedMember && detailMember.value?.id === updatedMember.id) {
+    detailMember.value = { ...detailMember.value, ...updatedMember }
+  }
 }
 
 const handleImportSuccess = () => {
   loadMembers()
-  ElMessage.success('批量导入完成')
 }
 
 const handleRefresh = () => {
   loadMembers()
 }
 
-const handleView = (member: Member) => {
-  // TODO: 打开成员详情对话框
-  ElMessage.info(`查看成员：${member.name}`)
+const getGroupLabel = (
+  groupId?: number | null,
+  groupName?: string | null
+) => {
+  if (groupName) return groupName
+  if (groupId) return `第${groupId}组`
+  return '未分组'
 }
 
-const handleEdit = (member: Member) => {
-  // TODO: 打开编辑成员对话框
-  ElMessage.info(`编辑成员：${member.name}`)
+const handleView = async (member: Member) => {
+  detailDialogVisible.value = true
+  detailLoading.value = true
+  try {
+    const fullMember = await getMember(member.id)
+    detailMember.value = fullMember
+  } catch (error) {
+    detailDialogVisible.value = false
+    ElMessage.error('加载成员详情失败')
+    console.error('View member error:', error)
+  } finally {
+    detailLoading.value = false
+  }
+}
+
+const handleEdit = async (member: Member) => {
+  try {
+    const fullMember = await getMember(member.id)
+    editingMember.value = fullMember
+    memberFormMode.value = 'edit'
+    memberFormVisible.value = true
+  } catch (error) {
+    ElMessage.error('加载成员详情失败，无法编辑')
+    console.error('Edit member load error:', error)
+  }
 }
 
 const handleDelete = async (member: Member) => {
@@ -407,6 +513,15 @@ const formatDateTime = (datetime: string) => {
 onMounted(() => {
   loadMembers()
 })
+
+onBeforeUnmount(() => {
+  if (searchTimer) {
+    clearTimeout(searchTimer)
+  }
+  if (filterTimer) {
+    clearTimeout(filterTimer)
+  }
+})
 </script>
 
 <style scoped>
@@ -476,5 +591,14 @@ onMounted(() => {
 
 .text-gray {
   color: #909399;
+}
+
+.detail-label {
+  width: 120px;
+  font-weight: 500;
+}
+
+.detail-content {
+  min-width: 200px;
 }
 </style>

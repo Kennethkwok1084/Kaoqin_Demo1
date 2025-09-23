@@ -1,8 +1,8 @@
 <template>
   <el-dialog
     v-model="visible"
-    title="新增成员"
-    width="600px"
+    :title="dialogTitle"
+    width="620px"
     :before-close="handleClose"
     destroy-on-close
   >
@@ -109,18 +109,31 @@
         </el-col>
       </el-row>
 
-      <el-form-item label="入职日期" prop="join_date">
-        <el-date-picker
-          v-model="form.join_date"
-          type="date"
-          placeholder="选择入职日期"
-          format="YYYY-MM-DD"
-          value-format="YYYY-MM-DD"
-          style="width: 100%"
-        />
-      </el-form-item>
+      <el-row :gutter="20">
+        <el-col :span="12">
+          <el-form-item label="小组" prop="group_id">
+            <el-input
+              v-model="groupIdInput"
+              placeholder="输入正整数，留空则未分组"
+              maxlength="5"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="入职日期" prop="join_date">
+            <el-date-picker
+              v-model="form.join_date"
+              type="date"
+              placeholder="选择入职日期"
+              format="YYYY-MM-DD"
+              value-format="YYYY-MM-DD"
+              style="width: 100%"
+            />
+          </el-form-item>
+        </el-col>
+      </el-row>
 
-      <el-form-item label="初始密码" prop="password">
+      <el-form-item v-if="!isEditMode" label="初始密码" prop="password">
         <el-input
           v-model="form.password"
           type="password"
@@ -135,7 +148,7 @@
       <div class="dialog-footer">
         <el-button @click="handleClose">取消</el-button>
         <el-button type="primary" :loading="loading" @click="handleSubmit">
-          确认创建
+          {{ submitButtonText }}
         </el-button>
       </div>
     </template>
@@ -147,17 +160,18 @@ import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { MembersApi } from '@/api/members'
-import type { MemberCreateRequest } from '@/api/members'
+import type { Member, MemberCreateRequest, MemberUpdateRequest } from '@/api/members'
 
 // Props
 interface Props {
   visible: boolean
+  mode?: 'create' | 'edit'
+  member?: Member | null
 }
 
-// Emits
 interface Emits {
   (e: 'update:visible', visible: boolean): void
-  (e: 'success'): void
+  (e: 'success', payload?: Member): void
 }
 
 const props = defineProps<Props>()
@@ -175,6 +189,7 @@ const form = reactive<MemberCreateRequest>({
   phone: '',
   department: '信息化建设处',
   class_name: '',
+  group_id: null,
   join_date: new Date().toISOString().split('T')[0],
   role: 'member',
   is_active: true,
@@ -216,13 +231,53 @@ const rules: FormRules = {
   role: [{ required: true, message: '请选择角色', trigger: 'change' }],
   is_active: [{ required: true, message: '请选择状态', trigger: 'change' }],
   class_name: [{ required: true, message: '请输入班级', trigger: 'blur' }],
-  join_date: [{ required: true, message: '请选择入职日期', trigger: 'change' }]
+  join_date: [{ required: true, message: '请选择入职日期', trigger: 'change' }],
+  group_id: [
+    {
+      validator: (_rule, value, callback) => {
+        if (value === null || value === undefined || value === '') {
+          callback()
+          return
+        }
+        if (!Number.isInteger(value) || value < 1) {
+          callback(new Error('小组编号必须为正整数'))
+          return
+        }
+        callback()
+      },
+      trigger: 'blur'
+    }
+  ]
 }
 
 // Computed
 const visible = computed({
   get: () => props.visible,
   set: value => emit('update:visible', value)
+})
+
+const mode = computed(() => props.mode ?? 'create')
+const isEditMode = computed(() => mode.value === 'edit')
+
+const dialogTitle = computed(() =>
+  isEditMode.value ? '编辑成员' : '新增成员'
+)
+
+const submitButtonText = computed(() =>
+  isEditMode.value ? '保存修改' : '确认创建'
+)
+
+const groupIdInput = computed({
+  get: () => (form.group_id ? String(form.group_id) : ''),
+  set: value => {
+    const normalized = value?.trim() ?? ''
+    if (!normalized) {
+      form.group_id = null
+      return
+    }
+    const digits = normalized.replace(/[^0-9]/g, '')
+    form.group_id = digits ? Number(digits) : null
+  }
 })
 
 // Methods
@@ -240,9 +295,26 @@ const resetForm = () => {
     phone: '',
     department: '信息化建设处',
     class_name: '',
+    group_id: null,
     join_date: new Date().toISOString().split('T')[0],
     role: 'member',
     is_active: true,
+    password: '123456'
+  })
+}
+
+const populateForm = (member: Member) => {
+  Object.assign(form, {
+    username: member.username,
+    name: member.name,
+    student_id: member.student_id || '',
+    phone: member.phone || '',
+    department: member.department || '信息化建设处',
+    class_name: member.class_name,
+    group_id: member.group_id ?? null,
+    join_date: member.join_date || new Date().toISOString().split('T')[0],
+    role: member.role || 'member',
+    is_active: member.is_active,
     password: '123456'
   })
 }
@@ -254,27 +326,63 @@ const handleSubmit = async () => {
     await formRef.value.validate()
     loading.value = true
 
-    // 准备提交数据
-    const submitData = { ...form }
+    if (isEditMode.value) {
+      if (!props.member) {
+        throw new Error('未找到待编辑的成员信息')
+      }
 
-    // 如果手机号为空，删除该字段
-    if (!submitData.phone?.trim()) {
-      delete submitData.phone
+      const normalizedStudentId = form.student_id?.trim() ?? ''
+      const normalizedPhone = form.phone?.trim() ?? ''
+      const normalizedDepartment = form.department?.trim() ?? ''
+
+      const submitData: MemberUpdateRequest = {
+        username: form.username.trim(),
+        name: form.name.trim(),
+        student_id: normalizedStudentId ? normalizedStudentId : null,
+        phone: normalizedPhone || undefined,
+        department: normalizedDepartment || undefined,
+        class_name: form.class_name.trim(),
+        group_id: form.group_id ?? null,
+        role: form.role,
+        is_active: form.is_active
+      }
+
+      const updatedMember = await MembersApi.updateMember(
+        props.member.id,
+        submitData
+      )
+
+      ElMessage.success('成员信息更新成功')
+      emit('success', updatedMember)
+      handleClose()
+    } else {
+      const normalizedStudentId = form.student_id?.trim() ?? ''
+      const normalizedPhone = form.phone?.trim() ?? ''
+      const normalizedDepartment = form.department?.trim() ?? ''
+
+      const submitData: MemberCreateRequest = {
+        username: form.username.trim(),
+        name: form.name.trim(),
+        student_id: normalizedStudentId || undefined,
+        phone: normalizedPhone || undefined,
+        department: normalizedDepartment || undefined,
+        class_name: form.class_name.trim(),
+        group_id: form.group_id ?? null,
+        join_date: form.join_date,
+        role: form.role,
+        is_active: form.is_active,
+        password: form.password?.trim() || '123456'
+      }
+
+      const createdMember = await MembersApi.createMember(submitData)
+
+      ElMessage.success('成员创建成功')
+      emit('success', createdMember)
+      handleClose()
     }
-
-    // 如果学号为空，删除该字段
-    if (!submitData.student_id?.trim()) {
-      delete submitData.student_id
-    }
-
-    await MembersApi.createMember(submitData)
-
-    ElMessage.success('成员创建成功')
-    emit('success')
-    handleClose()
   } catch (error) {
-    console.error('创建成员失败:', error)
-    ElMessage.error('创建成员失败，请重试')
+    console.error('保存成员失败:', error)
+    ElMessage.error(isEditMode.value ? '更新成员失败，请重试' : '创建成员失败，请重试')
   } finally {
     loading.value = false
   }
@@ -285,7 +393,20 @@ watch(
   () => props.visible,
   newVal => {
     if (newVal) {
-      resetForm()
+      if (isEditMode.value && props.member) {
+        populateForm(props.member)
+      } else {
+        resetForm()
+      }
+    }
+  }
+)
+
+watch(
+  () => props.member,
+  newMember => {
+    if (visible.value && newMember && isEditMode.value) {
+      populateForm(newMember)
     }
   }
 )

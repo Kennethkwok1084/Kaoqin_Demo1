@@ -193,6 +193,7 @@ async def create_member(
             phone=member_data.phone,
             department=member_data.department,
             class_name=member_data.class_name,
+            group_id=member_data.group_id,
             join_date=member_data.join_date,
             password_hash=get_password_hash(member_data.password),
             role=member_data.role,
@@ -270,6 +271,24 @@ async def update_member(
                     status_code=status.HTTP_409_CONFLICT,
                     detail=f"用户名 {update_data['username']} 已存在",
                 )
+
+        if "student_id" in update_data:
+            student_id_value = update_data["student_id"] or None
+            update_data["student_id"] = student_id_value
+
+            if student_id_value:
+                query = select(Member).where(
+                    and_(
+                        Member.student_id == student_id_value,
+                        Member.id != member_id,
+                    )
+                )
+                result = await db.execute(query)
+                if result.scalar_one_or_none():
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=f"学号 {student_id_value} 已存在",
+                    )
 
         # 应用更新
         for field, value in update_data.items():
@@ -420,6 +439,7 @@ async def import_members(
                     phone=member_item.phone.strip() if member_item.phone else None,
                     department=(member_item.department or "信息化建设处").strip(),
                     class_name=member_item.class_name.strip(),
+                    group_id=member_item.group_id,
                     join_date=date.today(),
                     password_hash=get_password_hash("123456"),
                     role=role,

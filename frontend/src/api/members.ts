@@ -14,6 +14,8 @@ export interface Member {
   phone?: string
   department: string
   class_name: string
+  group_id?: number | null
+  group_name?: string | null
   join_date?: string
   role: string
   is_active: boolean
@@ -37,10 +39,11 @@ export interface MemberListResponse {
 export interface MemberCreateRequest {
   username: string
   name: string
-  student_id?: string
+  student_id?: string | null
   phone?: string
   department?: string
   class_name: string
+  group_id?: number | null
   join_date?: string
   role?: string
   is_active?: boolean
@@ -50,9 +53,11 @@ export interface MemberCreateRequest {
 export interface MemberUpdateRequest {
   username?: string
   name?: string
+  student_id?: string | null
   phone?: string
   department?: string
   class_name?: string
+  group_id?: number | null
   role?: string
   is_active?: boolean
 }
@@ -65,6 +70,7 @@ export interface MemberImportItem {
   department?: string
   class_name: string
   role?: string
+  group_id?: number | null
 }
 
 export interface MemberImportRequest {

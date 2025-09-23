@@ -11,6 +11,8 @@ const mockMembersData = {
       phone: '13800138001',
       department: '网络维护部',
       class_name: '计算机1班',
+      group_id: 1,
+      group_name: '第1组',
       role: 'member',
       is_active: true,
       status_display: '在职',
@@ -25,6 +27,8 @@ const mockMembersData = {
       phone: '13800138002',
       department: '网络维护部',
       class_name: '计算机2班',
+      group_id: null,
+      group_name: null,
       role: 'group_leader',
       is_active: true,
       status_display: '在职',
@@ -48,7 +52,13 @@ export const updateMember = vi.fn().mockResolvedValue(mockMembersData.items[0])
 export const deleteMember = vi.fn().mockResolvedValue(undefined)
 export const importMembers = vi
   .fn()
-  .mockResolvedValue({ success_count: 10, error_count: 0 })
+  .mockResolvedValue({
+    total_processed: 10,
+    successful_imports: 10,
+    failed_imports: 0,
+    skipped_duplicates: 0,
+    errors: []
+  })
 
 // 导出 membersApi 对象
 export const membersApi = {

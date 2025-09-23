@@ -23,6 +23,9 @@ class MemberBase(BaseModel):
     phone: Optional[str] = Field(None, max_length=11, description="手机号")
     department: str = Field(default="信息化建设处", max_length=100, description="部门")
     class_name: str = Field(..., min_length=1, max_length=50, description="班级")
+    group_id: Optional[int] = Field(
+        default=None, ge=1, description="小组ID（可选，正整数）"
+    )
     join_date: Optional[date] = Field(
         default_factory=date.today, description="入职日期"
     )
@@ -63,6 +66,24 @@ class MemberBase(BaseModel):
             raise ValueError("姓名只能包含中文、字母、空格和·符号")
         return v
 
+    @field_validator("group_id", mode="before")
+    @classmethod
+    def validate_group_id(cls, v: Optional[int]) -> Optional[int]:
+        """验证小组ID格式，允许空值"""
+        if v is None or v == "" or v == "null" or v == "undefined":
+            return None
+        try:
+            value_str = str(v).strip()
+            normalized = value_str.lstrip("第").rstrip("组")
+            if not normalized:
+                return None
+            group_int = int(normalized)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("小组ID必须为正整数") from exc
+        if group_int < 1:
+            raise ValueError("小组ID必须为正整数")
+        return group_int
+
 
 class MemberCreate(MemberBase):
     """创建成员Schema"""
@@ -97,10 +118,16 @@ class MemberUpdate(BaseModel):
     name: Optional[str] = Field(
         None, min_length=1, max_length=50, description="真实姓名"
     )
+    student_id: Optional[str] = Field(
+        None, min_length=1, max_length=20, description="学号/员工号（可选）"
+    )
     phone: Optional[str] = Field(None, max_length=11, description="手机号")
     department: Optional[str] = Field(None, max_length=100, description="部门")
     class_name: Optional[str] = Field(
         None, min_length=1, max_length=50, description="班级"
+    )
+    group_id: Optional[int] = Field(
+        default=None, ge=1, description="小组ID（可选，正整数）"
     )
     role: Optional[UserRole] = Field(None, description="用户角色")
     is_active: Optional[bool] = Field(None, description="在职状态")
@@ -130,6 +157,34 @@ class MemberUpdate(BaseModel):
             raise ValueError("姓名只能包含中文、字母、空格和·符号")
         return v
 
+    @field_validator("student_id")
+    @classmethod
+    def validate_student_id(cls, v: Optional[str]) -> Optional[str]:
+        """验证学号格式"""
+        if v is None or v == "" or v == "null" or v == "undefined":
+            return None
+        if not re.match(r"^[A-Za-z0-9]+$", v):
+            raise ValueError("学号只能包含字母和数字")
+        return v
+
+    @field_validator("group_id", mode="before")
+    @classmethod
+    def validate_group_id(cls, v: Optional[int]) -> Optional[int]:
+        """验证小组ID格式"""
+        if v is None or v == "" or v == "null" or v == "undefined":
+            return None
+        try:
+            value_str = str(v).strip()
+            normalized = value_str.lstrip("第").rstrip("组")
+            if not normalized:
+                return None
+            group_int = int(normalized)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("小组ID必须为正整数") from exc
+        if group_int < 1:
+            raise ValueError("小组ID必须为正整数")
+        return group_int
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -154,6 +209,8 @@ class MemberResponse(BaseModel):
     phone: Optional[str]
     department: str
     class_name: str
+    group_id: Optional[int]
+    group_name: Optional[str]
     join_date: Optional[date]
     role: str
     is_active: bool
@@ -241,6 +298,9 @@ class MemberImportItem(BaseModel):
     department: Optional[str] = Field(default="信息化建设处", description="部门")
     class_name: str = Field(..., description="班级")
     role: Optional[str] = Field(default="member", description="角色")
+    group_id: Optional[int] = Field(
+        default=None, description="小组ID（可选，正整数）"
+    )
 
     @field_validator("student_id", mode="before")
     @classmethod
@@ -274,6 +334,22 @@ class MemberImportItem(BaseModel):
             raise ValueError("姓名只能包含中文、字母、·和空格")
         return name_str
 
+    @field_validator("group_id", mode="before")
+    @classmethod
+    def validate_group_id(cls, v: Any) -> Optional[int]:
+        """允许从字符串解析小组ID"""
+        if v is None or v == "" or v == "null" or v == "undefined":
+            return None
+        value_str = str(v).strip()
+        normalized = value_str.lstrip("第").rstrip("组")
+        try:
+            group_int = int(normalized)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("小组ID必须为正整数") from exc
+        if group_int < 1:
+            raise ValueError("小组ID必须为正整数")
+        return group_int
+
     @model_validator(mode="before")
     @classmethod
     def clean_empty_fields(cls, values: Any) -> Any:
@@ -289,6 +365,8 @@ class MemberImportItem(BaseModel):
                     cleaned[key] = "member"
                 elif key == "department":
                     cleaned[key] = "信息化建设处"
+                elif key == "group_id":
+                    cleaned[key] = None
                 else:
                     cleaned[key] = value
             else:

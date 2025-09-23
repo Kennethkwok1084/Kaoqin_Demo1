@@ -610,6 +610,7 @@ import {
 } from '@element-plus/icons-vue'
 import * as XLSX from 'xlsx'
 import { tasksApi } from '@/api/tasks'
+import { parseBTable, validateBTableFormat, convertBTableToAFormat } from '@/utils/bTableParser'
 
 // Props
 interface Props {
@@ -1127,20 +1128,65 @@ const parseExcelFile = async (file: File, tableType: 'a-table' | 'b-table') => {
         const workbook = XLSX.read(data, { type: 'array' })
         const sheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[sheetName]
-        const jsonData = XLSX.utils.sheet_to_json(worksheet)
 
-        // 根据表类型验证和转换数据
-        const processedData = jsonData.map((row: any, index) => {
-          const errors: string[] = []
-          const processedRow = {
-            ...row,
-            _valid: true,
-            _errors: errors,
-            _rowIndex: index + 1,
-            _tableType: tableType
+        if (tableType === 'b-table') {
+          // B表使用特殊解析器
+          const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
+          console.log('B表原始数据:', rawData.slice(0, 10))
+
+          // 验证B表格式
+          const formatValidation = validateBTableFormat(rawData)
+          if (!formatValidation.isValid) {
+            throw new Error(formatValidation.error || 'B表格式不正确')
           }
 
-          if (tableType === 'a-table') {
+          // 使用B表解析器解析数据
+          const parseResult = parseBTable(rawData)
+          if (!parseResult.success) {
+            throw new Error(`B表解析失败: ${parseResult.errors.join(', ')}`)
+          }
+
+          console.log(`B表解析完成：${parseResult.validRows}条有效记录，${parseResult.errors.length}个错误`)
+
+          // 将B表记录转换为标准格式
+          const processedData = parseResult.data.map((record, index) => ({
+            // 标准化字段映射
+            '工单编号': `B_${index + 1}`, // B表通常没有工单编号，生成一个
+            '联系人': record.reporterName,
+            '联系方式': record.contact,
+            '处理人': record.inspector,
+            '故障描述': record.repairContent,
+            '解决方案': record.inspectContent,
+            '工时': null, // B表格式中没有直接的工时字段
+            '客户评价': record.result,
+            '满意度': null,
+            '备注': record.location,
+            // 内部字段
+            _valid: true,
+            _errors: [],
+            _rowIndex: index + 1,
+            _tableType: tableType,
+            _matchKey: `${record.reporterName || ''}_${record.contact || ''}`.trim(),
+            // 保留原始B表数据
+            _originalBTableRecord: record
+          }))
+
+          resolve(processedData)
+        } else {
+          // A表使用常规解析
+          const jsonData = XLSX.utils.sheet_to_json(worksheet)
+
+          // 根据表类型验证和转换数据
+          const processedData = jsonData.map((row: any, index) => {
+            const errors: string[] = []
+            const processedRow = {
+              ...row,
+              _valid: true,
+              _errors: errors,
+              _rowIndex: index + 1,
+              _tableType: tableType
+            }
+
             // A表验证必填字段
             if (!row['工单编号']) errors.push('工单编号不能为空')
             if (!row['位置']) errors.push('位置不能为空')
@@ -1154,55 +1200,27 @@ const parseExcelFile = async (file: File, tableType: 'a-table' | 'b-table') => {
             // 构建A表匹配关键字
             processedRow._matchKey =
               `${row['报单人'] || ''}_${row['报单人电话'] || ''}`.trim()
-          } else {
-            // B表验证必填字段
-            if (!row['工单编号']) errors.push('工单编号不能为空')
-            if (!row['联系人']) errors.push('联系人不能为空')
-            if (!row['联系方式']) errors.push('联系方式不能为空')
 
-            // 构建B表匹配关键字
-            processedRow._matchKey =
-              `${row['联系人'] || ''}_${row['联系方式'] || ''}`.trim()
-          }
-
-          // 验证时间格式
-          const timeFields =
-            tableType === 'a-table'
-              ? ['报单时间']
-              : ['响应时间', '处理时间', '完成时间']
-
-          timeFields.forEach(field => {
-            if (row[field]) {
-              const date = new Date(row[field])
-              if (isNaN(date.getTime())) {
-                errors.push(`${field}格式不正确`)
+            // 验证时间格式
+            const timeFields = ['报单时间']
+            timeFields.forEach(field => {
+              if (row[field]) {
+                const date = new Date(row[field])
+                if (isNaN(date.getTime())) {
+                  errors.push(`${field}格式不正确`)
+                }
               }
-            }
+            })
+
+            processedRow._valid = errors.length === 0
+            return processedRow
           })
 
-          // B表特有验证
-          if (tableType === 'b-table') {
-            if (row['工时'] && isNaN(Number(row['工时']))) {
-              errors.push('工时必须是数字')
-            }
-            if (
-              row['满意度'] &&
-              (isNaN(Number(row['满意度'])) ||
-                Number(row['满意度']) < 1 ||
-                Number(row['满意度']) > 5)
-            ) {
-              errors.push('满意度必须是1-5之间的数字')
-            }
-          }
-
-          processedRow._valid = errors.length === 0
-          return processedRow
-        })
-
-        // 只返回有效数据
-        const validData = processedData.filter(item => item._valid)
-        console.log(`${tableType}表解析完成：${validData.length}条有效记录`)
-        resolve(validData)
+          // 只返回有效数据
+          const validData = processedData.filter(item => item._valid)
+          console.log(`${tableType}表解析完成：${validData.length}条有效记录`)
+          resolve(validData)
+        }
       } catch (error) {
         console.error('Excel解析失败:', error)
         reject(error)
@@ -1267,14 +1285,14 @@ const performABMatching = () => {
   // 为每个A表记录尝试匹配B表记录
   aTableData.value.forEach(aRow => {
     const matchingBRows = bTableData.value.filter(
-      bRow =>
-        aRow._matchKey === bRow._matchKey &&
-        aRow['工单编号'] === bRow['工单编号']
+      bRow => aRow._matchKey === bRow._matchKey
     )
 
     if (matchingBRows.length > 0) {
       // 成功匹配，合并A-B表数据
       matchingBRows.forEach(bRow => {
+        const originalBRecord = bRow._originalBTableRecord
+
         matchedResults.push({
           // A表数据
           workOrderId: aRow['工单编号'],
@@ -1286,30 +1304,33 @@ const performABMatching = () => {
           contactPhone: aRow['报单人电话'],
           reportTime: aRow['报单时间'],
           status: aRow['工单状态'],
-          taskType: getTaskType(aRow['类型']),
+          taskType: getTaskType(aRow['类型'], originalBRecord?.repairType),
           priority: getPriority(aRow['优先级']),
           category: aRow['分类'],
-          completionStatus: aRow['完成情况'] || aRow['工单状态'], // 新增完成情况字段
+          completionStatus: aRow['完成情况'] || aRow['工单状态'],
 
-          // B表数据
-          assignee: bRow['处理人'],
-          responseTime: bRow['响应时间'],
-          processTime: bRow['处理时间'],
-          completeTime: bRow['完成时间'],
-          faultDescription: bRow['故障描述'],
-          solution: bRow['解决方案'],
-          processingNote: bRow['处理说明'],
+          // B表数据（使用原始B表记录）
+          assignee: originalBRecord?.inspector || bRow['处理人'],
+          responseTime: null, // B表格式中没有响应时间
+          processTime: null, // B表格式中没有处理时间
+          completeTime: null, // B表格式中没有完成时间
+          faultDescription: originalBRecord?.repairContent || bRow['故障描述'],
+          solution: originalBRecord?.inspectContent || bRow['解决方案'],
+          processingNote: originalBRecord?.location || bRow['备注'], // 使用location作为处理说明
           actualHours: bRow['工时'] ? Number(bRow['工时']) : null,
-          materialCost: bRow['材料费'] ? Number(bRow['材料费']) : 0,
-          laborCost: bRow['人工费'] ? Number(bRow['人工费']) : 0,
-          totalCost: bRow['总费用'] ? Number(bRow['总费用']) : 0,
-          customerRating: bRow['客户评价'],
+          materialCost: 0, // B表格式中没有成本信息
+          laborCost: 0,
+          totalCost: 0,
+          customerRating: originalBRecord?.result || bRow['客户评价'],
           satisfaction: bRow['满意度'] ? Number(bRow['满意度']) : null,
-          remark: bRow['备注'],
+          remark: originalBRecord ?
+            `位置:${originalBRecord.location}, 类型:${originalBRecord.repairType}` :
+            bRow['备注'],
 
           // 匹配状态
           matched: true,
-          matchKey: aRow._matchKey
+          matchKey: aRow._matchKey,
+          bTableSource: 'special_format' // 标记为特殊B表格式
         })
       })
     } else {
@@ -1328,7 +1349,7 @@ const performABMatching = () => {
         taskType: 'online_repair', // 无B表数据时默认为线上任务
         priority: getPriority(aRow['优先级']),
         category: aRow['分类'],
-        completionStatus: aRow['完成情况'] || aRow['工单状态'], // 新增完成情况字段
+        completionStatus: aRow['完成情况'] || aRow['工单状态'],
 
         // B表数据为空
         assignee: null,
@@ -1356,7 +1377,18 @@ const performABMatching = () => {
   return matchedResults
 }
 
-const getTaskType = (type: string): string => {
+const getTaskType = (type: string, bTableRepairType?: string): string => {
+  // 优先使用B表的repair_type字段
+  if (bTableRepairType) {
+    const bTypeText = bTableRepairType.toString().toLowerCase()
+    if (bTypeText.includes('现场')) {
+      return 'offline_repair'
+    } else if (bTypeText.includes('线上')) {
+      return 'online_repair'
+    }
+  }
+
+  // 再使用A表的type字段
   if (!type) return 'online_repair'
   const typeText = type.toString().toLowerCase()
   if (typeText.includes('线下') || typeText.includes('现场')) {
