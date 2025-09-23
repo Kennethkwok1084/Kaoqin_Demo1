@@ -4,13 +4,59 @@ import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import duration from 'dayjs/plugin/duration'
 import quarterOfYear from 'dayjs/plugin/quarterOfYear'
+import customParseFormat from 'dayjs/plugin/customParseFormat'
 import 'dayjs/locale/zh-cn'
 
 // 配置dayjs
 dayjs.extend(relativeTime)
 dayjs.extend(duration)
 dayjs.extend(quarterOfYear)
+dayjs.extend(customParseFormat)
 dayjs.locale('zh-cn')
+
+const candidateFormats = [
+  'YYYY-MM-DD HH:mm:ss',
+  'YYYY/MM/DD HH:mm:ss',
+  'YYYY-MM-DD HH:mm',
+  'YYYY/MM/DD HH:mm',
+  'YYYY-MM-DD',
+  'YYYY/MM/DD'
+]
+
+const parseDateSafe = (date: string | Date) => {
+  if (!date) return dayjs.invalid()
+
+  let parsed = dayjs(date)
+  if (parsed.isValid()) return parsed
+
+  if (typeof date === 'string') {
+    const trimmed = date.trim()
+    if (!trimmed) return dayjs.invalid()
+
+    const normalizedBase = trimmed.includes('T')
+      ? trimmed
+      : trimmed.replace(/\s+/, 'T')
+    const normalized = normalizedBase.replace(/(\.\d+)(Z)?$/, '$2')
+
+    parsed = dayjs(normalized)
+    if (parsed.isValid()) return parsed
+
+    const nativeDate = new Date(normalized)
+    if (!Number.isNaN(nativeDate.getTime())) {
+      return dayjs(nativeDate)
+    }
+
+    for (const format of candidateFormats) {
+      const strictParsed = dayjs(trimmed, format, true)
+      if (strictParsed.isValid()) return strictParsed
+
+      const normalizedParsed = dayjs(normalized, format, true)
+      if (normalizedParsed.isValid()) return normalizedParsed
+    }
+  }
+
+  return parsed
+}
 
 /**
  * 格式化日期
@@ -20,7 +66,7 @@ dayjs.locale('zh-cn')
  */
 export function formatDate(date: string | Date, format = 'YYYY-MM-DD'): string {
   if (!date) return ''
-  const parsed = dayjs(date)
+  const parsed = parseDateSafe(date)
   if (!parsed.isValid()) return ''
   return parsed.format(format)
 }
@@ -36,7 +82,7 @@ export function formatDateTime(
   format = 'YYYY-MM-DD HH:mm:ss'
 ): string {
   if (!date) return ''
-  const parsed = dayjs(date)
+  const parsed = parseDateSafe(date)
   if (!parsed.isValid()) return ''
   return parsed.format(format)
 }
@@ -67,7 +113,8 @@ export function formatTime(date: string | Date, format = 'HH:mm:ss'): string {
  */
 export function formatFromNow(date: string | Date): string {
   if (!date) return ''
-  return dayjs(date).fromNow()
+  const parsed = parseDateSafe(date)
+  return parsed.isValid() ? parsed.fromNow() : ''
 }
 
 /**
@@ -86,7 +133,7 @@ export function getRelativeTime(date: string | Date): string {
  */
 export function parseDate(dateString: string | null): Date | null {
   if (!dateString) return null
-  const parsed = dayjs(dateString)
+  const parsed = parseDateSafe(dateString)
   return parsed.isValid() ? parsed.toDate() : null
 }
 
@@ -97,7 +144,8 @@ export function parseDate(dateString: string | null): Date | null {
  * @returns 新的Date对象
  */
 export function addDays(date: string | Date, days: number): Date {
-  return dayjs(date).add(days, 'day').toDate()
+  const parsed = parseDateSafe(date)
+  return parsed.isValid() ? parsed.add(days, 'day').toDate() : new Date(NaN)
 }
 
 /**
@@ -110,7 +158,10 @@ export function getDaysBetween(
   startDate: string | Date,
   endDate: string | Date
 ): number {
-  return Math.abs(dayjs(endDate).diff(dayjs(startDate), 'day'))
+  const start = parseDateSafe(startDate)
+  const end = parseDateSafe(endDate)
+  if (!start.isValid() || !end.isValid()) return NaN
+  return Math.abs(end.diff(start, 'day'))
 }
 
 /**
@@ -124,7 +175,10 @@ export function formatRelativeTo(
   baseDate?: string | Date
 ): string {
   if (!date) return ''
-  return dayjs(date).to(dayjs(baseDate))
+  const parsed = parseDateSafe(date)
+  const base = baseDate ? parseDateSafe(baseDate) : dayjs()
+  if (!parsed.isValid() || !base.isValid()) return ''
+  return parsed.to(base)
 }
 
 /**
@@ -139,8 +193,9 @@ export function formatDateRange(
 ): string {
   if (!startDate || !endDate) return ''
 
-  const start = dayjs(startDate)
-  const end = dayjs(endDate)
+  const start = parseDateSafe(startDate)
+  const end = parseDateSafe(endDate)
+  if (!start.isValid() || !end.isValid()) return ''
 
   if (start.isSame(end, 'day')) {
     return start.format('YYYY-MM-DD')
@@ -160,7 +215,8 @@ export function formatDateRange(
  */
 export function isToday(date: string | Date): boolean {
   if (!date) return false
-  return dayjs(date).isSame(dayjs(), 'day')
+  const parsed = parseDateSafe(date)
+  return parsed.isValid() ? parsed.isSame(dayjs(), 'day') : false
 }
 
 /**
@@ -170,7 +226,10 @@ export function isToday(date: string | Date): boolean {
  */
 export function isYesterday(date: string | Date): boolean {
   if (!date) return false
-  return dayjs(date).isSame(dayjs().subtract(1, 'day'), 'day')
+  const parsed = parseDateSafe(date)
+  return parsed.isValid()
+    ? parsed.isSame(dayjs().subtract(1, 'day'), 'day')
+    : false
 }
 
 /**
@@ -180,7 +239,8 @@ export function isYesterday(date: string | Date): boolean {
  */
 export function isThisWeek(date: string | Date): boolean {
   if (!date) return false
-  return dayjs(date).isSame(dayjs(), 'week')
+  const parsed = parseDateSafe(date)
+  return parsed.isValid() ? parsed.isSame(dayjs(), 'week') : false
 }
 
 /**
@@ -190,7 +250,8 @@ export function isThisWeek(date: string | Date): boolean {
  */
 export function isThisMonth(date: string | Date): boolean {
   if (!date) return false
-  return dayjs(date).isSame(dayjs(), 'month')
+  const parsed = parseDateSafe(date)
+  return parsed.isValid() ? parsed.isSame(dayjs(), 'month') : false
 }
 
 /**

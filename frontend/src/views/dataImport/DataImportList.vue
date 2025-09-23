@@ -303,6 +303,7 @@ import {
   Download
 } from '@element-plus/icons-vue'
 import { dataImportApi } from '@/api/dataImport'
+import { formatDateTime as formatDateTimeUtil } from '@/utils/date'
 import type {
   ImportJob,
   ImportStatistics,
@@ -561,7 +562,7 @@ const formatFileSize = (bytes: number) => {
 }
 
 const formatDateTime = (dateStr: string) => {
-  return new Date(dateStr).toLocaleString()
+  return formatDateTimeUtil(dateStr) || '未知时间'
 }
 </script>
 

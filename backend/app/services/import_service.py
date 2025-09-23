@@ -6,11 +6,12 @@
 import logging
 import os
 import tempfile
-from datetime import datetime
+from datetime import datetime, date
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
+from openpyxl import load_workbook
 from fastapi import UploadFile
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -129,6 +130,7 @@ class DataImportService:
                     "报告时间",
                     "申请时间",
                     "报修时间",
+                    "报修日期",
                     "创建时间",
                     "report_time",
                     "create_time",
@@ -435,6 +437,11 @@ class DataImportService:
             if df is None or df.empty:
                 raise ValueError("文件中没有找到有效数据")
 
+            # 检测并处理合并单元格结构的B表
+            if self._looks_like_b_table(df):
+                logger.info("Detected B table layout with merged cells, using custom parser")
+                return self._parse_b_table_with_merged_cells(file_path)
+
             # 清理列名（去除空格和特殊字符）
             df.columns = df.columns.astype(str).str.strip()
 
@@ -452,6 +459,166 @@ class DataImportService:
         except Exception as e:
             logger.error(f"Parse Excel error: {str(e)}")
             raise ValueError(f"解析Excel文件失败: {str(e)}")
+
+    def _looks_like_b_table(self, df: pd.DataFrame) -> bool:
+        """判断是否可能为合并单元格的B表结构"""
+        if df.empty:
+            return False
+
+        unnamed_columns = sum(1 for col in df.columns if str(col).startswith("Unnamed"))
+        if unnamed_columns < max(1, len(df.columns) // 2):
+            return False
+
+        keywords = ("报修信息", "检修信息", "报修日期", "报修人姓名")
+        sample = df.head(6)
+
+        for _, row in sample.iterrows():
+            for value in row.tolist():
+                if isinstance(value, str) and any(keyword in value for keyword in keywords):
+                    return True
+
+        return False
+
+    def _parse_b_table_with_merged_cells(self, file_path: str) -> List[Dict[str, Any]]:
+        """解析包含合并单元格的B表格式"""
+        workbook = load_workbook(file_path, data_only=True, read_only=True)
+        records: List[Dict[str, Any]] = []
+
+        try:
+            for sheet_name in workbook.sheetnames:
+                sheet = workbook[sheet_name]
+                sheet_rows = [
+                    [cell if cell is not None else "" for cell in row]
+                    for row in sheet.iter_rows(values_only=True)
+                ]
+
+                sheet_records = self._parse_b_sheet_rows(sheet_rows, sheet_name)
+                if sheet_records:
+                    records.extend(sheet_records)
+
+            if not records:
+                raise ValueError("未能从B表中解析出有效数据，请检查是否填写了报修人姓名等关键字段")
+
+            logger.info(f"Parsed {len(records)} rows from merged B table workbook")
+            return records
+
+        finally:
+            workbook.close()
+
+    def _parse_b_sheet_rows(
+        self, rows: List[List[Any]], sheet_name: str
+    ) -> List[Dict[str, Any]]:
+        """从单个工作表提取B表记录"""
+        records: List[Dict[str, Any]] = []
+
+        if not rows:
+            return records
+
+        index = 0
+        total = len(rows)
+
+        while index < total:
+            row1 = rows[index]
+            row2 = rows[index + 1] if index + 1 < total else []
+
+            if self._is_valid_b_table_row(row1, row2):
+                record = self._build_b_table_record(row1, row2)
+
+                if record:
+                    records.append(record)
+
+                index += 3 if index + 2 < total else 2
+            else:
+                index += 1
+
+        if records:
+            logger.info(
+                "Sheet %s produced %s B table records",
+                sheet_name,
+                len(records),
+            )
+
+        return records
+
+    def _is_valid_b_table_row(
+        self, row1: List[Any], row2: List[Any]
+    ) -> bool:
+        """判断当前行是否是有效的B表数据段"""
+        if not row1 or len(row1) <= 3:
+            return False
+
+        header_cell = row1[2]
+        if not isinstance(header_cell, str) or "报修" not in header_cell:
+            return False
+
+        meaningful_values = [
+            self._extract_b_table_cell(row1, 3),
+            self._extract_b_table_cell(row1, 5),
+            self._extract_b_table_cell(row1, 7),
+            self._extract_b_table_cell(row2, 3),
+            self._extract_b_table_cell(row2, 9),
+        ]
+
+        return any(value for value in meaningful_values)
+
+    def _build_b_table_record(
+        self, row1: List[Any], row2: List[Any]
+    ) -> Optional[Dict[str, Any]]:
+        """根据两行数据构建标准化的B表记录"""
+        reporter_name = self._extract_b_table_cell(row1, 3)
+        location = self._extract_b_table_cell(row1, 5)
+        contact = self._extract_b_table_cell(row1, 7)
+        repair_content = self._extract_b_table_cell(row2, 3)
+        inspect_content = self._extract_b_table_cell(row2, 9)
+
+        if not any([reporter_name, location, contact, repair_content, inspect_content]):
+            return None
+
+        report_time = self._extract_b_table_cell(row1, 1)
+
+        if not report_time:
+            candidate = self._extract_b_table_cell(row1, 0)
+            if candidate and not any(
+                keyword in candidate for keyword in ("报修", "日期", "时间")
+            ):
+                report_time = candidate
+
+        record = {
+            "报修日期": report_time,
+            "报修人姓名": reporter_name,
+            "报修地点": location,
+            "联系方式": contact,
+            "检修人": self._extract_b_table_cell(row1, 9),
+            "检修结果": self._extract_b_table_cell(row1, 11),
+            "检修形式": self._extract_b_table_cell(row1, 13),
+            "报修内容": repair_content,
+            "检修内容": inspect_content,
+        }
+
+        return record
+
+    def _extract_b_table_cell(self, row: List[Any], index: int) -> str:
+        """提取并格式化B表单元格的值"""
+        if index >= len(row):
+            return ""
+
+        value = row[index]
+
+        if value is None or value == "":
+            return ""
+
+        if isinstance(value, datetime):
+            return value.strftime("%Y-%m-%d %H:%M:%S")
+
+        if isinstance(value, date):
+            return value.strftime("%Y-%m-%d")
+
+        if isinstance(value, float):
+            if value.is_integer():
+                return str(int(value))
+            return format(value, "g")
+
+        return str(value).strip()
 
     def _detect_table_structure(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
         """检测数据表结构"""

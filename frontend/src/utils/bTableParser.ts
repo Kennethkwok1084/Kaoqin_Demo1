@@ -39,13 +39,136 @@ export function parseBTable(worksheet: any[][]): ParsedBTable {
     validRows: 0
   }
 
+  const debug = true
+  if (debug) {
+    console.debug('[BTableParser] 开始解析B表，行数:', worksheet.length)
+  }
+
+  const normalizePhoneValue = (value: any): string => {
+    if (value === null || value === undefined) {
+      return ''
+    }
+    let digits = value.toString().replace(/\D+/g, '').trim()
+    if (!digits) {
+      return ''
+    }
+    if (digits.length > 11) {
+      if (digits.startsWith('86')) {
+        digits = digits.slice(-11)
+      } else if (digits.startsWith('0086')) {
+        digits = digits.slice(-11)
+      } else {
+        digits = digits.slice(-11)
+      }
+    }
+    return digits
+  }
+
+  const isMemberStyleTable = () => {
+    if (!worksheet || worksheet.length === 0) {
+      return false
+    }
+
+    const header = worksheet[0] || []
+    if (!Array.isArray(header)) {
+      return false
+    }
+
+    const hasName = header.some(cell => typeof cell === 'string' && cell.includes('姓名'))
+    const hasContact = header.some(cell => typeof cell === 'string' && (cell.includes('联系方式') || cell.includes('手机号') || cell.toLowerCase().includes('phone') || cell.includes('联系电话')))
+
+    return hasName && hasContact
+  }
+
+  const containsKeyword = (row: any[], keywords: string[]) =>
+    Array.isArray(row) && row.some(cell => typeof cell === 'string' && keywords.some(keyword => cell.includes(keyword)))
+
+  const isRowEmpty = (row: any[]) => !Array.isArray(row) || row.every(cell => cell === undefined || cell === null || cell === '')
+
+  const parseMemberStyleTable = () => {
+    const header = worksheet[0] || []
+
+    const findIndex = (keywords: string[]) =>
+      header.findIndex(cell => typeof cell === 'string' && keywords.some(keyword => cell.includes(keyword)))
+
+    const nameIndex = findIndex(['姓名'])
+    const contactIndex = findIndex(['联系方式', '联系电话', '手机号', '电话', '手机', 'contact', 'phone'])
+    const locationIndex = findIndex(['部门', '单位', '院系', '位置', '地点', '班级'])
+
+    if (nameIndex === -1 || contactIndex === -1) {
+      if (debug) {
+        console.debug('[BTableParser] 成员样式表缺少姓名或联系方式列')
+      }
+      return
+    }
+
+    for (let i = 1; i < worksheet.length; i += 1) {
+      const row = worksheet[i]
+      if (!Array.isArray(row)) {
+        continue
+      }
+
+      const reporterName = extractCellValue(row[nameIndex]).trim()
+      const contact = normalizePhoneValue(extractCellValue(row[contactIndex]))
+
+      if (!reporterName && !contact) {
+        continue
+      }
+
+      const record: BTableRecord = {
+        reporterName,
+        location: locationIndex !== -1 ? extractCellValue(row[locationIndex]) : '',
+        contact,
+        inspector: '',
+        result: '',
+        repairType: '',
+        repairContent: '',
+        inspectContent: ''
+      }
+
+      result.data.push(record)
+      result.validRows += 1
+
+      if (debug) {
+        console.debug('[BTableParser] 成员样式记录:', record)
+      }
+    }
+  }
+
   try {
+    if (isMemberStyleTable()) {
+      if (debug) {
+        console.debug('[BTableParser] 检测到成员列表样式B表')
+      }
+      parseMemberStyleTable()
+      result.success = result.validRows > 0
+
+      if (debug) {
+        console.debug('[BTableParser] 成员样式解析完成，有效记录数:', result.validRows)
+      }
+
+      return result
+    }
+
     // 跳过标题行，从第3行开始（索引2）
     let i = 2
 
     while (i < worksheet.length) {
       const row1 = worksheet[i] || []
       const row2 = worksheet[i + 1] || []
+
+      if (debug) {
+        console.debug(`[BTableParser] 检查第${i + 1}行和第${i + 2}行`, row1, row2)
+      }
+
+      // 跳过空行
+      if (isRowEmpty(row1) && isRowEmpty(row2)) {
+        if (debug) {
+          console.debug(`[BTableParser] 第${i + 1}行为空，跳过`)
+        }
+        i += 1
+        continue
+      }
 
       // 检查是否为有效的数据行
       // 第一行第一列应该包含"报修日期"或者第三列有实际数据
@@ -55,13 +178,16 @@ export function parseBTable(worksheet: any[][]): ParsedBTable {
       )
 
       if (isDataRow) {
+        if (debug) {
+          console.debug(`[BTableParser] 识别到有效数据段，起始行号: ${i + 1}`)
+        }
         try {
           // 提取基本信息（第一行）
           const reporterName = extractCellValue(row1[3]) // 列D: 报修人姓名
           const location = extractCellValue(row1[5]) // 列F: 报修地点
-          const contact = extractCellValue(row1[7]) // 列H: 联系方式
+          const contact = normalizePhoneValue(extractCellValue(row1[7])) // 列H: 联系方式
           const inspector = extractCellValue(row1[9]) // 列J: 检修人
-          const result = extractCellValue(row1[11]) // 列L: 检修结果
+          const inspectResult = extractCellValue(row1[11]) // 列L: 检修结果
           const repairType = extractCellValue(row1[13]) // 列N: 检修形式
 
           // 提取内容信息（第二行）
@@ -80,7 +206,7 @@ export function parseBTable(worksheet: any[][]): ParsedBTable {
             location: location || '',
             contact: contact || '',
             inspector: inspector || '',
-            result: result || '',
+            result: inspectResult || '',
             repairType: repairType || '',
             repairContent: repairContent || '',
             inspectContent: inspectContent || ''
@@ -89,6 +215,10 @@ export function parseBTable(worksheet: any[][]): ParsedBTable {
           result.data.push(record)
           result.validRows++
 
+          if (debug) {
+            console.debug('[BTableParser] 解析得到记录:', record)
+          }
+
         } catch (error) {
           const errorMsg = `第${i + 1}行解析失败: ${error}`
           result.errors.push(errorMsg)
@@ -96,11 +226,27 @@ export function parseBTable(worksheet: any[][]): ParsedBTable {
         }
       }
 
-      // 移动到下一组数据（跳过3行）
-      i += 3
+      if (isDataRow) {
+        // 移动到下一组数据（跳过3行）
+        i += 3
+      } else {
+        // 非有效数据段，逐行前进，避免跳过真正的数据
+        if (
+          containsKeyword(row1, ['报修信息', '检修信息']) ||
+          containsKeyword(row1, ['时间：', '时间:'])
+        ) {
+          i += 1
+        } else {
+          i += 1
+        }
+      }
     }
 
     result.success = result.errors.length === 0 || result.validRows > 0
+
+    if (debug) {
+      console.debug('[BTableParser] 解析完成，有效记录数:', result.validRows, '错误数:', result.errors.length)
+    }
 
   } catch (error) {
     result.success = false
@@ -151,17 +297,33 @@ export function validateBTableFormat(worksheet: any[][]): {
   }
 
   // 检查第一行是否包含时间信息
-  const firstRow = worksheet[0] || []
-  if (firstRow[0] && firstRow[0].toString().includes('时间：')) {
+  const previewRows = worksheet.slice(0, 10)
+
+  const containsKeyword = (rows: any[][], keyword: string) =>
+    rows.some(row =>
+      Array.isArray(row) && row.some(cell => typeof cell === 'string' && cell.includes(keyword))
+    )
+
+  const hasTimeRow = containsKeyword(previewRows, '时间')
+  const hasRepairHeader = containsKeyword(previewRows, '报修信息')
+  const hasInspectHeader = containsKeyword(previewRows, '检修信息')
+  const hasRepairDate = containsKeyword(previewRows, '报修日期')
+
+  if (hasRepairHeader && hasInspectHeader && hasRepairDate) {
     return { isValid: true }
   }
 
-  // 检查第二行是否包含"报修信息"和"检修信息"标题
-  const secondRow = worksheet[1] || []
-  const hasRepairInfo = secondRow[0] && secondRow[0].toString().includes('报修信息')
-  const hasInspectInfo = secondRow[8] && secondRow[8].toString().includes('检修信息')
+  if (hasTimeRow && hasRepairDate) {
+    return { isValid: true }
+  }
 
-  if (hasRepairInfo && hasInspectInfo) {
+  // 成员表样式：第一行包含姓名和联系方式/手机号
+  const header = worksheet[0] || []
+  if (
+    Array.isArray(header) &&
+    header.some(cell => typeof cell === 'string' && cell.includes('姓名')) &&
+    header.some(cell => typeof cell === 'string' && (cell.includes('联系方式') || cell.includes('联系电话') || cell.includes('手机号') || cell.includes('电话') || cell.toLowerCase().includes('phone')))
+  ) {
     return { isValid: true }
   }
 

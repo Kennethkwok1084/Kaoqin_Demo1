@@ -56,7 +56,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'tasks/repair',
         name: 'RepairTasks',
-        component: () => import('@/views/tasks/TaskList.vue'),
+        component: () => import('@/views/tasks/RepairTaskList.vue'),
         meta: {
           title: '维修任务',
           requiresAuth: true
@@ -65,7 +65,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'tasks/monitoring',
         name: 'MonitoringTasks',
-        component: () => import('@/views/tasks/TaskList.vue'),
+        component: () => import('@/views/tasks/MonitoringTaskList.vue'),
         meta: {
           title: '监控任务',
           requiresAuth: true
@@ -74,7 +74,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'tasks/assistance',
         name: 'AssistanceTasks',
-        component: () => import('@/views/tasks/TaskList.vue'),
+        component: () => import('@/views/tasks/AssistanceTaskList.vue'),
         meta: {
           title: '协助任务',
           requiresAuth: true

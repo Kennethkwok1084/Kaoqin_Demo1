@@ -609,8 +609,12 @@ import {
   Check
 } from '@element-plus/icons-vue'
 import * as XLSX from 'xlsx'
+import dayjs from 'dayjs'
+import customParseFormat from 'dayjs/plugin/customParseFormat'
 import { tasksApi } from '@/api/tasks'
 import { parseBTable, validateBTableFormat, convertBTableToAFormat } from '@/utils/bTableParser'
+
+dayjs.extend(customParseFormat)
 
 // Props
 interface Props {
@@ -666,6 +670,126 @@ const matchRate = computed(() => {
   if (aTableData.value.length === 0) return 0
   return (matchedCount.value / aTableData.value.length) * 100
 })
+
+const normalizeName = (name: any) => {
+  if (name === null || name === undefined) return ''
+  return name.toString().trim().replace(/\s+/g, '')
+}
+
+const normalizePhone = (phone: any) => {
+  if (phone === null || phone === undefined) return ''
+  let digits = phone.toString().replace(/\D+/g, '').trim()
+  if (!digits) return ''
+
+  // 去掉常见的国家码前缀，例如 +86 / 0086 / 86
+  if (digits.length > 11) {
+    if (digits.startsWith('86')) {
+      digits = digits.slice(-11)
+    } else if (digits.startsWith('0086')) {
+      digits = digits.slice(-11)
+    } else {
+      // 默认取后11位，避免尾号被截断
+      digits = digits.slice(-11)
+    }
+  }
+
+  return digits
+}
+
+const buildMatchKey = (name: any, phone: any) => {
+  const normalizedName = normalizeName(name)
+  const normalizedPhone = normalizePhone(phone)
+  return `${normalizedName}_${normalizedPhone}`.trim()
+}
+
+const normalizeDateTime = (value: any): string | null => {
+  if (value === null || value === undefined || value === '') {
+    return null
+  }
+
+  if (value instanceof Date) {
+    return dayjs(value).format('YYYY-MM-DD HH:mm:ss')
+  }
+
+  if (typeof value === 'number' && XLSX.SSF && typeof XLSX.SSF.parse_date_code === 'function') {
+    const parsed = XLSX.SSF.parse_date_code(value)
+    if (parsed) {
+      const jsDate = new Date(
+        Date.UTC(parsed.y, parsed.m - 1, parsed.d, parsed.H, parsed.M, parsed.S)
+      )
+      return dayjs(jsDate).format('YYYY-MM-DD HH:mm:ss')
+    }
+  }
+
+  const strValue = value.toString().trim()
+  if (!strValue) {
+    return null
+  }
+
+  const normalized = strValue
+    .replace(/年|月/g, '-')
+    .replace(/日/g, '')
+    .replace(/[.]/g, '-')
+    .replace('T', ' ')
+
+  const formats = [
+    'YYYY-MM-DD HH:mm:ss',
+    'YYYY/MM/DD HH:mm:ss',
+    'YYYY-MM-DD HH:mm',
+    'YYYY/MM/DD HH:mm',
+    'YYYY-MM-DD',
+    'YYYY/MM/DD',
+    'YYYY-MM-DDTHH:mm:ss'
+  ]
+
+  for (const format of formats) {
+    const parsed = dayjs(strValue, format, true)
+    if (parsed.isValid()) {
+      return parsed.format('YYYY-MM-DD HH:mm:ss')
+    }
+
+    const parsedNormalized = dayjs(normalized, format, true)
+    if (parsedNormalized.isValid()) {
+      return parsedNormalized.format('YYYY-MM-DD HH:mm:ss')
+    }
+  }
+
+  const autoParsed = dayjs(strValue)
+  if (autoParsed.isValid()) {
+    return autoParsed.format('YYYY-MM-DD HH:mm:ss')
+  }
+
+  const autoParsedNormalized = dayjs(normalized)
+  if (autoParsedNormalized.isValid()) {
+    return autoParsedNormalized.format('YYYY-MM-DD HH:mm:ss')
+  }
+
+  return strValue
+}
+
+const formatDateTimeForApi = (value: string | null): string | null => {
+  if (!value) return null
+
+  const trimmed = value.trim()
+  if (!trimmed) return null
+
+  const normalizeToDayjs = (input: string) => {
+    const candidate = input.includes('T') ? input : input.replace(' ', 'T')
+    return dayjs(candidate)
+  }
+
+  const directParsed = dayjs(trimmed)
+  if (directParsed.isValid()) {
+    return directParsed.format('YYYY-MM-DDTHH:mm:ss')
+  }
+
+  const normalizedParsed = normalizeToDayjs(trimmed)
+  if (normalizedParsed.isValid()) {
+    return normalizedParsed.format('YYYY-MM-DDTHH:mm:ss')
+  }
+
+  return trimmed
+}
 
 // A表（报修单）导入格式模板
 const aTableColumns = [
@@ -1166,15 +1290,17 @@ const parseExcelFile = async (file: File, tableType: 'a-table' | 'b-table') => {
             _errors: [],
             _rowIndex: index + 1,
             _tableType: tableType,
-            _matchKey: `${record.reporterName || ''}_${record.contact || ''}`.trim(),
+            _matchKey: buildMatchKey(record.reporterName, record.contact),
             // 保留原始B表数据
             _originalBTableRecord: record
           }))
 
+          console.log('B表标准化数据:', processedData)
           resolve(processedData)
         } else {
           // A表使用常规解析
           const jsonData = XLSX.utils.sheet_to_json(worksheet)
+          console.log('A表原始数据:', jsonData)
 
           // 根据表类型验证和转换数据
           const processedData = jsonData.map((row: any, index) => {
@@ -1198,8 +1324,10 @@ const parseExcelFile = async (file: File, tableType: 'a-table' | 'b-table') => {
             if (!row['工单状态']) errors.push('工单状态不能为空')
 
             // 构建A表匹配关键字
-            processedRow._matchKey =
-              `${row['报单人'] || ''}_${row['报单人电话'] || ''}`.trim()
+            processedRow._matchKey = buildMatchKey(
+              row['报单人'] || '',
+              row['报单人电话'] || ''
+            )
 
             // 验证时间格式
             const timeFields = ['报单时间']
@@ -1218,6 +1346,7 @@ const parseExcelFile = async (file: File, tableType: 'a-table' | 'b-table') => {
 
           // 只返回有效数据
           const validData = processedData.filter(item => item._valid)
+          console.log('A表标准化数据:', processedData)
           console.log(`${tableType}表解析完成：${validData.length}条有效记录`)
           resolve(validData)
         }
@@ -1237,6 +1366,13 @@ const generateOnlineOnlyTasks = () => {
   const onlineResults: any[] = []
 
   aTableData.value.forEach(aRow => {
+    const reporterNameRaw = (aRow['报单人'] || '').toString().trim()
+    const reporterContactRaw = aRow['报单人电话'] || ''
+    const reporterContact = normalizePhone(reporterContactRaw)
+    const matchKey = buildMatchKey(reporterNameRaw, reporterContactRaw)
+    const reportTime = normalizeDateTime(aRow['报单时间'])
+    const completionTime = normalizeDateTime(aRow['完工时间'] || aRow['完成时间'])
+
     onlineResults.push({
       // A表数据
       workOrderId: aRow['工单编号'],
@@ -1244,11 +1380,13 @@ const generateOnlineOnlyTasks = () => {
       description: aRow['描述'],
       company: aRow['报单企业'] || '',
       location: aRow['位置'],
-      contactPerson: aRow['报单人'],
-      contactPhone: aRow['报单人电话'],
-      reportTime: aRow['报单时间'],
+      contactPerson: reporterNameRaw,
+      contactPhone: reporterContact,
+      reporterName: reporterNameRaw,
+      reporterContact,
+      reportTime,
       status: aRow['工单状态'],
-      taskType: 'online_repair', // 强制设为线上任务
+      taskType: 'online', // 强制设为线上任务
       priority: getPriority(aRow['优先级']),
       category: aRow['分类'],
       completionStatus: aRow['完成情况'] || aRow['工单状态'], // 新增完成情况字段
@@ -1257,7 +1395,7 @@ const generateOnlineOnlyTasks = () => {
       assignee: null,
       responseTime: null,
       processTime: null,
-      completeTime: null,
+      completeTime: completionTime,
       faultDescription: null,
       solution: null,
       processingNote: null,
@@ -1268,10 +1406,11 @@ const generateOnlineOnlyTasks = () => {
       customerRating: null,
       satisfaction: null,
       remark: null,
+      repairForm: null,
 
       // 匹配状态（跳过B表）
       matched: false,
-      matchKey: aRow._matchKey,
+      matchKey,
       isOnlineOnly: true // 标记为仅线上任务
     })
   })
@@ -1284,14 +1423,42 @@ const performABMatching = () => {
 
   // 为每个A表记录尝试匹配B表记录
   aTableData.value.forEach(aRow => {
-    const matchingBRows = bTableData.value.filter(
-      bRow => aRow._matchKey === bRow._matchKey
+    const reporterNameRaw = (aRow['报单人'] || '').toString().trim()
+    const reporterContactRaw = aRow['报单人电话'] || ''
+    const reporterContact = normalizePhone(reporterContactRaw)
+    const matchKey = buildMatchKey(reporterNameRaw, reporterContactRaw)
+    const reportTime = normalizeDateTime(aRow['报单时间'])
+    const completionTime = normalizeDateTime(
+      aRow['完工时间'] || aRow['完成时间']
     )
+
+    const matchingBRows = bTableData.value.filter(
+      bRow => bRow._matchKey === matchKey
+    )
+
+    if (import.meta.env.DEV) {
+      console.debug('[ImportDialog] 尝试匹配', {
+        aRow: aRow['工单编号'],
+        reporterName: reporterNameRaw,
+        reporterContact,
+        rawPhone: reporterContactRaw,
+        matchKey,
+        bCandidates: matchingBRows.length
+      })
+    }
 
     if (matchingBRows.length > 0) {
       // 成功匹配，合并A-B表数据
       matchingBRows.forEach(bRow => {
         const originalBRecord = bRow._originalBTableRecord
+        if (import.meta.env.DEV) {
+          console.debug('[ImportDialog] 匹配成功', {
+            matchKey,
+            aRow: aRow['工单编号'],
+            bRowIndex: bRow._rowIndex,
+            bRecord: originalBRecord
+          })
+        }
 
         matchedResults.push({
           // A表数据
@@ -1300,9 +1467,11 @@ const performABMatching = () => {
           description: aRow['描述'],
           company: aRow['报单企业'] || '',
           location: aRow['位置'],
-          contactPerson: aRow['报单人'],
-          contactPhone: aRow['报单人电话'],
-          reportTime: aRow['报单时间'],
+          contactPerson: reporterNameRaw,
+          contactPhone: reporterContact,
+          reporterName: reporterNameRaw,
+          reporterContact,
+          reportTime,
           status: aRow['工单状态'],
           taskType: getTaskType(aRow['类型'], originalBRecord?.repairType),
           priority: getPriority(aRow['优先级']),
@@ -1313,7 +1482,7 @@ const performABMatching = () => {
           assignee: originalBRecord?.inspector || bRow['处理人'],
           responseTime: null, // B表格式中没有响应时间
           processTime: null, // B表格式中没有处理时间
-          completeTime: null, // B表格式中没有完成时间
+          completeTime: completionTime,
           faultDescription: originalBRecord?.repairContent || bRow['故障描述'],
           solution: originalBRecord?.inspectContent || bRow['解决方案'],
           processingNote: originalBRecord?.location || bRow['备注'], // 使用location作为处理说明
@@ -1323,17 +1492,19 @@ const performABMatching = () => {
           totalCost: 0,
           customerRating: originalBRecord?.result || bRow['客户评价'],
           satisfaction: bRow['满意度'] ? Number(bRow['满意度']) : null,
-          remark: originalBRecord ?
-            `位置:${originalBRecord.location}, 类型:${originalBRecord.repairType}` :
-            bRow['备注'],
+          remark: originalBRecord
+            ? `位置:${originalBRecord.location}, 类型:${originalBRecord.repairType}`
+            : bRow['备注'],
+          repairForm: originalBRecord?.repairType || null,
 
           // 匹配状态
           matched: true,
-          matchKey: aRow._matchKey,
+          matchKey,
           bTableSource: 'special_format' // 标记为特殊B表格式
         })
       })
     } else {
+      const matchKeyFallback = matchKey
       // 仅A表数据，没有匹配的B表（按线上单处理）
       matchedResults.push({
         // A表数据
@@ -1342,11 +1513,13 @@ const performABMatching = () => {
         description: aRow['描述'],
         company: aRow['报单企业'] || '',
         location: aRow['位置'],
-        contactPerson: aRow['报单人'],
-        contactPhone: aRow['报单人电话'],
-        reportTime: aRow['报单时间'],
+        contactPerson: reporterNameRaw,
+        contactPhone: reporterContact,
+        reporterName: reporterNameRaw,
+        reporterContact,
+        reportTime,
         status: aRow['工单状态'],
-        taskType: 'online_repair', // 无B表数据时默认为线上任务
+        taskType: 'online', // 无B表数据时默认为线上任务
         priority: getPriority(aRow['优先级']),
         category: aRow['分类'],
         completionStatus: aRow['完成情况'] || aRow['工单状态'],
@@ -1355,7 +1528,7 @@ const performABMatching = () => {
         assignee: null,
         responseTime: null,
         processTime: null,
-        completeTime: null,
+        completeTime: completionTime,
         faultDescription: null,
         solution: null,
         processingNote: null,
@@ -1366,40 +1539,56 @@ const performABMatching = () => {
         customerRating: null,
         satisfaction: null,
         remark: null,
+        repairForm: null,
 
         // 匹配状态
         matched: false,
-        matchKey: aRow._matchKey
+        matchKey: matchKeyFallback
       })
+      if (import.meta.env.DEV) {
+        console.debug('[ImportDialog] 未匹配到B表记录', {
+          matchKey: matchKeyFallback,
+          aRow: aRow['工单编号']
+        })
+      }
     }
   })
+
+  if (import.meta.env.DEV) {
+    console.debug('[ImportDialog] 匹配汇总结果', matchedResults)
+  }
 
   return matchedResults
 }
 
 const getTaskType = (type: string, bTableRepairType?: string): string => {
-  // 优先使用B表的repair_type字段
-  if (bTableRepairType) {
-    const bTypeText = bTableRepairType.toString().toLowerCase()
-    if (bTypeText.includes('现场')) {
-      return 'offline_repair'
-    } else if (bTypeText.includes('线上')) {
-      return 'online_repair'
+  const toText = (value?: string) =>
+    value ? value.toString().toLowerCase().trim() : ''
+
+  const bTypeText = toText(bTableRepairType)
+  if (bTypeText) {
+    if (bTypeText.includes('现场') || bTypeText.includes('线下')) {
+      return 'offline'
+    }
+    if (bTypeText.includes('线上') || bTypeText.includes('远程')) {
+      return 'online'
     }
   }
 
-  // 再使用A表的type字段
-  if (!type) return 'online_repair'
-  const typeText = type.toString().toLowerCase()
+  const typeText = toText(type)
+  if (!typeText) return 'online'
+
   if (typeText.includes('线下') || typeText.includes('现场')) {
-    return 'offline_repair'
-  } else if (typeText.includes('监控')) {
-    return 'monitoring'
-  } else if (typeText.includes('协助')) {
-    return 'assistance'
-  } else {
-    return 'online_repair'
+    return 'offline'
   }
+  if (typeText.includes('协助')) {
+    return 'assistance'
+  }
+  if (typeText.includes('维修') || typeText.includes('修复')) {
+    return 'repair'
+  }
+
+  return 'online'
 }
 
 const getPriority = (priority: string): string => {
@@ -1428,44 +1617,67 @@ const handleImport = async () => {
 
     // 准备导入数据
     const importData = {
-      matched_data: matchedData.value.map(item => ({
-        // A表字段
-        work_order_id: item.workOrderId,
-        title: item.title,
-        description: item.description,
-        type: 'repair', // 默认为维修任务
-        task_type: item.taskType,
-        priority: item.priority,
-        location: item.location,
-        contact_person: item.contactPerson,
-        contact_phone: item.contactPhone,
-        company: item.company,
-        report_time: item.reportTime,
-        status: item.status,
-        category: item.category,
-        completion_status: item.completionStatus, // 新增完成情况字段
+      matched_data: matchedData.value.map(item => {
+        const reportTime = formatDateTimeForApi(
+          normalizeDateTime(item.reportTime)
+        )
+        const responseTime = formatDateTimeForApi(
+          normalizeDateTime(item.responseTime)
+        )
+        const processTime = formatDateTimeForApi(
+          normalizeDateTime(item.processTime)
+        )
+        const completeTime = formatDateTimeForApi(
+          normalizeDateTime(item.completeTime)
+        )
 
-        // B表字段
-        assignee: item.assignee,
-        response_time: item.responseTime,
-        process_time: item.processTime,
-        complete_time: item.completeTime,
-        fault_description: item.faultDescription,
-        solution: item.solution,
-        processing_note: item.processingNote,
-        actual_hours: item.actualHours,
-        material_cost: item.materialCost,
-        labor_cost: item.laborCost,
-        total_cost: item.totalCost,
-        customer_rating: item.customerRating,
-        satisfaction: item.satisfaction,
-        remark: item.remark,
+        return {
+          // A表字段
+          work_order_id: item.workOrderId,
+          title: item.title,
+          description: item.description,
+          type: 'repair', // 默认为维修任务
+          task_type: item.taskType || 'online',
+          priority: item.priority,
+          location: item.location,
+          contact_person: item.contactPerson,
+          contact_phone: item.contactPhone,
+          company: item.company,
+          report_time: reportTime,
+          status: item.status,
+          category: item.category,
+          completion_status: item.completionStatus, // 新增完成情况字段
+          reporter_name: item.reporterName || item.contactPerson,
+          reporter_contact: item.reporterContact || item.contactPhone,
 
-        // 匹配状态
-        is_matched: item.matched,
-        match_key: item.matchKey,
-        is_online_only: item.isOnlineOnly || false // 是否为跳过B表的线上单
-      })),
+          // B表字段
+          assignee: item.assignee,
+          response_time: responseTime,
+          process_time: processTime,
+          completion_time: completeTime,
+          completionTime: completeTime,
+          complete_time: completeTime,
+          due_date: completeTime,
+          dueDate: completeTime,
+          fault_description: item.faultDescription,
+          solution: item.solution,
+          processing_note: item.processingNote,
+          actual_hours: item.actualHours,
+          material_cost: item.materialCost,
+          labor_cost: item.laborCost,
+          total_cost: item.totalCost,
+          customer_rating: item.customerRating,
+          satisfaction: item.satisfaction,
+          remark: item.remark,
+          repair_form:
+            item.repairForm || (item.taskType === 'offline_repair' ? '现场' : '线上'),
+
+          // 匹配状态
+          is_matched: item.matched,
+          match_key: item.matchKey,
+          is_online_only: item.isOnlineOnly || false // 是否为跳过B表的线上单
+        }
+      }),
       import_type:
         bTableImportOption.value === 'skip' ? 'online_only' : 'ab_matched'
     }

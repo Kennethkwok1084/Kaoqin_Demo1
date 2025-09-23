@@ -283,6 +283,7 @@ import {
 import * as echarts from 'echarts'
 import { statisticsApi } from '@/api/statistics'
 import { dashboardApi } from '@/api/dashboard'
+import dayjs from 'dayjs'
 import type {
   DashboardStats,
   TaskDistribution,
@@ -419,9 +420,19 @@ const formatNumber = (num: number): string => {
 }
 
 const formatTime = (timestamp: string): string => {
-  const date = new Date(timestamp)
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
+  if (!timestamp) return '未知时间'
+
+  const normalizeForParse = (value: string) =>
+    value.includes('T') ? value : value.replace(' ', 'T')
+
+  let parsed = dayjs(timestamp)
+  if (!parsed.isValid()) {
+    parsed = dayjs(normalizeForParse(timestamp))
+  }
+
+  if (!parsed.isValid()) return '未知时间'
+
+  const diff = dayjs().diff(parsed)
 
   if (diff < 60000) return '刚刚'
   if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`
@@ -550,7 +561,11 @@ const loadRecentActivities = async () => {
   try {
     // 调用API获取最近活动数据
     const data = await dashboardApi.getRecentActivities(10)
-    recentActivities.value = data || []
+    recentActivities.value = Array.isArray(data)
+      ? data
+      : Array.isArray((data as any)?.items)
+        ? (data as any).items
+        : []
   } catch (error) {
     console.error('加载最近活动失败:', error)
     ElMessage.error('加载最近活动数据失败')

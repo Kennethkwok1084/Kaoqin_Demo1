@@ -202,10 +202,18 @@
                 </el-link>
                 <div class="task-meta">
                   <el-tag
-                    :type="getTypeTagType(scope.row.type) as any"
+                    :type="
+                      getTypeTagType(
+                        scope.row.type || scope.row.task_type
+                      ) as any
+                    "
                     size="small"
                   >
-                    {{ getTaskTypeConfig(scope.row.type).label }}
+                    {{
+                      getTaskTypeConfig(
+                        scope.row.type || scope.row.task_type
+                      ).label
+                    }}
                   </el-tag>
                   <el-tag
                     :type="getPriorityTagType(scope.row.priority) as any"
@@ -238,9 +246,9 @@
             show-overflow-tooltip
           >
             <template #default="scope">
-              <span v-if="scope.row.assigneeName">{{
-                scope.row.assigneeName
-              }}</span>
+              <span v-if="scope.row.assigneeName || scope.row.member_name">
+                {{ scope.row.assigneeName || scope.row.member_name }}
+              </span>
               <span v-else class="text-placeholder">未分配</span>
             </template>
           </el-table-column>
@@ -260,9 +268,14 @@
           >
             <template #default="scope">
               <div
-                :class="getDueDateClass(scope.row.dueDate, scope.row.status)"
+                :class="
+                  getDueDateClass(
+                    scope.row.dueDate || scope.row.due_date,
+                    scope.row.status
+                  )
+                "
               >
-                {{ formatDate(scope.row.dueDate) }}
+                {{ formatDate(scope.row.dueDate || scope.row.due_date) }}
               </div>
             </template>
           </el-table-column>
@@ -274,7 +287,7 @@
             sortable="custom"
           >
             <template #default="scope">
-              {{ formatDate(scope.row.createdAt) }}
+              {{ formatDate(scope.row.createdAt || scope.row.created_at) }}
             </template>
           </el-table-column>
 
@@ -451,7 +464,7 @@
                   </div>
                   <div class="info-item">
                     <el-icon><User /></el-icon>
-                    {{ task.assigneeName || '未分配' }}
+                    {{ task.assigneeName || task.member_name || '未分配' }}
                   </div>
                   <div class="info-item">
                     <el-icon><Clock /></el-icon>
@@ -539,6 +552,7 @@ import {
   Monitor
 } from '@element-plus/icons-vue'
 import { tasksApi } from '@/api/tasks'
+import { formatDate as formatDateUtil, parseDate } from '@/utils/date'
 import type { Task, TaskListParams, TaskStats } from '@/types/task'
 import {
   TASK_TYPE_CONFIG,
@@ -981,14 +995,17 @@ const handleTaskFormSuccess = () => {
 
 // 工具方法
 const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleDateString('zh-CN')
+  if (!dateString) return '-'
+  return formatDateUtil(dateString) || '-'
 }
 
 const getTypeTagType = (type: string): string => {
   const typeMap: Record<string, string> = {
     repair: 'primary',
     monitoring: 'success',
-    assistance: 'warning'
+    assistance: 'warning',
+    online: 'info',
+    offline: 'warning'
   }
   return typeMap[type] || 'info'
 }
@@ -1013,12 +1030,14 @@ const getStatusTagType = (status: string): string => {
   return statusMap[status] || 'info'
 }
 
-const getDueDateClass = (dueDate: string, status: string): string => {
+const getDueDateClass = (dueDate: string | undefined, status: string): string => {
   if (status === 'completed') return ''
 
+  const dueDateObj = parseDate(dueDate)
+  if (!dueDateObj) return ''
+
   const now = new Date()
-  const due = new Date(dueDate)
-  const diffTime = due.getTime() - now.getTime()
+  const diffTime = dueDateObj.getTime() - now.getTime()
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
   if (diffDays < 0) return 'overdue'

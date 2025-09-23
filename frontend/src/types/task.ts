@@ -226,6 +226,18 @@ export const TASK_TYPE_CONFIG = {
     icon: 'UserFilled',
     description: '协助其他任务'
   },
+  online: {
+    label: '线上任务',
+    color: 'info',
+    icon: 'Monitor',
+    description: '远程处理任务'
+  },
+  offline: {
+    label: '线下任务',
+    color: 'warning',
+    icon: 'Tools',
+    description: '现场处理任务'
+  },
   other: {
     label: '其他任务',
     color: 'info',

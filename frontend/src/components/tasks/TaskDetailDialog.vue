@@ -88,13 +88,24 @@
                     </el-descriptions-item>
                     <el-descriptions-item label="位置">{{ task.location || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="负责人">
-                      {{ task.assigneeName || task.assignee || '未分配' }}
+                      {{
+                        task.assigneeName ||
+                        task.assignee ||
+                        task.member_name ||
+                        '未分配'
+                      }}
                     </el-descriptions-item>
                     <el-descriptions-item label="报修人">
                       {{ task.reporterName || task.reporter_name || '-' }}
                     </el-descriptions-item>
                     <el-descriptions-item label="联系方式">
-                      {{ task.contactInfo || task.contact_info || '-' }}
+                      {{
+                        task.contactInfo ||
+                        task.contact_info ||
+                        task.reporter_contact ||
+                        task.contact_phone ||
+                        '-'
+                      }}
                     </el-descriptions-item>
                   </el-descriptions>
                 </div>
@@ -108,21 +119,45 @@
                       {{ formatDateTime(task.createdAt || task.created_at || '') }}
                     </el-descriptions-item>
                     <el-descriptions-item label="截止时间">
-                      <span :class="getDueDateClass(task.dueDate || task.due_date || '', task.status || '')">
-                        {{ formatDateTime(task.dueDate || task.due_date || '') }}
+                      <span
+                        :class="
+                          getDueDateClass(
+                            task.dueDate ||
+                              task.due_date ||
+                              task.completion_time ||
+                              '',
+                            task.status || ''
+                          )
+                        "
+                      >
+                        {{
+                          formatDateTime(
+                            task.dueDate ||
+                              task.due_date ||
+                              task.completion_time ||
+                              ''
+                          )
+                        }}
                       </span>
                     </el-descriptions-item>
                     <el-descriptions-item label="开始时间">
                       {{ formatDateTime(task.startedAt || task.started_at || '') }}
                     </el-descriptions-item>
                     <el-descriptions-item label="完成时间">
-                      {{ formatDateTime(task.completedAt || task.completed_at || '') }}
+                      {{
+                        formatDateTime(
+                          task.completedAt ||
+                            task.completed_at ||
+                            task.completion_time ||
+                            ''
+                        )
+                      }}
                     </el-descriptions-item>
                     <el-descriptions-item label="预估工时">
-                      {{ task.estimatedHours || task.estimated_hours || 0 }} 小时
+                      {{ estimatedHours }} 小时
                     </el-descriptions-item>
                     <el-descriptions-item label="实际工时">
-                      {{ task.actualHours || task.actual_hours || 0 }} 小时
+                      {{ actualHours }} 小时
                     </el-descriptions-item>
                   </el-descriptions>
                 </div>
@@ -469,6 +504,34 @@ const workLogRules: FormRules = {
 const visible = computed({
   get: () => props.modelValue,
   set: value => emit('update:modelValue', value)
+})
+
+const estimatedHours = computed(() => {
+  if (!task.value) return 0
+  const explicit =
+    (task.value as any).estimatedHours ?? (task.value as any).estimated_hours
+  if (explicit !== undefined && explicit !== null) {
+    return Number(explicit)
+  }
+  const baseMinutes = (task.value as any).base_work_minutes
+  if (baseMinutes) {
+    return Number((baseMinutes / 60).toFixed(1))
+  }
+  return 0
+})
+
+const actualHours = computed(() => {
+  if (!task.value) return 0
+  const explicit =
+    (task.value as any).actualHours ?? (task.value as any).actual_hours
+  if (explicit !== undefined && explicit !== null) {
+    return Number(explicit)
+  }
+  const workMinutes = (task.value as any).work_minutes
+  if (workMinutes) {
+    return Number((workMinutes / 60).toFixed(1))
+  }
+  return 0
 })
 
 // 方法

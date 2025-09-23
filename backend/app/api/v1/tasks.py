@@ -761,27 +761,71 @@ async def get_repair_tasks(
         count_result = await db.execute(count_query)
         total = count_result.scalar() or 0
 
+        def format_datetime(value: Optional[datetime]) -> Optional[str]:
+            if not value:
+                return None
+            if value.tzinfo is None:
+                return value.isoformat()
+            return value.astimezone(timezone.utc).isoformat()
+
         # 格式化任务数据
         items = []
         for task in tasks:
+            task_type_value = (
+                task.task_type.value if task.task_type else TaskType.ONLINE.value
+            )
+
+            status_value = (
+                task.status.value if task.status else TaskStatus.PENDING.value
+            )
+            priority_value = (
+                task.priority.value if task.priority else TaskPriority.MEDIUM.value
+            )
+            category_value = (
+                task.category.value if task.category else TaskCategory.OTHER.value
+            )
+
+            due_date_iso = format_datetime(task.due_date or task.completion_time)
+            created_iso = format_datetime(task.created_at)
+            updated_iso = format_datetime(task.updated_at)
+            report_iso = format_datetime(task.report_time)
+            response_iso = format_datetime(task.response_time)
+            completion_iso = format_datetime(task.completion_time)
+
             task_data = {
                 "id": task.id,
                 "title": task.title,
                 "description": task.description,
                 "location": task.location,
-                "contact_person": task.reporter_contact,
-                "contact_phone": task.reporter_phone,
-                "status": task.status.value if task.status else "pending",
-                "priority": task.priority.value if task.priority else "medium",
-                "category": task.category.value if task.category else "hardware",
+                "contact_person": task.reporter_name,
+                "contactPerson": task.reporter_name,
+                "contact_phone": task.reporter_contact or task.reporter_phone,
+                "contactPhone": task.reporter_contact or task.reporter_phone,
+                "status": status_value,
+                "priority": priority_value,
+                "category": category_value,
                 "member_id": task.member_id,
+                "memberId": task.member_id,
                 "member_name": task.member.name if task.member else None,
+                "assigneeName": task.member.name if task.member else None,
+                "assigneeId": task.member_id,
                 "is_urgent": task.priority == TaskPriority.URGENT if task.priority else False,
                 "is_online": task.task_type == TaskType.ONLINE if task.task_type else True,
+                "task_type": task_type_value,
+                "type": task_type_value,
+                "due_date": due_date_iso,
+                "dueDate": due_date_iso,
+                "report_time": report_iso,
+                "reportTime": report_iso,
+                "response_time": response_iso,
+                "responseTime": response_iso,
+                "completion_time": completion_iso,
+                "completionTime": completion_iso,
+                "created_at": created_iso,
+                "createdAt": created_iso,
+                "updated_at": updated_iso,
+                "updatedAt": updated_iso,
                 "work_minutes": task.work_minutes,
-                "created_at": task.created_at.strftime('%Y-%m-%dT%H:%M:%SZ') if task.created_at else None,
-                "updated_at": task.updated_at.strftime('%Y-%m-%dT%H:%M:%SZ') if task.updated_at else None,
-                "completed_at": task.completion_time.strftime('%Y-%m-%dT%H:%M:%SZ') if task.completion_time else None,
                 "rating": task.rating,
                 "rating_comment": task.feedback,
             }
