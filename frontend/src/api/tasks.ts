@@ -17,43 +17,46 @@ import type {
 export const tasksApi = {
   /**
    * 获取任务列表
-   */
+  */
   async getTasks(params?: TaskListParams): Promise<TaskListResponse> {
-    // 将复杂的 filters 参数转换为简单的查询参数
+    const typeFromFilters =
+      params?.filters?.type?.[0] ||
+      (Array.isArray(params?.task_type) ? params?.task_type[0] : params?.task_type) ||
+      'repair'
+
+    const endpointMap: Record<string, string> = {
+      repair: '/tasks/repair',
+      monitoring: '/tasks/monitoring/list',
+      assistance: '/tasks/assistance/list'
+    }
+
+    const endpoint = endpointMap[typeFromFilters] || endpointMap.repair
+
     const queryParams: Record<string, any> = {
       page: params?.page || 1,
       pageSize: params?.pageSize || 20,
       sortBy: params?.sortBy || 'createdAt',
       sortOrder: params?.sortOrder || 'desc'
     }
+    queryParams.size = queryParams.pageSize
 
-    // 确定API端点基于任务类型
-    let endpoint = '/tasks/repair' // 默认为报修任务
-    let taskType = 'repair'
-
-    // 处理筛选条件
     if (params?.filters) {
       if (params.filters.search) {
         queryParams.search = params.filters.search
       }
-      if (params.filters.type && params.filters.type.length > 0) {
-        taskType = params.filters.type[0]
-        queryParams.type = taskType
-
-        // 根据任务类型选择不同的API端点
-        if (taskType === 'monitoring') {
-          endpoint = '/tasks/monitoring/list'
-        } else if (taskType === 'assistance') {
-          endpoint = '/tasks/assistance/list'
-        } else {
-          endpoint = '/tasks/repair' // repair或其他类型
-        }
-      }
       if (params.filters.status && params.filters.status.length > 0) {
-        queryParams.task_status = params.filters.status[0] // 取第一个状态
+        queryParams.status = params.filters.status[0]
+        queryParams.task_status = params.filters.status[0]
       }
       if (params.filters.assigneeId) {
         queryParams.assigned_to = params.filters.assigneeId
+      }
+      if (params.filters.priority && params.filters.priority.length > 0) {
+        queryParams.priority = params.filters.priority[0]
+      }
+      if (params.filters.dateRange && params.filters.dateRange.length === 2) {
+        queryParams.start_date = params.filters.dateRange[0]
+        queryParams.end_date = params.filters.dateRange[1]
       }
     }
 

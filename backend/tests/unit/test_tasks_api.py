@@ -9,13 +9,9 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from fastapi import HTTPException
 
-from app.api.v1.tasks import (
-    get_all_tasks,
-    get_assistance_tasks,
-    get_monitoring_tasks,
-    get_repair_list,
-    get_work_time_detail,
-)
+from app.api.v1.assistance import get_assistance_tasks
+from app.api.v1.monitoring import get_monitoring_tasks
+from app.api.v1.repair import get_work_time_detail
 from app.models.member import Member, UserRole
 from app.models.task import RepairTask, TaskCategory, TaskPriority, TaskStatus, TaskType
 
@@ -135,18 +131,6 @@ class TestTasksAPI:
         assert "无权限查看" in str(exc_info.value.detail)
 
     @pytest.mark.asyncio
-    async def test_get_repair_list_success(self):
-        """Test repair tasks list endpoint - success case."""
-        # Call endpoint (get_repair_list doesn't take parameters in actual
-        # implementation)
-        result = await get_repair_list()
-
-        # Verify results (based on actual implementation)
-        assert result["success"] is True
-        assert "data" in result
-        assert "items" in result["data"]
-
-    @pytest.mark.asyncio
     async def test_get_monitoring_tasks_success(self):
         """Test monitoring tasks endpoint - success case."""
         # Mock dependencies
@@ -223,35 +207,6 @@ class TestTasksAPI:
         assert result["data"]["total"] == 0
         assert result["data"]["page"] == 1
         assert result["data"]["pageSize"] == 10
-
-    @pytest.mark.asyncio
-    async def test_get_all_tasks_admin_permission(self):
-        """Test tasks list endpoint - admin can see all tasks."""
-        # Mock dependencies
-        mock_db = AsyncMock()
-        mock_admin_user = Member(
-            id=1,
-            username="admin_user",
-            name="管理员",
-            class_name="管理员",
-            role=UserRole.ADMIN,
-            is_active=True,
-        )
-
-        # Mock database result
-        mock_result = Mock()
-        mock_result.scalars.return_value.all.return_value = []
-        mock_db.execute.return_value = mock_result
-
-        # Call endpoint
-        result = await get_all_tasks(
-            page=1, pageSize=10, current_user=mock_admin_user, db=mock_db
-        )
-
-        # Verify admin endpoint works
-        assert result["success"] is True
-        assert "data" in result
-
 
 @pytest.fixture
 def mock_work_hours_service():

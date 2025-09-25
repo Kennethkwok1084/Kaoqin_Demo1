@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.api.v1.tasks import import_maintenance_orders
+from app.api.v1.repair import import_maintenance_orders
 from app.models.member import Member, UserRole
 
 

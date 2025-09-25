@@ -14,7 +14,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v1 import attendance, auth, dashboard
 from app.api.v1 import import_api as import_router
-from app.api.v1 import members, roles, statistics, system, system_config, tasks
+from app.api.v1 import assistance, members, monitoring, repair, roles, statistics, system, system_config
 from app.core.cache import cleanup_cache, init_cache
 from app.core.config import get_cors_origins, get_log_config, settings
 from app.core.database import check_database_health, close_database, init_database
@@ -378,7 +378,9 @@ async def root() -> Dict[str, Any]:
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(members.router, prefix="/api/v1/members", tags=["Members"])
-app.include_router(tasks.router, prefix="/api/v1/tasks", tags=["Tasks"])
+app.include_router(repair.router, prefix="/api/v1/tasks", tags=["Tasks"])
+app.include_router(monitoring.router, prefix="/api/v1/tasks", tags=["Tasks"])
+app.include_router(assistance.router, prefix="/api/v1/tasks", tags=["Tasks"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Dashboard"])
 app.include_router(attendance.router, prefix="/api/v1/attendance", tags=["Attendance"])
 app.include_router(statistics.router, prefix="/api/v1/statistics", tags=["Statistics"])

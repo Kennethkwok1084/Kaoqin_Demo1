@@ -100,6 +100,7 @@
               v-model="filters.type"
               placeholder="任务类型"
               multiple
+              :multiple-limit="1"
               collapse-tags
               clearable
               @change="loadTasks"
@@ -577,8 +578,7 @@ const taskType = computed(() => {
   const path = router.currentRoute.value.path
   if (path.includes('/tasks/monitoring')) return 'monitoring'
   if (path.includes('/tasks/assistance')) return 'assistance'
-  if (path.includes('/tasks/repair')) return 'repair'
-  return 'all'
+  return 'repair'
 })
 
 // 根据任务类型设置页面标题和描述
@@ -604,9 +604,9 @@ const pageInfo = computed(() => {
       }
     default:
       return {
-        title: '任务管理',
-        subtitle: '管理和跟踪所有维护任务',
-        createButtonText: '新建任务'
+        title: '维修任务',
+        subtitle: '管理和跟踪所有维修处理任务',
+        createButtonText: '新建维修任务'
       }
   }
 })
@@ -695,8 +695,19 @@ const loadTasks = async () => {
   try {
     loading.value = true
 
-    // 根据当前任务类型添加过滤条件
-    const taskTypeFilter = taskType.value !== 'all' ? [taskType.value] : []
+    // 根据当前任务类型确定查询类型
+    const selectedType =
+      filters.type.length > 0 && filters.type[0] === taskType.value
+        ? filters.type[0]
+        : taskType.value
+
+    if (selectedType) {
+      if (filters.type.length !== 1 || filters.type[0] !== selectedType) {
+        filters.type = [selectedType]
+      }
+    } else if (filters.type.length > 0) {
+      filters.type = []
+    }
 
     const params: TaskListParams = {
       page: pagination.page,
@@ -706,7 +717,7 @@ const loadTasks = async () => {
       sortOrder: sortConfig.sortOrder,
       filters: {
         ...filters,
-        type: taskTypeFilter.length > 0 ? taskTypeFilter : filters.type,
+        type: selectedType ? [selectedType] : [],
         search: searchQuery.value || undefined
       }
     }
@@ -723,11 +734,20 @@ const loadTasks = async () => {
 
 const loadTaskStats = async () => {
   try {
-    // 根据当前任务类型添加过滤条件
-    const taskTypeFilter = taskType.value !== 'all' ? [taskType.value] : []
+    const selectedType =
+      filters.type.length > 0 && filters.type[0] === taskType.value
+        ? filters.type[0]
+        : taskType.value
+    if (selectedType) {
+      if (filters.type.length !== 1 || filters.type[0] !== selectedType) {
+        filters.type = [selectedType]
+      }
+    } else if (filters.type.length > 0) {
+      filters.type = []
+    }
     const statsFilters = {
       ...filters,
-      type: taskTypeFilter.length > 0 ? taskTypeFilter : filters.type
+      type: selectedType ? [selectedType] : []
     }
 
     const stats = await tasksApi.getTaskStats(statsFilters)
@@ -798,7 +818,7 @@ const viewTaskDetail = (task: Task | { id: number; type?: string; task_type?: st
   const resolvedType =
     (task as any).type ||
     (task as any).task_type ||
-    (taskType.value !== 'all' ? taskType.value : null)
+    taskType.value
   currentTaskType.value = resolvedType as string | null
   showDetailDialog.value = true
 }
