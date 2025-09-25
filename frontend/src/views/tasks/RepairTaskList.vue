@@ -3,14 +3,14 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-content">
-        <h1 class="page-title">维修任务管理</h1>
+        <h1 class="page-title">报修单管理</h1>
         <p class="page-subtitle">管理和跟踪所有设备维修和网络故障处理任务</p>
       </div>
       <div class="header-actions">
         <el-button type="primary" :icon="Plus" @click="showCreateDialog">
           新建维修任务
         </el-button>
-        <el-button :icon="Upload" @click="showImportDialog">
+        <el-button :icon="Upload" @click="showImport">
           导入报修任务 (A-B表匹配)
         </el-button>
         <el-button :icon="Download" @click="exportTasks"> 导出任务 </el-button>
@@ -123,7 +123,7 @@
     <el-card class="table-card" shadow="never">
       <template #header>
         <div class="table-header">
-          <div class="table-title">维修任务列表 ({{ pagination.total }})</div>
+          <div class="table-title">报修单列表 ({{ pagination.total }})</div>
           <div class="table-actions">
             <el-button-group>
               <el-button
@@ -163,8 +163,11 @@
                   {{ scope.row.title }}
                 </el-link>
                 <div class="task-meta">
-                  <el-tag :type="scope.row.is_online ? 'success' : 'warning'" size="small">
-                    {{ scope.row.is_online ? '线上维修' : '线下维修' }}
+                  <el-tag
+                    :type="isOfflineTask(scope.row) ? 'warning' : 'success'"
+                    size="small"
+                  >
+                    {{ isOfflineTask(scope.row) ? '线下维修' : '线上维修' }}
                   </el-tag>
                   <el-tag :type="getPriorityTagType(scope.row.priority)" size="small">
                     {{ getPriorityLabel(scope.row.priority) }}
@@ -187,10 +190,28 @@
               <el-tag :type="getStatusTagType(scope.row.status)">
                 {{ getStatusLabel(scope.row.status) }}
               </el-tag>
+              <el-tag
+                v-if="scope.row.is_overdue_response || scope.row.isOverdueResponse"
+                type="danger"
+                effect="plain"
+                size="small"
+                style="margin-left: 6px;"
+              >
+                响应超时
+              </el-tag>
+              <el-tag
+                v-else-if="scope.row.is_overdue_completion || scope.row.isOverdueCompletion"
+                type="danger"
+                effect="plain"
+                size="small"
+                style="margin-left: 6px;"
+              >
+                处理超时
+              </el-tag>
             </template>
           </el-table-column>
 
-          <el-table-column prop="member_name" label="维修技师" width="120" show-overflow-tooltip>
+          <el-table-column prop="member_name" label="处理人" width="120" show-overflow-tooltip>
             <template #default="scope">
               <span v-if="scope.row.member_name">{{ scope.row.member_name }}</span>
               <span v-else class="text-placeholder">未分配</span>
@@ -233,7 +254,7 @@
                   <template #dropdown>
                     <el-dropdown-menu>
                       <el-dropdown-item command="assign" v-if="scope.row.status === 'pending'">
-                        分配技师
+                        分配处理人
                       </el-dropdown-item>
                       <el-dropdown-item command="start" v-if="scope.row.status === 'pending'">
                         开始维修
@@ -280,6 +301,7 @@
     <TaskDetailDialog
       v-model="showDetailDialog"
       :task-id="currentTaskId"
+      :task-type="currentTaskType"
       @updated="loadTasks"
     />
 
@@ -291,7 +313,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus,
@@ -357,6 +379,7 @@ const showDetailDialog = ref(false)
 const showImportDialog = ref(false)
 const currentTask = ref<Task | null>(null)
 const currentTaskId = ref<number | null>(null)
+const currentTaskType = ref<string | null>('repair')
 
 // 统计卡片配置 - 专门针对维修任务
 const statsCards = [
@@ -411,7 +434,7 @@ const loadTasks = async () => {
     tasks.value = result.items
     pagination.total = result.total
   } catch (error) {
-    ElMessage.error('加载维修任务列表失败')
+    ElMessage.error('加载报修单列表失败')
   } finally {
     loading.value = false
   }
@@ -465,10 +488,32 @@ const resetFilters = () => {
   loadTasks()
 }
 
+const isOfflineTask = (task: Task) => {
+  if (typeof task.is_offline === 'boolean') {
+    return task.is_offline
+  }
+  // 兼容驼峰命名
+  if (typeof (task as any).isOffline === 'boolean') {
+    return (task as any).isOffline
+  }
+  if (typeof (task as any).is_online === 'boolean') {
+    return !(task as any).is_online
+  }
+  const taskType = (task.task_type || (task as any).taskType || '').toString()
+  if (taskType) {
+    return taskType === 'offline' || taskType === 'offline_repair'
+  }
+  return false
+}
+
 // 任务操作
 const showCreateDialog = () => {
   currentTask.value = null
   showTaskDialog.value = true
+}
+
+const showImport = () => {
+  showImportDialog.value = true
 }
 
 const editTask = (task: Task) => {
@@ -478,6 +523,7 @@ const editTask = (task: Task) => {
 
 const viewTaskDetail = (taskId: number) => {
   currentTaskId.value = taskId
+  currentTaskType.value = 'repair'
   showDetailDialog.value = true
 }
 
@@ -490,8 +536,8 @@ const handleTaskAction = async (command: string, task: Task) => {
       await deleteTask(task)
       break
     case 'assign':
-      // TODO: 实现分配技师逻辑
-      ElMessage.info('分配技师功能开发中...')
+      // TODO: 实现分配处理人逻辑
+      ElMessage.info('分配处理人功能开发中...')
       break
     case 'start':
       await startTask(task)
@@ -640,6 +686,15 @@ onMounted(() => {
   loadTasks()
   loadTaskStats()
 })
+
+watch(
+  () => showDetailDialog.value,
+  value => {
+    if (!value) {
+      currentTaskType.value = 'repair'
+    }
+  }
+)
 </script>
 
 <style scoped lang="scss">

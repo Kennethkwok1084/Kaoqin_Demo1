@@ -10,8 +10,8 @@
         <el-button type="primary" :icon="Plus" @click="showCreateDialog">
           新建监控任务
         </el-button>
-        <el-button :icon="Monitor" @click="quickPatrol">
-          快速巡检
+        <el-button :icon="Upload" @click="showImportDialog">
+          导入监控任务
         </el-button>
         <el-button :icon="Download" @click="exportTasks"> 导出任务 </el-button>
       </div>
@@ -268,21 +268,21 @@
     </el-card>
 
     <!-- 对话框组件 -->
-    <MonitoringTaskFormDialog
+    <TaskFormDialog
       v-model="showTaskDialog"
       :task="currentTask"
       @success="handleTaskFormSuccess"
     />
 
-    <MonitoringTaskDetailDialog
+    <TaskDetailDialog
       v-model="showDetailDialog"
       :task-id="currentTaskId"
       @updated="loadTasks"
     />
 
-    <QuickPatrolDialog
-      v-model="showQuickPatrolDialog"
-      @success="handleQuickPatrolSuccess"
+    <ImportTaskDialog
+      v-model="showImportDialog"
+      @success="handleImportSuccess"
     />
   </div>
 </template>
@@ -307,9 +307,9 @@ import {
 import { tasksApi } from '@/api/tasks'
 import { formatDate as formatDateUtil } from '@/utils/date'
 import type { Task, TaskListParams, TaskStats } from '@/types/task'
-import MonitoringTaskFormDialog from '@/components/tasks/MonitoringTaskFormDialog.vue'
-import MonitoringTaskDetailDialog from '@/components/tasks/MonitoringTaskDetailDialog.vue'
-import QuickPatrolDialog from '@/components/tasks/QuickPatrolDialog.vue'
+import TaskFormDialog from '@/components/tasks/TaskFormDialog.vue'
+import TaskDetailDialog from '@/components/tasks/TaskDetailDialog.vue'
+import ImportTaskDialog from '@/components/tasks/ImportTaskDialog.vue'
 
 // 响应式数据
 const loading = ref(false)
@@ -352,7 +352,7 @@ const sortConfig = reactive({
 // 对话框状态
 const showTaskDialog = ref(false)
 const showDetailDialog = ref(false)
-const showQuickPatrolDialog = ref(false)
+const showImportDialog = ref(false)
 const currentTask = ref<Task | null>(null)
 const currentTaskId = ref<number | null>(null)
 
@@ -405,7 +405,7 @@ const loadTasks = async () => {
       }
     }
 
-    const result = await tasksApi.getMonitoringTasks(params)
+    const result = await tasksApi.getTasks(params)
     tasks.value = result.items
     pagination.total = result.total
   } catch (error) {
@@ -470,8 +470,9 @@ const showCreateDialog = () => {
   showTaskDialog.value = true
 }
 
-const quickPatrol = () => {
-  showQuickPatrolDialog.value = true
+const handleImportSuccess = () => {
+  loadTasks()
+  loadTaskStats()
 }
 
 const viewTaskDetail = (taskId: number) => {
@@ -481,7 +482,7 @@ const viewTaskDetail = (taskId: number) => {
 
 const startInspection = async (task: Task) => {
   try {
-    await tasksApi.startMonitoringTask(task.id)
+    await tasksApi.startTask(task.id)
     ElMessage.success('巡检任务已开始')
     loadTasks()
     loadTaskStats()
@@ -529,7 +530,7 @@ const deleteTask = async (task: Task) => {
       }
     )
 
-    await tasksApi.deleteMonitoringTask(task.id)
+    await tasksApi.deleteTask(task.id)
     ElMessage.success('监控任务删除成功')
     loadTasks()
     loadTaskStats()
@@ -554,10 +555,6 @@ const handleTaskFormSuccess = () => {
   loadTaskStats()
 }
 
-const handleQuickPatrolSuccess = () => {
-  loadTasks()
-  loadTaskStats()
-}
 
 // 工具方法
 const formatDate = (dateString: string): string => {

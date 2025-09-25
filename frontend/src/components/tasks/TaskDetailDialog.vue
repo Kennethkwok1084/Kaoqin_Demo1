@@ -98,18 +98,33 @@
                     <el-descriptions-item label="报修人">
                       {{ task.reporterName || task.reporter_name || '-' }}
                     </el-descriptions-item>
-                    <el-descriptions-item label="联系方式">
-                      {{
-                        task.contactInfo ||
-                        task.contact_info ||
-                        task.reporter_contact ||
-                        task.contact_phone ||
-                        '-'
-                      }}
-                    </el-descriptions-item>
-                  </el-descriptions>
-                </div>
-              </el-col>
+                  <el-descriptions-item label="联系方式">
+                    {{
+                      task.contactInfo ||
+                      task.contact_info ||
+                      task.reporter_contact ||
+                      task.contact_phone ||
+                      '-'
+                    }}
+                  </el-descriptions-item>
+                  <el-descriptions-item label="超时状态">
+                    <template v-if="overdueStatus.isOverdue">
+                      <el-tag
+                        v-for="status in overdueStatus.labels"
+                        :key="status"
+                        type="danger"
+                        effect="plain"
+                        size="small"
+                        style="margin-right: 6px"
+                      >
+                        {{ status }}
+                      </el-tag>
+                    </template>
+                    <span v-else>未超时</span>
+                  </el-descriptions-item>
+                </el-descriptions>
+              </div>
+            </el-col>
 
               <el-col :span="12">
                 <div class="info-section">
@@ -141,7 +156,7 @@
                       </span>
                     </el-descriptions-item>
                     <el-descriptions-item label="开始时间">
-                      {{ formatDateTime(task.startedAt || task.started_at || '') }}
+                      {{ formatDateTime(task.startedAt || task.started_at || task.start_time || task.response_time || '') }}
                     </el-descriptions-item>
                     <el-descriptions-item label="完成时间">
                       {{
@@ -188,7 +203,7 @@
         </el-card>
 
         <!-- 工时记录 -->
-        <el-card class="work-logs-section" shadow="never">
+        <el-card v-if="isRepairTask" class="work-logs-section" shadow="never">
           <template #header>
             <div class="card-header">
               <div class="header-left">
@@ -233,7 +248,7 @@
         </el-card>
 
         <!-- 评论区 -->
-        <el-card class="comments-section" shadow="never">
+        <el-card v-if="isRepairTask" class="comments-section" shadow="never">
           <template #header>
             <div class="card-header">
               <div class="header-left">
@@ -294,7 +309,7 @@
         </el-card>
 
         <!-- 附件列表 -->
-        <el-card class="attachments-section" shadow="never">
+        <el-card v-if="isRepairTask" class="attachments-section" shadow="never">
           <template #header>
             <div class="card-header">
               <div class="header-left">
@@ -453,10 +468,12 @@ import {
 interface Props {
   modelValue: boolean
   taskId?: number | null
+  taskType?: string | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  taskId: null
+  taskId: null,
+  taskType: null
 })
 
 // Emits
@@ -482,6 +499,7 @@ const addingComment = ref(false)
 const addingWorkLog = ref(false)
 const newComment = ref('')
 const showWorkLogDialog = ref(false)
+const detailTaskType = ref<string>('repair')
 
 // 工时表单数据
 const workLogForm = reactive({
@@ -515,7 +533,7 @@ const estimatedHours = computed(() => {
   }
   const baseMinutes = (task.value as any).base_work_minutes
   if (baseMinutes) {
-    return Number((baseMinutes / 60).toFixed(1))
+    return Number((baseMinutes / 60).toFixed(2))
   }
   return 0
 })
@@ -529,10 +547,48 @@ const actualHours = computed(() => {
   }
   const workMinutes = (task.value as any).work_minutes
   if (workMinutes) {
-    return Number((workMinutes / 60).toFixed(1))
+    return Number((workMinutes / 60).toFixed(2))
   }
   return 0
 })
+
+const overdueStatus = computed(() => {
+  if (!task.value) {
+    return {
+      isOverdue: false,
+      labels: [] as string[]
+    }
+  }
+
+  const responseOverdue = Boolean(
+    (task.value as any).is_overdue_response ?? (task.value as any).isOverdueResponse
+  )
+  const completionOverdue = Boolean(
+    (task.value as any).is_overdue_completion ??
+      (task.value as any).isOverdueCompletion
+  )
+
+  const tagList = ((task.value as any).tags || []) as Array<string | { name?: string }>
+  const tagNames = tagList
+    .map(tag => (typeof tag === 'string' ? tag : tag?.name))
+    .filter((name): name is string => Boolean(name))
+  const timeoutResponseTagNames = new Set(['超时响应', '超时响应惩罚'])
+  const timeoutCompletionTagNames = new Set(['超时处理', '超时处理惩罚'])
+
+  const responseTimeoutTagged = tagNames.some(name => timeoutResponseTagNames.has(name))
+  const completionTimeoutTagged = tagNames.some(name => timeoutCompletionTagNames.has(name))
+
+  const labels: string[] = []
+  if (responseOverdue || responseTimeoutTagged) labels.push('接单超时')
+  if (completionOverdue || completionTimeoutTagged) labels.push('处理超时')
+
+  return {
+    isOverdue: labels.length > 0,
+    labels
+  }
+})
+
+const isRepairTask = computed(() => detailTaskType.value === 'repair')
 
 // 方法
 const loadTaskDetail = async () => {
@@ -540,9 +596,18 @@ const loadTaskDetail = async () => {
 
   try {
     loading.value = true
-    task.value = await tasksApi.getTask(props.taskId)
+    const fetchedTask = await tasksApi.getTask(props.taskId, {
+      type: props.taskType || undefined
+    })
+    task.value = fetchedTask
 
-    // 同时加载相关数据
+    const resolvedType =
+      props.taskType ||
+      (fetchedTask as any).type ||
+      (fetchedTask as any).task_type ||
+      'repair'
+    detailTaskType.value = resolvedType as string
+
     await Promise.all([
       loadWorkLogs(),
       loadComments(),
@@ -557,7 +622,11 @@ const loadTaskDetail = async () => {
 }
 
 const loadWorkLogs = async () => {
-  if (!props.taskId) return
+  if (!props.taskId || detailTaskType.value !== 'repair') {
+    workLogs.value = []
+    workLogsLoading.value = false
+    return
+  }
 
   try {
     workLogsLoading.value = true
@@ -570,7 +639,11 @@ const loadWorkLogs = async () => {
 }
 
 const loadComments = async () => {
-  if (!props.taskId) return
+  if (!props.taskId || detailTaskType.value !== 'repair') {
+    comments.value = []
+    commentsLoading.value = false
+    return
+  }
 
   try {
     commentsLoading.value = true
@@ -583,11 +656,19 @@ const loadComments = async () => {
 }
 
 const loadAttachments = async () => {
-  if (!props.taskId || !task.value) return
+  if (!props.taskId || !task.value) {
+    attachmentsLoading.value = false
+    return
+  }
+
+  if (detailTaskType.value !== 'repair') {
+    attachments.value = (task.value as any).attachments || []
+    attachmentsLoading.value = false
+    return
+  }
 
   try {
     attachmentsLoading.value = true
-    // 如果任务对象包含附件信息，直接使用
     attachments.value = (task.value as any).attachments || []
   } catch (error) {
     console.error('加载附件失败:', error)
@@ -608,6 +689,7 @@ const resetData = () => {
   attachments.value = []
   newComment.value = ''
   showWorkLogDialog.value = false
+  detailTaskType.value = props.taskType || 'repair'
   resetWorkLogForm()
 }
 
@@ -659,6 +741,7 @@ const handleTaskAction = async (command: string) => {
 }
 
 const showAddWorkLogDialog = () => {
+  if (!isRepairTask.value) return
   showWorkLogDialog.value = true
 }
 
@@ -854,10 +937,12 @@ const getDueDateClass = (dueDate: string, status: string): string => {
 
 // 监听
 watch(
-  () => [props.modelValue, props.taskId],
-  ([visible, taskId]) => {
+  () => [props.modelValue, props.taskId, props.taskType],
+  ([visible, taskId, taskType]) => {
     if (visible && taskId) {
       loadTaskDetail()
+    } else if (!visible) {
+      detailTaskType.value = (taskType as string | null) || 'repair'
     }
   },
   { immediate: true }

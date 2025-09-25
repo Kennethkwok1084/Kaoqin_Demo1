@@ -25,6 +25,8 @@ from app.api.deps import (
 )
 from app.models.member import Member, UserRole
 from app.models.task import (
+    AssistanceTask,
+    MonitoringTask,
     RepairTask,
     TaskCategory,
     TaskPriority,
@@ -577,7 +579,9 @@ async def get_work_time_detail(
 
 @router.get("/stats", response_model=Dict[str, Any])
 async def get_tasks_stats(
-    current_user: Member = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    task_type: Optional[str] = Query(None, description="任务类型：repair, monitoring, assistance"),
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ) -> Dict[str, Any]:
     """
     获取任务统计信息
@@ -589,46 +593,54 @@ async def get_tasks_stats(
         today_start = datetime.combine(today, datetime.min.time())
         today_end = datetime.combine(today, datetime.max.time())
 
+        # 根据任务类型选择对应的模型
+        if task_type == "monitoring":
+            TaskModel = MonitoringTask
+        elif task_type == "assistance":
+            TaskModel = AssistanceTask
+        else:
+            TaskModel = RepairTask  # 默认或 repair 类型
+
         # 总任务统计
-        total_query = select(func.count(RepairTask.id))
+        total_query = select(func.count(TaskModel.id))
         total_result = await db.execute(total_query)
         total_tasks = total_result.scalar() or 0
 
         # 待处理任务
-        pending_query = select(func.count(RepairTask.id)).where(
-            RepairTask.status == TaskStatus.PENDING
+        pending_query = select(func.count(TaskModel.id)).where(
+            TaskModel.status == TaskStatus.PENDING
         )
         pending_result = await db.execute(pending_query)
         pending_tasks = pending_result.scalar() or 0
 
         # 进行中任务
-        in_progress_query = select(func.count(RepairTask.id)).where(
-            RepairTask.status == TaskStatus.IN_PROGRESS
+        in_progress_query = select(func.count(TaskModel.id)).where(
+            TaskModel.status == TaskStatus.IN_PROGRESS
         )
         in_progress_result = await db.execute(in_progress_query)
         in_progress_tasks = in_progress_result.scalar() or 0
 
         # 已完成任务
-        completed_query = select(func.count(RepairTask.id)).where(
-            RepairTask.status == TaskStatus.COMPLETED
+        completed_query = select(func.count(TaskModel.id)).where(
+            TaskModel.status == TaskStatus.COMPLETED
         )
         completed_result = await db.execute(completed_query)
         completed_tasks = completed_result.scalar() or 0
 
         # 今日创建任务
-        today_created_query = select(func.count(RepairTask.id)).where(
+        today_created_query = select(func.count(TaskModel.id)).where(
             and_(
-                RepairTask.created_at >= today_start, RepairTask.created_at <= today_end
+                TaskModel.created_at >= today_start, TaskModel.created_at <= today_end
             )
         )
         today_created_result = await db.execute(today_created_query)
         today_created = today_created_result.scalar() or 0
 
         # 今日完成任务
-        today_completed_query = select(func.count(RepairTask.id)).where(
+        today_completed_query = select(func.count(TaskModel.id)).where(
             and_(
-                RepairTask.completion_time >= today_start,
-                RepairTask.completion_time <= today_end,
+                TaskModel.completion_time >= today_start,
+                TaskModel.completion_time <= today_end,
             )
         )
         today_completed_result = await db.execute(today_completed_query)
@@ -638,16 +650,16 @@ async def get_tasks_stats(
         my_tasks = 0
         my_pending = 0
         if current_user.role in [UserRole.MEMBER, UserRole.GROUP_LEADER]:
-            my_tasks_query = select(func.count(RepairTask.id)).where(
-                RepairTask.member_id == current_user.id
+            my_tasks_query = select(func.count(TaskModel.id)).where(
+                TaskModel.member_id == current_user.id
             )
             my_tasks_result = await db.execute(my_tasks_query)
             my_tasks = my_tasks_result.scalar() or 0
 
-            my_pending_query = select(func.count(RepairTask.id)).where(
+            my_pending_query = select(func.count(TaskModel.id)).where(
                 and_(
-                    RepairTask.member_id == current_user.id,
-                    RepairTask.status.in_([TaskStatus.PENDING, TaskStatus.IN_PROGRESS]),
+                    TaskModel.member_id == current_user.id,
+                    TaskModel.status.in_([TaskStatus.PENDING, TaskStatus.IN_PROGRESS]),
                 )
             )
             my_pending_result = await db.execute(my_pending_query)
@@ -677,7 +689,7 @@ async def get_tasks_stats(
         )
 
 
-# ============= 维修任务管理 =============
+# ============= 报修单管理 =============
 
 
 @router.get("/repair", response_model=Dict[str, Any])
@@ -691,7 +703,7 @@ async def get_repair_tasks(
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """
-    获取维修任务列表
+    获取报修单列表
     权限：管理员和组长可查看所有任务，普通用户只能查看自己的任务
     """
     try:
@@ -811,6 +823,8 @@ async def get_repair_tasks(
                 "assigneeId": task.member_id,
                 "is_urgent": task.priority == TaskPriority.URGENT if task.priority else False,
                 "is_online": task.task_type == TaskType.ONLINE if task.task_type else True,
+                "is_offline": task.task_type == TaskType.OFFLINE if task.task_type else False,
+                "isOffline": task.task_type == TaskType.OFFLINE if task.task_type else False,
                 "task_type": task_type_value,
                 "type": task_type_value,
                 "due_date": due_date_iso,
@@ -821,11 +835,17 @@ async def get_repair_tasks(
                 "responseTime": response_iso,
                 "completion_time": completion_iso,
                 "completionTime": completion_iso,
+                "completed_at": completion_iso,
+                "completedAt": completion_iso,
                 "created_at": created_iso,
                 "createdAt": created_iso,
                 "updated_at": updated_iso,
                 "updatedAt": updated_iso,
                 "work_minutes": task.work_minutes,
+                "is_overdue_response": task.is_overdue_response,
+                "isOverdueResponse": task.is_overdue_response,
+                "is_overdue_completion": task.is_overdue_completion,
+                "isOverdueCompletion": task.is_overdue_completion,
                 "rating": task.rating,
                 "rating_comment": task.feedback,
             }
@@ -842,14 +862,14 @@ async def get_repair_tasks(
                 "size": pageSize,
                 "pages": pages
             },
-            message=f"成功获取维修任务列表，共 {total} 条记录"
+            message=f"成功获取报修单列表，共 {total} 条记录"
         )
 
     except Exception as e:
-        logger.error(f"获取维修任务列表失败: {str(e)}")
+        logger.error(f"获取报修单列表失败: {str(e)}")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取维修任务列表失败: {str(e)}"
+            detail=f"获取报修单列表失败: {str(e)}"
         )
 
 
@@ -1182,6 +1202,15 @@ async def delete_repair_task(
 
         task_id_str = task.task_id
         task_title = task.title
+
+        # 先删除关联标签
+        from app.models.task import task_tag_association
+
+        await db.execute(
+            delete(task_tag_association).where(
+                task_tag_association.c.task_id == task.id
+            )
+        )
 
         # 删除任务
         delete_stmt = delete(RepairTask).where(RepairTask.id == task_id)
@@ -4223,13 +4252,81 @@ async def get_assistance_tasks_list(
 
     except Exception as e:
         logger.error(f"Get assistance tasks error: {str(e)}")
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="获取协助任务列表失败",
+        return create_error_response(
+            message="获取协助任务列表失败", details={"error": str(e)}
         )
 
 
 # ============= 协助任务审核流程 - 扩展现有API =============
+
+
+@router.get("/assistance/{task_id}", response_model=Dict[str, Any])
+async def get_assistance_task_detail(
+    task_id: int,
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """获取单个协助任务详情"""
+    try:
+        assistance_task = await db.get(AssistanceTask, task_id)
+        if not assistance_task:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND, detail="协助任务不存在"
+            )
+
+        if not check_user_can_manage_group(current_user) and assistance_task.member_id != current_user.id:
+            raise HTTPException(
+                status_code=http_status.HTTP_403_FORBIDDEN, detail="无权限查看该协助任务"
+            )
+
+        start_iso = assistance_task.start_time.isoformat() if assistance_task.start_time else None
+        end_iso = assistance_task.end_time.isoformat() if assistance_task.end_time else None
+
+        task_data = {
+            "id": assistance_task.id,
+            "title": assistance_task.title,
+            "description": assistance_task.description,
+            "status": assistance_task.status.value if assistance_task.status else None,
+            "task_type": "assistance",
+            "type": "assistance",
+            "assisted_department": assistance_task.assisted_department,
+            "assisted_person": assistance_task.assisted_person,
+            "location": assistance_task.assisted_department,
+            "reporter_name": assistance_task.assisted_person,
+            "reporter_contact": assistance_task.assisted_person,
+            "start_time": start_iso,
+            "started_at": start_iso,
+            "startedAt": start_iso,
+            "end_time": end_iso,
+            "completed_at": end_iso,
+            "completedAt": end_iso,
+            "completion_time": end_iso,
+            "due_date": end_iso,
+            "dueDate": end_iso,
+            "work_minutes": assistance_task.work_minutes,
+            "work_hours": round((assistance_task.work_minutes or 0) / 60.0, 2),
+            "actual_hours": round((assistance_task.work_minutes or 0) / 60.0, 2),
+            "member_id": assistance_task.member_id,
+            "member_name": assistance_task.member.name if assistance_task.member else None,
+            "approved_by": assistance_task.approved_by,
+            "approved_at": assistance_task.approved_at.isoformat() if assistance_task.approved_at else None,
+            "review_comment": assistance_task.review_comment,
+            "is_overdue_response": False,
+            "is_overdue_completion": False,
+            "attachments": [],
+            "created_at": assistance_task.created_at.isoformat() if assistance_task.created_at else None,
+            "updated_at": assistance_task.updated_at.isoformat() if assistance_task.updated_at else None,
+        }
+
+        return create_response(data=task_data, message="成功获取协助任务详情")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取协助任务详情失败: {str(e)}")
+        return create_error_response(
+            message="获取协助任务详情失败", details={"error": str(e)}
+        )
 
 
 @router.get("/assistance/pending", response_model=Dict[str, Any])
@@ -4838,6 +4935,10 @@ async def import_maintenance_orders(
                 except Exception:
                     pass
 
+                # 如果缺少响应时间但有报修时间，使用报修时间作为兜底值，便于后续超时计算
+                if not response_time and report_time:
+                    response_time = report_time
+
                 try:
                     if import_completion_time:
                         from dateutil import parser
@@ -4914,7 +5015,10 @@ async def import_maintenance_orders(
                     "rating": data.get("rating"),
                     "feedback": data.get("feedback"),
                     "repair_form": repair_form,
+                    "is_offline": task_type == TaskType.OFFLINE,
                     "work_order_status": work_order_status,
+                    "created_at": report_time,
+                    "updated_at": completion_time or report_time,
                 }
 
                 # 创建维修任务

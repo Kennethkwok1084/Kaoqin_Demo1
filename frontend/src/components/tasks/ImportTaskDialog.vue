@@ -393,12 +393,10 @@
               <el-table-column label="任务类型" width="90">
                 <template #default="{ row }">
                   <el-tag
-                    :type="
-                      row.taskType === 'offline_repair' ? 'warning' : 'info'
-                    "
+                    :type="isRowOffline(row) ? 'warning' : 'info'"
                     size="small"
                   >
-                    {{ row.taskType === 'offline_repair' ? '线下' : '线上' }}
+                    {{ isRowOffline(row) ? '线下' : '线上' }}
                     <span
                       v-if="row.isOnlineOnly"
                       style="margin-left: 4px"
@@ -430,7 +428,7 @@
                       {{ row.actualHours }}小时
                     </div>
                     <div v-else class="work-hours-default">
-                      {{ row.taskType === 'offline_repair' ? '100' : '40' }}分钟
+                      {{ isRowOffline(row) ? '100' : '40' }}分钟
                     </div>
                   </div>
                 </template>
@@ -726,6 +724,22 @@ const normalizeDateTime = (value: any): string | null => {
     return null
   }
 
+  const digitsOnly = strValue.replace(/[^0-9]/g, '')
+  if (digitsOnly.length >= 8) {
+    const year = digitsOnly.slice(0, 4)
+    const month = digitsOnly.slice(4, 6) || '01'
+    const day = digitsOnly.slice(6, 8) || '01'
+    const hour = digitsOnly.slice(8, 10) || '00'
+    const minute = digitsOnly.slice(10, 12) || '00'
+    const second = digitsOnly.slice(12, 14) || '00'
+
+    const candidate = `${year}-${month}-${day} ${hour}:${minute}:${second}`
+    const parsedDigits = dayjs(candidate, 'YYYY-MM-DD HH:mm:ss', true)
+    if (parsedDigits.isValid()) {
+      return parsedDigits.format('YYYY-MM-DD HH:mm:ss')
+    }
+  }
+
   const normalized = strValue
     .replace(/年|月/g, '-')
     .replace(/日/g, '')
@@ -767,6 +781,17 @@ const normalizeDateTime = (value: any): string | null => {
   return strValue
 }
 
+const isRowOffline = (row: any): boolean => {
+  if (typeof row?.isOffline === 'boolean') {
+    return row.isOffline
+  }
+  if (typeof row?.is_offline === 'boolean') {
+    return row.is_offline
+  }
+  const type = (row?.taskType || row?.task_type || '').toString()
+  return type === 'offline' || type === 'offline_repair'
+}
+
 const formatDateTimeForApi = (value: string | null): string | null => {
   if (!value) return null
 
@@ -776,6 +801,21 @@ const formatDateTimeForApi = (value: string | null): string | null => {
   const normalizeToDayjs = (input: string) => {
     const candidate = input.includes('T') ? input : input.replace(' ', 'T')
     return dayjs(candidate)
+  }
+
+  const digitsOnly = trimmed.replace(/[^0-9]/g, '')
+  if (digitsOnly.length >= 8) {
+    const year = digitsOnly.slice(0, 4)
+    const month = digitsOnly.slice(4, 6) || '01'
+    const day = digitsOnly.slice(6, 8) || '01'
+    const hour = digitsOnly.slice(8, 10) || '00'
+    const minute = digitsOnly.slice(10, 12) || '00'
+    const second = digitsOnly.slice(12, 14) || '00'
+    const candidate = `${year}-${month}-${day}T${hour}:${minute}:${second}`
+    const parsedDigits = dayjs(candidate)
+    if (parsedDigits.isValid()) {
+      return parsedDigits.format('YYYY-MM-DDTHH:mm:ss')
+    }
   }
 
   const directParsed = dayjs(trimmed)
@@ -1361,6 +1401,56 @@ const parseExcelFile = async (file: File, tableType: 'a-table' | 'b-table') => {
   })
 }
 
+const deriveTaskMeta = (primaryType: any, secondaryType?: any) => {
+  const normalize = (value: any) =>
+    value
+      ? value
+          .toString()
+          .toLowerCase()
+          .replace(/\s+/g, '')
+      : ''
+
+  const primaryText = normalize(primaryType)
+  const secondaryText = normalize(secondaryType)
+
+  const hasOfflineKeyword = (text: string) =>
+    ['线下', '现场', '实地'].some(keyword => text.includes(keyword))
+
+  const hasOnlineKeyword = (text: string) =>
+    ['线上', '远程'].some(keyword => text.includes(keyword))
+
+  if (secondaryText) {
+    if (hasOfflineKeyword(secondaryText)) {
+      return { taskType: 'offline', isOffline: true }
+    }
+    if (hasOnlineKeyword(secondaryText)) {
+      return { taskType: 'online', isOffline: false }
+    }
+  }
+
+  if (hasOfflineKeyword(primaryText)) {
+    return { taskType: 'offline', isOffline: true }
+  }
+
+  if (hasOnlineKeyword(primaryText)) {
+    return { taskType: 'online', isOffline: false }
+  }
+
+  if (primaryText.includes('协助')) {
+    return { taskType: 'assistance', isOffline: false }
+  }
+
+  if (primaryText.includes('监控')) {
+    return { taskType: 'monitoring', isOffline: false }
+  }
+
+  if (primaryText.includes('维修') || primaryText.includes('修复')) {
+    return { taskType: 'repair', isOffline: false }
+  }
+
+  return { taskType: 'online', isOffline: false }
+}
+
 // 生成仅线上任务数据（跳过B表时使用）
 const generateOnlineOnlyTasks = () => {
   const onlineResults: any[] = []
@@ -1372,6 +1462,8 @@ const generateOnlineOnlyTasks = () => {
     const matchKey = buildMatchKey(reporterNameRaw, reporterContactRaw)
     const reportTime = normalizeDateTime(aRow['报单时间'])
     const completionTime = normalizeDateTime(aRow['完工时间'] || aRow['完成时间'])
+
+    const meta = deriveTaskMeta(aRow['类型'])
 
     onlineResults.push({
       // A表数据
@@ -1386,7 +1478,8 @@ const generateOnlineOnlyTasks = () => {
       reporterContact,
       reportTime,
       status: aRow['工单状态'],
-      taskType: 'online', // 强制设为线上任务
+      taskType: meta.taskType,
+      isOffline: meta.isOffline,
       priority: getPriority(aRow['优先级']),
       category: aRow['分类'],
       completionStatus: aRow['完成情况'] || aRow['工单状态'], // 新增完成情况字段
@@ -1410,8 +1503,9 @@ const generateOnlineOnlyTasks = () => {
 
       // 匹配状态（跳过B表）
       matched: false,
+      isOffline: meta.isOffline,
       matchKey,
-      isOnlineOnly: true // 标记为仅线上任务
+      isOnlineOnly: !meta.isOffline // 仅当无法识别线下时才视为线上默认
     })
   })
 
@@ -1451,12 +1545,21 @@ const performABMatching = () => {
       // 成功匹配，合并A-B表数据
       matchingBRows.forEach(bRow => {
         const originalBRecord = bRow._originalBTableRecord
+        const repairFormRaw =
+          originalBRecord?.repairType ||
+          bRow['检修形式'] ||
+          bRow['检修方式'] ||
+          ''
+        const meta = deriveTaskMeta(aRow['类型'], repairFormRaw)
         if (import.meta.env.DEV) {
           console.debug('[ImportDialog] 匹配成功', {
             matchKey,
             aRow: aRow['工单编号'],
             bRowIndex: bRow._rowIndex,
-            bRecord: originalBRecord
+            bRecord: originalBRecord,
+            repairForm: repairFormRaw,
+            taskType: meta.taskType,
+            isOffline: meta.isOffline
           })
         }
 
@@ -1473,7 +1576,8 @@ const performABMatching = () => {
           reporterContact,
           reportTime,
           status: aRow['工单状态'],
-          taskType: getTaskType(aRow['类型'], originalBRecord?.repairType),
+          taskType: meta.taskType,
+          isOffline: meta.isOffline,
           priority: getPriority(aRow['优先级']),
           category: aRow['分类'],
           completionStatus: aRow['完成情况'] || aRow['工单状态'],
@@ -1495,17 +1599,32 @@ const performABMatching = () => {
           remark: originalBRecord
             ? `位置:${originalBRecord.location}, 类型:${originalBRecord.repairType}`
             : bRow['备注'],
-          repairForm: originalBRecord?.repairType || null,
+          repairForm:
+            (repairFormRaw && repairFormRaw.toString().trim()) || null,
 
           // 匹配状态
           matched: true,
+          isOffline: meta.isOffline,
           matchKey,
+          isOnlineOnly: false,
           bTableSource: 'special_format' // 标记为特殊B表格式
         })
       })
     } else {
       const matchKeyFallback = matchKey
-      // 仅A表数据，没有匹配的B表（按线上单处理）
+      const rawAssigneeFromA =
+        aRow['处理人'] ||
+        aRow['处理人员'] ||
+        aRow['负责人'] ||
+        aRow['责任人'] ||
+        aRow['指派人'] ||
+        aRow['受派人'] ||
+        ''
+      const assigneeFromA = rawAssigneeFromA
+        ? rawAssigneeFromA.toString().trim()
+        : ''
+      const meta = deriveTaskMeta(aRow['类型'])
+      // 仅A表数据，没有匹配的B表（根据A表类型推断）
       matchedResults.push({
         // A表数据
         workOrderId: aRow['工单编号'],
@@ -1519,13 +1638,16 @@ const performABMatching = () => {
         reporterContact,
         reportTime,
         status: aRow['工单状态'],
-        taskType: 'online', // 无B表数据时默认为线上任务
+        taskType: meta.taskType,
+        isOffline: meta.isOffline,
         priority: getPriority(aRow['优先级']),
         category: aRow['分类'],
         completionStatus: aRow['完成情况'] || aRow['工单状态'],
 
         // B表数据为空
-        assignee: null,
+        assignee: assigneeFromA || null,
+        handler_name: assigneeFromA || null,
+        handlerName: assigneeFromA || null,
         responseTime: null,
         processTime: null,
         completeTime: completionTime,
@@ -1543,6 +1665,7 @@ const performABMatching = () => {
 
         // 匹配状态
         matched: false,
+        isOnlineOnly: !meta.isOffline,
         matchKey: matchKeyFallback
       })
       if (import.meta.env.DEV) {
@@ -1562,33 +1685,7 @@ const performABMatching = () => {
 }
 
 const getTaskType = (type: string, bTableRepairType?: string): string => {
-  const toText = (value?: string) =>
-    value ? value.toString().toLowerCase().trim() : ''
-
-  const bTypeText = toText(bTableRepairType)
-  if (bTypeText) {
-    if (bTypeText.includes('现场') || bTypeText.includes('线下')) {
-      return 'offline'
-    }
-    if (bTypeText.includes('线上') || bTypeText.includes('远程')) {
-      return 'online'
-    }
-  }
-
-  const typeText = toText(type)
-  if (!typeText) return 'online'
-
-  if (typeText.includes('线下') || typeText.includes('现场')) {
-    return 'offline'
-  }
-  if (typeText.includes('协助')) {
-    return 'assistance'
-  }
-  if (typeText.includes('维修') || typeText.includes('修复')) {
-    return 'repair'
-  }
-
-  return 'online'
+  return deriveTaskMeta(type, bTableRepairType).taskType
 }
 
 const getPriority = (priority: string): string => {
@@ -1637,7 +1734,7 @@ const handleImport = async () => {
           title: item.title,
           description: item.description,
           type: 'repair', // 默认为维修任务
-          task_type: item.taskType || 'online',
+          task_type: isRowOffline(item) ? 'offline' : item.taskType || 'online',
           priority: item.priority,
           location: item.location,
           contact_person: item.contactPerson,
@@ -1669,13 +1766,14 @@ const handleImport = async () => {
           customer_rating: item.customerRating,
           satisfaction: item.satisfaction,
           remark: item.remark,
-          repair_form:
-            item.repairForm || (item.taskType === 'offline_repair' ? '现场' : '线上'),
+          repair_form: item.repairForm || (isRowOffline(item) ? '现场' : '线上'),
+          is_offline: isRowOffline(item),
+          isOffline: isRowOffline(item),
 
           // 匹配状态
           is_matched: item.matched,
           match_key: item.matchKey,
-          is_online_only: item.isOnlineOnly || false // 是否为跳过B表的线上单
+          is_online_only: Boolean(item.isOnlineOnly) // 是否为跳过B表的线上单
         }
       }),
       import_type:

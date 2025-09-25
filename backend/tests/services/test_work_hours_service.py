@@ -322,8 +322,10 @@ class TestTimeOverdueChecks(TestWorkHoursCalculationServiceBasic):
     def test_is_completion_overdue_true(self, service):
         """测试完成超时检查 - 超时情况"""
         task = MagicMock()
+        base_time = datetime.utcnow() - timedelta(hours=50)
+        task.report_time = base_time
+        task.response_time = base_time
         task.completion_time = None
-        task.response_time = datetime.utcnow() - timedelta(hours=50)  # 超过48小时
 
         result = service._is_completion_overdue(task)
         assert result is True
@@ -331,11 +333,26 @@ class TestTimeOverdueChecks(TestWorkHoursCalculationServiceBasic):
     def test_is_completion_overdue_false(self, service):
         """测试完成超时检查 - 未超时情况"""
         task = MagicMock()
+        base_time = datetime.utcnow() - timedelta(hours=20)
+        task.report_time = base_time
+        task.response_time = base_time
         task.completion_time = None
-        task.response_time = datetime.utcnow() - timedelta(hours=20)  # 未超过48小时
 
         result = service._is_completion_overdue(task)
         assert result is False
+
+    def test_is_completion_overdue_with_completion_time(self, service):
+        """处理完成但耗时超过阈值仍判定超时"""
+        start_time = datetime.utcnow() - timedelta(hours=60)
+        finish_time = start_time + timedelta(hours=55)
+
+        task = MagicMock()
+        task.report_time = start_time
+        task.response_time = start_time
+        task.completion_time = finish_time
+
+        result = service._is_completion_overdue(task)
+        assert result is True
 
     def test_is_negative_review_true(self, service):
         """测试差评检查 - 差评情况"""

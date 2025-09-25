@@ -10,7 +10,7 @@
         <el-button type="primary" :icon="Plus" @click="showCreateDialog">
           新建协助任务
         </el-button>
-        <el-button :icon="Upload" @click="showImportDialog">
+        <el-button :icon="Upload" @click="showImport">
           导入协助任务
         </el-button>
         <el-button :icon="Download" @click="exportTasks"> 导出任务 </el-button>
@@ -304,19 +304,21 @@
     </el-card>
 
     <!-- 对话框组件 -->
-    <AssistanceTaskFormDialog
+    <TaskFormDialog
       v-model="showTaskDialog"
       :task="currentTask"
       @success="handleTaskFormSuccess"
     />
 
-    <AssistanceTaskDetailDialog
+    <TaskDetailDialog
       v-model="showDetailDialog"
       :task-id="currentTaskId"
+      :task-type="currentTaskType"
       @updated="loadTasks"
     />
 
-    <ImportAssistanceDialog
+    <!-- Import dialog for assistance tasks -->
+    <ImportAssistanceTaskDialog
       v-model="showImportDialog"
       @success="handleImportSuccess"
     />
@@ -324,7 +326,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus,
@@ -344,9 +346,9 @@ import {
 import { tasksApi } from '@/api/tasks'
 import { formatDate as formatDateUtil } from '@/utils/date'
 import type { Task, TaskListParams, TaskStats } from '@/types/task'
-import AssistanceTaskFormDialog from '@/components/tasks/AssistanceTaskFormDialog.vue'
-import AssistanceTaskDetailDialog from '@/components/tasks/AssistanceTaskDetailDialog.vue'
-import ImportAssistanceDialog from '@/components/tasks/ImportAssistanceDialog.vue'
+import TaskFormDialog from '@/components/tasks/TaskFormDialog.vue'
+import TaskDetailDialog from '@/components/tasks/TaskDetailDialog.vue'
+import ImportAssistanceTaskDialog from '@/components/tasks/ImportAssistanceTaskDialog.vue'
 
 // 响应式数据
 const loading = ref(false)
@@ -393,6 +395,7 @@ const showDetailDialog = ref(false)
 const showImportDialog = ref(false)
 const currentTask = ref<Task | null>(null)
 const currentTaskId = ref<number | null>(null)
+const currentTaskType = ref<string | null>(null)
 
 // 统计卡片配置 - 专门针对协助任务
 const statsCards = [
@@ -443,7 +446,7 @@ const loadTasks = async () => {
       }
     }
 
-    const result = await tasksApi.getAssistanceTasks(params)
+    const result = await tasksApi.getTasks(params)
     tasks.value = result.items
     pagination.total = result.total
   } catch (error) {
@@ -511,12 +514,13 @@ const showCreateDialog = () => {
 
 const viewTaskDetail = (taskId: number) => {
   currentTaskId.value = taskId
+  currentTaskType.value = 'assistance'
   showDetailDialog.value = true
 }
 
 const startAssistance = async (task: Task) => {
   try {
-    await tasksApi.startAssistanceTask(task.id)
+    await tasksApi.startTask(task.id)
     ElMessage.success('协助任务已开始')
     loadTasks()
     loadTaskStats()
@@ -527,7 +531,7 @@ const startAssistance = async (task: Task) => {
 
 const completeAssistance = async (task: Task) => {
   try {
-    await tasksApi.completeAssistanceTask(task.id)
+    await tasksApi.completeTask(task.id)
     ElMessage.success('协助任务已完成')
     loadTasks()
     loadTaskStats()
@@ -572,7 +576,7 @@ const deleteTask = async (task: Task) => {
       }
     )
 
-    await tasksApi.deleteAssistanceTask(task.id)
+    await tasksApi.deleteTask(task.id)
     ElMessage.success('协助任务删除成功')
     loadTasks()
     loadTaskStats()
@@ -585,7 +589,7 @@ const deleteTask = async (task: Task) => {
 
 const pauseAssistance = async (task: Task) => {
   try {
-    await tasksApi.pauseAssistanceTask(task.id)
+    await tasksApi.pauseTask(task.id)
     ElMessage.success('协助任务已暂停')
     loadTasks()
     loadTaskStats()
@@ -596,7 +600,7 @@ const pauseAssistance = async (task: Task) => {
 
 const resumeAssistance = async (task: Task) => {
   try {
-    await tasksApi.resumeAssistanceTask(task.id)
+    await tasksApi.resumeTask(task.id)
     ElMessage.success('协助任务已恢复')
     loadTasks()
     loadTaskStats()
@@ -612,6 +616,10 @@ const exportTasks = async () => {
   } catch (error) {
     ElMessage.error('导出协助任务失败')
   }
+}
+
+const showImport = () => {
+  showImportDialog.value = true
 }
 
 const handleTaskFormSuccess = () => {
@@ -708,6 +716,15 @@ onMounted(() => {
   loadTasks()
   loadTaskStats()
 })
+
+watch(
+  () => showDetailDialog.value,
+  value => {
+    if (!value) {
+      currentTaskType.value = null
+    }
+  }
+)
 </script>
 
 <style scoped lang="scss">

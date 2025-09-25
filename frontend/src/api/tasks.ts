@@ -27,13 +27,27 @@ export const tasksApi = {
       sortOrder: params?.sortOrder || 'desc'
     }
 
+    // 确定API端点基于任务类型
+    let endpoint = '/tasks/repair' // 默认为报修任务
+    let taskType = 'repair'
+
     // 处理筛选条件
     if (params?.filters) {
       if (params.filters.search) {
         queryParams.search = params.filters.search
       }
       if (params.filters.type && params.filters.type.length > 0) {
-        queryParams.type = params.filters.type[0] // 取第一个类型
+        taskType = params.filters.type[0]
+        queryParams.type = taskType
+
+        // 根据任务类型选择不同的API端点
+        if (taskType === 'monitoring') {
+          endpoint = '/tasks/monitoring/list'
+        } else if (taskType === 'assistance') {
+          endpoint = '/tasks/assistance/list'
+        } else {
+          endpoint = '/tasks/repair' // repair或其他类型
+        }
       }
       if (params.filters.status && params.filters.status.length > 0) {
         queryParams.task_status = params.filters.status[0] // 取第一个状态
@@ -43,29 +57,45 @@ export const tasksApi = {
       }
     }
 
-    const response = await http.get('/tasks/repair', { params: queryParams })
+    const response = await http.get(endpoint, { params: queryParams })
     return response.data.data || { items: [], total: 0, page: 1, pageSize: 20 }
   },
 
   /**
    * 获取任务详情
    */
-  async getTask(id: number): Promise<Task> {
-    const response = await http.get(`/tasks/repair/${id}`)
+  async getTask(id: number, options?: { type?: string }): Promise<Task> {
+    const taskType = options?.type || 'repair'
+
+    let endpoint = `/tasks/repair/${id}`
+    if (taskType === 'assistance') {
+      endpoint = `/tasks/assistance/${id}`
+    }
+
+    const response = await http.get(endpoint)
     return response.data.data
   },
 
   /**
    * 获取任务详情 (别名方法，用于测试兼容性)
    */
-  async getTaskDetail(id: number): Promise<Task> {
-    return this.getTask(id)
+  async getTaskDetail(id: number, options?: { type?: string }): Promise<Task> {
+    return this.getTask(id, options)
   },
 
   /**
    * 创建任务
    */
   async createTask(data: CreateTaskRequest): Promise<Task> {
+    // 根据任务类型选择正确的API端点
+    let endpoint = '/tasks/repair' // 默认为报修任务
+
+    if ((data as any).type === 'assistance') {
+      endpoint = '/tasks/assistance'
+    } else if ((data as any).type === 'monitoring') {
+      endpoint = '/tasks/monitoring'
+    }
+
     const formData = new FormData()
 
     // 处理文件上传
@@ -92,7 +122,7 @@ export const tasksApi = {
       success: boolean
       message: string
       data: Task
-    }>('/tasks', formData, {
+    }>(endpoint, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -194,8 +224,63 @@ export const tasksApi = {
    * 获取任务统计
    */
   async getTaskStats(filters?: any): Promise<TaskStats> {
-    const response = await http.get('/tasks/stats', { params: filters })
-    return response.data.data || {}
+    const queryParams: Record<string, any> = {}
+
+    if (filters?.type && filters.type.length > 0) {
+      queryParams.task_type = filters.type[0]
+    }
+
+    const response = await http.get('/tasks/stats', { params: queryParams })
+    const data = response.data.data || {}
+    const overview = data.overview || {}
+
+    const toNumber = (value: unknown): number => {
+      if (value === null || value === undefined) return 0
+      const numeric = Number(value)
+      return Number.isFinite(numeric) ? numeric : 0
+    }
+
+    const normalized = {
+      total: toNumber(overview.total ?? data.total),
+      pending: toNumber(overview.pending ?? data.pending),
+      in_progress: toNumber(
+        overview.in_progress ??
+          overview.inProgress ??
+          data.in_progress ??
+          data.inProgress
+      ),
+      completed: toNumber(overview.completed ?? data.completed),
+      cancelled: toNumber(overview.cancelled ?? data.cancelled),
+      overdue: toNumber(overview.overdue ?? data.overdue),
+      total_work_hours: toNumber(
+        overview.total_work_hours ??
+          overview.totalWorkHours ??
+          data.total_work_hours ??
+          data.totalWorkHours
+      ),
+      avg_work_hours: toNumber(
+        overview.avg_work_hours ??
+          overview.avgWorkHours ??
+          data.avg_work_hours ??
+          data.avgWorkHours
+      ),
+      inProgress: 0
+    } satisfies TaskStats & {
+      overview?: typeof overview
+      today?: Record<string, number>
+      personal?: Record<string, number>
+      completion_rate?: number
+    }
+
+    normalized.inProgress = normalized.in_progress
+    normalized.overview = overview
+    normalized.today = (data.today || {}) as Record<string, number>
+    normalized.personal = (data.personal || {}) as Record<string, number>
+    normalized.completion_rate = toNumber(
+      data.completion_rate ?? data.completionRate
+    )
+
+    return normalized
   },
 
   /**
@@ -512,32 +597,25 @@ export const tasksApi = {
   /**
    * 导入协助任务
    */
-  async importAssistanceTasks(data: {
-    assistance_tasks: any[]
-  }): Promise<{
-    success: number
-    failed: number
-    matched_members: number
-    total_duration: number
-    errors: string[]
+  async importAssistanceTasks(tasks: any[]): Promise<{
+    success_count: number
+    failed_count: number
+    total_count: number
+    errors: any[]
   }> {
-    const response = await http.post<{
-      success: boolean
-      message: string
-      data: {
-        success: number
-        failed: number
-        matched_members: number
-        total_duration: number
-        errors: string[]
+    try {
+      const response = await http.post('/tasks/assistance/import', {
+        assistance_tasks: tasks
+      })
+      return response.data.data || {
+        success_count: tasks.length,
+        failed_count: 0,
+        total_count: tasks.length,
+        errors: []
       }
-    }>('/tasks/assistance/import', data)
-    return response.data.data || {
-      success: 0,
-      failed: 0,
-      matched_members: 0,
-      total_duration: 0,
-      errors: []
+    } catch (error) {
+      console.error('Import assistance tasks failed:', error)
+      throw new Error('导入协助任务失败')
     }
   }
 }

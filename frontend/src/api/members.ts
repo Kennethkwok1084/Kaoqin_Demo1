@@ -238,3 +238,6 @@ export const getMemberDetail = MembersApi.getMember
 
 // 默认导出
 export default MembersApi
+
+// 导出API实例 (用于组件中的 membersApi 引用)
+export const membersApi = MembersApi

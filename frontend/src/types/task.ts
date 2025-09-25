@@ -58,6 +58,12 @@ export interface Task extends BaseEntity {
   startedAt?: string | null
   completed_at?: string | null
   completedAt?: string | null
+  is_overdue_response?: boolean
+  isOverdueResponse?: boolean
+  is_overdue_completion?: boolean
+  isOverdueCompletion?: boolean
+  is_offline?: boolean
+  isOffline?: boolean
   completion_notes?: string | null
 
   // 关联数据

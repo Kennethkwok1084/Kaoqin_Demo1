@@ -102,6 +102,15 @@ class TaskService:
             task.task_type = task_data.get("task_type", TaskType.ONLINE)
             task.status = task_data.get("status", TaskStatus.PENDING)
 
+            # 覆盖创建/更新时间（用于导入对齐原始报修时间）
+            created_at = task_data.get("created_at")
+            if created_at:
+                task.created_at = created_at
+
+            updated_at = task_data.get("updated_at")
+            if updated_at:
+                task.updated_at = updated_at
+
             # 设置基础工时
             task.base_work_minutes = task.get_base_work_minutes()
 

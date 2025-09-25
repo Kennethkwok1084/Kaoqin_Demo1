@@ -94,8 +94,8 @@ class WorkHoursCalculationService:
             raise ValueError(f"任务 {task.id} 的任务类型无效")
 
         if not hasattr(task, "report_time") or task.report_time is None:
-            logger.error(f"Task {task.id} has invalid report_time")
-            raise ValueError(f"任务 {task.id} 的报修时间无效")
+            logger.warning(f"Task {task.id} missing report_time, using current time fallback")
+            task.report_time = datetime.utcnow()
 
         # 确保task有tags属性
         if not hasattr(task, "tags"):
@@ -766,13 +766,19 @@ class WorkHoursCalculationService:
 
     def _is_completion_overdue(self, task: RepairTask) -> bool:
         """检查是否超时处理"""
-        if task.completion_time or not task.response_time or task.response_time is None:
+        if not task.report_time:
             return False
 
-        hours_since_response = (
-            datetime.utcnow() - task.response_time
-        ).total_seconds() / 3600
-        return hours_since_response > self.COMPLETION_TIMEOUT_HOURS
+        start_time = task.response_time or task.report_time
+
+        if task.completion_time:
+            duration_hours = (
+                task.completion_time - start_time
+            ).total_seconds() / 3600
+            return duration_hours > self.COMPLETION_TIMEOUT_HOURS
+
+        hours_since_start = (datetime.utcnow() - start_time).total_seconds() / 3600
+        return hours_since_start > self.COMPLETION_TIMEOUT_HOURS
 
     def _is_negative_review(self, task: RepairTask) -> bool:
         """检查是否为差评"""

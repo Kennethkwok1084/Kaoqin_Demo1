@@ -197,7 +197,7 @@
           >
             <template #default="scope">
               <div class="task-title">
-                <el-link type="primary" @click="viewTaskDetail(scope.row.id)">
+                <el-link type="primary" @click="viewTaskDetail(scope.row)">
                   {{ scope.row.title }}
                 </el-link>
                 <div class="task-meta">
@@ -307,7 +307,7 @@
                 <el-button
                   type="text"
                   size="small"
-                  @click="viewTaskDetail(scope.row.id)"
+                  @click="viewTaskDetail(scope.row)"
                 >
                   详情
                 </el-button>
@@ -397,7 +397,7 @@
             v-for="task in tasks"
             :key="task.id"
           >
-            <div class="task-card" @click="viewTaskDetail(task.id)">
+            <div class="task-card" @click="viewTaskDetail(task)">
               <div class="task-card-header">
                 <div class="task-card-title">{{ task.title }}</div>
                 <div class="task-card-actions">
@@ -511,6 +511,7 @@
     <TaskDetailDialog
       v-model="showDetailDialog"
       :task-id="currentTaskId"
+      :task-type="currentTaskType"
       @updated="loadTasks"
     />
 
@@ -655,6 +656,7 @@ const showImportTaskDialog = ref(false)
 const showImportAssistanceDialog = ref(false)
 const currentTask = ref<Task | null>(null)
 const currentTaskId = ref<number | null>(null)
+const currentTaskType = ref<string | null>(null)
 
 // 统计卡片配置
 const statsCards = [
@@ -791,8 +793,13 @@ const editTask = (task: Task) => {
   showTaskDialog.value = true
 }
 
-const viewTaskDetail = (taskId: number) => {
-  currentTaskId.value = taskId
+const viewTaskDetail = (task: Task | { id: number; type?: string; task_type?: string }) => {
+  currentTaskId.value = task.id
+  const resolvedType =
+    (task as any).type ||
+    (task as any).task_type ||
+    (taskType.value !== 'all' ? taskType.value : null)
+  currentTaskType.value = resolvedType as string | null
   showDetailDialog.value = true
 }
 
@@ -1075,6 +1082,15 @@ onMounted(() => {
   loadTasks()
   loadTaskStats()
 })
+
+watch(
+  () => showDetailDialog.value,
+  value => {
+    if (!value) {
+      currentTaskType.value = null
+    }
+  }
+)
 
 // 监听筛选条件变化
 watch(
