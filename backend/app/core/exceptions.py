@@ -160,6 +160,13 @@ class ResourceNotFoundError(BaseCustomException):
         )
 
 
+class NotFoundError(ResourceNotFoundError):
+    """向后兼容的资源未找到异常别名"""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:  # type: ignore[override]
+        super().__init__(*args, **kwargs)
+
+
 # 业务逻辑相关异常
 class BusinessLogicError(BaseCustomException):
     """业务逻辑验证失败时抛出的异常"""

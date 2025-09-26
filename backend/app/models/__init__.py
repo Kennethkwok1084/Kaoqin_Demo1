@@ -18,6 +18,7 @@ from app.models.task import (
     RepairTask,
     TaskCategory,
     TaskPriority,
+    UrgencyLevel,
     TaskStatus,
     TaskTag,
     TaskType,
@@ -44,6 +45,7 @@ __all__ = [
     # Task enums
     "TaskCategory",
     "TaskPriority",
+    "UrgencyLevel",
     "TaskStatus",
     "TaskType",
     # Attendance models

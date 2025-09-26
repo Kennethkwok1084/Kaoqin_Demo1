@@ -922,6 +922,7 @@ class WorkHoursCalculationService:
 
         await self.db.commit()
 
+
     async def bulk_recalculate_work_hours(
         self,
         member_ids: List[int],
@@ -2388,3 +2389,13 @@ class RushTaskMarkingService:
             await self.db.flush()
 
         return tag
+
+
+class WorkHoursService(WorkHoursCalculationService):
+    """向后兼容的工时服务别名"""
+
+    def __init__(self, db: Optional[AsyncSession]) -> None:
+        super().__init__(db)
+
+
+__all__ = ["WorkHoursCalculationService", "WorkHoursService", "safe_float"]

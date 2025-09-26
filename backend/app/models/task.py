@@ -50,10 +50,19 @@ class TaskPriority(enum.Enum):
     URGENT = "urgent"  # 紧急
 
 
+class UrgencyLevel(enum.Enum):
+    """Urgency level for repair tasks."""
+
+    LOW = "low"  # 低
+    NORMAL = "normal"  # 普通
+    HIGH = "high"  # 高
+
+
 class TaskStatus(enum.Enum):
     """Task status enumeration."""
 
     PENDING = "pending"  # 待处理
+    ASSIGNED = "assigned"  # 已分配
     IN_PROGRESS = "in_progress"  # 处理中
     COMPLETED = "completed"  # 已完成
     CANCELLED = "cancelled"  # 已取消
@@ -247,6 +256,30 @@ class RepairTask(BaseModel):
     def __init__(self, **kwargs: Any) -> None:
         """Initialize RepairTask with required field defaults."""
         # Provide defaults for required fields if not provided
+        assigned_member = kwargs.pop("assigned_member_id", None)
+        if assigned_member is not None and "member_id" not in kwargs:
+            kwargs["member_id"] = assigned_member
+
+        if "is_online_task" in kwargs and "task_type" not in kwargs:
+            is_online = kwargs.pop("is_online_task")
+            kwargs["task_type"] = (
+                TaskType.ONLINE if bool(is_online) else TaskType.OFFLINE
+            )
+
+        if "urgency_level" in kwargs and kwargs["urgency_level"] is not None:
+            urgency_value = kwargs["urgency_level"]
+            if isinstance(urgency_value, UrgencyLevel):
+                kwargs["urgency_level"] = urgency_value.value
+            elif isinstance(urgency_value, str):
+                try:
+                    kwargs["urgency_level"] = UrgencyLevel(urgency_value).value
+                except ValueError as exc:
+                    raise ValueError(
+                        f"Invalid urgency level: {urgency_value}"
+                    ) from exc
+            else:
+                raise TypeError("urgency_level must be str or UrgencyLevel")
+
         if "task_id" not in kwargs:
             kwargs["task_id"] = f"TEST_{id(self)}"  # Generate unique ID for tests
         if "member_id" not in kwargs:
@@ -259,6 +292,9 @@ class RepairTask(BaseModel):
             kwargs["report_time"] = datetime.now(timezone.utc)
 
         super().__init__(**kwargs)
+
+        if getattr(self, "urgency_level", None) is None:
+            self.urgency_level = UrgencyLevel.NORMAL.value
 
     __tablename__ = "repair_tasks"
 
@@ -318,6 +354,13 @@ class RepairTask(BaseModel):
         default=TaskPriority.MEDIUM,
         nullable=False,
         comment="Task priority",
+    )
+
+    urgency_level = Column(
+        String(20),
+        nullable=False,
+        default=UrgencyLevel.NORMAL.value,
+        comment="Task urgency level",
     )
 
     status: Mapped[TaskStatus] = mapped_column(
@@ -435,6 +478,35 @@ class RepairTask(BaseModel):
     offline_marked_at = Column(
         DateTime(timezone=True), nullable=True, comment="线下单标记时间"
     )
+
+    @property
+    def assigned_member_id(self) -> Optional[int]:
+        """Alias for assigned member."""
+        return getattr(self, "member_id", None)
+
+    @assigned_member_id.setter
+    def assigned_member_id(self, value: Optional[int]) -> None:
+        self.member_id = value
+
+    @property
+    def is_online_task(self) -> bool:
+        """Convenience accessor to check if task is online."""
+        task_type = getattr(self, "task_type", None)
+        if isinstance(task_type, TaskType):
+            return task_type == TaskType.ONLINE
+        if isinstance(task_type, str):
+            try:
+                return TaskType(task_type) == TaskType.ONLINE
+            except ValueError:
+                return True
+        fallback = getattr(self, "_task_type", TaskType.ONLINE)
+        if isinstance(fallback, TaskType):
+            return fallback == TaskType.ONLINE
+        return True
+
+    @is_online_task.setter
+    def is_online_task(self, value: bool) -> None:
+        self.task_type = TaskType.ONLINE if bool(value) else TaskType.OFFLINE
 
     # Relationships
     member: Mapped["Member"] = relationship(
