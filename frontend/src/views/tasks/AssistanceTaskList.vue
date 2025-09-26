@@ -85,21 +85,6 @@
 
           <div class="filter-item">
             <el-select
-              v-model="filters.department"
-              placeholder="请求部门"
-              clearable
-              @change="loadTasks"
-            >
-              <el-option label="学生处" value="student_affairs" />
-              <el-option label="教务处" value="academic_affairs" />
-              <el-option label="后勤处" value="logistics" />
-              <el-option label="财务处" value="finance" />
-              <el-option label="其他部门" value="other" />
-            </el-select>
-          </div>
-
-          <div class="filter-item">
-            <el-select
               v-model="filters.priority"
               placeholder="优先级"
               multiple
@@ -197,18 +182,6 @@
             </template>
           </el-table-column>
 
-          <el-table-column prop="requesting_department" label="请求部门" width="120">
-            <template #default="scope">
-              <el-tag type="info" size="small">
-                {{ getDepartmentLabel(scope.row.requesting_department) }}
-              </el-tag>
-            </template>
-          </el-table-column>
-
-          <el-table-column prop="requester_name" label="请求人" width="100" show-overflow-tooltip />
-
-          <el-table-column prop="requester_contact" label="联系方式" width="120" show-overflow-tooltip />
-
           <el-table-column prop="member_name" label="协助人员" width="120" show-overflow-tooltip>
             <template #default="scope">
               <span v-if="scope.row.member_name">{{ scope.row.member_name }}</span>
@@ -239,20 +212,6 @@
           <el-table-column prop="end_time" label="结束时间" width="120">
             <template #default="scope">
               {{ scope.row.end_time ? formatDate(scope.row.end_time) : '-' }}
-            </template>
-          </el-table-column>
-
-          <el-table-column prop="satisfaction_rating" label="满意度" width="100">
-            <template #default="scope">
-              <el-rate
-                v-if="scope.row.satisfaction_rating"
-                :model-value="scope.row.satisfaction_rating"
-                disabled
-                show-score
-                text-color="#ff9900"
-                size="small"
-              />
-              <span v-else>-</span>
             </template>
           </el-table-column>
 
@@ -372,7 +331,6 @@ const selectedTasks = ref<Task[]>([])
 const filters = reactive({
   status: [] as string[],
   assistanceType: [] as string[],
-  department: '' as string,
   priority: [] as string[],
   assigneeId: undefined as number | undefined,
   dateRange: undefined as [string, string] | undefined
@@ -495,7 +453,6 @@ const resetFilters = () => {
   Object.assign(filters, {
     status: [],
     assistanceType: [],
-    department: '',
     priority: [],
     assigneeId: undefined,
     dateRange: undefined
@@ -659,18 +616,6 @@ const getAssistanceTypeLabel = (type: string): string => {
   }
   return typeMap[type] || '其他协助'
 }
-
-const getDepartmentLabel = (department: string): string => {
-  const departmentMap: Record<string, string> = {
-    student_affairs: '学生处',
-    academic_affairs: '教务处',
-    logistics: '后勤处',
-    finance: '财务处',
-    other: '其他部门'
-  }
-  return departmentMap[department] || '其他部门'
-}
-
 const getPriorityTagType = (priority: string): string => {
   const priorityMap: Record<string, string> = {
     low: 'info',

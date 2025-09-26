@@ -8,6 +8,29 @@
   >
     <div v-loading="loading" class="task-detail-dialog">
       <div v-if="task" class="task-content">
+        <!-- 调试信息 (开发环境显示) -->
+        <el-card v-if="isDev" class="debug-info" shadow="never" style="margin-bottom: 20px; background: #f5f7fa;">
+          <template #header>
+            <span style="color: #909399; font-size: 14px;">🔍 调试信息 (仅开发环境显示)</span>
+          </template>
+          <div style="font-size: 12px; color: #606266;">
+            <p><strong>任务类型:</strong> {{ detailTaskType }}</p>
+            <p><strong>任务ID:</strong> {{ props.taskId }}</p>
+            <p><strong>数据状态:</strong> {{ task ? '已加载' : '未加载' }}</p>
+            <p v-if="task"><strong>关键字段:</strong></p>
+            <ul v-if="task" style="margin: 0; padding-left: 20px;">
+              <li>title: {{ task.title || 'null' }}</li>
+              <li>status: {{ task.status || 'null' }}</li>
+              <li>location: {{ task.location || 'null' }}</li>
+              <li>assigneeName: {{ task.assigneeName || 'null' }}</li>
+              <li>member_name: {{ task.member_name || 'null' }}</li>
+              <li>reporterName: {{ task.reporterName || 'null' }}</li>
+              <li>work_minutes: {{ task.work_minutes || 'null' }}</li>
+              <li>actualHours: {{ actualHours }}</li>
+            </ul>
+          </div>
+        </el-card>
+
         <!-- 任务基本信息 -->
         <el-card class="task-basic-info" shadow="never">
           <template #header>
@@ -86,8 +109,8 @@
                         {{ getTaskPriorityConfig(task.priority || '').label }}
                       </el-tag>
                     </el-descriptions-item>
-                    <el-descriptions-item label="位置">{{ task.location || '-' }}</el-descriptions-item>
-                    <el-descriptions-item label="负责人">
+                    <el-descriptions-item :label="detailTaskType === 'assistance' ? '协助地点' : '位置'">{{ task.location || '-' }}</el-descriptions-item>
+                    <el-descriptions-item :label="detailTaskType === 'assistance' ? '协助人员' : '负责人'">
                       {{
                         task.assigneeName ||
                         task.assignee ||
@@ -95,7 +118,7 @@
                         '未分配'
                       }}
                     </el-descriptions-item>
-                    <el-descriptions-item label="报修人">
+                    <el-descriptions-item :label="detailTaskType === 'assistance' ? '被协助人' : '报修人'">
                       {{ task.reporterName || task.reporter_name || '-' }}
                     </el-descriptions-item>
                   <el-descriptions-item label="联系方式">
@@ -107,7 +130,7 @@
                       '-'
                     }}
                   </el-descriptions-item>
-                  <el-descriptions-item label="超时状态">
+                  <el-descriptions-item v-if="detailTaskType !== 'assistance'" label="超时状态">
                     <template v-if="overdueStatus.isOverdue">
                       <el-tag
                         v-for="status in overdueStatus.labels"
@@ -155,10 +178,10 @@
                         }}
                       </span>
                     </el-descriptions-item>
-                    <el-descriptions-item label="开始时间">
+                    <el-descriptions-item :label="detailTaskType === 'assistance' ? '协助开始时间' : '开始时间'">
                       {{ formatDateTime(task.startedAt || task.started_at || task.start_time || task.response_time || '') }}
                     </el-descriptions-item>
-                    <el-descriptions-item label="完成时间">
+                    <el-descriptions-item :label="detailTaskType === 'assistance' ? '协助结束时间' : '完成时间'">
                       {{
                         formatDateTime(
                           task.completedAt ||
@@ -168,10 +191,10 @@
                         )
                       }}
                     </el-descriptions-item>
-                    <el-descriptions-item label="预估工时">
+                    <el-descriptions-item :label="detailTaskType === 'assistance' ? '协助工时' : '预估工时'">
                       {{ estimatedHours }} 小时
                     </el-descriptions-item>
-                    <el-descriptions-item label="实际工时">
+                    <el-descriptions-item :label="detailTaskType === 'assistance' ? '实际协助工时' : '实际工时'">
                       {{ actualHours }} 小时
                     </el-descriptions-item>
                   </el-descriptions>
@@ -180,9 +203,9 @@
             </el-row>
 
             <div class="description-section">
-              <h4>任务描述</h4>
+              <h4>{{ detailTaskType === 'assistance' ? '协助内容' : '任务描述' }}</h4>
               <div class="description-content">
-                {{ task.description || '暂无描述' }}
+                {{ task.description || (detailTaskType === 'assistance' ? '暂无协助内容' : '暂无描述') }}
               </div>
             </div>
 
@@ -524,17 +547,24 @@ const visible = computed({
   set: value => emit('update:modelValue', value)
 })
 
+const isDev = computed(() => import.meta.env.DEV)
+
 const estimatedHours = computed(() => {
   if (!task.value) return 0
   const explicit =
     (task.value as any).estimatedHours ?? (task.value as any).estimated_hours
   if (explicit !== undefined && explicit !== null) {
-    return Number(explicit)
+    const result = Number(explicit)
+    console.log('📊 [TaskDetail] estimatedHours (explicit):', result)
+    return result
   }
   const baseMinutes = (task.value as any).base_work_minutes
   if (baseMinutes) {
-    return Number((baseMinutes / 60).toFixed(2))
+    const result = Number((baseMinutes / 60).toFixed(2))
+    console.log('📊 [TaskDetail] estimatedHours (from base_work_minutes):', result)
+    return result
   }
+  console.log('📊 [TaskDetail] estimatedHours (default):', 0)
   return 0
 })
 
@@ -543,12 +573,17 @@ const actualHours = computed(() => {
   const explicit =
     (task.value as any).actualHours ?? (task.value as any).actual_hours
   if (explicit !== undefined && explicit !== null) {
-    return Number(explicit)
+    const result = Number(explicit)
+    console.log('📊 [TaskDetail] actualHours (explicit):', result)
+    return result
   }
   const workMinutes = (task.value as any).work_minutes
   if (workMinutes) {
-    return Number((workMinutes / 60).toFixed(2))
+    const result = Number((workMinutes / 60).toFixed(2))
+    console.log('📊 [TaskDetail] actualHours (from work_minutes):', { workMinutes, result })
+    return result
   }
+  console.log('📊 [TaskDetail] actualHours (default):', 0)
   return 0
 })
 
@@ -596,10 +631,16 @@ const loadTaskDetail = async () => {
 
   try {
     loading.value = true
+    console.log('🔄 [TaskDetail] 开始加载任务详情', {
+      taskId: props.taskId,
+      taskType: props.taskType
+    })
+
     const fetchedTask = await tasksApi.getTask(props.taskId, {
       type: props.taskType || undefined
     })
-    task.value = fetchedTask
+
+    console.log('📦 [TaskDetail] 获取到原始任务数据:', fetchedTask)
 
     const resolvedType =
       props.taskType ||
@@ -608,13 +649,89 @@ const loadTaskDetail = async () => {
       'repair'
     detailTaskType.value = resolvedType as string
 
+    console.log('🎯 [TaskDetail] 解析的任务类型:', {
+      propsTaskType: props.taskType,
+      fetchedType: (fetchedTask as any).type,
+      fetchedTaskType: (fetchedTask as any).task_type,
+      resolvedType: resolvedType,
+      detailTaskType: detailTaskType.value
+    })
+
+    if (detailTaskType.value === 'assistance') {
+      const workMinutes = (fetchedTask as any).work_minutes || 0
+      console.log('🛠️ [TaskDetail] 处理协助任务数据', {
+        workMinutes,
+        assisted_department: (fetchedTask as any).assisted_department,
+        assisted_person: (fetchedTask as any).assisted_person,
+        member_name: (fetchedTask as any).member_name,
+        start_time: (fetchedTask as any).start_time,
+        end_time: (fetchedTask as any).end_time,
+        status: (fetchedTask as any).status
+      })
+
+      const normalizedTask = {
+        ...fetchedTask,
+        type: 'assistance',
+        task_type: 'assistance',
+        // 位置信息 - 使用协助地点
+        location: (fetchedTask as any).assisted_department || (fetchedTask as any).location || '未指定',
+        // 负责人信息 - 协助任务中的负责人是协助者
+        assigneeName: (fetchedTask as any).member_name || (fetchedTask as any).assigneeName || '未分配',
+        assignee: (fetchedTask as any).member_name || (fetchedTask as any).assigneeName || '未分配',
+        member_name: (fetchedTask as any).member_name || (fetchedTask as any).assigneeName || '未分配',
+        // 协助任务没有报修人概念
+        reporterName: (fetchedTask as any).assisted_person || '无',
+        reporter_name: (fetchedTask as any).assisted_person || '无',
+        reporterContact: '无',
+        reporter_contact: '无',
+        contact_info: '无',
+        contact_phone: '无',
+        // 时间字段标准化
+        createdAt: (fetchedTask as any).created_at || (fetchedTask as any).createdAt,
+        created_at: (fetchedTask as any).created_at || (fetchedTask as any).createdAt,
+        startedAt: (fetchedTask as any).start_time || (fetchedTask as any).startedAt,
+        started_at: (fetchedTask as any).start_time || (fetchedTask as any).startedAt,
+        start_time: (fetchedTask as any).start_time || (fetchedTask as any).startedAt,
+        completedAt: (fetchedTask as any).end_time || (fetchedTask as any).completed_at || (fetchedTask as any).completedAt,
+        completed_at: (fetchedTask as any).end_time || (fetchedTask as any).completed_at || (fetchedTask as any).completedAt,
+        end_time: (fetchedTask as any).end_time || (fetchedTask as any).completed_at || (fetchedTask as any).completedAt,
+        dueDate: (fetchedTask as any).due_date || (fetchedTask as any).end_time || (fetchedTask as any).dueDate,
+        due_date: (fetchedTask as any).due_date || (fetchedTask as any).end_time || (fetchedTask as any).due_date,
+        completion_time: (fetchedTask as any).completion_time || (fetchedTask as any).end_time,
+        // 工时信息
+        actualHours: Number((workMinutes / 60).toFixed(2)),
+        actual_hours: Number((workMinutes / 60).toFixed(2)),
+        estimatedHours: Number((workMinutes / 60).toFixed(2)),
+        estimated_hours: Number((workMinutes / 60).toFixed(2)),
+        work_minutes: workMinutes,
+        // 状态信息
+        status: (fetchedTask as any).status || 'completed',
+        task_status: (fetchedTask as any).status || 'completed',
+        // 优先级信息
+        priority: (fetchedTask as any).priority || 'medium',
+        // 协助任务特有字段
+        assisted_department: (fetchedTask as any).assisted_department,
+        assisted_person: (fetchedTask as any).assisted_person,
+      }
+
+      console.log('✅ [TaskDetail] 协助任务数据标准化完成:', normalizedTask)
+      task.value = normalizedTask as Task
+    } else {
+      console.log('📋 [TaskDetail] 使用原始任务数据 (非协助任务)')
+      task.value = fetchedTask
+    }
+
+    console.log('🎯 [TaskDetail] 最终设置的task.value:', task.value)
+
     await Promise.all([
       loadWorkLogs(),
       loadComments(),
       loadAttachments()
     ])
+
+    console.log('🎉 [TaskDetail] 任务详情加载完成!')
   } catch (error) {
-    console.error('加载任务详情失败:', error)
+    console.error('❌ [TaskDetail] 加载任务详情失败:', error)
     ElMessage.error('加载任务详情失败')
   } finally {
     loading.value = false
@@ -883,8 +1000,13 @@ const deleteAttachment = async (attachment: any) => {
 
 // 工具方法
 const formatDateTime = (dateString: string): string => {
-  if (!dateString) return '-'
-  return new Date(dateString).toLocaleString('zh-CN')
+  if (!dateString) {
+    console.log('🕒 [TaskDetail] formatDateTime: 空日期字符串，返回 "-"')
+    return '-'
+  }
+  const formatted = new Date(dateString).toLocaleString('zh-CN')
+  console.log('🕒 [TaskDetail] formatDateTime:', { input: dateString, output: formatted })
+  return formatted
 }
 
 const formatFileSize = (size: number): string => {

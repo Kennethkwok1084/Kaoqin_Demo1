@@ -88,7 +88,7 @@
                 <el-icon><User /></el-icon>
               </div>
               <div class="stat-content">
-                <div class="stat-number">{{ overview.total_members }}</div>
+                <div class="stat-number">{{ attendanceOverview.total_members }}</div>
                 <div class="stat-label">参与成员</div>
               </div>
             </div>
@@ -98,7 +98,7 @@
                 <el-icon><Timer /></el-icon>
               </div>
               <div class="stat-content">
-                <div class="stat-number">{{ overview.total_hours.toFixed(1) }}</div>
+                <div class="stat-number">{{ attendanceOverview.total_hours.toFixed(1) }}</div>
                 <div class="stat-label">总工时</div>
               </div>
             </div>
@@ -108,7 +108,7 @@
                 <el-icon><Tools /></el-icon>
               </div>
               <div class="stat-content">
-                <div class="stat-number">{{ overview.repair_hours.toFixed(1) }}</div>
+                <div class="stat-number">{{ attendanceOverview.repair_hours.toFixed(1) }}</div>
                 <div class="stat-label">维修工时</div>
               </div>
             </div>
@@ -118,7 +118,7 @@
                 <el-icon><Monitor /></el-icon>
               </div>
               <div class="stat-content">
-                <div class="stat-number">{{ overview.monitoring_hours.toFixed(1) }}</div>
+                <div class="stat-number">{{ attendanceOverview.monitoring_hours.toFixed(1) }}</div>
                 <div class="stat-label">监控工时</div>
               </div>
             </div>
@@ -128,7 +128,7 @@
                 <el-icon><Star /></el-icon>
               </div>
               <div class="stat-content">
-                <div class="stat-number">{{ overview.assistance_hours.toFixed(1) }}</div>
+                <div class="stat-number">{{ attendanceOverview.assistance_hours.toFixed(1) }}</div>
                 <div class="stat-label">协助工时</div>
               </div>
             </div>
@@ -138,7 +138,7 @@
                 <el-icon><TrendCharts /></el-icon>
               </div>
               <div class="stat-content">
-                <div class="stat-number">{{ overview.average_hours.toFixed(1) }}</div>
+                <div class="stat-number">{{ attendanceOverview.average_hours.toFixed(1) }}</div>
                 <div class="stat-label">人均工时</div>
               </div>
             </div>
@@ -710,34 +710,105 @@ const periodText = computed(() => {
   return '当前周期'
 })
 
-// 导出考勤数据（周期）
+const resolveExportRange = () => {
+  const fallbackStart = dayjs().startOf('month').format('YYYY-MM-DD')
+  const fallbackEnd = dayjs().endOf('month').format('YYYY-MM-DD')
+
+  if (cycleType.value === 'monthly') {
+    const monthValue = selectedMonth.value || getCurrentMonth()
+    const monthDay = dayjs(monthValue)
+    return {
+      dateFrom: monthDay.startOf('month').format('YYYY-MM-DD'),
+      dateTo: monthDay.endOf('month').format('YYYY-MM-DD')
+    }
+  }
+
+  if (cycleType.value === 'weekly') {
+    const startValue = weekStart.value || dayjs().format('YYYY-MM-DD')
+    const startDay = dayjs(startValue)
+    return {
+      dateFrom: startDay.format('YYYY-MM-DD'),
+      dateTo: startDay.add(6, 'day').format('YYYY-MM-DD')
+    }
+  }
+
+  const [customStart, customEnd] = customRange.value || [fallbackStart, fallbackEnd]
+  return { dateFrom: customStart, dateTo: customEnd }
+}
+
+// 导出考勤数据（按新模板）
 const handleExport = async () => {
   try {
     loading.value = true
-    const params: any = { format: 'excel' }
-    if (cycleType.value === 'monthly') {
-      params.cycle_type = 'monthly'
-      params.month = selectedMonth.value || getCurrentMonth()
-    } else if (cycleType.value === 'weekly') {
-      params.cycle_type = 'weekly'
-      params.week_start = weekStart.value || dayjs().format('YYYY-MM-DD')
-    } else {
-      params.cycle_type = 'custom'
-      const [from, to] = customRange.value || [dayjs().startOf('month').format('YYYY-MM-DD'), dayjs().endOf('month').format('YYYY-MM-DD')]
-      params.date_from = from
-      params.date_to = to
+    const { dateFrom, dateTo } = resolveExportRange()
+
+    const startMonth = dayjs(dateFrom)
+    const endMonth = dayjs(dateTo)
+
+    if (!startMonth.isValid() || !endMonth.isValid()) {
+      ElMessage.error('导出时间范围无效，请重新选择')
+      return
     }
 
-    const result = await attendanceApi.exportCycleSummary(params)
+    if (startMonth.format('YYYY-MM') !== endMonth.format('YYYY-MM')) {
+      ElMessage.warning('导出时间范围需在同一月份内，请调整筛选条件')
+      return
+    }
 
-    if (result.success) {
-      ElMessage.success(`考勤数据导出成功，共 ${result.total_records} 条记录`)
-      if (result.download_url) {
-        // 可以在这里实现文件下载
-        window.open(result.download_url, '_blank')
+    if (startMonth.isAfter(endMonth)) {
+      ElMessage.error('开始日期不能晚于结束日期')
+      return
+    }
+
+    const exportResult = await attendanceApi.exportWorkHoursData({
+      date_from: dateFrom,
+      date_to: dateTo,
+      format: 'excel'
+    })
+
+    if (exportResult?.success) {
+      const totalRecords = exportResult.total_records ?? attendanceList.value?.length ?? 0
+      ElMessage.success(`考勤数据导出成功，共 ${totalRecords} 条记录`)
+
+      if (!exportResult.download_url) {
+        ElMessage.warning('导出文件生成成功，但未返回下载链接')
+        return
+      }
+
+      try {
+        const filename = exportResult.filename || `attendance_${dateFrom}.xlsx`
+        const { getToken } = await import('@/utils/auth')
+        const token = getToken()
+        const downloadUrl = `${window.location.origin}${exportResult.download_url}`
+
+        const response = await fetch(downloadUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = filename
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+      } catch (downloadError: any) {
+        console.error('下载文件失败:', downloadError)
+        ElMessage.error(`下载文件失败: ${downloadError?.message || '未知错误'}`)
       }
     } else {
-      ElMessage.warning(result.message || '导出失败')
+      const message = exportResult?.message || '导出失败，请稍后再试'
+      ElMessage.error(message)
     }
   } catch (error) {
     console.error('导出失败:', error)

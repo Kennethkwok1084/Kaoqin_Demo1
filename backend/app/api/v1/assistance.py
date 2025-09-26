@@ -46,6 +46,53 @@ from app.schemas.task import (
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+
+def _ensure_aware(dt: Optional[datetime]) -> Optional[datetime]:
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _normalize_assistance_status(task: AssistanceTask) -> TaskStatus:
+    if task.status == TaskStatus.COMPLETED:
+        return TaskStatus.COMPLETED
+
+    now = datetime.now(timezone.utc)
+    start = _ensure_aware(task.start_time) or now
+    end = _ensure_aware(task.end_time) or start
+
+    if end <= now:
+        return TaskStatus.COMPLETED
+    if start > now:
+        return TaskStatus.PENDING
+    return TaskStatus.IN_PROGRESS
+
+
+def _derive_assistance_status_from_text(
+    status_text: str, start: datetime, end: datetime
+) -> TaskStatus:
+    text = status_text.strip()
+    now = datetime.now(timezone.utc)
+
+    if text in ("已协助", "已完成", "完成"):
+        return TaskStatus.COMPLETED
+    if text in ("待协助", "待处理", "未协助"):
+        return TaskStatus.PENDING if start > now else TaskStatus.COMPLETED
+    if text in ("协助中", "处理中"):
+        if end <= now:
+            return TaskStatus.COMPLETED
+        if start > now:
+            return TaskStatus.PENDING
+        return TaskStatus.IN_PROGRESS
+
+    if end <= now:
+        return TaskStatus.COMPLETED
+    if start > now:
+        return TaskStatus.PENDING
+    return TaskStatus.IN_PROGRESS
+
 # ============= 通用任务 =============
 @router.get("/assistance", response_model=Dict[str, Any])
 async def get_assistance_tasks(
@@ -251,6 +298,9 @@ async def get_assistance_tasks_list(
         # 构建响应
         items = []
         for task in tasks:
+            status_enum = _normalize_assistance_status(task)
+            # 同步内存对象状态，避免后续逻辑出现旧值
+            task.status = status_enum
             items.append(
                 {
                     "id": task.id,
@@ -264,6 +314,8 @@ async def get_assistance_tasks_list(
                     "end_time": task.end_time.isoformat() if task.end_time else "",
                     "work_minutes": task.work_minutes,
                     "work_hours": round((task.work_minutes or 0) / 60.0, 2),
+                    "actual_hours": round((task.work_minutes or 0) / 60.0, 2),
+                    "status": status_enum.value,
                     "member_name": task.member.name if task.member else "未知",
                     "created_at": (
                         task.created_at.isoformat() if task.created_at else ""
@@ -300,7 +352,11 @@ async def get_assistance_task_detail(
 ) -> Dict[str, Any]:
     """获取单个协助任务详情"""
     try:
-        assistance_task = await db.get(AssistanceTask, task_id)
+        # 使用selectinload预加载member关系以避免lazy loading问题
+        stmt = select(AssistanceTask).options(selectinload(AssistanceTask.member)).where(AssistanceTask.id == task_id)
+        result = await db.execute(stmt)
+        assistance_task = result.scalar_one_or_none()
+
         if not assistance_task:
             raise HTTPException(
                 status_code=http_status.HTTP_404_NOT_FOUND, detail="协助任务不存在"
@@ -314,18 +370,20 @@ async def get_assistance_task_detail(
         start_iso = assistance_task.start_time.isoformat() if assistance_task.start_time else None
         end_iso = assistance_task.end_time.isoformat() if assistance_task.end_time else None
 
+        status_enum = _normalize_assistance_status(assistance_task)
+
         task_data = {
             "id": assistance_task.id,
             "title": assistance_task.title,
             "description": assistance_task.description,
-            "status": assistance_task.status.value if assistance_task.status else None,
+            "status": status_enum.value,
             "task_type": "assistance",
             "type": "assistance",
             "assisted_department": assistance_task.assisted_department,
             "assisted_person": assistance_task.assisted_person,
-            "location": assistance_task.assisted_department,
-            "reporter_name": assistance_task.assisted_person,
-            "reporter_contact": assistance_task.assisted_person,
+            "location": None,
+            "reporter_name": None,
+            "reporter_contact": None,
             "start_time": start_iso,
             "started_at": start_iso,
             "startedAt": start_iso,
@@ -616,4 +674,3 @@ async def batch_approve_assistance_tasks(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="批量审核协助任务失败",
         )
-

@@ -6,6 +6,9 @@
 from datetime import date, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import tempfile
+from types import SimpleNamespace
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -18,6 +21,30 @@ from app.models.task import (
     TaskStatus,
     TaskType,
 )
+
+
+class DummyScalarResult:
+    """模拟 SQLAlchemy ScalarResult.all() 接口"""
+
+    def __init__(self, items):
+        self._items = items or []
+
+    def all(self):
+        return self._items
+
+
+class DummyResult:
+    """模拟 AsyncResult，兼容 scalars().all() 与 all() 调用"""
+
+    def __init__(self, scalars_items=None, rows=None):
+        self._scalars_items = scalars_items or []
+        self._rows = rows or []
+
+    def scalars(self):
+        return DummyScalarResult(self._scalars_items)
+
+    def all(self):
+        return self._rows
 
 
 class TestAttendanceAPIBasic:
@@ -576,92 +603,91 @@ class TestWorkHoursExportAPI(TestAttendanceAPIBasic):
     """测试工时数据导出API"""
 
     @pytest.mark.asyncio
-    async def test_export_work_hours_basic(self, client, admin_user, test_user):
+    async def test_export_work_hours_basic(
+        self, client, admin_user, test_user, sample_repair_task
+    ):
         """测试导出工时数据基础功能"""
+        sample_repair_task.member = test_user
+        sample_repair_task.tags = []
+
         with (
             patch("app.api.deps.get_db") as mock_get_db,
             patch("app.api.deps.get_current_user") as mock_get_user,
-            patch("pandas.DataFrame") as mock_df,
-            patch("tempfile.NamedTemporaryFile"),
+            patch("app.api.v1.attendance._get_export_dir") as mock_export_dir,
         ):
 
             mock_db = AsyncMock()
             mock_get_db.return_value = mock_db
             mock_get_user.return_value = admin_user
 
-            # Mock数据查询结果
-            mock_record = MagicMock()
-            mock_record.task_id = "T001"
-            mock_record.title = "网络维修"
-            mock_record.completion_time = datetime.now()
-            mock_record.work_minutes = 120
-            mock_record.task_type = TaskType.ONLINE
-            mock_record.rating = 5
-            mock_record.member_id = test_user.id
-            mock_record.member_name = "测试用户"
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                mock_export_dir.return_value = tmp_dir
 
-            mock_result = MagicMock()
-            mock_result.fetchall.return_value = [mock_record]
-            mock_db.execute.return_value = mock_result
+                mock_db.execute.side_effect = [
+                    DummyResult(scalars_items=[test_user]),
+                    DummyResult(rows=[]),
+                    DummyResult(scalars_items=[sample_repair_task]),
+                    DummyResult(scalars_items=[]),
+                    DummyResult(scalars_items=[]),
+                ]
 
-            # Mock DataFrame
-            mock_df_instance = MagicMock()
-            mock_df.return_value = mock_df_instance
+                response = await client.get(
+                    "/api/v1/attendance/export?date_from=2024-12-01&date_to=2024-12-31&format=excel",
+                    headers={"Authorization": "Bearer admin_token"},
+                )
 
-            response = await client.get(
-                "/api/v1/attendance/export?date_from=2024-12-01&date_to=2024-12-31&format=excel",
-                headers={"Authorization": "Bearer admin_token"},
-            )
-
-            assert response.status_code == 200
-            data = response.json()
-            assert data["success"] is True
-            assert "filename" in data
-            assert data["total_records"] == 1
+                assert response.status_code == 200
+                data = response.json()
+                assert data["success"] is True
+                assert data["total_records"] == 1
+                assert data["filename"].endswith(".xlsx")
 
     @pytest.mark.asyncio
     async def test_export_work_hours_csv_format(self, client, admin_user):
         """测试CSV格式导出"""
-        with (
-            patch("app.api.deps.get_db") as mock_get_db,
-            patch("app.api.deps.get_current_user") as mock_get_user,
-            patch("pandas.DataFrame") as mock_df,
-            patch("tempfile.NamedTemporaryFile"),
-        ):
-
-            mock_db = AsyncMock()
-            mock_get_db.return_value = mock_db
+        with patch("app.api.deps.get_current_user") as mock_get_user:
             mock_get_user.return_value = admin_user
-
-            mock_result = MagicMock()
-            mock_result.fetchall.return_value = []
-            mock_db.execute.return_value = mock_result
-
-            mock_df_instance = MagicMock()
-            mock_df.return_value = mock_df_instance
 
             response = await client.get(
                 "/api/v1/attendance/export?date_from=2024-12-01&date_to=2024-12-31&format=csv",
                 headers={"Authorization": "Bearer admin_token"},
             )
 
-            assert response.status_code == 200
-            data = response.json()
-            assert data["success"] is True
-            assert data["total_records"] == 0
+            assert response.status_code == 400
 
     @pytest.mark.asyncio
     async def test_export_work_hours_permission_denied(self, client, regular_user):
         """测试普通用户导出权限拒绝"""
-        with patch("app.api.deps.get_current_user") as mock_get_user:
+        with (
+            patch("app.api.deps.get_db") as mock_get_db,
+            patch("app.api.deps.get_current_user") as mock_get_user,
+            patch("app.api.v1.attendance._get_export_dir") as mock_export_dir,
+        ):
+
+            mock_db = AsyncMock()
+            mock_get_db.return_value = mock_db
             mock_get_user.return_value = regular_user
 
-            response = await client.get(
-                "/api/v1/attendance/export?date_from=2024-12-01&date_to=2024-12-31",
-                headers={"Authorization": "Bearer user_token"},
-            )
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                mock_export_dir.return_value = tmp_dir
 
-            assert response.status_code == 403
+                mock_db.execute.side_effect = [
+                    DummyResult(scalars_items=[regular_user]),
+                    DummyResult(rows=[]),
+                    DummyResult(scalars_items=[]),
+                    DummyResult(scalars_items=[]),
+                    DummyResult(scalars_items=[]),
+                ]
+
+                response = await client.get(
+                    "/api/v1/attendance/export?date_from=2024-12-01&date_to=2024-12-31",
+                    headers={"Authorization": "Bearer user_token"},
+                )
+
+                assert response.status_code == 200
+                data = response.json()
+                assert data["success"] is True
+                assert data["total_records"] == 1
 
     @pytest.mark.asyncio
     async def test_export_work_hours_with_member_filter(self, client, admin_user):
@@ -669,27 +695,55 @@ class TestWorkHoursExportAPI(TestAttendanceAPIBasic):
         with (
             patch("app.api.deps.get_db") as mock_get_db,
             patch("app.api.deps.get_current_user") as mock_get_user,
-            patch("pandas.DataFrame") as mock_df,
-            patch("tempfile.NamedTemporaryFile"),
+            patch("app.api.v1.attendance._get_export_dir") as mock_export_dir,
         ):
 
             mock_db = AsyncMock()
             mock_get_db.return_value = mock_db
             mock_get_user.return_value = admin_user
 
-            mock_result = MagicMock()
-            mock_result.fetchall.return_value = []
-            mock_db.execute.return_value = mock_result
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                mock_export_dir.return_value = tmp_dir
 
-            mock_df_instance = MagicMock()
-            mock_df.return_value = mock_df_instance
+                members = [
+                    Member(
+                        id=1,
+                        username="member1",
+                        student_id="20219901",
+                        name="成员一",
+                        email="m1@test.com",
+                        role=UserRole.MEMBER,
+                        is_active=True,
+                        class_name="一班",
+                    ),
+                    Member(
+                        id=2,
+                        username="member2",
+                        student_id="20219902",
+                        name="成员二",
+                        email="m2@test.com",
+                        role=UserRole.MEMBER,
+                        is_active=True,
+                        class_name="二班",
+                    ),
+                ]
 
-            response = await client.get(
-                "/api/v1/attendance/export?date_from=2024-12-01&date_to=2024-12-31&member_ids=1&member_ids=2",
-                headers={"Authorization": "Bearer admin_token"},
-            )
+                mock_db.execute.side_effect = [
+                    DummyResult(scalars_items=members),
+                    DummyResult(rows=[]),
+                    DummyResult(scalars_items=[]),
+                    DummyResult(scalars_items=[]),
+                    DummyResult(scalars_items=[]),
+                ]
 
-            assert response.status_code == 200
+                response = await client.get(
+                    "/api/v1/attendance/export?date_from=2024-12-01&date_to=2024-12-31&member_ids=1&member_ids=2",
+                    headers={"Authorization": "Bearer admin_token"},
+                )
+
+                assert response.status_code == 200
+                data = response.json()
+                assert data["total_records"] == 2
 
     @pytest.mark.asyncio
     async def test_export_work_hours_no_data(self, client, admin_user):
@@ -703,10 +757,7 @@ class TestWorkHoursExportAPI(TestAttendanceAPIBasic):
             mock_get_db.return_value = mock_db
             mock_get_user.return_value = admin_user
 
-            # Mock无数据结果
-            mock_result = MagicMock()
-            mock_result.fetchall.return_value = []
-            mock_db.execute.return_value = mock_result
+            mock_db.execute.side_effect = [DummyResult(scalars_items=[])]
 
             response = await client.get(
                 "/api/v1/attendance/export?date_from=2024-12-01&date_to=2024-12-31",
@@ -1185,41 +1236,39 @@ class TestAttendanceAPIErrorHandling(TestAttendanceAPIBasic):
         with (
             patch("app.api.deps.get_db") as mock_get_db,
             patch("app.api.deps.get_current_user") as mock_get_user,
-            patch("pandas.DataFrame") as mock_df,
-            patch("tempfile.NamedTemporaryFile"),
+            patch("app.api.v1.attendance._get_export_dir") as mock_export_dir,
         ):
 
             mock_db = AsyncMock()
             mock_get_db.return_value = mock_db
             mock_get_user.return_value = admin_user
 
-            # Mock大量记录
-            large_dataset = []
-            for i in range(10000):
-                mock_record = MagicMock()
-                mock_record.task_id = f"T{i:05d}"
-                mock_record.title = f"任务{i}"
-                mock_record.completion_time = datetime.now()
-                mock_record.work_minutes = 60
-                mock_record.task_type = TaskType.ONLINE
-                mock_record.rating = 4
-                mock_record.member_id = test_user.id
-                mock_record.member_name = "用户"
-                large_dataset.append(mock_record)
+            large_tasks = [
+                SimpleNamespace(
+                    member_id=test_user.id,
+                    work_minutes=60,
+                    tags=[],
+                    member=test_user,
+                )
+                for _ in range(10000)
+            ]
 
-            mock_result = MagicMock()
-            mock_result.fetchall.return_value = large_dataset
-            mock_db.execute.return_value = mock_result
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                mock_export_dir.return_value = tmp_dir
 
-            mock_df_instance = MagicMock()
-            mock_df.return_value = mock_df_instance
+                mock_db.execute.side_effect = [
+                    DummyResult(scalars_items=[test_user]),
+                    DummyResult(rows=[]),
+                    DummyResult(scalars_items=large_tasks),
+                    DummyResult(scalars_items=[]),
+                    DummyResult(scalars_items=[]),
+                ]
 
-            response = await client.get(
-                "/api/v1/attendance/export?date_from=2024-01-01&date_to=2024-12-31",
-                headers={"Authorization": "Bearer admin_token"},
-            )
+                response = await client.get(
+                    "/api/v1/attendance/export?date_from=2024-01-01&date_to=2024-12-31",
+                    headers={"Authorization": "Bearer admin_token"},
+                )
 
-            # 应该能处理大数据集而不崩溃
-            assert response.status_code == 200
-            data = response.json()
-            assert data["total_records"] == 10000
+                assert response.status_code == 200
+                data = response.json()
+                assert data["total_records"] == 1

@@ -19,6 +19,7 @@ from app.core.cache import cleanup_cache, init_cache
 from app.core.config import get_cors_origins, get_log_config, settings
 from app.core.database import check_database_health, close_database, init_database
 from app.core.exceptions import BaseCustomException
+from app.core.startup import initialize_app
 from app.core.openapi_config import (
     get_custom_openapi_schema,
     get_openapi_config,
@@ -47,10 +48,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await init_cache()
         logger.info("Cache initialized")
     else:
-        # Initialize database if in development mode
-        if settings.DEBUG:
+        # 执行应用程序初始化（包括数据库迁移和管理员用户创建）
+        initialization_success = await initialize_app()
+        if not initialization_success:
+            logger.error("应用程序初始化失败，但继续启动...")
+
+        # Initialize database if in development mode (deprecated in favor of startup logic)
+        if settings.DEBUG and not initialization_success:
             await init_database()
-            logger.info("Database initialized")
+            logger.info("Database initialized (fallback)")
 
         # Check database health
         db_healthy = await check_database_health()

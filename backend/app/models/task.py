@@ -296,6 +296,12 @@ class RepairTask(BaseModel):
         if getattr(self, "urgency_level", None) is None:
             self.urgency_level = UrgencyLevel.NORMAL.value
 
+        if not getattr(self, "work_minutes", None):
+            try:
+                self.update_work_minutes()
+            except Exception:
+                self.work_minutes = getattr(self, "base_work_minutes", 0)
+
     __tablename__ = "repair_tasks"
 
     # Task identification

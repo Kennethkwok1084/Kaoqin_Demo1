@@ -46,6 +46,57 @@ from app.schemas.task import (
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+
+def _ensure_aware(dt: Optional[datetime]) -> Optional[datetime]:
+    """Normalize naive datetimes to UTC-aware values."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _normalize_assistance_status(task: AssistanceTask) -> TaskStatus:
+    """Determine assistance task status based on timing if not explicitly completed."""
+    if task.status == TaskStatus.COMPLETED:
+        return TaskStatus.COMPLETED
+
+    now = datetime.now(timezone.utc)
+    start = _ensure_aware(task.start_time) or now
+    end = _ensure_aware(task.end_time) or start
+
+    if end <= now:
+        return TaskStatus.COMPLETED
+    if start > now:
+        return TaskStatus.PENDING
+    return TaskStatus.IN_PROGRESS
+
+
+def _derive_assistance_status_from_text(
+    status_text: str, start: datetime, end: datetime
+) -> TaskStatus:
+    """Convert textual status from import data into TaskStatus."""
+    text = status_text.strip()
+    now = datetime.now(timezone.utc)
+
+    if text in ("已协助", "已完成", "完成"):
+        return TaskStatus.COMPLETED
+    if text in ("待协助", "待处理", "未协助"):
+        return TaskStatus.PENDING if start > now else TaskStatus.COMPLETED
+    if text in ("协助中", "处理中"):
+        if end <= now:
+            return TaskStatus.COMPLETED
+        if start > now:
+            return TaskStatus.PENDING
+        return TaskStatus.IN_PROGRESS
+
+    # 默认根据时间判断
+    if end <= now:
+        return TaskStatus.COMPLETED
+    if start > now:
+        return TaskStatus.PENDING
+    return TaskStatus.IN_PROGRESS
+
 # ============= 通用任务 =============
 @router.get("/monitoring", response_model=Dict[str, Any])
 async def get_monitoring_tasks(
@@ -1055,6 +1106,8 @@ async def import_assistance_tasks(
                     result["failed"] += 1
                     continue
 
+                assistance_date = _ensure_aware(assistance_date)
+
                 # 验证时长
                 duration_minutes = task_data.get("duration_minutes", 0)
                 if not isinstance(duration_minutes, (int, float)) or duration_minutes <= 0:
@@ -1062,6 +1115,9 @@ async def import_assistance_tasks(
                     result["errors"].append(error_msg)
                     result["failed"] += 1
                     continue
+
+                duration_minutes = int(duration_minutes)
+                end_time = assistance_date + timedelta(minutes=duration_minutes)
 
                 # 处理提交人匹配（简化版）
                 submitter = task_data.get("submitter", "").strip()
@@ -1080,6 +1136,18 @@ async def import_assistance_tasks(
                     if matched_member:
                         result["matched_members"] += 1
 
+                status_raw = str(
+                    task_data.get("status")
+                    or task_data.get("assistance_status")
+                    or ""
+                )
+
+                status = _derive_assistance_status_from_text(
+                    status_raw,
+                    assistance_date,
+                    end_time,
+                )
+
                 # 创建协助任务
                 new_task = AssistanceTask(
                     title=f"协助任务 - {task_data.get('location', '未知地点')}",
@@ -1088,9 +1156,9 @@ async def import_assistance_tasks(
                     assisted_department=task_data.get("location", ""),
                     assisted_person=submitter,
                     start_time=assistance_date,
-                    end_time=assistance_date,
-                    work_minutes=int(duration_minutes),
-                    status=TaskStatus.COMPLETED  # 导入的协助任务默认为已完成
+                    end_time=end_time,
+                    work_minutes=duration_minutes,
+                    status=status,
                 )
 
                 db.add(new_task)

@@ -128,7 +128,7 @@ export const attendanceApi = {
     date_from: string
     date_to: string
     member_ids?: number[]
-    format?: 'excel' | 'csv'
+    format?: 'excel'
   }): Promise<{
     success: boolean
     message: string
@@ -139,7 +139,8 @@ export const attendanceApi = {
     expires_at: number
   }> {
     const response = await http.get('/attendance/export', { params })
-    return response.data
+    const data = response.data
+    return (data && typeof data === 'object' && 'data' in data ? (data as any).data : data)
   },
 
   // 获取工时统计

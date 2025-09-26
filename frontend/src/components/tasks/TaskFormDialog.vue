@@ -491,6 +491,15 @@ const handleSubmit = async () => {
     await formRef.value.validate()
     submitting.value = true
 
+    if (
+      typeof formData.estimatedHours === 'number' &&
+      formData.estimatedHours * 60 > 999
+    ) {
+      ElMessage.error('预估工时需小于等于16.6小时（999分钟）')
+      submitting.value = false
+      return
+    }
+
     if (isEdit.value && props.task) {
       // 更新任务
       const updateData: UpdateTaskRequest = {

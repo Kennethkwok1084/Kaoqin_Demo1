@@ -8,7 +8,7 @@ from typing import AsyncGenerator
 
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient
+from httpx import AsyncClient, Response
 
 from app.main import app
 
@@ -16,66 +16,123 @@ from app.main import app
 class TestAPIPerformance:
     """API performance test suite."""
 
-    @pytest.mark.asyncio
-    @pytest.mark.benchmark
-    @pytest.mark.timeout(30)  # 缩短超时时间防止测试卡死
-    async def test_tasks_list_performance(
-        self, benchmark, async_client: AsyncClient, auth_headers
-    ):
-        """
-        Test tasks list API performance.
-        Benchmark threshold: should respond within 500ms.
-        """
+    async def _benchmark_tasks_list(
+        self,
+        endpoint: str,
+        label: str,
+        benchmark,
+        async_client: AsyncClient,
+        auth_headers,
+        rounds: int = 3,
+        request_timeout: float = 5.0,
+        benchmark_timeout: float = 15.0,
+        max_mean_seconds: float = 0.5,
+    ) -> None:
+        """通用的任务列表性能基准封装"""
 
-        async def get_tasks_list():
+        async def fetch() -> Response:
             try:
-                # 添加请求超时
                 response = await asyncio.wait_for(
-                    async_client.get("/api/v1/tasks/", headers=auth_headers),
-                    timeout=5.0,  # 缩短单个请求超时
+                    async_client.get(endpoint, headers=auth_headers),
+                    timeout=request_timeout,
                 )
                 return response
-            except asyncio.TimeoutError:
-                pytest.fail("API request timed out after 5 seconds")
-            except Exception as e:
-                pytest.fail(f"API request failed: {str(e)}")
+            except asyncio.TimeoutError as exc:  # pragma: no cover - 调试输出
+                pytest.fail(
+                    f"{label} API request timed out after {request_timeout}s: {exc}"
+                )
+            except Exception as exc:  # pragma: no cover - 调试输出
+                pytest.fail(f"{label} API request failed: {exc}")
 
-        # Run benchmark with error handling
         try:
             response = await asyncio.wait_for(
-                benchmark.pedantic(get_tasks_list, rounds=3),  # 减少测试轮数
-                timeout=15.0,  # 缩短基准测试超时
+                benchmark.pedantic(fetch, rounds=rounds),
+                timeout=benchmark_timeout,
             )
         except asyncio.TimeoutError:
-            pytest.fail("Performance benchmark timed out after 15 seconds")
-        except Exception as e:
-            pytest.fail(f"Performance benchmark failed: {str(e)}")
+            pytest.fail(
+                f"{label} performance benchmark timed out after {benchmark_timeout}s"
+            )
+        except Exception as exc:  # pragma: no cover - 调试输出
+            pytest.fail(f"{label} performance benchmark failed: {exc}")
 
-        # Verify response
-        assert response is not None, "Response is None"
-        print(f"\n🔍 Response status: {response.status_code}")
+        assert response is not None, f"{label} response is None"
 
-        # 更宽松的状态码检查，允许400以便调试
+        # 宽松处理常见错误码，便于在数据不充分时跳过
         if response.status_code == 400:
-            print(f"⚠️ API returned 400 Bad Request: {response.text}")
-            pytest.skip("API returned 400 Bad Request - skipping performance test")
+            print(
+                f"⚠️  {label} API returned 400 Bad Request, payload: {response.text}"
+            )
+            pytest.skip(f"{label} API returned 400 Bad Request")
+
+        if response.status_code == 404:
+            pytest.fail(f"{label} endpoint {endpoint} not found (404)")
 
         assert (
             response.status_code == 200
-        ), f"Expected 200, got {response.status_code}: {response.text}"
+        ), f"{label} expected 200, got {response.status_code}: {response.text}"
 
         data = response.json()
-        assert "success" in data
+        assert data.get("success") is True, f"{label} response missing success flag"
 
-        # Performance assertions
-        benchmark_result = benchmark.stats
+        stats = benchmark.stats
         assert (
-            benchmark_result["mean"] < 0.5
-        ), f"API took {benchmark_result['mean']:.3f}s, should be < 0.5s"
+            stats["mean"] < max_mean_seconds
+        ), f"{label} took {stats['mean']:.3f}s, should be < {max_mean_seconds}s"
 
-        print("\n📊 Tasks List API Performance:")
-        print(f"   Mean time: {benchmark_result['mean'] * 1000:.1f}ms")
+        print(f"\n📊 {label} Performance:")
+        print(f"   Mean time: {stats['mean'] * 1000:.1f}ms")
         print(f"   Status: {response.status_code}")
+
+    @pytest.mark.asyncio
+    @pytest.mark.benchmark
+    @pytest.mark.timeout(30)  # 缩短超时时间防止测试卡死
+    async def test_repair_tasks_list_performance(
+        self, benchmark, async_client: AsyncClient, auth_headers
+    ):
+        """
+        Test repair tasks list API performance.
+        Benchmark threshold: should respond within 500ms.
+        """
+        await self._benchmark_tasks_list(
+            endpoint="/api/v1/tasks/repair",
+            label="Repair Tasks List",
+            benchmark=benchmark,
+            async_client=async_client,
+            auth_headers=auth_headers,
+        )
+
+    @pytest.mark.asyncio
+    @pytest.mark.benchmark
+    @pytest.mark.timeout(30)
+    async def test_monitoring_tasks_list_performance(
+        self, benchmark, async_client: AsyncClient, auth_headers
+    ):
+        """Test monitoring tasks list API performance."""
+
+        await self._benchmark_tasks_list(
+            endpoint="/api/v1/tasks/monitoring/list",
+            label="Monitoring Tasks List",
+            benchmark=benchmark,
+            async_client=async_client,
+            auth_headers=auth_headers,
+        )
+
+    @pytest.mark.asyncio
+    @pytest.mark.benchmark
+    @pytest.mark.timeout(30)
+    async def test_assistance_tasks_list_performance(
+        self, benchmark, async_client: AsyncClient, auth_headers
+    ):
+        """Test assistance tasks list API performance."""
+
+        await self._benchmark_tasks_list(
+            endpoint="/api/v1/tasks/assistance/list",
+            label="Assistance Tasks List",
+            benchmark=benchmark,
+            async_client=async_client,
+            auth_headers=auth_headers,
+        )
 
     @pytest.mark.asyncio
     @pytest.mark.benchmark

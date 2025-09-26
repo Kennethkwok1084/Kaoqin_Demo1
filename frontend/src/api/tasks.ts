@@ -25,9 +25,9 @@ export const tasksApi = {
       'repair'
 
     const endpointMap: Record<string, string> = {
-      repair: '/tasks/repair',
-      monitoring: '/tasks/monitoring/list',
-      assistance: '/tasks/assistance/list'
+      repair: '/tasks/fixes',
+      monitoring: '/tasks/monitoring',
+      assistance: '/tasks/assistance'
     }
 
     const endpoint = endpointMap[typeFromFilters] || endpointMap.repair
@@ -75,7 +75,20 @@ export const tasksApi = {
       endpoint = `/tasks/assistance/${id}`
     }
 
+    console.log('🌐 [TasksAPI] 调用任务详情接口', {
+      id,
+      taskType,
+      endpoint,
+      options
+    })
+
     const response = await http.get(endpoint)
+
+    console.log('📡 [TasksAPI] 任务详情API响应:', {
+      status: response.status,
+      data: response.data
+    })
+
     return response.data.data
   },
 
@@ -90,46 +103,89 @@ export const tasksApi = {
    * 创建任务
    */
   async createTask(data: CreateTaskRequest): Promise<Task> {
-    // 根据任务类型选择正确的API端点
-    let endpoint = '/tasks/repair' // 默认为报修任务
+    const taskType = (data as any).type || (data as any).task_type || 'repair'
+    let endpoint = '/tasks/repair'
 
-    if ((data as any).type === 'assistance') {
+    if (taskType === 'assistance') {
       endpoint = '/tasks/assistance'
-    } else if ((data as any).type === 'monitoring') {
+    } else if (taskType === 'monitoring') {
       endpoint = '/tasks/monitoring'
     }
 
-    const formData = new FormData()
-
-    // 处理文件上传
-    if ((data as any).attachments) {
-      ;((data as any).attachments as File[]).forEach(
-        (file: File, index: number) => {
-          formData.append(`attachments[${index}]`, file)
-        }
-      )
-      delete (data as any).attachments
+    const taskTypeMap: Record<string, string> = {
+      repair: 'repair',
+      assistance: 'assistance',
+      monitoring: 'offline',
+      online: 'online',
+      offline: 'offline',
+      maintenance: 'offline',
+      inspection: 'offline',
+      other: 'offline'
     }
 
-    Object.entries(data).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        if (Array.isArray(value)) {
-          formData.append(key, JSON.stringify(value))
-        } else {
-          formData.append(key, value.toString())
-        }
+    const normalizedTaskType = taskTypeMap[taskType] || 'repair'
+
+    const payload: Record<string, any> = {
+      title: (data as any).title,
+      description: (data as any).description,
+      task_type: normalizedTaskType,
+      priority: (data as any).priority || 'medium',
+      location: (data as any).location,
+      assigned_to:
+        (data as any).assigneeId ?? (data as any).assignee_id ?? (data as any).assigned_to,
+      reporter_name:
+        (data as any).reporter_name ?? (data as any).contactInfo ?? '',
+      reporter_contact:
+        (data as any).contactInfo ?? (data as any).contact_info ?? '',
+      tag_ids: ((data as any).tags ?? (data as any).tag_ids ?? []).map((tag: any) =>
+        Number.isNaN(Number(tag)) ? undefined : Number(tag)
+      ),
+      is_rush: Boolean((data as any).is_rush)
+    }
+
+    payload.tag_ids = payload.tag_ids.filter((tag: any) => typeof tag === 'number')
+    if (!payload.tag_ids.length) {
+      delete payload.tag_ids
+    }
+
+    const deadlineValue = (data as any).dueDate || (data as any).deadline
+    if (deadlineValue) {
+      const deadlineDate = new Date(deadlineValue)
+      if (!Number.isNaN(deadlineDate.getTime())) {
+        payload.deadline = deadlineDate.toISOString()
+      }
+    }
+
+    const estimatedMinutes =
+      typeof (data as any).estimatedHours === 'number'
+        ? Math.round((data as any).estimatedHours * 60)
+        : (data as any).estimated_minutes
+
+    if (
+      typeof estimatedMinutes === 'number' &&
+      estimatedMinutes >= 1 &&
+      estimatedMinutes <= 999
+    ) {
+      payload.estimated_minutes = estimatedMinutes
+    }
+
+    // 移除undefined字段，避免422
+    Object.keys(payload).forEach(key => {
+      if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
+        delete payload[key]
       }
     })
+
+    if (import.meta.env.DEV) {
+      console.debug('[tasksApi] createTask payload', payload)
+    }
 
     const response = await http.post<{
       success: boolean
       message: string
       data: Task
-    }>(endpoint, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
+    }>(endpoint, payload)
+
     return response.data.data || (response.data as any)
   },
 

@@ -846,125 +846,527 @@ async def export_work_hours_data(
     date_from: date = Query(..., description="开始日期"),
     date_to: date = Query(..., description="结束日期"),
     member_ids: Optional[List[int]] = Query(None, description="成员ID列表"),
-    format: str = Query("excel", description="导出格式（excel/csv）"),
+    format: str = Query("excel", description="导出格式（仅支持excel）"),
     current_user: Member = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
-    """
-    导出工时数据（管理员功能）
-
-    - 导出基于任务完成的工时统计数据
-    - 支持Excel和CSV格式导出
-    """
+    """按照既定模板导出考勤工时数据，多工作表Excel版本。"""
     try:
-        # 检查管理员权限
-        if not current_user.is_admin:
+        # 目前仅支持Excel多工作表导出
+        if format.lower() != "excel":
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="只有管理员可以导出工时数据",
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="当前仅支持Excel格式导出",
             )
 
-        import tempfile
         from datetime import datetime as dt
 
+        import os
         import pandas as pd
-        from sqlalchemy import select
+        from sqlalchemy import and_, select
+        from sqlalchemy.orm import selectinload
 
-        from app.models.member import Member
-        from app.models.task import RepairTask
+        from app.models.attendance import MonthlyAttendanceSummary
+        from app.models.task import (
+            AssistanceTask,
+            MonitoringTask,
+            RepairTask,
+            TaskTagType,
+        )
 
-        # 构建时间范围
+        # 权限控制：管理员可导出全量，普通成员仅能导出自己的数据
+        if current_user.is_admin:
+            target_member_ids: Optional[set[int]] = (
+                set(map(int, member_ids)) if member_ids else None
+            )
+        else:
+            target_member_ids = {current_user.id}
+            if member_ids and any(mid != current_user.id for mid in member_ids):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="无权限导出其他成员的数据",
+                )
+
+        if date_from > date_to:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="开始日期不能晚于结束日期",
+            )
+
+        if date_from.year != date_to.year or date_from.month != date_to.month:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="导出时间范围必须在同一个自然月内",
+            )
+
+        target_year = date_from.year
+        target_month = date_from.month
+        month_label = f"{target_month}月"
+        month_display = f"{target_year}年{target_month:02d}月"
+
         date_from_dt = datetime.combine(date_from, datetime.min.time())
         date_to_dt = datetime.combine(date_to, datetime.max.time())
 
-        # 构建成员过滤条件
-        member_filter = []
-        if member_ids:
-            member_filter.append(RepairTask.member_id.in_(member_ids))
-
-        # 获取维修任务数据
-        repair_query = (
-            select(
-                RepairTask.id,
-                RepairTask.task_id,
-                RepairTask.title,
-                RepairTask.completion_time,
-                RepairTask.work_minutes,
-                RepairTask.task_type,
-                RepairTask.rating,
-                RepairTask.member_id,
-                Member.name.label("member_name"),
-            )
-            .join(Member, RepairTask.member_id == Member.id)
-            .where(
-                RepairTask.completion_time >= date_from_dt,
-                RepairTask.completion_time <= date_to_dt,
-                RepairTask.status == TaskStatus.COMPLETED,
-                *member_filter,
-            )
-            .order_by(RepairTask.completion_time.desc())
-        )
-
-        repair_result = await db.execute(repair_query)
-        repair_records = repair_result.fetchall()
-
-        # 转换为DataFrame
-        export_data = []
-        for record in repair_records:
-            export_data.append(
-                {
-                    "任务ID": record.task_id,
-                    "任务标题": record.title,
-                    "任务类型": "维修任务",
-                    "完成时间": (
-                        record.completion_time.strftime("%Y-%m-%d %H:%M:%S")
-                        if record.completion_time
-                        else ""
-                    ),
-                    "工时(小时)": round(record.work_minutes / 60, 2),
-                    "工时(分钟)": record.work_minutes,
-                    "任务分类": record.task_type,
-                    "用户评分": record.rating or 0,
-                    "成员ID": record.member_id,
-                    "成员姓名": record.member_name,
-                    "导出时间": dt.now().strftime("%Y-%m-%d %H:%M:%S"),
+        # 查询成员基础信息
+        member_query = select(Member).where(Member.is_active.is_(True))
+        if target_member_ids is not None:
+            if not target_member_ids:
+                return {
+                    "success": True,
+                    "message": "没有找到符合条件的工时数据",
+                    "total_records": 0,
                 }
-            )
+            member_query = member_query.where(Member.id.in_(target_member_ids))
 
-        if not export_data:
+        member_result = await db.execute(member_query)
+        member_records = list(member_result.scalars().all())
+
+        if not member_records:
             return {
                 "success": True,
                 "message": "没有找到符合条件的工时数据",
                 "total_records": 0,
             }
 
-        df = pd.DataFrame(export_data)
+        member_info: Dict[int, Dict[str, str]] = {}
+        for member in member_records:
+            member_info[member.id] = {
+                "name": member.name,
+                "class_name": member.class_name,
+            }
 
-        # 生成文件（统一写入 uploads/attendance_exports/）
-        timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
-        export_dir = _get_export_dir()
-        if format.lower() == "csv":
-            filename = f"work_hours_export_{timestamp}.csv"
-            import os
-            file_path = os.path.join(export_dir, filename)
-            df.to_csv(file_path, index=False, encoding="utf-8-sig")
-        else:
-            filename = f"work_hours_export_{timestamp}.xlsx"
-            import os
-            file_path = os.path.join(export_dir, filename)
-            df.to_excel(
-                file_path, index=False, engine="openpyxl", sheet_name="工时统计"
+        # 校验请求的成员是否都存在
+        if current_user.is_admin and target_member_ids is not None:
+            missing_members = target_member_ids - set(member_info.keys())
+            if missing_members:
+                missing_ids = ", ".join(str(mid) for mid in sorted(missing_members))
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"指定成员不存在或已离职: {missing_ids}",
+                )
+
+        export_member_ids = set(member_info.keys())
+
+        # 获取指定月份的结转信息
+        summary_query = (
+            select(
+                MonthlyAttendanceSummary.member_id,
+                MonthlyAttendanceSummary.carried_hours,
             )
+            .where(
+                and_(
+                    MonthlyAttendanceSummary.year == target_year,
+                    MonthlyAttendanceSummary.month == target_month,
+                    MonthlyAttendanceSummary.member_id.in_(export_member_ids),
+                )
+            )
+        )
+        summary_result = await db.execute(summary_query)
+        carried_map: Dict[int, float] = {
+            member_id: float(carried or 0.0)
+            for member_id, carried in summary_result.all()
+        }
+
+        # 预先填充统计结构
+        stats_map: Dict[int, Dict[str, Any]] = {}
+
+        def ensure_member_stat(member_id: int, fallback: Optional[Member] = None) -> Dict[str, Any]:
+            if member_id not in stats_map:
+                info = member_info.get(member_id)
+                if not info and fallback is not None:
+                    info = {
+                        "name": fallback.name,
+                        "class_name": fallback.class_name,
+                    }
+                    member_info[member_id] = info
+                if not info:
+                    info = {"name": "", "class_name": ""}
+                    member_info[member_id] = info
+
+                stats_map[member_id] = {
+                    "member_id": member_id,
+                    "name": info["name"],
+                    "class_name": info["class_name"],
+                    "carried_hours": float(carried_map.get(member_id, 0.0)),
+                    "repair_minutes": 0.0,
+                    "repair_total_minutes": 0.0,
+                    "repair_count": 0,
+                    "late_response_count": 0,
+                    "late_completion_count": 0,
+                    "positive_count": 0,
+                    "positive_minutes": 0.0,
+                    "timeout_penalty_minutes": 0.0,
+                    "monitoring_minutes": 0.0,
+                    "assistance_minutes": 0.0,
+                }
+            return stats_map[member_id]
+
+        for mid in export_member_ids:
+            ensure_member_stat(mid)
+
+        # 查询并统计报修任务
+        repair_query = (
+            select(RepairTask)
+            .options(selectinload(RepairTask.tags), selectinload(RepairTask.member))
+            .where(
+                RepairTask.status == TaskStatus.COMPLETED,
+                RepairTask.completion_time >= date_from_dt,
+                RepairTask.completion_time <= date_to_dt,
+            )
+        )
+        if export_member_ids:
+            repair_query = repair_query.where(RepairTask.member_id.in_(export_member_ids))
+
+        repair_result = await db.execute(repair_query)
+        repair_tasks = list(repair_result.scalars().all())
+
+        for task in repair_tasks:
+            stat = ensure_member_stat(task.member_id, task.member)
+            task_minutes = float(task.work_minutes or 0.0)
+            stat["repair_minutes"] += task_minutes
+            stat["repair_total_minutes"] += task_minutes
+            stat["repair_count"] += 1
+
+            positive_minutes = 0.0
+            has_positive = False
+            late_response_minutes = 0.0
+            late_completion_minutes = 0.0
+
+            for tag in getattr(task, "tags", []):
+                tag_type = getattr(tag, "tag_type", None)
+                if hasattr(tag_type, "value"):
+                    tag_type_value = tag_type.value
+                else:
+                    tag_type_value = str(tag_type or "")
+                modifier = float(getattr(tag, "work_minutes_modifier", 0) or 0.0)
+                tag_name_lower = (getattr(tag, "name", "") or "").lower()
+
+                if tag_type_value in {TaskTagType.NON_DEFAULT_RATING.value, TaskTagType.BONUS.value} and modifier > 0:
+                    positive_minutes += modifier
+                    has_positive = True
+                    continue
+
+                if tag_type_value == TaskTagType.TIMEOUT_RESPONSE.value:
+                    penalty = abs(modifier)
+                    late_response_minutes += penalty
+                    continue
+
+                if tag_type_value == TaskTagType.TIMEOUT_PROCESSING.value:
+                    penalty = abs(modifier)
+                    late_completion_minutes += penalty
+                    continue
+
+                if tag_type_value == TaskTagType.PENALTY.value and modifier != 0:
+                    penalty = abs(modifier)
+                    if "响应" in tag_name_lower or "response" in tag_name_lower:
+                        late_response_minutes += penalty
+                    elif "处理" in tag_name_lower or "completion" in tag_name_lower:
+                        late_completion_minutes += penalty
+
+            if has_positive:
+                stat["positive_count"] += 1
+            stat["positive_minutes"] += positive_minutes
+
+            if late_response_minutes > 0:
+                stat["late_response_count"] += 1
+            if late_completion_minutes > 0:
+                stat["late_completion_count"] += 1
+            stat["timeout_penalty_minutes"] += late_response_minutes + late_completion_minutes
+
+        # 查询并统计监控任务
+        monitoring_query = (
+            select(MonitoringTask)
+            .options(selectinload(MonitoringTask.member))
+            .where(
+                MonitoringTask.status == TaskStatus.COMPLETED,
+                MonitoringTask.end_time >= date_from_dt,
+                MonitoringTask.end_time <= date_to_dt,
+            )
+        )
+        if export_member_ids:
+            monitoring_query = monitoring_query.where(
+                MonitoringTask.member_id.in_(export_member_ids)
+            )
+
+        monitoring_result = await db.execute(monitoring_query)
+        monitoring_tasks = list(monitoring_result.scalars().all())
+
+        for task in monitoring_tasks:
+            stat = ensure_member_stat(task.member_id, task.member)
+            stat["monitoring_minutes"] += float(task.work_minutes or 0.0)
+
+        # 查询并统计协助任务
+        assistance_query = (
+            select(AssistanceTask)
+            .options(selectinload(AssistanceTask.member))
+            .where(
+                AssistanceTask.status == TaskStatus.COMPLETED,
+                AssistanceTask.end_time >= date_from_dt,
+                AssistanceTask.end_time <= date_to_dt,
+            )
+        )
+        if export_member_ids:
+            assistance_query = assistance_query.where(
+                AssistanceTask.member_id.in_(export_member_ids)
+            )
+
+        assistance_result = await db.execute(assistance_query)
+        assistance_tasks = list(assistance_result.scalars().all())
+
+        assistance_rows: List[Dict[str, Any]] = []
+
+        for task in assistance_tasks:
+            stat = ensure_member_stat(task.member_id, task.member)
+            if task.work_minutes is not None:
+                duration_minutes = float(task.work_minutes)
+            elif task.start_time and task.end_time:
+                duration_minutes = (
+                    (task.end_time - task.start_time).total_seconds() / 60.0
+                )
+            else:
+                duration_minutes = 0.0
+
+            stat["assistance_minutes"] += duration_minutes
+
+            member_meta = member_info.get(task.member_id, {"name": "", "class_name": ""})
+            start_time = task.start_time
+            end_time = task.end_time
+
+            date_str = (
+                start_time.strftime("%Y-%m-%d")
+                if start_time
+                else (end_time.strftime("%Y-%m-%d") if end_time else "")
+            )
+            time_range = ""
+            if start_time and end_time:
+                time_range = f"{start_time.strftime('%H:%M')} - {end_time.strftime('%H:%M')}"
+
+            assistance_rows.append(
+                {
+                    "序号": 0,  # 占位，写入前统一编号
+                    "班级": member_meta.get("class_name", ""),
+                    "姓名": member_meta.get("name", ""),
+                    "协助任务名称": task.title or "",
+                    "协助任务地点": task.assisted_department or "",
+                    "协助任务日期": date_str,
+                    "协助任务时间段": time_range,
+                    "协助任务小时数": round(duration_minutes / 60.0, 2),
+                    "签名": "",
+                }
+            )
+
+        assistance_rows.sort(
+            key=lambda item: (
+                item["班级"],
+                item["姓名"],
+                item["协助任务日期"],
+                item["协助任务时间段"],
+            )
+        )
+        for idx, row in enumerate(assistance_rows, start=1):
+            row["序号"] = idx
+
+        # 组装汇总数据
+        sorted_stats = sorted(
+            stats_map.values(), key=lambda item: (item["class_name"], item["name"])
+        )
+
+        def _to_hours(minutes: float) -> float:
+            return round(float(minutes or 0.0) / 60.0, 2)
+
+        summary_rows: List[Dict[str, Any]] = []
+        repair_rows: List[Dict[str, Any]] = []
+
+        for idx, stat in enumerate(sorted_stats, start=1):
+            carried_hours = round(float(stat.get("carried_hours", 0.0)), 2)
+            repair_hours = _to_hours(stat.get("repair_minutes", 0.0))
+            monitoring_hours = _to_hours(stat.get("monitoring_minutes", 0.0))
+            assistance_hours = _to_hours(stat.get("assistance_minutes", 0.0))
+            total_hours = round(
+                carried_hours + repair_hours + monitoring_hours + assistance_hours, 2
+            )
+
+            summary_rows.append(
+                {
+                    "序号": idx,
+                    "班级": stat["class_name"],
+                    "姓名": stat["name"],
+                    "上月结转时长": carried_hours,
+                    "报修单协助时长": repair_hours,
+                    "日常监控协助时长": monitoring_hours,
+                    "协助任务协助时长": assistance_hours,
+                    "工作总时长": total_hours,
+                    "签名": "",
+                }
+            )
+
+            repair_rows.append(
+                {
+                    "序号": idx,
+                    "班级": stat["class_name"],
+                    "姓名": stat["name"],
+                    "报修单总数": stat["repair_count"],
+                    "响应超时单数": stat["late_response_count"],
+                    "处理超时单数": stat["late_completion_count"],
+                    "超时扣除时间数": _to_hours(stat["timeout_penalty_minutes"]),
+                    "好评单数": stat["positive_count"],
+                    "好评折算时间数": _to_hours(stat["positive_minutes"]),
+                    "汇总时间数": _to_hours(stat["repair_total_minutes"]),
+                    "签名": "",
+                }
+            )
+
+        # 导出参数信息工作表
+        current_time = dt.now()
+        config_rows = [
+            {"参数": "导出时间", "数值": current_time.strftime("%Y-%m-%d %H:%M:%S"), "说明": ""},
+            {
+                "参数": "导出范围",
+                "数值": f"{date_from.isoformat()} 至 {date_to.isoformat()}",
+                "说明": "含首尾日期，按任务完成时间统计",
+            },
+            {"参数": "导出月份", "数值": month_display, "说明": ""},
+            {
+                "参数": "导出人",
+                "数值": current_user.name or current_user.username,
+                "说明": f"ID: {current_user.id}",
+            },
+            {
+                "参数": "成员数量",
+                "数值": len(sorted_stats),
+                "说明": "统计范围内的成员数量",
+            },
+            {
+                "参数": "线上任务基础工时(分钟)",
+                "数值": 40,
+                "说明": "非爆单线上任务默认工时",
+            },
+            {
+                "参数": "线下任务基础工时(分钟)",
+                "数值": 100,
+                "说明": "非爆单线下任务默认工时",
+            },
+            {
+                "参数": "爆单任务工时(分钟)",
+                "数值": 15,
+                "说明": "爆单任务固定工时",
+            },
+            {
+                "参数": "非默认好评奖励(分钟)",
+                "数值": 30,
+                "说明": "带文字好评的额外工时",
+            },
+            {
+                "参数": "响应超时扣时(分钟)",
+                "数值": 30,
+                "说明": "超过24小时未响应",
+            },
+            {
+                "参数": "处理超时扣时(分钟)",
+                "数值": 30,
+                "说明": "超过48小时未完成",
+            },
+            {
+                "参数": "差评扣时(分钟)",
+                "数值": 60,
+                "说明": "差评触发扣时",
+            },
+            {
+                "参数": "响应超时阈值(小时)",
+                "数值": 24,
+                "说明": "超过阈值视为超时响应",
+            },
+            {
+                "参数": "处理超时阈值(小时)",
+                "数值": 48,
+                "说明": "超过阈值视为超时处理",
+            },
+            {
+                "参数": "月度满勤标准(小时)",
+                "数值": 30,
+                "说明": "用于结转判断",
+            },
+        ]
+
+        summary_df = pd.DataFrame(
+            summary_rows,
+            columns=[
+                "序号",
+                "班级",
+                "姓名",
+                "上月结转时长",
+                "报修单协助时长",
+                "日常监控协助时长",
+                "协助任务协助时长",
+                "工作总时长",
+                "签名",
+            ],
+        )
+        repair_df = pd.DataFrame(
+            repair_rows,
+            columns=[
+                "序号",
+                "班级",
+                "姓名",
+                "报修单总数",
+                "响应超时单数",
+                "处理超时单数",
+                "超时扣除时间数",
+                "好评单数",
+                "好评折算时间数",
+                "汇总时间数",
+                "签名",
+            ],
+        )
+        assistance_df = pd.DataFrame(
+            assistance_rows,
+            columns=[
+                "序号",
+                "班级",
+                "姓名",
+                "协助任务名称",
+                "协助任务地点",
+                "协助任务日期",
+                "协助任务时间段",
+                "协助任务小时数",
+                "签名",
+            ],
+        )
+        info_df = pd.DataFrame(
+            config_rows,
+            columns=["参数", "数值", "说明"],
+        )
+
+        timestamp = current_time.strftime("%Y%m%d_%H%M%S")
+        filename = f"work_hours_export_{target_year}{target_month:02d}_{timestamp}.xlsx"
+        export_dir = _get_export_dir()
+        file_path = os.path.join(export_dir, filename)
+
+        with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
+            summary_df.to_excel(writer, index=False, sheet_name="汇总")
+            repair_df.to_excel(
+                writer,
+                index=False,
+                sheet_name=f"报修单工作时长-{month_label}",
+            )
+            assistance_df.to_excel(
+                writer,
+                index=False,
+                sheet_name=f"协助任务-{month_label}",
+            )
+            info_df.to_excel(writer, index=False, sheet_name="导出信息")
 
         return {
             "success": True,
             "message": "工时数据导出成功",
             "filename": filename,
-            "total_records": len(export_data),
+            "total_records": len(summary_rows),
             "download_url": f"/api/v1/attendance/download/{filename}",
-            "expires_at": (dt.now().timestamp() + 3600),  # 1小时后过期
+            "expires_at": current_time.timestamp() + 3600,
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"导出工时数据失败: {str(e)}")
         raise HTTPException(
