@@ -203,6 +203,14 @@
                 </el-link>
                 <div class="task-meta">
                   <el-tag
+                    v-if="isImportedTask(scope.row)"
+                    :type="isUnmatchedImport(scope.row) ? 'danger' : 'info'"
+                    size="small"
+                    effect="plain"
+                  >
+                    {{ getImportTagText(scope.row) }}
+                  </el-tag>
+                  <el-tag
                     :type="
                       getTypeTagType(
                         scope.row.type || scope.row.task_type
@@ -419,12 +427,20 @@
               </div>
 
               <div class="task-card-content">
-                <div class="task-card-meta">
-                  <el-tag
-                    :type="
-                      getTypeTagType(task.task_type || task.type || '') as any
-                    "
-                    size="small"
+              <div class="task-card-meta">
+                <el-tag
+                  v-if="isImportedTask(task)"
+                  :type="isUnmatchedImport(task) ? 'danger' : 'info'"
+                  size="small"
+                  effect="plain"
+                >
+                  {{ getImportTagText(task) }}
+                </el-tag>
+                <el-tag
+                  :type="
+                    getTypeTagType(task.task_type || task.type || '') as any
+                  "
+                  size="small"
                   >
                     {{
                       (TASK_TYPE_CONFIG as any)[
@@ -527,6 +543,52 @@
       v-model="showImportAssistanceDialog"
       @success="handleImportSuccess"
     />
+
+    <el-dialog
+      v-model="assignDialogVisible"
+      title="分配处理人"
+      width="480px"
+    >
+      <el-alert
+        :title="`本次将指派 ${assignTargets.length} 个维修任务`"
+        type="info"
+        show-icon
+        style="margin-bottom: 12px"
+      />
+      <el-form label-width="80px">
+        <el-form-item label="处理人">
+          <el-select
+            v-model="assignForm.assigneeId"
+            placeholder="请选择成员"
+            filterable
+            :loading="assignMembersLoading"
+          >
+            <el-option
+              v-for="member in assignableMembers"
+              :key="member.id"
+              :label="`${member.name} (${member.username})`"
+              :value="member.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input
+            v-model="assignForm.note"
+            type="textarea"
+            :rows="3"
+            placeholder="可选，填写指派说明"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="assignDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="assignLoading" @click="submitAssign">
+            确认指派
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -554,6 +616,7 @@ import {
   Monitor
 } from '@element-plus/icons-vue'
 import { tasksApi } from '@/api/tasks'
+import { MembersApi, type Member } from '@/api/members'
 import { formatDate as formatDateUtil, parseDate } from '@/utils/date'
 import type { Task, TaskListParams, TaskStats } from '@/types/task'
 import {
@@ -658,6 +721,17 @@ const currentTask = ref<Task | null>(null)
 const currentTaskId = ref<number | null>(null)
 const currentTaskType = ref<string | null>(null)
 
+const assignDialogVisible = ref(false)
+const assignLoading = ref(false)
+const assignMembersLoading = ref(false)
+const assignCandidatesLoaded = ref(false)
+const assignableMembers = ref<Member[]>([])
+const assignTargets = ref<Task[]>([])
+const assignForm = reactive({
+  assigneeId: undefined as number | undefined,
+  note: ''
+})
+
 // 统计卡片配置
 const statsCards = [
   {
@@ -757,6 +831,25 @@ const loadTaskStats = async () => {
   }
 }
 
+const fetchAssignableMembers = async () => {
+  if (assignCandidatesLoaded.value) return
+  try {
+    assignMembersLoading.value = true
+    const response = await MembersApi.getMembers({
+      page: 1,
+      page_size: 200,
+      is_active: true
+    })
+    assignableMembers.value = response.items || []
+    assignCandidatesLoaded.value = true
+  } catch (error) {
+    console.error('加载成员列表失败:', error)
+    ElMessage.error('无法加载可指派的成员名单')
+  } finally {
+    assignMembersLoading.value = false
+  }
+}
+
 const handleSearch = () => {
   pagination.page = 1
   loadTasks()
@@ -823,6 +916,66 @@ const viewTaskDetail = (task: Task | { id: number; type?: string; task_type?: st
   showDetailDialog.value = true
 }
 
+const openAssignDialog = async (targets: Task[]) => {
+  if (!targets.length) {
+    ElMessage.info('请选择要指派的任务')
+    return
+  }
+
+  const eligible = targets.filter(item => resolveTaskType(item) === 'repair')
+  if (eligible.length === 0) {
+    ElMessage.warning('当前仅支持为维修任务指派处理人')
+    return
+  }
+
+  if (eligible.length < targets.length) {
+    ElMessage.warning('已忽略非维修类型任务，仅指派维修任务')
+  }
+
+  await fetchAssignableMembers()
+
+  assignTargets.value = eligible
+  assignForm.assigneeId =
+    eligible.length === 1
+      ? ((eligible[0].assignee_id as number | undefined) ||
+        (eligible[0].assigneeId as number | undefined) ||
+        undefined)
+      : undefined
+  assignForm.note = ''
+  assignDialogVisible.value = true
+}
+
+const submitAssign = async () => {
+  if (!assignForm.assigneeId) {
+    ElMessage.warning('请选择要指派的成员')
+    return
+  }
+  if (assignTargets.value.length === 0) {
+    assignDialogVisible.value = false
+    return
+  }
+
+  try {
+    assignLoading.value = true
+    for (const task of assignTargets.value) {
+      await tasksApi.assignTask(task.id, assignForm.assigneeId, {
+        note: assignForm.note,
+        taskType: 'repair'
+      })
+    }
+    ElMessage.success('任务指派成功')
+    assignDialogVisible.value = false
+    selectedTasks.value = []
+    await loadTasks()
+    await loadTaskStats()
+  } catch (error) {
+    console.error('任务指派失败:', error)
+    ElMessage.error('任务指派失败，请稍后重试')
+  } finally {
+    assignLoading.value = false
+  }
+}
+
 const handleTaskAction = async (command: string, task: Task) => {
   switch (command) {
     case 'edit':
@@ -832,7 +985,7 @@ const handleTaskAction = async (command: string, task: Task) => {
       await deleteTask(task)
       break
     case 'assign':
-      // TODO: 实现分配任务逻辑
+      await openAssignDialog([task])
       break
     case 'start':
       await startTask(task)
@@ -952,13 +1105,26 @@ const reopenTask = async (task: Task) => {
 
 // 批量操作
 const batchAssign = () => {
-  // TODO: 实现批量分配逻辑
-  ElMessage.info('批量分配功能开发中...')
+  if (selectedTasks.value.length === 0) {
+    ElMessage.info('请先选择需要指派的任务')
+    return
+  }
+  openAssignDialog(selectedTasks.value)
 }
 
-const batchExport = () => {
-  // TODO: 实现批量导出逻辑
-  ElMessage.info('批量导出功能开发中...')
+const batchExport = async () => {
+  if (selectedTasks.value.length === 0) {
+    ElMessage.info('请先选择需要导出的任务')
+    return
+  }
+  const ids = selectedTasks.value.map(task => task.id)
+  try {
+    await tasksApi.exportTasks({ ...filters, ids, task_ids: ids })
+    ElMessage.success('批量导出任务成功')
+  } catch (error) {
+    console.error('批量导出任务失败:', error)
+    ElMessage.error('批量导出失败，请稍后重试')
+  }
 }
 
 const batchDelete = async () => {
@@ -1096,6 +1262,42 @@ const getProgressColor = (status: string): string => {
   }
   return colorMap[status] || '#909399'
 }
+
+const resolveTaskType = (task: Task): string => {
+  const type = (task.task_type || (task as any).type || '').toString()
+  return type || 'repair'
+}
+
+const isImportedTask = (task: Task): boolean => {
+  return Boolean(task.import_batch_id || (task as any).importBatchId)
+}
+
+const isUnmatchedImport = (task: Task): boolean => {
+  const summary = (task.import_summary || (task as any).importSummary) as
+    | { is_matched?: boolean }
+    | undefined
+  if (summary && typeof summary.is_matched === 'boolean') {
+    return summary.is_matched === false
+  }
+  const raw = (task as any).is_matched ?? (task as any).isMatched
+  if (typeof raw === 'boolean') {
+    return raw === false
+  }
+  return false
+}
+
+const getImportTagText = (task: Task): string => {
+  return isUnmatchedImport(task) ? '未匹配' : '已导入'
+}
+
+watch(assignDialogVisible, visible => {
+  if (!visible) {
+    assignLoading.value = false
+    assignForm.assigneeId = undefined
+    assignForm.note = ''
+    assignTargets.value = []
+  }
+})
 
 // 生命周期
 onMounted(() => {

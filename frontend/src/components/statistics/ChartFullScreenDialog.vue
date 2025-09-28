@@ -179,6 +179,14 @@ watch(
   visible => {
     dialogVisible.value = visible
     if (visible) {
+      if (props.chartConfig?.filters) {
+        Object.assign(chartFilters, props.chartConfig.filters)
+      }
+      if (props.chartConfig?.chartType) {
+        chartType.value = props.chartConfig.chartType
+      } else if (props.chartConfig?.type) {
+        chartType.value = props.chartConfig.type
+      }
       nextTick(() => {
         initChart()
       })
@@ -207,6 +215,15 @@ const initChart = async () => {
 
   try {
     loading.value = true
+
+    if (props.chartConfig.filters) {
+      Object.assign(chartFilters, props.chartConfig.filters)
+    }
+    if (props.chartConfig.chartType) {
+      chartType.value = props.chartConfig.chartType
+    } else if (props.chartConfig.type) {
+      chartType.value = props.chartConfig.type
+    }
 
     // 初始化图表实例
     chartInstance.value = echarts.init(chartRef.value)

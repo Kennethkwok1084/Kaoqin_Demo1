@@ -5,6 +5,7 @@ import pytest
 
 from app.api.v1.repair import import_maintenance_orders
 from app.models.member import Member, UserRole
+from app.core.security import create_access_token
 
 
 @pytest.mark.asyncio

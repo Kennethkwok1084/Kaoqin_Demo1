@@ -204,6 +204,97 @@
         </el-row>
       </el-card>
 
+      <!-- 协助任务专属字段 -->
+      <el-card v-if="isAssistanceTask" class="form-section" shadow="never">
+        <template #header>
+          <div class="card-header">
+            <el-icon><Timer /></el-icon>
+            <span>协助任务信息</span>
+          </div>
+        </template>
+
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="协助日期" required>
+              <el-date-picker
+                v-model="formData.assistanceDate"
+                type="date"
+                placeholder="选择协助日期"
+                value-format="YYYY-MM-DD"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="16">
+            <el-form-item label="录入方式">
+              <el-radio-group v-model="formData.assistanceTimeMode">
+                <el-radio-button label="range">时间段</el-radio-button>
+                <el-radio-button label="duration">时长</el-radio-button>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="开始时间" required>
+              <el-time-picker
+                v-model="formData.assistanceStartTime"
+                placeholder="开始时间"
+                format="HH:mm"
+                value-format="HH:mm"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8" v-if="formData.assistanceTimeMode === 'range'">
+            <el-form-item label="结束时间" required>
+              <el-time-picker
+                v-model="formData.assistanceEndTime"
+                placeholder="结束时间"
+                format="HH:mm"
+                value-format="HH:mm"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8" v-else>
+            <el-form-item label="协助时长 (分钟)" required>
+              <el-input-number
+                v-model="formData.assistanceDuration"
+                :min="15"
+                :max="720"
+                :step="15"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="协助部门">
+              <el-input
+                v-model="formData.assistedDepartment"
+                placeholder="填写协助的部门"
+                clearable
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="协助对象">
+              <el-input
+                v-model="formData.assistedPerson"
+                placeholder="填写协助对象"
+                clearable
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-alert
+          v-if="formData.assistanceTimeMode === 'duration'"
+          type="info"
+          show-icon
+          :closable="false"
+          title="系统将根据协助日期与开始时间自动换算结束时间"
+        />
+      </el-card>
+
       <!-- 附件上传 -->
       <el-card class="form-section" shadow="never">
         <template #header>
@@ -256,7 +347,8 @@ import {
   Setting,
   Location,
   Paperclip,
-  UploadFilled
+  UploadFilled,
+  Timer
 } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules, UploadFile } from 'element-plus'
 import type { Task, CreateTaskRequest, UpdateTaskRequest } from '@/types/task'
@@ -302,6 +394,13 @@ interface TaskFormData extends CreateTaskRequest {
   tags?: string[]
   attachments?: File[]
   contactInfo?: string
+  assistanceDate?: string
+  assistanceStartTime?: string
+  assistanceEndTime?: string
+  assistanceTimeMode?: 'range' | 'duration'
+  assistanceDuration?: number
+  assistedDepartment?: string
+  assistedPerson?: string
 }
 
 // 表单数据
@@ -321,7 +420,14 @@ const formData = reactive<TaskFormData>({
   due_date: '',
   dueDate: '',
   tags: [],
-  attachments: []
+  attachments: [],
+  assistanceDate: '',
+  assistanceStartTime: '',
+  assistanceEndTime: '',
+  assistanceTimeMode: 'range',
+  assistanceDuration: 60,
+  assistedDepartment: '',
+  assistedPerson: ''
 })
 
 // 表单验证规则
@@ -351,10 +457,17 @@ const formRules: FormRules = {
   estimatedHours: [
     { required: true, message: '请输入预估工时', trigger: 'blur' },
     {
-      type: 'number',
-      min: 0.5,
-      max: 999,
-      message: '工时应在0.5-999小时之间',
+      validator: (_rule, value, callback) => {
+        if (value === undefined || value === null || Number(value) <= 0) {
+          callback(new Error('请输入大于0的工时'))
+          return
+        }
+        if (Number(value) > 999) {
+          callback(new Error('工时需小于999小时'))
+          return
+        }
+        callback()
+      },
       trigger: 'change'
     }
   ],
@@ -368,10 +481,93 @@ const visible = computed({
 })
 
 const isEdit = computed(() => !!props.task)
+const isAssistanceTask = computed(() => formData.type === 'assistance')
 
 // 禁用过去的日期
 const disabledDate = (time: Date) => {
   return time.getTime() < Date.now() - 24 * 60 * 60 * 1000
+}
+
+const formatDateTimeIso = (date: Date) => {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  const hh = String(date.getHours()).padStart(2, '0')
+  const mm = String(date.getMinutes()).padStart(2, '0')
+  const ss = String(date.getSeconds()).padStart(2, '0')
+  return `${y}-${m}-${d}T${hh}:${mm}:${ss}`
+}
+
+const formatDatePart = (date: Date) => {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+const formatTimePart = (date: Date) => {
+  const hh = String(date.getHours()).padStart(2, '0')
+  const mm = String(date.getMinutes()).padStart(2, '0')
+  return `${hh}:${mm}`
+}
+
+const computeAssistanceTimes = () => {
+  if (!formData.assistanceDate) {
+    return null
+  }
+
+  const startTimeText = formData.assistanceStartTime || ''
+  if (!startTimeText) {
+    return null
+  }
+
+  const baseDate = new Date(`${formData.assistanceDate}T00:00:00`)
+  if (Number.isNaN(baseDate.getTime())) {
+    return null
+  }
+
+  const [startHour, startMinute] = startTimeText.split(':').map(v => Number(v))
+  if (Number.isNaN(startHour) || Number.isNaN(startMinute)) {
+    return null
+  }
+
+  const startDate = new Date(baseDate)
+  startDate.setHours(startHour, startMinute, 0, 0)
+
+  let endDate: Date | null = null
+  if (formData.assistanceTimeMode === 'duration') {
+    const durationMinutes = Number(formData.assistanceDuration || 0)
+    if (!durationMinutes || durationMinutes <= 0) {
+      return null
+    }
+    endDate = new Date(startDate.getTime() + durationMinutes * 60000)
+  } else {
+    const endTimeText = formData.assistanceEndTime || ''
+    if (!endTimeText) {
+      return null
+    }
+    const [endHour, endMinute] = endTimeText.split(':').map(v => Number(v))
+    if (Number.isNaN(endHour) || Number.isNaN(endMinute)) {
+      return null
+    }
+    endDate = new Date(baseDate)
+    endDate.setHours(endHour, endMinute, 0, 0)
+  }
+
+  if (!endDate || Number.isNaN(endDate.getTime())) {
+    return null
+  }
+
+  if (endDate <= startDate) {
+    return null
+  }
+
+  const minutes = Math.round((endDate.getTime() - startDate.getTime()) / 60000)
+  return {
+    startIso: formatDateTimeIso(startDate),
+    endIso: formatDateTimeIso(endDate),
+    minutes
+  }
 }
 
 // Methods
@@ -444,7 +640,8 @@ const resetForm = () => {
   Object.assign(formData, {
     title: '',
     description: '',
-    type: 'network_repair' as any,
+    type: 'repair' as any,
+    task_type: 'repair',
     priority: 'medium',
     assigneeId: undefined,
     location: '',
@@ -452,7 +649,14 @@ const resetForm = () => {
     estimatedHours: 2,
     dueDate: '',
     tags: [],
-    attachments: []
+    attachments: [],
+    assistanceDate: '',
+    assistanceStartTime: '',
+    assistanceEndTime: '',
+    assistanceTimeMode: 'range',
+    assistanceDuration: 60,
+    assistedDepartment: '',
+    assistedPerson: ''
   })
   fileList.value = []
   formRef.value?.clearValidate()
@@ -474,6 +678,40 @@ const initForm = () => {
       tags: props.task.tags || [],
       attachments: []
     })
+
+    if ((props.task.type || (props.task as any).task_type) === 'assistance') {
+      const startRaw = (props.task as any).start_time || (props.task as any).startTime
+      const endRaw = (props.task as any).end_time || (props.task as any).endTime
+      if (startRaw) {
+        const startDate = new Date(startRaw)
+        if (!Number.isNaN(startDate.getTime())) {
+          formData.assistanceDate = formatDatePart(startDate)
+          formData.assistanceStartTime = formatTimePart(startDate)
+        }
+      }
+      if (endRaw) {
+        const endDate = new Date(endRaw)
+        if (!Number.isNaN(endDate.getTime())) {
+          formData.assistanceEndTime = formatTimePart(endDate)
+          formData.assistanceTimeMode = 'range'
+        }
+      } else if (formData.estimatedHours) {
+        formData.assistanceTimeMode = 'duration'
+        formData.assistanceDuration = Math.round((formData.estimatedHours || 0) * 60)
+      }
+      formData.assistedDepartment =
+        (props.task as any).assisted_department || (props.task as any).assistedDepartment || ''
+      formData.assistedPerson =
+        (props.task as any).assisted_person || (props.task as any).assistedPerson || ''
+    } else {
+      formData.assistanceDate = ''
+      formData.assistanceStartTime = ''
+      formData.assistanceEndTime = ''
+      formData.assistanceDuration = 60
+      formData.assistanceTimeMode = 'range'
+      formData.assistedDepartment = ''
+      formData.assistedPerson = ''
+    }
   } else {
     resetForm()
   }
@@ -488,6 +726,20 @@ const handleSubmit = async () => {
   if (!formRef.value) return
 
   try {
+    let assistanceTimes: ReturnType<typeof computeAssistanceTimes> | null = null
+    if (isAssistanceTask.value) {
+      assistanceTimes = computeAssistanceTimes()
+      if (!assistanceTimes) {
+        ElMessage.error('请填写完整的协助日期与时间信息')
+        return
+      }
+      formData.dueDate = assistanceTimes.endIso
+      formData.estimatedHours = Number((assistanceTimes.minutes / 60).toFixed(2))
+      if (formData.estimatedHours && formData.estimatedHours < 0.17) {
+        formData.estimatedHours = 0.17
+      }
+    }
+
     await formRef.value.validate()
     submitting.value = true
 
@@ -530,7 +782,11 @@ const handleSubmit = async () => {
         estimatedHours: formData.estimatedHours,
         dueDate: formData.dueDate,
         tags: formData.tags,
-        attachments: formData.attachments
+        attachments: formData.attachments,
+        assistedDepartment: formData.assistedDepartment,
+        assistedPerson: formData.assistedPerson,
+        start_time: assistanceTimes?.startIso,
+        end_time: assistanceTimes?.endIso
       }
 
       await tasksApi.createTask(createData as any)
@@ -560,6 +816,64 @@ watch(
       loadMembers()
       loadTags()
     }
+  }
+)
+
+watch(
+  () => formData.type,
+  type => {
+    if (type === 'assistance') {
+      if (!formData.assistanceDate) {
+        const today = new Date()
+        const y = today.getFullYear()
+        const m = String(today.getMonth() + 1).padStart(2, '0')
+        const d = String(today.getDate()).padStart(2, '0')
+        formData.assistanceDate = `${y}-${m}-${d}`
+      }
+      if (!formData.assistanceStartTime) {
+        formData.assistanceStartTime = '09:00'
+      }
+    }
+  }
+)
+
+watch(
+  () => formData.assistanceTimeMode,
+  mode => {
+    if (!isAssistanceTask.value) {
+      return
+    }
+    if (mode === 'duration') {
+      formData.assistanceEndTime = ''
+      if (!formData.assistanceDuration || formData.assistanceDuration <= 0) {
+        formData.assistanceDuration = 60
+      }
+    } else if (mode === 'range' && !formData.assistanceEndTime) {
+      formData.assistanceEndTime = '10:00'
+    }
+  }
+)
+
+watch(
+  () => [
+    formData.assistanceDate,
+    formData.assistanceStartTime,
+    formData.assistanceEndTime,
+    formData.assistanceTimeMode,
+    formData.assistanceDuration,
+    formData.type
+  ],
+  () => {
+    if (!isAssistanceTask.value) {
+      return
+    }
+    const times = computeAssistanceTimes()
+    if (!times) {
+      formData.dueDate = ''
+      return
+    }
+    formData.estimatedHours = Number((times.minutes / 60).toFixed(2))
+    formData.dueDate = times.endIso
   }
 )
 

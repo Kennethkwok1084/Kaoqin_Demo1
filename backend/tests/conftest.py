@@ -259,6 +259,14 @@ def auth_headers():
 
 
 @pytest.fixture
+def valid_auth_headers(test_user):
+    """Create valid authorization headers with real user."""
+    from app.core.security import create_access_token
+    token = create_access_token(subject=str(test_user.id))
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
 async def token(async_client):
     """Get authentication token for testing."""
     # 创建测试用户

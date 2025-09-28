@@ -12,6 +12,7 @@ from httpx import AsyncClient
 
 from app.main import app
 from app.models.member import Member, UserRole
+from app.core.security import create_access_token
 from app.models.task import RepairTask, TaskStatus
 
 
@@ -21,7 +22,9 @@ class TestMembersAPIBasic:
     @pytest.fixture
     async def client(self):
         """创建测试客户端"""
-        async with AsyncClient(app=app, base_url="http://testserver") as ac:
+        from httpx import ASGITransport
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
             yield ac
 
     @pytest.fixture
@@ -113,7 +116,7 @@ class TestGetMembersAPI(TestMembersAPIBasic):
             mock_count_result.scalar.return_value = len(sample_members)
 
             response = await client.get(
-                "/api/v1/members/", headers={"Authorization": "Bearer admin_token"}
+                "/api/v1/members/", headers={"Authorization": f"Bearer {create_access_token(subject='1')}"}
             )
 
             assert response.status_code == 200
@@ -142,7 +145,7 @@ class TestGetMembersAPI(TestMembersAPIBasic):
 
             response = await client.get(
                 "/api/v1/members/?page=1&per_page=10",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -172,7 +175,7 @@ class TestGetMembersAPI(TestMembersAPIBasic):
 
             response = await client.get(
                 "/api/v1/members/?role=member&is_active=true&search=用户1",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -186,7 +189,7 @@ class TestGetMembersAPI(TestMembersAPIBasic):
             mock_get_admin.side_effect = Exception("权限不足")
 
             response = await client.get(
-                "/api/v1/members/", headers={"Authorization": "Bearer user_token"}
+                "/api/v1/members/", headers={"Authorization": f"Bearer {create_access_token(subject='1')}"}
             )
 
             assert response.status_code in [401, 403, 500]
@@ -213,7 +216,7 @@ class TestGetMemberAPI(TestMembersAPIBasic):
             mock_db.execute.return_value = mock_result
 
             response = await client.get(
-                "/api/v1/members/1", headers={"Authorization": "Bearer admin_token"}
+                "/api/v1/members/1", headers={"Authorization": f"Bearer {create_access_token(subject='1')}"}
             )
 
             assert response.status_code == 200
@@ -240,7 +243,7 @@ class TestGetMemberAPI(TestMembersAPIBasic):
             mock_db.execute.return_value = mock_result
 
             response = await client.get(
-                "/api/v1/members/999", headers={"Authorization": "Bearer admin_token"}
+                "/api/v1/members/999", headers={"Authorization": f"Bearer {create_access_token(subject='1')}"}
             )
 
             assert response.status_code == 404
@@ -253,7 +256,7 @@ class TestGetMemberAPI(TestMembersAPIBasic):
 
             response = await client.get(
                 "/api/v1/members/invalid_id",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 422
@@ -308,7 +311,7 @@ class TestCreateMemberAPI(TestMembersAPIBasic):
                 response = await client.post(
                     "/api/v1/members/",
                     json=member_data,
-                    headers={"Authorization": "Bearer admin_token"},
+                    headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
                 )
 
                 assert response.status_code == 201
@@ -349,7 +352,7 @@ class TestCreateMemberAPI(TestMembersAPIBasic):
             response = await client.post(
                 "/api/v1/members/",
                 json=member_data,
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 400
@@ -370,7 +373,7 @@ class TestCreateMemberAPI(TestMembersAPIBasic):
             response = await client.post(
                 "/api/v1/members/",
                 json=invalid_member_data,
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 422
@@ -407,7 +410,7 @@ class TestUpdateMemberAPI(TestMembersAPIBasic):
             response = await client.put(
                 "/api/v1/members/1",
                 json=update_data,
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -441,7 +444,7 @@ class TestUpdateMemberAPI(TestMembersAPIBasic):
             response = await client.put(
                 "/api/v1/members/999",
                 json=update_data,
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 404
@@ -470,7 +473,7 @@ class TestUpdateMemberAPI(TestMembersAPIBasic):
             response = await client.put(
                 "/api/v1/members/1",
                 json=update_data,
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -501,7 +504,7 @@ class TestDeleteMemberAPI(TestMembersAPIBasic):
             mock_db.commit = AsyncMock()
 
             response = await client.delete(
-                "/api/v1/members/1", headers={"Authorization": "Bearer admin_token"}
+                "/api/v1/members/1", headers={"Authorization": f"Bearer {create_access_token(subject='1')}"}
             )
 
             assert response.status_code == 200
@@ -527,7 +530,7 @@ class TestDeleteMemberAPI(TestMembersAPIBasic):
             mock_db.execute.return_value = mock_result
 
             response = await client.delete(
-                "/api/v1/members/999", headers={"Authorization": "Bearer admin_token"}
+                "/api/v1/members/999", headers={"Authorization": f"Bearer {create_access_token(subject='1')}"}
             )
 
             assert response.status_code == 404
@@ -551,7 +554,7 @@ class TestDeleteMemberAPI(TestMembersAPIBasic):
 
             response = await client.delete(
                 f"/api/v1/members/{admin_user.id}",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             # 应该不能删除自己
@@ -597,7 +600,7 @@ user2,20210002,用户2,user2@test.com,member"""
             response = await client.post(
                 "/api/v1/members/import",
                 files={"file": ("members.csv", csv_file, "text/csv")},
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -615,7 +618,7 @@ user2,20210002,用户2,user2@test.com,member"""
             response = await client.post(
                 "/api/v1/members/import",
                 files={"file": ("invalid.txt", invalid_file, "text/plain")},
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 400
@@ -631,7 +634,7 @@ user2,20210002,用户2,user2@test.com,member"""
             response = await client.post(
                 "/api/v1/members/import",
                 files={"file": ("empty.csv", empty_file, "text/csv")},
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 400
@@ -674,7 +677,7 @@ class TestChangePasswordAPI(TestMembersAPIBasic):
                 response = await client.post(
                     "/api/v1/members/1/change-password",
                     json=password_data,
-                    headers={"Authorization": "Bearer user_token"},
+                    headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
                 )
 
                 assert response.status_code == 200
@@ -710,7 +713,7 @@ class TestChangePasswordAPI(TestMembersAPIBasic):
                 response = await client.post(
                     "/api/v1/members/1/change-password",
                     json=password_data,
-                    headers={"Authorization": "Bearer user_token"},
+                    headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
                 )
 
                 assert response.status_code == 400
@@ -729,7 +732,7 @@ class TestChangePasswordAPI(TestMembersAPIBasic):
             response = await client.post(
                 "/api/v1/members/1/change-password",
                 json=password_data,
-                headers={"Authorization": "Bearer user_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 422
@@ -763,7 +766,7 @@ class TestMemberStatsAPI(TestMembersAPIBasic):
 
             response = await client.get(
                 "/api/v1/members/stats/overview",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -791,7 +794,7 @@ class TestMembersErrorHandling(TestMembersAPIBasic):
             mock_get_db.side_effect = Exception("Database connection failed")
 
             response = await client.get(
-                "/api/v1/members/", headers={"Authorization": "Bearer admin_token"}
+                "/api/v1/members/", headers={"Authorization": f"Bearer {create_access_token(subject='1')}"}
             )
 
             assert response.status_code == 500
@@ -837,7 +840,7 @@ class TestMembersErrorHandling(TestMembersAPIBasic):
             response = await client.post(
                 "/api/v1/members/",
                 json=member_data,
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 500
@@ -870,7 +873,7 @@ class TestMembersErrorHandling(TestMembersAPIBasic):
 
             response = await client.get(
                 "/api/v1/members/?per_page=100",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -899,7 +902,7 @@ class TestMembersErrorHandling(TestMembersAPIBasic):
             # 尝试SQL注入
             response = await client.get(
                 "/api/v1/members/?search='; DROP TABLE members; --",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             # 应该正常处理，不会执行恶意SQL

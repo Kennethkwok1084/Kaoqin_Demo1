@@ -64,6 +64,20 @@ export interface Task extends BaseEntity {
   isOverdueCompletion?: boolean
   is_offline?: boolean
   isOffline?: boolean
+  approved_by?: number | null
+  approvedBy?: number | null
+  approved_by_name?: string | null
+  approvedByName?: string | null
+  approved_at?: string | null
+  approvedAt?: string | null
+  review_comment?: string | null
+  reviewComment?: string | null
+  import_batch_id?: string | null
+  importBatchId?: string | null
+  is_matched?: boolean
+  isMatched?: boolean
+  import_summary?: ImportSummary
+  importSummary?: ImportSummary
   completion_notes?: string | null
 
   // 关联数据
@@ -96,6 +110,16 @@ export interface TaskComment extends BaseEntity {
   content: string
   authorId: number
   authorName: string
+}
+
+export interface ImportSummary {
+  has_original_data: boolean
+  has_matched_member_data: boolean
+  is_matched: boolean
+  import_batch_id?: string | null
+  import_status?: string
+  import_batch?: string | null
+  [key: string]: unknown
 }
 
 export interface TaskEvaluation extends BaseEntity {

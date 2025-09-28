@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is an **Attendance Management System (考勤管理系统)** designed for university network maintenance teams. It's a modern full-stack application with a separated frontend-backend architecture.
 
 **Tech Stack**: Backend uses **Python + FastAPI + PostgreSQL**, frontend uses **Vue 3 + Capacitor** for cross-platform apps, with future **Flutter** integration planned.
-
+项目需要始终基于“如无必要不增加实体”原则。文件命名请不要随便命名，遵循规范性的命名。
 ## Architecture
 
 The project follows a microservices architecture:

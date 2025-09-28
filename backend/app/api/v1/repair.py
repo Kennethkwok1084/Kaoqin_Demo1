@@ -474,6 +474,8 @@ async def get_repair_tasks(
                 "updated_at": updated_iso,
                 "updatedAt": updated_iso,
                 "work_minutes": task.work_minutes,
+                "import_batch_id": task.import_batch_id,
+                "importBatchId": task.import_batch_id,
                 "is_overdue_response": task.is_overdue_response,
                 "isOverdueResponse": task.is_overdue_response,
                 "is_overdue_completion": task.is_overdue_completion,
@@ -481,6 +483,14 @@ async def get_repair_tasks(
                 "rating": task.rating,
                 "rating_comment": task.feedback,
             }
+
+            import_summary = task.get_import_data_summary()
+            if import_summary:
+                task_data["import_summary"] = import_summary
+                task_data["importSummary"] = import_summary
+                task_data["is_matched"] = import_summary.get("is_matched")
+                task_data["isMatched"] = import_summary.get("is_matched")
+
             items.append(task_data)
 
         # 计算页数

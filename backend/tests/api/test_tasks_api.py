@@ -7,10 +7,11 @@ from datetime import date, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 
 from app.main import app
 from app.models.member import Member, UserRole
+from app.core.security import create_access_token
 from app.models.task import (
     AssistanceTask,
     MonitoringTask,
@@ -28,7 +29,8 @@ class TestTasksAPIBasic:
     @pytest.fixture
     async def client(self):
         """创建测试客户端"""
-        async with AsyncClient(app=app, base_url="http://testserver") as ac:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
             yield ac
 
     @pytest.fixture
@@ -123,7 +125,7 @@ class TestMonitoringTasksAPI(TestTasksAPIBasic):
 
             response = await client.get(
                 "/api/v1/tasks/monitoring",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -149,7 +151,7 @@ class TestMonitoringTasksAPI(TestTasksAPIBasic):
 
             response = await client.get(
                 "/api/v1/tasks/monitoring?monitoring_type=inspection&status=completed",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -185,7 +187,7 @@ class TestRepairTasksAPI(TestTasksAPIBasic):
             mock_db.execute.return_value = mock_result
 
             response = await client.get(
-                "/api/v1/tasks/fixes", headers={"Authorization": "Bearer test_token"}
+                "/api/v1/tasks/fixes", headers={"Authorization": f"Bearer {create_access_token(subject='1')}"}
             )
 
             assert response.status_code == 200
@@ -216,7 +218,7 @@ class TestRepairTasksAPI(TestTasksAPIBasic):
 
             response = await client.get(
                 "/api/v1/tasks/repair-list?page=1&per_page=10",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -256,7 +258,7 @@ class TestAssistanceTasksAPI(TestTasksAPIBasic):
 
             response = await client.get(
                 "/api/v1/tasks/assistance",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -282,7 +284,7 @@ class TestAssistanceTasksAPI(TestTasksAPIBasic):
 
             response = await client.get(
                 "/api/v1/tasks/assistance?status=pending",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -310,7 +312,7 @@ class TestWorkTimeDetailAPI(TestTasksAPIBasic):
 
             response = await client.get(
                 "/api/v1/tasks/work-time-detail/1",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -338,7 +340,7 @@ class TestWorkTimeDetailAPI(TestTasksAPIBasic):
 
             response = await client.get(
                 "/api/v1/tasks/work-time-detail/999",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 404
@@ -377,7 +379,7 @@ class TestWorkTimeDetailAPI(TestTasksAPIBasic):
 
             response = await client.get(
                 "/api/v1/tasks/work-time-detail/1?recalculate=true",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -412,7 +414,7 @@ class TestTasksStatsAPI(TestTasksAPIBasic):
             mock_db.execute.side_effect = mock_results
 
             response = await client.get(
-                "/api/v1/tasks/stats", headers={"Authorization": "Bearer admin_token"}
+                "/api/v1/tasks/stats", headers={"Authorization": f"Bearer {create_access_token(subject='1')}"}
             )
 
             assert response.status_code == 200
@@ -447,7 +449,7 @@ class TestTasksStatsAPI(TestTasksAPIBasic):
 
             response = await client.get(
                 "/api/v1/tasks/stats?start_date=2025-01-01&end_date=2025-01-31",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -462,7 +464,7 @@ class TestTasksStatsAPI(TestTasksAPIBasic):
             mock_get_user.return_value = self.sample_user()  # 普通用户
 
             response = await client.get(
-                "/api/v1/tasks/stats", headers={"Authorization": "Bearer test_token"}
+                "/api/v1/tasks/stats", headers={"Authorization": f"Bearer {create_access_token(subject='1')}"}
             )
 
             # 根据实际权限控制，可能返回403或其他状态码
@@ -504,7 +506,7 @@ class TestTaskCreationAPI(TestTasksAPIBasic):
             response = await client.post(
                 "/api/v1/tasks/repair",
                 json=task_data,
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 201
@@ -524,7 +526,7 @@ class TestTaskCreationAPI(TestTasksAPIBasic):
         response = await client.post(
             "/api/v1/tasks/repair",
             json=invalid_task_data,
-            headers={"Authorization": "Bearer test_token"},
+            headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
         )
 
         assert response.status_code == 422
@@ -564,7 +566,7 @@ class TestTaskCreationAPI(TestTasksAPIBasic):
             response = await client.post(
                 "/api/v1/tasks/monitoring",
                 json=task_data,
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 201
@@ -606,7 +608,7 @@ class TestTaskCreationAPI(TestTasksAPIBasic):
             response = await client.post(
                 "/api/v1/tasks/assistance",
                 json=task_data,
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 201
@@ -640,7 +642,7 @@ class TestTaskUpdateAPI(TestTasksAPIBasic):
             response = await client.patch(
                 "/api/v1/tasks/1/status",
                 json=update_data,
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -669,7 +671,7 @@ class TestTaskUpdateAPI(TestTasksAPIBasic):
             response = await client.post(
                 "/api/v1/tasks/1/feedback",
                 json=feedback_data,
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -699,7 +701,7 @@ class TestErrorHandling(TestTasksAPIBasic):
 
             response = await client.get(
                 "/api/v1/tasks/work-time-detail/invalid_id",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 422
@@ -733,7 +735,7 @@ class TestErrorHandling(TestTasksAPIBasic):
             response = await client.post(
                 "/api/v1/tasks/repair",
                 json=task_data,
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 500

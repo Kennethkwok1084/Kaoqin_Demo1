@@ -284,11 +284,52 @@
       v-model="showImportDialog"
       @success="handleImportSuccess"
     />
+
+    <el-dialog
+      v-model="reportDialogVisible"
+      title="提交巡检报告"
+      width="520px"
+    >
+      <el-form label-width="110px">
+        <el-form-item label="巡检记录">
+          <el-input
+            v-model="reportForm.inspectionNotes"
+            type="textarea"
+            :rows="4"
+            placeholder="填写本次巡检发现及处理情况"
+          />
+        </el-form-item>
+        <el-form-item label="检查设备">
+          <el-input
+            v-model="reportForm.equipmentText"
+            type="textarea"
+            :rows="3"
+            placeholder="可输入多个设备名称，换行或逗号分隔"
+          />
+        </el-form-item>
+        <el-form-item label="发现问题">
+          <el-input
+            v-model="reportForm.issuesText"
+            type="textarea"
+            :rows="3"
+            placeholder="记录发现的问题，如无可留空"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="reportDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="reportLoading" @click="confirmSubmitReport">
+            提交
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus,
@@ -355,6 +396,15 @@ const showDetailDialog = ref(false)
 const showImportDialog = ref(false)
 const currentTask = ref<Task | null>(null)
 const currentTaskId = ref<number | null>(null)
+
+const reportDialogVisible = ref(false)
+const reportLoading = ref(false)
+const reportTargetTask = ref<Task | null>(null)
+const reportForm = reactive({
+  inspectionNotes: '',
+  equipmentText: '',
+  issuesText: ''
+})
 
 // 统计卡片配置 - 专门针对监控任务
 const statsCards = [
@@ -491,12 +541,44 @@ const startInspection = async (task: Task) => {
   }
 }
 
-const submitReport = async (task: Task) => {
+const submitReport = (task: Task) => {
+  reportTargetTask.value = task
+  reportForm.inspectionNotes = ''
+  reportForm.equipmentText = ''
+  reportForm.issuesText = ''
+  reportDialogVisible.value = true
+}
+
+const confirmSubmitReport = async () => {
+  if (!reportTargetTask.value) return
   try {
-    // TODO: 打开巡检报告提交对话框
-    ElMessage.info('巡检报告提交功能开发中...')
+    reportLoading.value = true
+
+    const equipmentChecked = reportForm.equipmentText
+      .split(/\n|,/)
+      .map(item => item.trim())
+      .filter(Boolean)
+
+    const issuesFound = reportForm.issuesText
+      .split(/\n|,/)
+      .map(item => item.trim())
+      .filter(Boolean)
+
+    await tasksApi.completeMonitoringInspection(reportTargetTask.value.id, {
+      inspection_notes: reportForm.inspectionNotes.trim() || undefined,
+      equipment_checked: equipmentChecked.length > 0 ? equipmentChecked : undefined,
+      issues_found: issuesFound.length > 0 ? issuesFound : undefined
+    })
+
+    ElMessage.success('巡检报告提交成功')
+    reportDialogVisible.value = false
+    await loadTasks()
+    await loadTaskStats()
   } catch (error) {
-    ElMessage.error('提交巡检报告失败')
+    console.error('提交巡检报告失败:', error)
+    ElMessage.error('提交巡检报告失败，请稍后重试')
+  } finally {
+    reportLoading.value = false
   }
 }
 
@@ -617,6 +699,16 @@ const getProgressColor = (percentage: number): string => {
   if (percentage >= 70) return '#E6A23C'
   return '#F56C6C'
 }
+
+watch(reportDialogVisible, visible => {
+  if (!visible) {
+    reportLoading.value = false
+    reportTargetTask.value = null
+    reportForm.inspectionNotes = ''
+    reportForm.equipmentText = ''
+    reportForm.issuesText = ''
+  }
+})
 
 // 生命周期
 onMounted(() => {

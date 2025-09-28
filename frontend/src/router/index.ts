@@ -112,6 +112,15 @@ const routes: RouteRecordRaw[] = [
         }
       },
       {
+        path: 'statistics/rankings',
+        name: 'StatisticsRanking',
+        component: () => import('@/views/statistics/RankingDetail.vue'),
+        meta: {
+          title: '成员排行榜',
+          requiresAuth: true
+        }
+      },
+      {
         path: 'work-hours',
         name: 'WorkHoursList',
         component: () => import('@/views/workHours/WorkHoursList.vue'),

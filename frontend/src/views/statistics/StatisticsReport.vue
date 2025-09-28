@@ -428,6 +428,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, nextTick, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   Plus,
@@ -456,7 +457,8 @@ import type {
   StatisticsOverview,
   StatisticsFilters,
   MemberRankingItem,
-  DepartmentStatsItem
+  DepartmentStatsItem,
+  ChartConfig
 } from '@/types/statistics'
 import { getMonthRange, getWeekRange, getQuarterRange } from '@/utils/date'
 import ReportGenerateDialog from '@/components/statistics/ReportGenerateDialog.vue'
@@ -464,15 +466,13 @@ import ChartFullScreenDialog from '@/components/statistics/ChartFullScreenDialog
 import ExportDataDialog from '@/components/statistics/ExportDataDialog.vue'
 
 // 响应式数据
+const router = useRouter()
+
 const refreshing = ref(false)
 const showReportDialog = ref(false)
 const showFullScreenDialog = ref(false)
 const showExportDialog = ref(false)
-const fullScreenChartConfig = ref<any>({
-  title: '',
-  data: null,
-  type: 'line'
-})
+const fullScreenChartConfig = ref<ChartConfig | null>(null)
 
 // 图表引用
 const taskTrendChartRef = ref<HTMLElement>()
@@ -928,10 +928,71 @@ const handleExportChart = async (chartId: string) => {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const handleFullScreen = (_chartId: string) => {
-  // TODO: 实现全屏查看
-  ElMessage.info('全屏功能开发中...')
+const buildFilterPayload = (): StatisticsFilters => {
+  const payload: StatisticsFilters = {
+    dateRange: [...dateRange.value] as [string, string]
+  }
+
+  if (filters.departments && filters.departments.length > 0) {
+    payload.departments = [...filters.departments]
+  }
+
+  if (filters.members && filters.members.length > 0) {
+    payload.members = [...filters.members]
+  }
+
+  return payload
+}
+
+const handleFullScreen = (chartId: string) => {
+  const filterPayload = buildFilterPayload()
+
+  const chartMeta: Record<string, ChartConfig> = {
+    '1': {
+      id: 'task_completion_trend',
+      type: 'line',
+      chartType: 'line',
+      title: '任务完成趋势',
+      filters: filterPayload
+    },
+    '2': {
+      id: 'task_type_distribution',
+      type: 'pie',
+      chartType: 'pie',
+      title: '任务类型分布',
+      filters: filterPayload
+    },
+    '3': {
+      id: 'attendance_distribution',
+      type: 'pie',
+      chartType: 'pie',
+      title: '考勤分布情况',
+      filters: filterPayload
+    },
+    '4': {
+      id: 'work_hours_distribution',
+      type: 'bar',
+      chartType: 'bar',
+      title: '工时分布',
+      filters: filterPayload
+    },
+    '5': {
+      id: 'department_comparison',
+      type: 'radar',
+      chartType: 'radar',
+      title: '部门对比分析',
+      filters: filterPayload
+    }
+  }
+
+  const config = chartMeta[chartId]
+  if (!config) {
+    ElMessage.warning('暂不支持该图表的全屏查看')
+    return
+  }
+
+  fullScreenChartConfig.value = config
+  showFullScreenDialog.value = true
 }
 
 const handleRefreshChart = (chartId: string) => {
@@ -968,8 +1029,13 @@ const handleExportSuccess = () => {
 }
 
 const viewAllRankings = () => {
-  // TODO: 跳转到详细排行榜页面
-  ElMessage.info('详细排行榜功能开发中...')
+  router.push({
+    name: 'StatisticsRanking',
+    query: {
+      start: dateRange.value[0],
+      end: dateRange.value[1]
+    }
+  })
 }
 
 // 工具方法

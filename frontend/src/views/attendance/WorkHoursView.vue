@@ -368,11 +368,80 @@
         </div>
       </div>
     </el-card>
+
+    <!-- 任务工时详情对话框 -->
+    <TaskWorkHoursDetailDialog
+      v-model="showTaskDetailDialog"
+      :record="currentRecord"
+      @edit="handleEditWorkHours"
+      @recalculate="handleRecalculateWorkHours"
+    />
+
+    <el-dialog
+      v-model="adjustDialogVisible"
+      title="调整工时"
+      width="520px"
+    >
+      <div class="adjust-context" v-if="adjustContext">
+        <div class="context-row">
+          <span class="label">成员：</span>
+          <span class="value">{{ adjustContext.member_name }}</span>
+        </div>
+        <div class="context-row">
+          <span class="label">周期：</span>
+          <span class="value">{{ adjustContext.month }}</span>
+        </div>
+      </div>
+
+      <el-form label-width="110px">
+        <el-form-item label="选择任务">
+          <el-select
+            v-model="adjustForm.taskId"
+            placeholder="请选择需要调整的任务"
+            :loading="adjustOptionsLoading"
+          >
+            <el-option
+              v-for="item in adjustCandidates"
+              :key="item.id"
+              :label="`${item.title}（${(item.work_minutes / 60).toFixed(1)}h）`"
+              :value="item.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="调整后工时 (分钟)">
+          <el-input-number
+            v-model="adjustForm.adjustedMinutes"
+            :min="0"
+            :max="2000"
+            :step="5"
+            :disabled="adjustOptionsLoading"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="调整原因">
+          <el-input
+            v-model="adjustForm.reason"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入工时调整原因"
+          />
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="adjustDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="adjustLoading" @click="confirmAdjustWorkHours">
+            确认调整
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   Download,
@@ -388,10 +457,16 @@ import {
   Edit
 } from '@element-plus/icons-vue'
 import { attendanceApi } from '@/api/attendance'
+import { tasksApi } from '@/api/tasks'
 import dayjs from 'dayjs'
-import type { WorkHoursCycleRecord } from '@/types/attendance'
+import type {
+  WorkHoursCycleRecord,
+  AttendanceRecord as TaskAttendanceRecord,
+  WorkHoursRecord
+} from '@/types/attendance'
+import TaskWorkHoursDetailDialog from '@/components/attendance/TaskWorkHoursDetailDialog.vue'
 
-// 考勤记录类型定义
+// 考勤记录类型定义（周期汇总）
 interface AttendanceRecord {
   id: number
   member_id: number
@@ -450,6 +525,20 @@ const attendanceOverview = reactive<AttendanceOverview>({
 const attendanceList = ref<AttendanceRecord[]>([])
 
 const groupOptions = ref<GroupOption[]>([])
+
+// 对话框状态
+const showTaskDetailDialog = ref(false)
+const currentRecord = ref<TaskAttendanceRecord | null>(null)
+const adjustDialogVisible = ref(false)
+const adjustLoading = ref(false)
+const adjustOptionsLoading = ref(false)
+const adjustCandidates = ref<WorkHoursRecord[]>([])
+const adjustContext = ref<AttendanceRecord | null>(null)
+const adjustForm = reactive({
+  taskId: undefined as number | undefined,
+  adjustedMinutes: undefined as number | undefined,
+  reason: ''
+})
 
 // 筛选条件
 const filters = reactive({
@@ -541,6 +630,20 @@ const getPerformanceLevel = (totalHours: number): string => {
   return '待改进'
 }
 
+const extractTaskId = (raw: unknown): number | null => {
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    return raw
+  }
+  if (typeof raw === 'string') {
+    const match = raw.match(/\d+/)
+    if (match) {
+      const parsed = Number(match[0])
+      return Number.isFinite(parsed) ? parsed : null
+    }
+  }
+  return null
+}
+
 const formatGroupLabel = (groupId?: number | null): string => {
   if (groupId === null || groupId === undefined) {
     return '未分组'
@@ -555,6 +658,29 @@ const getPerformanceTagType = (totalHours: number): 'success' | 'warning' | 'inf
   if (totalHours >= 40) return 'warning'
   return 'danger'
 }
+
+watch(adjustDialogVisible, visible => {
+  if (!visible) {
+    adjustLoading.value = false
+    adjustOptionsLoading.value = false
+    adjustCandidates.value = []
+    adjustContext.value = null
+    adjustForm.taskId = undefined
+    adjustForm.adjustedMinutes = undefined
+    adjustForm.reason = ''
+  }
+})
+
+watch(
+  () => adjustForm.taskId,
+  newTaskId => {
+    if (!newTaskId) return
+    const candidate = adjustCandidates.value.find(item => item.id === newTaskId)
+    if (candidate) {
+      adjustForm.adjustedMinutes = candidate.work_minutes
+    }
+  }
+)
 
 // 计算工时百分比
 const getHoursPercentage = (hours: number, total: number): number => {
@@ -822,14 +948,173 @@ const handleExport = async () => {
 
 // 查看成员详情
 const viewMemberDetail = (record: AttendanceRecord) => {
-  // TODO: 实现成员考勤详情页面
-  ElMessage.info(`查看 ${record.member_name} 的详细考勤信息`)
+  // 将周期汇总数据转换为任务记录格式
+  const taskRecord: TaskAttendanceRecord = {
+    id: record.id,
+    task_id: `SUMMARY-${record.id}`,
+    title: `${record.member_name} - ${record.month} 工时汇总`,
+    task_type: 'summary',
+    work_date: `${record.month}-01`,
+    work_hours: record.total_hours,
+    work_minutes: Math.round(record.total_hours * 60),
+    task_category: '汇总统计',
+    rating: record.performance_score || 5,
+    member_id: record.member_id,
+    member_name: record.member_name,
+    memberName: record.member_name,
+    memberAvatar: '',
+    employeeId: `EMP-${record.member_id}`,
+    department: record.group_name || '未分组',
+    date: `${record.month}-01`,
+    source: 'repair_task' as any,
+    workHours: record.total_hours,
+    checkInTime: null,
+    checkOutTime: null,
+    status: 'normal',
+    lateMinutes: 0,
+    earlyLeaveMinutes: 0,
+    overtimeHours: 0,
+    location: '',
+    ip: '',
+    device: '',
+    remark: `维修任务: ${record.repair_task_hours}h, 监控任务: ${record.monitoring_hours}h, 协助任务: ${record.assistance_hours}h`,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+
+  currentRecord.value = taskRecord
+  showTaskDetailDialog.value = true
 }
 
 // 调整工时
+const openAdjustDialogFor = async (
+  memberId: number,
+  month: string,
+  preferredTaskId?: number
+) => {
+  adjustDialogVisible.value = true
+  adjustOptionsLoading.value = true
+  adjustForm.taskId = undefined
+  adjustForm.adjustedMinutes = undefined
+  adjustForm.reason = ''
+
+  try {
+    const monthStart = dayjs(`${month}-01`).startOf('month').format('YYYY-MM-DD')
+    const monthEnd = dayjs(`${month}-01`).endOf('month').format('YYYY-MM-DD')
+
+    const records = await attendanceApi.getWorkHoursRecords({
+      member_id: memberId,
+      date_from: monthStart,
+      date_to: monthEnd,
+      page: 1,
+      size: 200
+    })
+
+    adjustCandidates.value = records || []
+
+    if (!records || records.length === 0) {
+      ElMessage.warning('该成员在本周期内暂无可调整的任务记录')
+      return
+    }
+
+    const preferred = preferredTaskId
+      ? records.find(item => item.id === preferredTaskId)
+      : undefined
+
+    const initial = preferred || records[0]
+    adjustForm.taskId = initial?.id
+    adjustForm.adjustedMinutes = initial?.work_minutes
+  } catch (error) {
+    console.error('加载可调整任务失败:', error)
+    ElMessage.error('无法加载可调整任务列表')
+    adjustCandidates.value = []
+  } finally {
+    adjustOptionsLoading.value = false
+  }
+}
+
 const adjustWorkHours = (record: AttendanceRecord) => {
-  // TODO: 实现工时调整功能
-  ElMessage.info(`调整 ${record.member_name} 的工时`)
+  adjustContext.value = record
+  openAdjustDialogFor(record.member_id, record.month)
+}
+
+const handleEditWorkHours = (record: TaskAttendanceRecord) => {
+  const memberId = record.member_id || (record as any).memberId
+  const workDate = record.work_date || (record as any).date
+  if (!memberId || !workDate) {
+    ElMessage.warning('缺少工时记录的成员或日期信息，无法调整')
+    return
+  }
+
+  const month = dayjs(workDate).format('YYYY-MM')
+  adjustContext.value = {
+    id: memberId,
+    member_id: memberId,
+    member_name: record.member_name || (record as any).memberName || '未知成员',
+    month,
+    repair_task_hours: record.work_hours || (record as any).workHours || 0,
+    monitoring_hours: 0,
+    assistance_hours: 0,
+    carried_hours: 0,
+    total_hours: record.work_hours || (record as any).workHours || 0,
+    remaining_hours: 0,
+    updated_at: new Date().toISOString()
+  }
+
+  const preferredTaskId = extractTaskId(record.task_id || (record as any).taskId)
+  openAdjustDialogFor(memberId, month, preferredTaskId || undefined)
+}
+
+const confirmAdjustWorkHours = async () => {
+  if (!adjustForm.taskId) {
+    ElMessage.warning('请选择需要调整的任务')
+    return
+  }
+  if (adjustForm.adjustedMinutes === undefined) {
+    ElMessage.warning('请输入调整后的工时（分钟）')
+    return
+  }
+  if (!adjustForm.reason.trim()) {
+    ElMessage.warning('请填写调整原因')
+    return
+  }
+
+  try {
+    adjustLoading.value = true
+    const targetMinutes = Math.max(0, Math.round(adjustForm.adjustedMinutes))
+    await tasksApi.adjustTaskWorkHours(
+      adjustForm.taskId,
+      targetMinutes,
+      adjustForm.reason.trim()
+    )
+    ElMessage.success('工时调整成功')
+    adjustDialogVisible.value = false
+    await loadAttendanceData()
+  } catch (error) {
+    console.error('工时调整失败:', error)
+    ElMessage.error('工时调整失败，请稍后重试')
+  } finally {
+    adjustLoading.value = false
+  }
+}
+
+// 处理工时重新计算
+const handleRecalculateWorkHours = async (record: TaskAttendanceRecord) => {
+  const taskId = extractTaskId(record.task_id || (record as any).taskId)
+  if (!taskId) {
+    ElMessage.warning('无法识别任务编号，无法重新计算')
+    return
+  }
+
+  try {
+    ElMessage.info('正在重新计算工时...')
+    await tasksApi.recalculateTaskWorkHours(taskId)
+    await loadAttendanceData()
+    ElMessage.success('工时重新计算完成')
+  } catch (error) {
+    console.error('重新计算工时失败:', error)
+    ElMessage.error('重新计算工时失败，请稍后重试')
+  }
 }
 
 // 获取当前月份
@@ -1068,6 +1353,21 @@ onMounted(async () => {
       }
       &.assistance {
         background: #909399;
+      }
+    }
+  }
+
+  .adjust-context {
+    margin-bottom: 12px;
+
+    .context-row {
+      display: flex;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--el-text-color-regular);
+
+      .label {
+        color: var(--el-text-color-secondary);
       }
     }
   }

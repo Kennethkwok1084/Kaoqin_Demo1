@@ -253,6 +253,7 @@ import {
   getMembers,
   getMember,
   deleteMember,
+  MembersApi,
   type Member,
   type MemberListParams
 } from '@/api/members'
@@ -471,16 +472,57 @@ const handleBatchDelete = async () => {
       }
     )
 
-    // TODO: 实现批量删除
-    ElMessage.info('批量删除功能开发中')
+    const ids = selectedMembers.value.map(member => member.id)
+    for (const id of ids) {
+      try {
+        await deleteMember(id)
+      } catch (error) {
+        console.error(`删除成员 ${id} 失败`, error)
+        ElMessage.error(`删除成员失败（ID: ${id}）`)
+      }
+    }
+
+    ElMessage.success('批量删除完成')
+    selectedMembers.value = []
+    loadMembers()
   } catch (error) {
     // 用户取消操作
   }
 }
 
-const handleBatchDeactivate = () => {
-  // TODO: 实现批量离职
-  ElMessage.info('批量离职功能开发中')
+const handleBatchDeactivate = async () => {
+  const activeMembers = selectedMembers.value.filter(member => member.is_active)
+  if (activeMembers.length === 0) {
+    ElMessage.info('选中的成员已全部为离职状态')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定将选中的 ${activeMembers.length} 名成员标记为离职吗？`,
+      '确认批量离职',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    for (const member of activeMembers) {
+      try {
+        await MembersApi.updateMember(member.id, { is_active: false })
+      } catch (error) {
+        console.error(`离职成员 ${member.id} 失败`, error)
+        ElMessage.error(`离职操作失败（ID: ${member.id}）`)
+      }
+    }
+
+    ElMessage.success('批量离职操作完成')
+    selectedMembers.value = []
+    loadMembers()
+  } catch (error) {
+    // 用户取消
+  }
 }
 
 // 工具方法

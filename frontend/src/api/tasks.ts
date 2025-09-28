@@ -169,6 +169,21 @@ export const tasksApi = {
       payload.estimated_minutes = estimatedMinutes
     }
 
+    if (taskType === 'assistance') {
+      if ((data as any).assistedDepartment) {
+        payload.assisted_department = (data as any).assistedDepartment
+      }
+      if ((data as any).assistedPerson) {
+        payload.assisted_person = (data as any).assistedPerson
+      }
+      if ((data as any).start_time) {
+        payload.start_time = (data as any).start_time
+      }
+      if ((data as any).end_time) {
+        payload.end_time = (data as any).end_time
+      }
+    }
+
     // 移除undefined字段，避免422
     Object.keys(payload).forEach(key => {
       if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
@@ -218,13 +233,29 @@ export const tasksApi = {
   /**
    * 分配任务
    */
-  async assignTask(id: number, assigneeId: number): Promise<Task> {
+  async assignTask(
+    id: number,
+    assigneeId: number,
+    options?: { note?: string; taskType?: string }
+  ): Promise<Task> {
+    const taskType = options?.taskType || 'repair'
+
+    const endpointMap: Record<string, string> = {
+      repair: `/tasks/repair/${id}/assign`
+    }
+
+    const endpoint = endpointMap[taskType]
+    if (!endpoint) {
+      throw new Error(`暂未支持 ${taskType} 类型任务的指派操作`)
+    }
+
     const response = await http.put<{
       success: boolean
       message: string
       data: Task
-    }>(`/tasks/repair/${id}/assign`, {
-      member_id: assigneeId
+    }>(endpoint, {
+      assigned_to: assigneeId,
+      assignment_note: options?.note
     })
     return response.data.data || (response.data as any)
   },
@@ -277,6 +308,114 @@ export const tasksApi = {
       data: Task
     }>(`/tasks/${id}/reopen`, { reason })
     return response.data.data || (response.data as any)
+  },
+
+  /**
+   * 标记维修任务为线下单
+   */
+  async markTaskOffline(
+    id: number,
+    payload?: { inspectionResult?: string; images?: string[] }
+  ): Promise<any> {
+    const params: Record<string, any> = {}
+    if (payload?.inspectionResult) {
+      params.inspection_result = payload.inspectionResult
+    }
+    if (payload?.images && payload.images.length > 0) {
+      params.images = payload.images
+    }
+
+    const response = await http.post(`/tasks/repair/${id}/mark-offline`, null, {
+      params
+    })
+    return response.data?.data || response.data
+  },
+
+  /**
+   * 手动调整任务工时（分钟）
+   */
+  async adjustTaskWorkHours(
+    id: number,
+    adjustedMinutes: number,
+    reason: string
+  ): Promise<any> {
+    const response = await http.put(`/work-hours/${id}/adjust`, null, {
+      params: {
+        adjusted_minutes: adjustedMinutes,
+        reason
+      }
+    })
+    return response.data?.data || response.data
+  },
+
+  /**
+   * 重新计算单个维修任务工时
+   */
+  async recalculateTaskWorkHours(id: number): Promise<any> {
+    const response = await http.post(`/tasks/repair/${id}/recalculate-hours`)
+    return response.data?.data || response.data
+  },
+
+  /**
+   * 更新巡检任务检查信息
+   */
+  async updateMonitoringInspection(
+    id: number,
+    payload: {
+      cabinet_count?: number
+      minutes_per_cabinet?: number
+      inspection_notes?: string
+      equipment_checked?: string[]
+      issues_found?: string[]
+    }
+  ): Promise<any> {
+    const response = await http.put(`/tasks/monitoring/${id}/inspection`, payload)
+    return response.data?.data || response.data
+  },
+
+  /**
+   * 完成巡检任务并提交报告
+   */
+  async completeMonitoringInspection(
+    id: number,
+    payload: {
+      inspection_notes?: string
+      equipment_checked?: string[]
+      issues_found?: string[]
+    }
+  ): Promise<any> {
+    const response = await http.put(
+      `/tasks/monitoring/${id}/inspection/complete`,
+      payload
+    )
+    return response.data?.data || response.data
+  },
+
+  /**
+   * 审核协助任务
+   */
+  async approveAssistanceTask(
+    id: number,
+    options?: { approve?: boolean }
+  ): Promise<any> {
+    const response = await http.put(`/tasks/assistance/${id}/approve`, {
+      approve: options?.approve ?? true
+    })
+    return response.data?.data || response.data
+  },
+
+  /**
+   * 批量审核协助任务
+   */
+  async batchApproveAssistanceTasks(
+    ids: number[],
+    approve = true
+  ): Promise<any> {
+    const response = await http.post(`/tasks/assistance/batch-approve`, {
+      task_ids: ids,
+      approve
+    })
+    return response.data?.data || response.data
   },
 
   /**

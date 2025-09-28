@@ -182,10 +182,42 @@
             </template>
           </el-table-column>
 
+          <el-table-column label="审核状态" width="120">
+            <template #default="scope">
+              <el-tag :type="getApprovalStatus(scope.row).type">
+                {{ getApprovalStatus(scope.row).text }}
+              </el-tag>
+              <div
+                v-if="scope.row.approved_by_name || (scope.row as any).approvedByName"
+                class="approval-meta"
+              >
+                {{ scope.row.approved_by_name || (scope.row as any).approvedByName }}
+                ·
+                {{
+                  scope.row.approved_at || (scope.row as any).approvedAt
+                    ? formatDate(scope.row.approved_at || (scope.row as any).approvedAt)
+                    : ''
+                }}
+              </div>
+            </template>
+          </el-table-column>
+
           <el-table-column prop="member_name" label="协助人员" width="120" show-overflow-tooltip>
             <template #default="scope">
               <span v-if="scope.row.member_name">{{ scope.row.member_name }}</span>
               <span v-else class="text-placeholder">未分配</span>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="assisted_department" label="协助部门" width="140" show-overflow-tooltip>
+            <template #default="scope">
+              {{ scope.row.assisted_department || '—' }}
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="assisted_person" label="协助对象" width="120" show-overflow-tooltip>
+            <template #default="scope">
+              {{ scope.row.assisted_person || '—' }}
             </template>
           </el-table-column>
 
@@ -235,6 +267,18 @@
                     <el-dropdown-menu>
                       <el-dropdown-item command="edit">编辑任务</el-dropdown-item>
                       <el-dropdown-item command="assign">分配人员</el-dropdown-item>
+                      <el-dropdown-item
+                        v-if="isAdmin && isPendingApproval(scope.row)"
+                        command="approve"
+                      >
+                        审核通过
+                      </el-dropdown-item>
+                      <el-dropdown-item
+                        v-if="isAdmin && isPendingApproval(scope.row)"
+                        command="reject"
+                      >
+                        驳回任务
+                      </el-dropdown-item>
                       <el-dropdown-item command="pause" v-if="scope.row.status === 'in_progress'">暂停协助</el-dropdown-item>
                       <el-dropdown-item command="resume" v-if="scope.row.status === 'on_hold'">恢复协助</el-dropdown-item>
                       <el-dropdown-item command="feedback">查看反馈</el-dropdown-item>
@@ -249,6 +293,20 @@
       </div>
 
       <!-- 分页 -->
+      <div class="batch-actions" v-if="isAdmin && selectedTasks.length > 0">
+        <div class="batch-info">已选择 {{ selectedTasks.length }} 个任务</div>
+        <div class="batch-buttons">
+          <el-button type="success" :loading="approvalLoading" @click="batchApproveSelected(true)">
+            <el-icon><CircleCheck /></el-icon>
+            批量通过
+          </el-button>
+          <el-button type="danger" :loading="approvalLoading" @click="batchApproveSelected(false)">
+            <el-icon><CircleClose /></el-icon>
+            批量驳回
+          </el-button>
+        </div>
+      </div>
+
       <div class="pagination-wrapper">
         <el-pagination
           v-model:current-page="pagination.page"
@@ -285,7 +343,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus,
@@ -300,7 +358,8 @@ import {
   CircleCheck,
   Warning,
   User,
-  Clock
+  Clock,
+  CircleClose
 } from '@element-plus/icons-vue'
 import { tasksApi } from '@/api/tasks'
 import { formatDate as formatDateUtil } from '@/utils/date'
@@ -308,6 +367,7 @@ import type { Task, TaskListParams, TaskStats } from '@/types/task'
 import TaskFormDialog from '@/components/tasks/TaskFormDialog.vue'
 import TaskDetailDialog from '@/components/tasks/TaskDetailDialog.vue'
 import ImportAssistanceTaskDialog from '@/components/tasks/ImportAssistanceTaskDialog.vue'
+import { useAuthStore } from '@/stores/auth'
 
 // 响应式数据
 const loading = ref(false)
@@ -354,6 +414,10 @@ const showImportDialog = ref(false)
 const currentTask = ref<Task | null>(null)
 const currentTaskId = ref<number | null>(null)
 const currentTaskType = ref<string | null>(null)
+
+const authStore = useAuthStore()
+const isAdmin = computed(() => authStore.userInfo?.role === 'admin')
+const approvalLoading = ref(false)
 
 // 统计卡片配置 - 专门针对协助任务
 const statsCards = [
@@ -407,6 +471,7 @@ const loadTasks = async () => {
     const result = await tasksApi.getTasks(params)
     tasks.value = result.items
     pagination.total = result.total
+    selectedTasks.value = []
   } catch (error) {
     ElMessage.error('加载协助任务列表失败')
   } finally {
@@ -497,6 +562,98 @@ const completeAssistance = async (task: Task) => {
   }
 }
 
+const approveAssistance = async (task: Task, approve: boolean) => {
+  if (!isAdmin.value) {
+    ElMessage.warning('当前账号无权审核协助任务')
+    return
+  }
+
+  if (approvalLoading.value) {
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要${approve ? '通过' : '驳回'}协助任务“${task.title}”吗？`,
+      '审核确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: approve ? 'success' : 'warning'
+      }
+    )
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('审核操作被取消/出错:', error)
+    }
+    return
+  }
+
+  try {
+    approvalLoading.value = true
+    await tasksApi.approveAssistanceTask(task.id, { approve })
+    ElMessage.success(approve ? '协助任务审核通过' : '协助任务已驳回')
+    loadTasks()
+    loadTaskStats()
+  } catch (error) {
+    console.error('审核协助任务失败:', error)
+    ElMessage.error('审核协助任务失败')
+  } finally {
+    approvalLoading.value = false
+  }
+}
+
+const batchApproveSelected = async (approve: boolean) => {
+  if (!isAdmin.value) {
+    ElMessage.warning('当前账号无权批量审核协助任务')
+    return
+  }
+
+  if (approvalLoading.value) {
+    return
+  }
+
+  const targets = selectedTasks.value.filter(task => isPendingApproval(task))
+  if (targets.length === 0) {
+    ElMessage.info('请选择待审核的协助任务')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要${approve ? '通过' : '驳回'}选中的 ${targets.length} 个协助任务吗？`,
+      '批量审核确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: approve ? 'success' : 'warning'
+      }
+    )
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('批量审核取消/失败:', error)
+    }
+    return
+  }
+
+  try {
+    approvalLoading.value = true
+    const ids = targets.map(task => task.id)
+    await tasksApi.batchApproveAssistanceTasks(ids, approve)
+    ElMessage.success(
+      approve ? '批量协助任务审核通过' : '批量驳回协助任务完成'
+    )
+    selectedTasks.value = []
+    loadTasks()
+    loadTaskStats()
+  } catch (error) {
+    console.error('批量审核协助任务失败:', error)
+    ElMessage.error('批量审核协助任务失败')
+  } finally {
+    approvalLoading.value = false
+  }
+}
+
 const handleTaskAction = async (command: string, task: Task) => {
   switch (command) {
     case 'edit':
@@ -508,6 +665,12 @@ const handleTaskAction = async (command: string, task: Task) => {
       break
     case 'assign':
       ElMessage.info('分配人员功能开发中...')
+      break
+    case 'approve':
+      await approveAssistance(task, true)
+      break
+    case 'reject':
+      await approveAssistance(task, false)
       break
     case 'pause':
       await pauseAssistance(task)
@@ -641,7 +804,8 @@ const getStatusTagType = (status: string): string => {
     pending: 'info',
     in_progress: 'warning',
     completed: 'success',
-    on_hold: 'default'
+    on_hold: 'default',
+    cancelled: 'danger'
   }
   return statusMap[status] || 'info'
 }
@@ -651,9 +815,25 @@ const getStatusLabel = (status: string): string => {
     pending: '待协助',
     in_progress: '协助中',
     completed: '已完成',
-    on_hold: '已暂停'
+    on_hold: '已暂停',
+    cancelled: '已取消'
   }
   return statusMap[status] || '待协助'
+}
+
+const isPendingApproval = (task: Task): boolean => task.status === 'pending'
+
+const getApprovalStatus = (task: Task): { text: string; type: string } => {
+  if (task.status === 'cancelled' && (task.approved_at || (task as any).approvedAt)) {
+    return { text: '已驳回', type: 'danger' }
+  }
+  if (task.status === 'completed' && (task.approved_at || (task as any).approvedAt)) {
+    return { text: '已通过', type: 'success' }
+  }
+  if (isPendingApproval(task)) {
+    return { text: '待审核', type: 'warning' }
+  }
+  return { text: getStatusLabel(task.status as string), type: getStatusTagType(task.status as string) }
 }
 
 // 生命周期
@@ -707,6 +887,27 @@ watch(
     @include flex-center;
     gap: $spacing-small;
   }
+}
+
+.batch-actions {
+  @include flex-between;
+  align-items: center;
+  padding: $spacing-small $spacing-base;
+  background: $background-color-white;
+  border: 1px solid $border-color-light;
+  border-radius: $border-radius-base;
+  margin: $spacing-base 0;
+
+  .batch-buttons {
+    display: flex;
+    gap: $spacing-small;
+  }
+}
+
+.approval-meta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: $text-color-secondary;
 }
 
 .stats-section {

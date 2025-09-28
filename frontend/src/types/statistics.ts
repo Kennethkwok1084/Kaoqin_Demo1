@@ -240,6 +240,7 @@ export interface StatisticsFilters {
   taskTypes?: string[]
   includeWeekends?: boolean
   includeHolidays?: boolean
+  dimension?: string
 }
 
 export interface ExportOptions {
@@ -471,10 +472,13 @@ export const CHART_COLORS = {
 
 // 补充缺失的接口定义
 export interface ChartConfig {
+  id?: string
   type?: string
   title?: string
   data?: ChartData
   dimension?: string
+  chartType?: string
+  filters?: StatisticsFilters
   [key: string]: any
 }
 

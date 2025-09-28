@@ -21,6 +21,7 @@ from app.models.task import (
     TaskStatus,
     TaskType,
 )
+from app.core.security import create_access_token
 
 
 class DummyScalarResult:
@@ -171,6 +172,11 @@ class TestWorkHoursRecordsAPI(TestAttendanceAPIBasic):
         self, client, regular_user, test_user
     ):
         """测试带过滤条件的工时记录查询"""
+        from app.core.security import create_access_token
+
+        # Create valid JWT token for testing
+        valid_token = create_access_token(subject=str(regular_user.id))
+
         with (
             patch("app.api.deps.get_db") as mock_get_db,
             patch("app.api.deps.get_current_user") as mock_get_user,
@@ -186,7 +192,7 @@ class TestWorkHoursRecordsAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/records?date_from=2024-12-01&date_to=2024-12-31&page=1&size=20",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {valid_token}"},
             )
 
             assert response.status_code == 200
@@ -211,9 +217,12 @@ class TestWorkHoursRecordsAPI(TestAttendanceAPIBasic):
             mock_result.fetchall.return_value = []
             mock_db.execute.return_value = mock_result
 
+            # Create valid admin token
+            admin_token = create_access_token(subject=str(admin_user.id))
+
             response = await client.get(
                 f"/api/v1/attendance/records?member_id={test_user.id}",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {admin_token}"},
             )
 
             assert response.status_code == 200
@@ -226,51 +235,61 @@ class TestWorkHoursRecordsAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/records?member_id=2",  # 查看其他人的记录
-                headers={"Authorization": "Bearer user_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject=str(regular_user.id))}"},
             )
 
             assert response.status_code == 403
 
     @pytest.mark.asyncio
     async def test_get_work_hours_records_pagination(
-        self, client, regular_user, test_user
+        self, client, regular_user
     ):
         """测试工时记录分页功能"""
-        with (
-            patch("app.api.deps.get_db") as mock_get_db,
-            patch("app.api.deps.get_current_user") as mock_get_user,
-        ):
+        from app.api.deps import get_current_user, get_db
+        from app.main import app
 
-            mock_db = AsyncMock()
-            mock_get_db.return_value = mock_db
-            mock_get_user.return_value = regular_user
+        # Mock database session
+        mock_db = AsyncMock()
 
-            # Mock大量记录
-            mock_records = []
-            for i in range(50):
-                mock_record = MagicMock()
-                mock_record.id = i + 1
-                mock_record.title = f"任务{i+1}"
-                mock_record.work_date = datetime.now()
-                mock_record.work_minutes = 60
-                mock_record.task_type = TaskType.ONLINE
-                mock_record.rating = 4
-                mock_record.member_id = test_user.id
-                mock_record.member_name = "用户"
-                mock_records.append(mock_record)
+        # Mock大量记录
+        mock_records = []
+        for i in range(50):
+            mock_record = MagicMock()
+            mock_record.id = i + 1
+            mock_record.title = f"任务{i+1}"
+            mock_record.work_date = datetime.now()
+            mock_record.work_minutes = 60
+            mock_record.task_type = TaskType.ONLINE
+            mock_record.rating = 4
+            mock_record.member_id = regular_user.id
+            mock_record.member_name = "用户"
+            mock_records.append(mock_record)
 
-            mock_result = MagicMock()
-            mock_result.fetchall.return_value = mock_records
-            mock_db.execute.return_value = mock_result
+        mock_result = MagicMock()
+        mock_result.fetchall.return_value = mock_records
+        mock_db.execute.return_value = mock_result
 
+        # Override dependencies
+        def override_get_db():
+            return mock_db
+
+        def override_get_current_user():
+            return regular_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        try:
             response = await client.get(
-                "/api/v1/attendance/records?page=2&size=10",
-                headers={"Authorization": "Bearer test_token"},
+                "/api/v1/attendance/records?page=2&size=10"
             )
 
             assert response.status_code == 200
             data = response.json()
             assert len(data) == 10  # 第二页应该有10条记录
+        finally:
+            # Clean up overrides
+            app.dependency_overrides.clear()
 
     @pytest.mark.asyncio
     async def test_get_work_hours_records_database_error(self, client, regular_user):
@@ -289,7 +308,7 @@ class TestWorkHoursRecordsAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/records",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 500
@@ -344,7 +363,7 @@ class TestMonthlySummaryAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/summary/2024-12",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -367,7 +386,7 @@ class TestMonthlySummaryAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/summary/invalid-month",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 400
@@ -400,7 +419,7 @@ class TestMonthlySummaryAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 f"/api/v1/attendance/summary/2024-12?member_id={test_user.id}",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject=str(admin_user.id))}"},
             )
 
             assert response.status_code == 200
@@ -427,7 +446,7 @@ class TestMonthlySummaryAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/summary/2024-12?member_id=999",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject=str(admin_user.id))}"},
             )
 
             assert response.status_code == 404
@@ -457,7 +476,7 @@ class TestMonthlySummaryAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/summary/2024-12",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -493,7 +512,7 @@ class TestTodayWorkHoursSummaryAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/today-summary",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -531,7 +550,7 @@ class TestTodayWorkHoursSummaryAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/today",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -558,7 +577,7 @@ class TestTodayWorkHoursSummaryAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/today-summary",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -590,7 +609,7 @@ class TestTodayWorkHoursSummaryAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/today-summary",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -633,7 +652,7 @@ class TestWorkHoursExportAPI(TestAttendanceAPIBasic):
 
                 response = await client.get(
                     "/api/v1/attendance/export?date_from=2024-12-01&date_to=2024-12-31&format=excel",
-                    headers={"Authorization": "Bearer admin_token"},
+                    headers={"Authorization": f"Bearer {create_access_token(subject=str(admin_user.id))}"},
                 )
 
                 assert response.status_code == 200
@@ -650,7 +669,7 @@ class TestWorkHoursExportAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/export?date_from=2024-12-01&date_to=2024-12-31&format=csv",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject=str(admin_user.id))}"},
             )
 
             assert response.status_code == 400
@@ -681,7 +700,7 @@ class TestWorkHoursExportAPI(TestAttendanceAPIBasic):
 
                 response = await client.get(
                     "/api/v1/attendance/export?date_from=2024-12-01&date_to=2024-12-31",
-                    headers={"Authorization": "Bearer user_token"},
+                    headers={"Authorization": f"Bearer {create_access_token(subject=str(regular_user.id))}"},
                 )
 
                 assert response.status_code == 200
@@ -738,7 +757,7 @@ class TestWorkHoursExportAPI(TestAttendanceAPIBasic):
 
                 response = await client.get(
                     "/api/v1/attendance/export?date_from=2024-12-01&date_to=2024-12-31&member_ids=1&member_ids=2",
-                    headers={"Authorization": "Bearer admin_token"},
+                    headers={"Authorization": f"Bearer {create_access_token(subject=str(admin_user.id))}"},
                 )
 
                 assert response.status_code == 200
@@ -761,7 +780,7 @@ class TestWorkHoursExportAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/export?date_from=2024-12-01&date_to=2024-12-31",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject=str(admin_user.id))}"},
             )
 
             assert response.status_code == 200
@@ -804,7 +823,7 @@ class TestWorkHoursStatsAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/stats?startDate=2024-12-01&endDate=2024-12-31",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -823,7 +842,7 @@ class TestWorkHoursStatsAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/stats?startDate=invalid&endDate=2024-12-31",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 400
@@ -853,7 +872,7 @@ class TestWorkHoursStatsAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/stats?memberId=1&startDate=2024-12-01&endDate=2024-12-31",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject=str(admin_user.id))}"},
             )
 
             assert response.status_code == 200
@@ -868,7 +887,7 @@ class TestWorkHoursStatsAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/stats?memberId=2&startDate=2024-12-01&endDate=2024-12-31",
-                headers={"Authorization": "Bearer user_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject=str(regular_user.id))}"},
             )
 
             assert response.status_code == 403
@@ -896,7 +915,7 @@ class TestWorkHoursStatsAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/stats?memberId=999&startDate=2024-12-01&endDate=2024-12-31",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject=str(admin_user.id))}"},
             )
 
             assert response.status_code == 404
@@ -929,7 +948,7 @@ class TestWorkHoursChartDataAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/chart-data?type=daily&startDate=2024-12-01&endDate=2024-12-31",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -964,7 +983,7 @@ class TestWorkHoursChartDataAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/chart-data?type=weekly&startDate=2024-12-01&endDate=2024-12-31",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -996,7 +1015,7 @@ class TestWorkHoursChartDataAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/chart-data?type=monthly&startDate=2024-12-01&endDate=2024-12-31",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -1012,7 +1031,7 @@ class TestWorkHoursChartDataAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/chart-data?type=invalid&startDate=2024-12-01&endDate=2024-12-31",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 400
@@ -1025,7 +1044,7 @@ class TestWorkHoursChartDataAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/chart-data?type=daily&startDate=invalid&endDate=2024-12-31",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 400
@@ -1048,7 +1067,7 @@ class TestWorkHoursChartDataAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/chart-data?type=daily&startDate=2024-12-01&endDate=2024-12-31&memberId=1",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject=str(admin_user.id))}"},
             )
 
             assert response.status_code == 200
@@ -1071,7 +1090,7 @@ class TestWorkHoursChartDataAPI(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/chart-data?type=daily&startDate=2024-12-01&endDate=2024-12-31",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -1119,7 +1138,7 @@ class TestAttendanceAPIErrorHandling(TestAttendanceAPIBasic):
 
             response = await client.get(
                 "/api/v1/attendance/records",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 500
@@ -1154,7 +1173,7 @@ class TestAttendanceAPIErrorHandling(TestAttendanceAPIBasic):
             for _ in range(3):
                 task = client.get(
                     "/api/v1/attendance/records",
-                    headers={"Authorization": "Bearer test_token"},
+                    headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
                 )
                 tasks.append(task)
 
@@ -1183,7 +1202,7 @@ class TestAttendanceAPIErrorHandling(TestAttendanceAPIBasic):
             # 测试一年的日期范围
             response = await client.get(
                 "/api/v1/attendance/records?date_from=2024-01-01&date_to=2024-12-31",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -1197,7 +1216,7 @@ class TestAttendanceAPIErrorHandling(TestAttendanceAPIBasic):
             # 测试无效的分页参数
             response = await client.get(
                 "/api/v1/attendance/records?page=0&size=1001",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             # 应该返回验证错误
@@ -1222,7 +1241,7 @@ class TestAttendanceAPIErrorHandling(TestAttendanceAPIBasic):
             # 尝试SQL注入
             response = await client.get(
                 "/api/v1/attendance/records?date_from=2024-01-01'; DROP TABLE repair_tasks; --",
-                headers={"Authorization": "Bearer test_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             # 应该正常处理，不会执行恶意SQL
@@ -1266,7 +1285,7 @@ class TestAttendanceAPIErrorHandling(TestAttendanceAPIBasic):
 
                 response = await client.get(
                     "/api/v1/attendance/export?date_from=2024-01-01&date_to=2024-12-31",
-                    headers={"Authorization": "Bearer admin_token"},
+                    headers={"Authorization": f"Bearer {create_access_token(subject=str(admin_user.id))}"},
                 )
 
                 assert response.status_code == 200

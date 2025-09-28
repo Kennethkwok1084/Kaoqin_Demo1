@@ -9,10 +9,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import HTTPException
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 
 from app.main import app
 from app.models.attendance import AttendanceRecord
+from app.core.security import create_access_token
 from app.models.member import Member, UserRole
 from app.models.task import RepairTask, TaskCategory, TaskPriority, TaskStatus, TaskType
 
@@ -23,7 +24,8 @@ class TestStatisticsAPIBasic:
     @pytest.fixture
     async def client(self):
         """创建测试客户端"""
-        async with AsyncClient(app=app, base_url="http://testserver") as ac:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
             yield ac
 
     @pytest.fixture
@@ -139,7 +141,7 @@ class TestStatisticsOverviewAPI(TestStatisticsAPIBasic):
 
             response = await client.get(
                 "/api/v1/statistics/overview",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -179,7 +181,7 @@ class TestStatisticsOverviewAPI(TestStatisticsAPIBasic):
 
             response = await client.get(
                 "/api/v1/statistics/overview?start_date=2025-01-01&end_date=2025-01-31",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -199,7 +201,7 @@ class TestStatisticsOverviewAPI(TestStatisticsAPIBasic):
 
             response = await client.get(
                 "/api/v1/statistics/overview",
-                headers={"Authorization": "Bearer user_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 403
@@ -239,7 +241,7 @@ class TestEfficiencyAnalysisAPI(TestStatisticsAPIBasic):
 
             response = await client.get(
                 "/api/v1/statistics/efficiency",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -272,7 +274,7 @@ class TestEfficiencyAnalysisAPI(TestStatisticsAPIBasic):
 
             response = await client.get(
                 f"/api/v1/statistics/efficiency?member_id={test_user.id}",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -342,7 +344,7 @@ class TestMonthlyReportAPI(TestStatisticsAPIBasic):
 
             response = await client.get(
                 "/api/v1/statistics/monthly-report?year=2025&month=1",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -386,7 +388,7 @@ class TestMonthlyReportAPI(TestStatisticsAPIBasic):
 
             response = await client.get(
                 "/api/v1/statistics/monthly-report",  # 不指定年月，应该使用当前月份
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -401,7 +403,7 @@ class TestMonthlyReportAPI(TestStatisticsAPIBasic):
 
             response = await client.get(
                 "/api/v1/statistics/monthly-report?year=2025&month=13",  # 无效月份
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 422  # 参数验证错误
@@ -434,7 +436,7 @@ class TestExportStatisticsAPI(TestStatisticsAPIBasic):
 
             response = await client.get(
                 "/api/v1/statistics/export?format=json",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -465,7 +467,7 @@ class TestExportStatisticsAPI(TestStatisticsAPIBasic):
 
             response = await client.get(
                 "/api/v1/statistics/export?format=csv&start_date=2025-01-01&end_date=2025-01-31",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -481,7 +483,7 @@ class TestExportStatisticsAPI(TestStatisticsAPIBasic):
 
             response = await client.get(
                 "/api/v1/statistics/export?format=xml",  # 不支持的格式
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 422
@@ -515,7 +517,7 @@ class TestChartDataAPI(TestStatisticsAPIBasic):
 
             response = await client.get(
                 "/api/v1/statistics/charts?chart_type=daily_tasks",
-                headers={"Authorization": "Bearer leader_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -560,7 +562,7 @@ class TestChartDataAPI(TestStatisticsAPIBasic):
 
                 response = await client.get(
                     f"/api/v1/statistics/charts?chart_type={chart_type}",
-                    headers={"Authorization": "Bearer leader_token"},
+                    headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
                 )
 
                 assert response.status_code == 200
@@ -603,7 +605,7 @@ class TestRankingsAPI(TestStatisticsAPIBasic):
 
             response = await client.get(
                 "/api/v1/statistics/rankings?ranking_type=work_hours",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -635,7 +637,7 @@ class TestRankingsAPI(TestStatisticsAPIBasic):
 
                 response = await client.get(
                     f"/api/v1/statistics/rankings?ranking_type={ranking_type}",
-                    headers={"Authorization": "Bearer admin_token"},
+                    headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
                 )
 
                 assert response.status_code == 200
@@ -685,7 +687,7 @@ class TestAttendanceStatisticsAPI(TestStatisticsAPIBasic):
 
             response = await client.get(
                 "/api/v1/statistics/attendance?year=2025&month=1",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -723,7 +725,7 @@ class TestAttendanceStatisticsAPI(TestStatisticsAPIBasic):
 
             response = await client.get(
                 f"/api/v1/statistics/attendance?member_id={test_user.id}&year=2025&month=1",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -759,7 +761,7 @@ class TestWorkHoursOverviewAPI(TestStatisticsAPIBasic):
 
             response = await client.get(
                 "/api/v1/statistics/work-hours/overview",
-                headers={"Authorization": "Bearer leader_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -796,7 +798,7 @@ class TestWorkHoursOverviewAPI(TestStatisticsAPIBasic):
 
             response = await client.get(
                 f"/api/v1/statistics/work-hours/overview?member_id={test_user.id}&start_date=2025-01-01&end_date=2025-01-31",
-                headers={"Authorization": "Bearer leader_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -820,7 +822,7 @@ class TestStatisticsErrorHandling(TestStatisticsAPIBasic):
 
             response = await client.get(
                 "/api/v1/statistics/overview",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 500
@@ -834,7 +836,7 @@ class TestStatisticsErrorHandling(TestStatisticsAPIBasic):
             # 测试无效日期格式
             response = await client.get(
                 "/api/v1/statistics/overview?start_date=invalid_date",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 422
@@ -866,7 +868,7 @@ class TestStatisticsErrorHandling(TestStatisticsAPIBasic):
 
             response = await client.get(
                 "/api/v1/statistics/overview",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 200
@@ -892,7 +894,7 @@ class TestStatisticsErrorHandling(TestStatisticsAPIBasic):
 
             response = await client.get(
                 "/api/v1/statistics/overview",
-                headers={"Authorization": "Bearer admin_token"},
+                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
             )
 
             assert response.status_code == 500

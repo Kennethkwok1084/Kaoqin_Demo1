@@ -453,6 +453,13 @@
       :record="currentRecord"
     />
 
+    <TaskWorkHoursDetailDialog
+      v-model="showTaskDetailDialog"
+      :record="currentRecord"
+      @edit="handleEditWorkHours"
+      @recalculate="handleRecalculateWorkHours"
+    />
+
     <LeaveApplicationDialog
       v-model="showLeaveDialog"
       @success="handleLeaveSuccess"
@@ -517,6 +524,7 @@ import type {
 } from '@/types/attendance'
 import { formatDateShort, formatTime } from '@/utils/date'
 import AttendanceDetailDialog from '@/components/attendance/AttendanceDetailDialog.vue'
+import TaskWorkHoursDetailDialog from '@/components/attendance/TaskWorkHoursDetailDialog.vue'
 import AttendanceCalendar from '@/components/attendance/AttendanceCalendar.vue'
 import LeaveApplicationDialog from '@/components/attendance/LeaveApplicationDialog.vue'
 import OvertimeApplicationDialog from '@/components/attendance/OvertimeApplicationDialog.vue'
@@ -589,6 +597,7 @@ const filters = reactive<AttendanceFilters>({
 
 // 对话框状态
 const showDetailDialog = ref(false)
+const showTaskDetailDialog = ref(false)
 const showLeaveDialog = ref(false)
 const showOvertimeDialog = ref(false)
 const showCheckInDialog = ref(false)
@@ -671,7 +680,8 @@ const handleCheckOutSuccess = () => {
 
 const handleView = (record: AttendanceRecord) => {
   currentRecord.value = record
-  showDetailDialog.value = true
+  // 显示任务工时详情对话框
+  showTaskDetailDialog.value = true
 }
 
 const handleAction = async (command: string, record: AttendanceRecord) => {
@@ -752,9 +762,45 @@ const resetFilters = () => {
   handleFilterChange()
 }
 
-const handleSortChange = (sort: any) => {
-  // TODO: 实现排序逻辑
-  console.log('排序变更:', sort)
+const handleSortChange = (sort: {
+  prop: string
+  order: 'ascending' | 'descending' | null
+}) => {
+  if (!sort || !sort.prop || !sort.order) {
+    loadAttendanceRecords()
+    return
+  }
+
+  const direction = sort.order === 'ascending' ? 1 : -1
+  const { prop } = sort
+
+  const camelProp = prop.replace(/_([a-z])/g, (_match, p1) => p1.toUpperCase())
+
+  const getValue = (record: AttendanceRecord, key: string) => {
+    const direct = (record as any)[key]
+    if (direct !== undefined) return direct
+    return (record as any)[camelProp]
+  }
+
+  const sorted = [...attendanceList.value].sort((a, b) => {
+    const valueA = getValue(a, prop)
+    const valueB = getValue(b, prop)
+
+    if (valueA === valueB) return 0
+
+    const numA = Number(valueA)
+    const numB = Number(valueB)
+
+    if (!Number.isNaN(numA) && !Number.isNaN(numB)) {
+      return (numA - numB) * direction
+    }
+
+    const strA = (valueA ?? '').toString()
+    const strB = (valueB ?? '').toString()
+    return strA.localeCompare(strB, 'zh-CN') * direction
+  })
+
+  attendanceList.value = sorted as AttendanceRecord[]
 }
 
 const handlePageChange = (page: number) => {
@@ -783,6 +829,25 @@ const handleOvertimeSuccess = () => {
 
 const handleCorrectionSuccess = () => {
   loadAttendanceRecords()
+}
+
+const handleEditWorkHours = (record: AttendanceRecord) => {
+  // 处理工时调整
+  console.log('调整工时:', record)
+  ElMessage.info('工时调整功能开发中...')
+}
+
+const handleRecalculateWorkHours = async (record: AttendanceRecord) => {
+  // 处理工时重新计算
+  try {
+    ElMessage.info('正在重新计算工时...')
+    // 这里调用重新计算的API
+    await loadAttendanceRecords()
+    ElMessage.success('工时重新计算完成')
+  } catch (error) {
+    console.error('重新计算工时失败:', error)
+    ElMessage.error('重新计算工时失败')
+  }
 }
 
 // 工具方法

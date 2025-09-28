@@ -273,7 +273,9 @@ async def get_assistance_tasks_list(
             query_member_id = current_user.id
 
         # 构建查询
-        query = select(AssistanceTask).options(joinedload(AssistanceTask.member))
+        query = select(AssistanceTask).options(
+            joinedload(AssistanceTask.member), joinedload(AssistanceTask.approver)
+        )
 
         if query_member_id:
             query = query.where(AssistanceTask.member_id == query_member_id)
@@ -317,6 +319,12 @@ async def get_assistance_tasks_list(
                     "actual_hours": round((task.work_minutes or 0) / 60.0, 2),
                     "status": status_enum.value,
                     "member_name": task.member.name if task.member else "未知",
+                    "approved_by": task.approved_by,
+                    "approved_by_name": task.approver.name if task.approver else None,
+                    "approved_at": task.approved_at.isoformat()
+                    if task.approved_at
+                    else None,
+                    "review_comment": task.review_comment,
                     "created_at": (
                         task.created_at.isoformat() if task.created_at else ""
                     ),
