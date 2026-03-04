@@ -8,14 +8,11 @@ ARG BUILD_DATE
 # 设置工作目录
 WORKDIR /app
 
-# 安装pnpm
-RUN npm install -g pnpm
-
 # 复制包配置文件
-COPY package.json pnpm-lock.yaml ./
+COPY package.json package-lock.json ./
 
 # 安装依赖
-RUN pnpm install --frozen-lockfile
+RUN npm ci
 
 # 复制源代码
 COPY . .
@@ -24,9 +21,13 @@ COPY . .
 ENV NODE_ENV=production
 ENV VITE_APP_VERSION=${VERSION}
 ENV VITE_BUILD_DATE=${BUILD_DATE}
+ARG VITE_API_BASE_URL=/api/v1
+ARG VITE_APP_TITLE=考勤管理系统
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ENV VITE_APP_TITLE=${VITE_APP_TITLE}
 
 # 构建应用
-RUN pnpm build
+RUN npm run build
 
 # 生产运行阶段
 FROM nginx:1.25-alpine as runtime

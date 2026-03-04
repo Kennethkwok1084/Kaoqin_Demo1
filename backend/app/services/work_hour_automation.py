@@ -21,6 +21,7 @@ from app.models.task import (
     task_tag_association,
 )
 from app.services.task_service import TaskService
+from app.services.work_hours_service import WorkHoursCalculationService
 
 logger = logging.getLogger(__name__)
 
@@ -229,12 +230,19 @@ class WorkHourAutomationService:
             total_minutes_before = 0
             total_minutes_after = 0
 
+            # Fix C (P0): 使用单一计算入口
+            calc_service = WorkHoursCalculationService(self.db)
             for task in tasks:
                 old_minutes = task.work_minutes
                 total_minutes_before += old_minutes or 0
 
-                # 重新计算工时
-                task.update_work_minutes()
+                try:
+                    # 经由单一入口重算
+                    calc_result = await calc_service.calculate_task_work_minutes(task)
+                    task.work_minutes = calc_result["total_minutes"]
+                except Exception:
+                    # 降级：保持原有工时不变，避免单任务失败中断整批
+                    pass
 
                 new_minutes = task.work_minutes
                 total_minutes_after += new_minutes or 0
@@ -464,7 +472,13 @@ class WorkHourAutomationService:
                 penalties_applied = True
 
         if penalties_applied:
-            task.update_work_minutes()
+            # Fix C (P0): 经由单一入口更新工时
+            try:
+                calc_service = WorkHoursCalculationService(self.db)
+                calc_result = await calc_service.calculate_task_work_minutes(task)
+                task.work_minutes = calc_result["total_minutes"]
+            except Exception as e:
+                logger.warning(f"Failed to recalculate work minutes via service for task {task.id}: {e}")
 
         return penalties_applied
 
@@ -493,7 +507,13 @@ class WorkHourAutomationService:
             bonuses_applied = True
 
         if bonuses_applied:
-            task.update_work_minutes()
+            # Fix C (P0): 经由单一入口更新工时
+            try:
+                calc_service = WorkHoursCalculationService(self.db)
+                calc_result = await calc_service.calculate_task_work_minutes(task)
+                task.work_minutes = calc_result["total_minutes"]
+            except Exception as e:
+                logger.warning(f"Failed to recalculate work minutes via service for task {task.id}: {e}")
 
         return bonuses_applied
 
@@ -776,7 +796,13 @@ class WorkHourAutomationService:
                     processed = True
 
             if processed:
-                task.update_work_minutes()
+                # Fix C (P0): 经由单一入口更新工时
+                try:
+                    calc_service = WorkHoursCalculationService(self.db)
+                    calc_result = await calc_service.calculate_task_work_minutes(task)
+                    task.work_minutes = calc_result["total_minutes"]
+                except Exception as e:
+                    logger.warning(f"Failed to recalculate work minutes via service for task {task.id}: {e}")
 
             return processed
 

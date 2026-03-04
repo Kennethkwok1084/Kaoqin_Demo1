@@ -545,22 +545,32 @@ class RepairTask(BaseModel):
 
     @property
     def is_overdue_response(self) -> bool:
-        """Check if response is overdue (>24 hours)."""
+        """Check if response is overdue (>24 hours from report)."""
         try:
             response_time = self.response_time
-            status = self.status
             report_time = self.report_time
         except Exception:
             # Handle case when accessing outside session context
             return False
 
-        if response_time or status != TaskStatus.PENDING:
+        # Fix B (P0): 不以"是否有 response_time"直接返回
+        # 已响应：检查响应耗时是否超限; 未响应：检查当前等待时长是否超限
+        if report_time is None:
             return False
 
         now = datetime.now(timezone.utc)
-        report_dt = report_time or now
+        report_dt = report_time
         if report_dt.tzinfo is None:
             report_dt = report_dt.replace(tzinfo=timezone.utc)
+
+        if response_time is not None:
+            response_dt = response_time
+            if response_dt.tzinfo is None:
+                response_dt = response_dt.replace(tzinfo=timezone.utc)
+            hours = (response_dt - report_dt).total_seconds() / 3600
+            return bool(hours > 24)
+
+        # 未响应：当前等待时长
         hours_since_report = (now - report_dt).total_seconds() / 3600
         return bool(hours_since_report > 24)
 

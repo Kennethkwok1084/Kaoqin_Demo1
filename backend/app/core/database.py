@@ -135,6 +135,15 @@ def _get_async_engine_args() -> Dict[str, Any]:
         "execution_options": {"compiled_cache": {}},
     }
 
+    # SQLite configuration (for tests)
+    if db_url.startswith("sqlite"):
+        from sqlalchemy.pool import StaticPool
+        base_args.update({
+            "poolclass": StaticPool,
+            "connect_args": {"check_same_thread": False}
+        })
+        return base_args
+
     # PostgreSQL-only configuration with optimizations
     pool_config = _get_optimized_pool_config()
     connect_args = _get_optimized_connect_args()

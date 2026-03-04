@@ -380,6 +380,23 @@ npm run test:component
 
 ## 部署指南
 
+### 前后端独立部署（推荐）
+
+- 详细文档：`docs/deployment/independent-deploy.md`
+- 支持两种独立部署方式：
+  - Docker：前后端分离编排（`deploy/docker/docker-compose.backend.yml`、`deploy/docker/docker-compose.frontend.yml`）
+  - systemctl：后端 `kaoqin-backend.service` + 前端 `nginx.service`
+
+快速命令（Docker）：
+
+```bash
+# 后端独立部署
+docker compose --env-file deploy/docker/.env.backend -f deploy/docker/docker-compose.backend.yml up -d --build
+
+# 前端独立部署
+docker compose --env-file deploy/docker/.env.frontend -f deploy/docker/docker-compose.frontend.yml up -d --build
+```
+
 ### 生产环境部署
 
 #### 1. 服务器要求

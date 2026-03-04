@@ -7,8 +7,7 @@
 # mypy: disable-error-code=unreachable
 
 import logging
-from calendar import monthrange
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import and_, select
@@ -64,6 +63,13 @@ class WorkHoursCalculationService:
         # 时间阈值
         self.RESPONSE_TIMEOUT_HOURS = 24  # 响应超时阈值
         self.COMPLETION_TIMEOUT_HOURS = 48  # 处理超时阈值
+
+        # Fix D (P0): 爆单口径版本冻结
+        # 当前生效口径：爆单固定 15 分钟，不叠加基础工时，可与惩罚叠加，最小值为 0
+        # 生效日期：2026-02-25
+        # 历史追溯策略：不追溯（仅生效日期后新数据）
+        self.RUSH_ORDER_RULE_VERSION = "v1.0-20260225"
+        self.RUSH_ORDER_FIXED_MINUTES = 15  # 爆单固定工时（不叠加基础工时）
 
     async def calculate_task_work_minutes(self, task: RepairTask) -> Dict[str, int]:
         """
@@ -322,9 +328,12 @@ class WorkHoursCalculationService:
             raise RuntimeError(f"验证成员信息时出错: {str(e)}")
 
         try:
-            # 计算月份范围
+            # Fix A (P0): 使用半开区间 [月初, 次月月初) 避免月末带时分秒的数据漏算
+            # 原 "<= last_day" 等价于 "<= last_day 00:00:00"，会漏计月末全天带时分秒的记录
             first_day = date(year, month, 1)
-            last_day = date(year, month, monthrange(year, month)[1])
+            next_month_start = (
+                date(year + 1, 1, 1) if month == 12 else date(year, month + 1, 1)
+            )
 
             # 查询报修任务
             repair_tasks_query = (
@@ -334,7 +343,7 @@ class WorkHoursCalculationService:
                     and_(
                         RepairTask.member_id == member_id,
                         RepairTask.report_time >= first_day,
-                        RepairTask.report_time <= last_day,
+                        RepairTask.report_time < next_month_start,
                         RepairTask.status.in_(
                             [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS]
                         ),
@@ -352,7 +361,7 @@ class WorkHoursCalculationService:
                 and_(
                     MonitoringTask.member_id == member_id,
                     MonitoringTask.start_time >= first_day,
-                    MonitoringTask.start_time <= last_day,
+                    MonitoringTask.start_time < next_month_start,
                     MonitoringTask.status == TaskStatus.COMPLETED,
                 )
             )
@@ -369,7 +378,7 @@ class WorkHoursCalculationService:
                 and_(
                     AssistanceTask.member_id == member_id,
                     AssistanceTask.start_time >= first_day,
-                    AssistanceTask.start_time <= last_day,
+                    AssistanceTask.start_time < next_month_start,
                     AssistanceTask.status == TaskStatus.COMPLETED,
                 )
             )
@@ -751,18 +760,30 @@ class WorkHoursCalculationService:
         return stats
 
     def _is_response_overdue(self, task: RepairTask) -> bool:
-        """检查是否超时响应"""
-        if (
-            task.response_time
-            or task.status != TaskStatus.PENDING
-            or task.report_time is None
-        ):
+        """
+        Fix B (P0): 检查是否超时响应
+        - 已响应：response_time - report_time > 24h 仍判为超时
+        - 未响应：now - report_time > 24h 判为超时
+        原逻辑以"是否有 response_time"直接返回 False，漏算已响应但超时的情况。
+        """
+        if task.report_time is None:
             return False
 
-        hours_since_report = (
-            datetime.utcnow() - task.report_time
-        ).total_seconds() / 3600
-        return hours_since_report > self.RESPONSE_TIMEOUT_HOURS
+        def _to_aware(dt: datetime) -> datetime:
+            return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+
+        report_dt = _to_aware(task.report_time)
+
+        if task.response_time is not None:
+            # 已响应：检查响应耗时是否超过阈值
+            response_dt = _to_aware(task.response_time)
+            hours = (response_dt - report_dt).total_seconds() / 3600
+            return hours > self.RESPONSE_TIMEOUT_HOURS
+
+        # 未响应：检查距报修时间是否超过阈值
+        now = datetime.now(timezone.utc)
+        hours = (now - report_dt).total_seconds() / 3600
+        return hours > self.RESPONSE_TIMEOUT_HOURS
 
     def _is_completion_overdue(self, task: RepairTask) -> bool:
         """检查是否超时处理"""
@@ -1449,9 +1470,11 @@ class RushTaskMarkingService:
 
             for task in tasks:
                 try:
-                    # 重新计算工时
+                    # Fix C (P0): 经由单一入口 calculate_task_work_minutes 重算工时
+                    # 禁止直接调用 task.update_work_minutes() 作为最终口径来源
                     old_work_minutes = task.work_minutes
-                    task.update_work_minutes()
+                    calc_result = await self.calculate_task_work_minutes(task)
+                    task.work_minutes = calc_result["total_minutes"]
 
                     if old_work_minutes != task.work_minutes:
                         logger.debug(

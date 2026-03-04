@@ -1,0 +1,74 @@
+name: kaoqin_app
+description: 工时管理与任务流转系统 Flutter 客户端（Mobile / Desktop / Web 多端适配）
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.19.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # 状态管理
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # 路由
+  go_router: ^13.2.1
+
+  # 网络请求
+  dio: ^5.4.3+1
+  retrofit: ^4.1.0
+  pretty_dio_logger: ^1.3.1
+
+  # JSON 序列化 / 不可变模型
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.9.0
+
+  # 本地存储
+  flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.2.3
+
+  # UI 工具
+  cupertino_icons: ^1.0.6
+  cached_network_image: ^3.3.1
+  shimmer: ^3.0.0
+  intl: ^0.19.0
+
+  # 图表
+  fl_chart: ^0.67.0
+
+  # 平台能力（桌面/移动端）
+  file_selector: ^1.0.3
+  path_provider: ^2.1.3
+  permission_handler: ^11.3.1
+  url_launcher: ^6.3.0
+
+  # 工具
+  logger: ^2.3.0
+  equatable: ^2.0.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # 代码生成
+  build_runner: ^2.4.9
+  freezed: ^2.5.2
+  json_serializable: ^6.8.0
+  retrofit_generator: ^8.1.0
+  riverpod_generator: ^2.4.0
+  custom_lint: ^0.6.4
+  riverpod_lint: ^2.3.10
+
+  # 代码规范
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/

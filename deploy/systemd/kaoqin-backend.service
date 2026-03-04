@@ -1,0 +1,21 @@
+[Unit]
+Description=Kaoqin Backend (FastAPI)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=kwok
+Group=kwok
+WorkingDirectory=/srv/code/Kaoqin_Demo1/backend
+EnvironmentFile=/srv/code/Kaoqin_Demo1/deploy/systemd/backend.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/srv/code/Kaoqin_Demo1/backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+KillSignal=SIGINT
+
+[Install]
+WantedBy=multi-user.target

@@ -16,12 +16,10 @@ RUN apt-get update && apt-get install -y \
 
 # 复制依赖文件
 COPY requirements.txt ./
-COPY requirements-prod.txt ./
 
 # 安装Python依赖
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir -r requirements-prod.txt
+    pip install --no-cache-dir -r requirements.txt
 
 # 生产运行阶段
 FROM python:3.12-slim as runtime

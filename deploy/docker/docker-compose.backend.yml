@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: kaoqin-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-kwok}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change-me}
+      POSTGRES_DB: ${DB_NAME:-attendence}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - kaoqin_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-kwok}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: kaoqin-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - kaoqin_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${BACKEND_VERSION:-local}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
+    container_name: kaoqin-backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_USER:-kwok}:${DB_PASSWORD:-change-me}@postgres:5432/${DB_NAME:-attendence}
+      DATABASE_URL_SYNC: postgresql://${DB_USER:-kwok}:${DB_PASSWORD:-change-me}@postgres:5432/${DB_NAME:-attendence}
+      REDIS_URL: redis://redis:6379/0
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DEBUG: ${DEBUG:-False}
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://127.0.0.1}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ../../backend/logs:/app/logs
+      - ../../backend/uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  kaoqin_postgres_data:
+  kaoqin_redis_data:

@@ -30,21 +30,30 @@ class DatabaseTestConfig:
         self.test_database_url = get_test_database_url()
 
     async def create_test_engine(self):
-        """创建测试数据库引擎（PostgreSQL）"""
-        engine = create_async_engine(
-            self.test_database_url,
-            echo=False,
-            pool_pre_ping=True,
-            pool_recycle=300,  # 5分钟回收连接
-            pool_size=5,  # 较小的连接池
-            max_overflow=0,  # 不允许溢出连接
-            pool_timeout=30,  # 连接超时
-            connect_args={
-                "server_settings": {
-                    "application_name": "attendence_test",
-                }
-            },
-        )
+        """创建测试数据库引擎（PostgreSQL/SQLite）"""
+        if self.test_database_url.startswith("sqlite"):
+            from sqlalchemy.pool import StaticPool
+            engine = create_async_engine(
+                self.test_database_url,
+                echo=False,
+                poolclass=StaticPool,
+                connect_args={"check_same_thread": False},
+            )
+        else:
+            engine = create_async_engine(
+                self.test_database_url,
+                echo=False,
+                pool_pre_ping=True,
+                pool_recycle=300,  # 5分钟回收连接
+                pool_size=5,  # 较小的连接池
+                max_overflow=0,  # 不允许溢出连接
+                pool_timeout=30,  # 连接超时
+                connect_args={
+                    "server_settings": {
+                        "application_name": "attendence_test",
+                    }
+                },
+            )
         return engine
 
     async def setup_test_database(self, engine):
@@ -53,52 +62,54 @@ class DatabaseTestConfig:
             # 删除所有表
             await conn.run_sync(Base.metadata.drop_all)
 
-            # 删除可能存在的ENUM类型
-            enum_types = [
-                "userrole",
-                "taskstatus",
-                "taskcategory",
-                "taskpriority",
-                "tasktype",
-                "tasktagtype",
-            ]
-            for enum_type in enum_types:
-                await conn.execute(text(f"DROP TYPE IF EXISTS {enum_type} CASCADE"))
+            # Check if using PostgreSQL before running PG-specific SQL
+            if engine.dialect.name == "postgresql":
+                # 删除可能存在的ENUM类型
+                enum_types = [
+                    "userrole",
+                    "taskstatus",
+                    "taskcategory",
+                    "taskpriority",
+                    "tasktype",
+                    "tasktagtype",
+                ]
+                for enum_type in enum_types:
+                    await conn.execute(text(f"DROP TYPE IF EXISTS {enum_type} CASCADE"))
 
-            # 创建所需的ENUM类型
-            await conn.execute(
-                text(
-                    "CREATE TYPE userrole AS ENUM ('admin','group_leader','member','guest')"
+                # 创建所需的ENUM类型
+                await conn.execute(
+                    text(
+                        "CREATE TYPE userrole AS ENUM ('admin','group_leader','member','guest')"
+                    )
                 )
-            )
-            await conn.execute(
-                text(
-                    "CREATE TYPE taskstatus AS ENUM ('pending','in_progress','completed','cancelled','on_hold')"
+                await conn.execute(
+                    text(
+                        "CREATE TYPE taskstatus AS ENUM ('pending','in_progress','completed','cancelled','on_hold')"
+                    )
                 )
-            )
-            await conn.execute(
-                text(
-                    "CREATE TYPE taskcategory AS ENUM ('network_repair','hardware_repair','software_support','software_issue','monitoring','assistance','other')"
+                await conn.execute(
+                    text(
+                        "CREATE TYPE taskcategory AS ENUM ('network_repair','hardware_repair','software_support','software_issue','monitoring','assistance','other')"
+                    )
                 )
-            )
-            await conn.execute(
-                text(
-                    "CREATE TYPE taskpriority AS ENUM ('low','medium','high','urgent')"
+                await conn.execute(
+                    text(
+                        "CREATE TYPE taskpriority AS ENUM ('low','medium','high','urgent')"
+                    )
                 )
-            )
-            await conn.execute(
-                text("CREATE TYPE tasktype AS ENUM ('online','offline','repair')")
-            )
-            await conn.execute(
-                text(
-                    "CREATE TYPE tasktagtype AS ENUM ('rush_order','non_default_rating','timeout_response','timeout_processing','bad_rating','bonus','penalty','category')"
+                await conn.execute(
+                    text("CREATE TYPE tasktype AS ENUM ('online','offline','repair')")
                 )
-            )
-            await conn.execute(
-                text(
-                    "CREATE TYPE attendanceexceptionstatus AS ENUM ('pending','approved','rejected')"
+                await conn.execute(
+                    text(
+                        "CREATE TYPE tasktagtype AS ENUM ('rush_order','non_default_rating','timeout_response','timeout_processing','bad_rating','bonus','penalty','category')"
+                    )
                 )
-            )
+                await conn.execute(
+                    text(
+                        "CREATE TYPE attendanceexceptionstatus AS ENUM ('pending','approved','rejected')"
+                    )
+                )
 
             # 创建所有表
             await conn.run_sync(Base.metadata.create_all)
