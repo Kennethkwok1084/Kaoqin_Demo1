@@ -44,9 +44,10 @@ COPY nginx.conf /etc/nginx/nginx.conf
 # 从builder阶段复制构建产物
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# 创建非root用户
-RUN addgroup -g 1001 -S nginx && \
-    adduser -S -D -H -u 1001 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx
+# 检查并创建非root用户 (如果不存在)
+RUN set -x ; \
+    addgroup -g 101 -S nginx 2>/dev/null || true ; \
+    adduser -S -D -H -u 101 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx 2>/dev/null || true
 
 # 设置正确的权限
 RUN chown -R nginx:nginx /usr/share/nginx/html && \
