@@ -9,6 +9,7 @@ import type {
   ConfirmResetPasswordRequest,
   ApiResponse
 } from '@/types/auth'
+import { getRefreshToken } from '@/utils/auth'
 
 /**
  * 认证相关API
@@ -42,8 +43,18 @@ export const authApi = {
    * 刷新访问令牌
    */
   async refreshToken(): Promise<RefreshTokenResponse> {
-    const response = await http.post<RefreshTokenResponse>('/auth/refresh')
-    return response.data
+    const refreshToken = getRefreshToken()
+    if (!refreshToken) {
+      throw new Error('未找到刷新令牌')
+    }
+
+    const response = await http.post<ApiResponse<RefreshTokenResponse>>(
+      '/auth/refresh',
+      {
+        refresh_token: refreshToken
+      }
+    )
+    return response.data.data
   },
 
   /**
@@ -68,7 +79,7 @@ export const authApi = {
   async changePassword(
     data: PasswordChangeRequest
   ): Promise<{ message: string }> {
-    const response = await http.post<{ message: string }>(
+    const response = await http.put<{ message: string }>(
       '/auth/change-password',
       data
     )
@@ -105,8 +116,10 @@ export const authApi = {
    * 验证token有效性
    */
   async validateToken(): Promise<{ valid: boolean }> {
-    const response = await http.get<{ valid: boolean }>('/auth/validate')
-    return response.data
+    const response = await http.get<ApiResponse<{ valid: boolean }>>(
+      '/auth/verify-token'
+    )
+    return response.data.data
   },
 
   /**

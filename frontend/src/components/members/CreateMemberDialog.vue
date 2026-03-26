@@ -137,7 +137,7 @@
         <el-input
           v-model="form.password"
           type="password"
-          placeholder="初始密码（默认：123456）"
+          placeholder="请设置初始密码"
           show-password
           maxlength="50"
         />
@@ -193,7 +193,7 @@ const form = reactive<MemberCreateRequest>({
   join_date: new Date().toISOString().split('T')[0],
   role: 'member',
   is_active: true,
-  password: '123456'
+  password: ''
 })
 
 // Form rules
@@ -232,6 +232,30 @@ const rules: FormRules = {
   is_active: [{ required: true, message: '请选择状态', trigger: 'change' }],
   class_name: [{ required: true, message: '请输入班级', trigger: 'blur' }],
   join_date: [{ required: true, message: '请选择入职日期', trigger: 'change' }],
+  password: [
+    {
+      validator: (_rule, value, callback) => {
+        if (isEditMode.value) {
+          callback()
+          return
+        }
+
+        const normalized = value?.trim() ?? ''
+        if (!normalized) {
+          callback(new Error('请输入初始密码'))
+          return
+        }
+
+        if (normalized.length < 8) {
+          callback(new Error('初始密码长度不能少于 8 位'))
+          return
+        }
+
+        callback()
+      },
+      trigger: 'blur'
+    }
+  ],
   group_id: [
     {
       validator: (_rule, value, callback) => {
@@ -299,7 +323,7 @@ const resetForm = () => {
     join_date: new Date().toISOString().split('T')[0],
     role: 'member',
     is_active: true,
-    password: '123456'
+    password: ''
   })
 }
 
@@ -315,7 +339,7 @@ const populateForm = (member: Member) => {
     join_date: member.join_date || new Date().toISOString().split('T')[0],
     role: member.role || 'member',
     is_active: member.is_active,
-    password: '123456'
+    password: ''
   })
 }
 
@@ -371,7 +395,7 @@ const handleSubmit = async () => {
         join_date: form.join_date,
         role: form.role,
         is_active: form.is_active,
-        password: form.password?.trim() || '123456'
+        password: form.password?.trim()
       }
 
       const createdMember = await MembersApi.createMember(submitData)

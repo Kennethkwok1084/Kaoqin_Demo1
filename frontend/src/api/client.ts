@@ -6,7 +6,7 @@ import axios, {
   type AxiosError
 } from 'axios'
 import { ElMessage } from 'element-plus'
-import { getToken, removeToken } from '@/utils/auth'
+import { getToken, clearAuthData } from '@/utils/auth'
 import router from '@/router'
 import { MessageManager, MESSAGES } from '@/constants/messages'
 
@@ -101,7 +101,7 @@ http.interceptors.response.use(
 
       case 401:
         ElMessage.error(displayMessage)
-        removeToken()
+        clearAuthData()
         router.replace('/login')
         break
 

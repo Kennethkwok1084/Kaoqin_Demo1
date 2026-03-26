@@ -99,8 +99,8 @@ export const useGlobalStore = defineStore('global', () => {
     setLoading(true)
 
     try {
-      // 应用初始化逻辑
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // 预留初始化钩子，避免伪造异步延迟影响页面判断
+      await Promise.resolve()
     } catch (error) {
       console.error('App initialization failed:', error)
     } finally {

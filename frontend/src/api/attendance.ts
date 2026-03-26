@@ -68,16 +68,10 @@ export const attendanceApi = {
   async getWorkHoursRecords(
     params?: WorkHoursListParams
   ): Promise<WorkHoursRecord[]> {
-    try {
-      const response = await http.get<WorkHoursRecord[]>('/attendance/records', {
-        params
-      })
-      return response.data || []
-    } catch (error) {
-      console.error('获取工时记录失败:', error)
-      // 返回空数组而不是抛出错误，让页面继续正常运行
-      return []
-    }
+    const response = await http.get<WorkHoursRecord[]>('/attendance/records', {
+      params
+    })
+    return response.data || []
   },
 
   // 获取指定成员的工时记录
@@ -93,21 +87,8 @@ export const attendanceApi = {
 
   // 获取今日工时概览
   async getTodayWorkHoursSummary(): Promise<WorkHoursSummary> {
-    try {
-      const response = await http.get<WorkHoursSummary>(
-        '/attendance/today-summary'
-      )
-      return response.data
-    } catch (error) {
-      console.error('获取今日工时概览失败:', error)
-      // 返回默认的空概览数据
-      return {
-        totalHours: 0,
-        completedTasks: 0,
-        ongoingTasks: 0,
-        efficiency: 0
-      } as WorkHoursSummary
-    }
+    const response = await http.get<WorkHoursSummary>('/attendance/today-summary')
+    return response.data
   },
 
   // 获取月度工时汇总

@@ -101,15 +101,8 @@ export function createEmptyChartData(): ChartData {
  */
 export function getDefaultLineChartData(): ChartData {
   return {
-    labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
-    datasets: [
-      {
-        label: '任务数量',
-        data: [0, 0, 0, 0, 0, 0],
-        borderColor: '#409EFF',
-        backgroundColor: 'rgba(64, 158, 255, 0.1)'
-      }
-    ]
+    labels: [],
+    datasets: []
   }
 }
 

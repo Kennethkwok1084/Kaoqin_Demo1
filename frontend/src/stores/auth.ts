@@ -2,17 +2,19 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { LoginRequest, UserInfo } from '@/types/auth'
 import { authApi } from '@/api/auth'
-import { removeToken, setToken, getToken, setRefreshToken } from '@/utils/auth'
+import {
+  clearAuthData,
+  setToken,
+  getToken,
+  setRefreshToken,
+  getRefreshToken,
+} from '@/utils/auth'
 import router from '@/router'
 
 export const useAuthStore = defineStore('auth', () => {
   // 状态
   const token = ref<string | null>(getToken())
-  const refreshTokenRef = ref<string | null>(
-    typeof localStorage !== 'undefined'
-      ? localStorage.getItem('refresh_token')
-      : null
-  )
+  const refreshTokenRef = ref<string | null>(getRefreshToken())
   const userInfo = ref<UserInfo | null>(null)
   const isLoading = ref(false)
 
@@ -58,7 +60,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       // 检查是否需要完善信息
       if (response.data.user.needs_profile_completion) {
-        await router.push('/auth/complete-profile')
+        await router.push('/complete-profile')
       } else {
         // 跳转到首页或目标页面
         const redirect = router.currentRoute.value.query.redirect as string
@@ -68,6 +70,10 @@ export const useAuthStore = defineStore('auth', () => {
       return true
     } catch (error) {
       console.error('登录失败:', error)
+      token.value = null
+      refreshTokenRef.value = null
+      userInfo.value = null
+      clearAuthData()
       return false
     } finally {
       isLoading.value = false
@@ -91,10 +97,7 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = null
       refreshTokenRef.value = null
       userInfo.value = null
-      removeToken()
-      if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem('refresh_token')
-      }
+      clearAuthData()
       isLoading.value = false
 
       // 跳转到登录页
@@ -114,7 +117,7 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (error) {
       console.error('获取用户信息失败:', error)
       // 如果获取用户信息失败，可能是token过期，执行登出
-      logout()
+      await logout()
       throw error
     }
   }
@@ -132,7 +135,7 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (error) {
       console.error('刷新token失败:', error)
       // token刷新失败，执行登出
-      logout()
+      await logout()
       throw error
     }
   }
@@ -151,7 +154,7 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (error) {
       console.error('刷新token失败:', error)
       // token刷新失败，执行登出
-      logout()
+      await logout()
       return false
     }
   }
@@ -163,7 +166,7 @@ export const useAuthStore = defineStore('auth', () => {
         await fetchUserInfo()
       } catch (error) {
         // 如果获取用户信息失败，清除token
-        logout()
+        await logout()
       }
     }
   }
@@ -171,10 +174,7 @@ export const useAuthStore = defineStore('auth', () => {
   // initializeAuth 方法 - 测试兼容性别名
   const initializeAuth = async (): Promise<void> => {
     const storedToken = getToken()
-    const storedRefreshToken =
-      typeof localStorage !== 'undefined'
-        ? localStorage.getItem('refresh_token')
-        : null
+    const storedRefreshToken = getRefreshToken()
 
     if (storedToken) {
       token.value = storedToken
@@ -191,10 +191,7 @@ export const useAuthStore = defineStore('auth', () => {
         token.value = null
         refreshTokenRef.value = null
         userInfo.value = null
-        removeToken()
-        if (typeof localStorage !== 'undefined') {
-          localStorage.removeItem('refresh_token')
-        }
+        clearAuthData()
       }
     }
   }

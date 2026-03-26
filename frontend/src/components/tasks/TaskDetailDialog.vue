@@ -750,6 +750,10 @@ const loadWorkLogs = async () => {
     workLogs.value = await tasksApi.getWorkLogs(props.taskId)
   } catch (error) {
     console.error('加载工时记录失败:', error)
+    workLogs.value = []
+    ElMessage.warning(
+      error instanceof Error ? error.message : '加载工时记录失败'
+    )
   } finally {
     workLogsLoading.value = false
   }
@@ -767,6 +771,8 @@ const loadComments = async () => {
     comments.value = await tasksApi.getComments(props.taskId)
   } catch (error) {
     console.error('加载评论失败:', error)
+    comments.value = []
+    ElMessage.warning(error instanceof Error ? error.message : '加载评论失败')
   } finally {
     commentsLoading.value = false
   }

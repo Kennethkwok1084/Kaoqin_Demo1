@@ -512,10 +512,7 @@ import {
 } from '@element-plus/icons-vue'
 import { attendanceApi } from '@/api/attendance'
 import { useAuthStore } from '@/stores/auth'
-import {
-  ATTENDANCE_STATUS_CONFIG,
-  DEPARTMENT_OPTIONS
-} from '@/types/attendance'
+import { ATTENDANCE_STATUS_CONFIG } from '@/types/attendance'
 import type {
   AttendanceRecord,
   AttendanceListParams,
@@ -604,7 +601,7 @@ const showCheckInDialog = ref(false)
 const showCheckOutDialog = ref(false)
 const showCorrectionDialog = ref(false)
 
-const departmentOptions = ref(DEPARTMENT_OPTIONS)
+const departmentOptions = ref<Array<{ label: string; value: string }>>([])
 
 // 定时器
 let timeTimer: NodeJS.Timeout | null = null
@@ -617,6 +614,21 @@ const updateCurrentTime = () => {
     minute: '2-digit',
     second: '2-digit'
   })
+}
+
+const updateDepartmentOptions = (records: AttendanceRecord[]) => {
+  const options = Array.from(
+    new Set(
+      records
+        .map(record => record.department?.trim())
+        .filter((department): department is string => Boolean(department))
+    )
+  )
+
+  departmentOptions.value = options.map(department => ({
+    label: department,
+    value: department
+  }))
 }
 
 const loadAttendanceRecords = async () => {
@@ -636,6 +648,7 @@ const loadAttendanceRecords = async () => {
 
     const records = await attendanceApi.getWorkHoursRecords(params)
     attendanceList.value = records as any // Type compatibility between WorkHoursRecord[] and AttendanceRecord[]
+    updateDepartmentOptions(attendanceList.value)
     pagination.total = records.length
   } catch (error) {
     console.error('加载工时记录失败:', error)
@@ -834,20 +847,13 @@ const handleCorrectionSuccess = () => {
 const handleEditWorkHours = (record: AttendanceRecord) => {
   // 处理工时调整
   console.log('调整工时:', record)
-  ElMessage.info('工时调整功能开发中...')
+  ElMessage.warning('工时调整暂未对接独立后端接口')
 }
 
 const handleRecalculateWorkHours = async (record: AttendanceRecord) => {
   // 处理工时重新计算
-  try {
-    ElMessage.info('正在重新计算工时...')
-    // 这里调用重新计算的API
-    await loadAttendanceRecords()
-    ElMessage.success('工时重新计算完成')
-  } catch (error) {
-    console.error('重新计算工时失败:', error)
-    ElMessage.error('重新计算工时失败')
-  }
+  console.warn('工时重算缺少后端任务上下文:', record)
+  ElMessage.warning('当前列表缺少任务上下文，暂不能直接触发工时重算')
 }
 
 // 工具方法

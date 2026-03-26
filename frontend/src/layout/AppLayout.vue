@@ -198,20 +198,17 @@ import {
   Odometer
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
-import { useGlobalStore } from '@/stores/global'
 import MobileBottomNav from '@/components/mobile/MobileBottomNav.vue'
 
 // 路由和store
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const globalStore = useGlobalStore()
 
 // 响应式数据
 const sidebarCollapsed = ref(false)
 const showMobileSidebar = ref(false)
-const notificationCount = ref(3) // 模拟通知数量
+const notificationCount = ref(0)
 
 // 检查是否为移动端
 const isMobile = computed(() => window.innerWidth <= 768)
@@ -253,7 +250,7 @@ const toggleFullscreen = () => {
 }
 
 const showNotifications = () => {
-  ElMessage.info('通知功能开发中...')
+  ElMessage.warning('通知中心暂未对接独立接口')
 }
 
 const handleUserMenuCommand = async (command: string) => {

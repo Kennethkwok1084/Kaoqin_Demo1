@@ -114,6 +114,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock, Message, Odometer } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
@@ -126,6 +127,8 @@ const resetFormRef = ref<FormInstance>()
 const isLoading = ref(false)
 const isResetting = ref(false)
 const forgotPasswordVisible = ref(false)
+const loginError = ref('')
+const router = useRouter()
 
 // 登录表单
 const loginForm = reactive({
@@ -168,26 +171,38 @@ const handleLogin = async () => {
   try {
     await loginFormRef.value.validate()
     isLoading.value = true
+    loginError.value = ''
 
-    // 修复：将username映射到后端需要的student_id字段
-    const loginData = {
-      student_id: loginForm.username,  // 将username映射为student_id
-      password: loginForm.password,
-      remember_me: loginForm.remember_me
+    const success = await authStore.login(
+      loginForm.username.trim(),
+      loginForm.password
+    )
+
+    if (!success) {
+      loginError.value = '用户名或密码错误'
+      ElMessage.error(loginError.value)
+      return
     }
 
-    await authStore.login(loginData)
+    if (loginForm.remember_me) {
+      localStorage.setItem('rememberedUsername', loginForm.username.trim())
+    } else {
+      localStorage.removeItem('rememberedUsername')
+    }
+
     ElMessage.success('登录成功')
   } catch (error: any) {
     console.error('登录失败:', error)
 
     if (error.response?.status === 401) {
-      ElMessage.error('用户名或密码错误')
+      loginError.value = '用户名或密码错误'
     } else if (error.response?.status === 423) {
-      ElMessage.error('账户已被锁定，请联系管理员')
+      loginError.value = '账户已被锁定，请联系管理员'
     } else {
-      ElMessage.error(error.response?.data?.message || '登录失败，请重试')
+      loginError.value = error.response?.data?.message || '登录失败，请重试'
     }
+
+    ElMessage.error(loginError.value)
   } finally {
     isLoading.value = false
   }
@@ -222,16 +237,16 @@ const handleResetPassword = async () => {
 onMounted(() => {
   // 如果已经登录，直接跳转到首页
   if (authStore.isAuthenticated) {
-    authStore.login
+    router.replace('/dashboard')
   }
 
   // 设置页面标题
   document.title = '登录 - 考勤管理系统'
 
-  // 开发环境下预填充表单（可选）
-  if (import.meta.env.DEV) {
-    loginForm.username = 'admin'
-    loginForm.password = 'admin123'
+  const rememberedUsername = localStorage.getItem('rememberedUsername')
+  if (rememberedUsername) {
+    loginForm.username = rememberedUsername
+    loginForm.remember_me = true
   }
 })
 </script>

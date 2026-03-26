@@ -7,7 +7,12 @@
         <p class="page-description">管理系统配置、用户权限和业务规则</p>
       </div>
       <div class="header-actions">
-        <el-button type="primary" :icon="Refresh" @click="refreshSettings">
+        <el-button
+          type="primary"
+          :icon="Refresh"
+          :loading="settingsLoading"
+          @click="refreshSettings"
+        >
           刷新配置
         </el-button>
       </div>
@@ -453,22 +458,25 @@ import {
   Monitor,
   Refresh
 } from '@element-plus/icons-vue'
-import { systemApi, type SystemInfo } from '@/api/system'
+import {
+  systemApi,
+  type SystemInfo,
+  type SystemSettingsPayload
+} from '@/api/system'
 
 // 响应式数据
 const activeSection = ref('basic')
 const backupLoading = ref(false)
+const settingsLoading = ref(false)
 
-// 基础设置
-const basicSettings = reactive({
+const defaultBasicSettings = {
   systemName: '考勤管理系统',
   systemDescription: '面向高校网络维护团队的考勤管理系统',
   defaultGroup: '1',
   timeFormat: '24h'
-})
+}
 
-// 工时规则设置
-const workHoursSettings = reactive({
+const defaultWorkHoursSettings = {
   onlineTaskMinutes: 40,
   offlineTaskMinutes: 100,
   rushBonusMinutes: 15,
@@ -476,7 +484,24 @@ const workHoursSettings = reactive({
   lateResponsePenalty: 30,
   lateCompletionPenalty: 30,
   negativeRatingPenalty: 60
-})
+}
+
+const defaultNotificationSettings = {
+  emailEnabled: false,
+  smtpServer: '',
+  smtpPort: 587,
+  senderEmail: '',
+  systemNotificationEnabled: true,
+  taskAssignmentNotification: true,
+  taskCompletionNotification: true,
+  workHoursNotification: false
+}
+
+// 基础设置
+const basicSettings = reactive({ ...defaultBasicSettings })
+
+// 工时规则设置
+const workHoursSettings = reactive({ ...defaultWorkHoursSettings })
 
 // 权限设置
 const permissionSettings = ref([
@@ -513,30 +538,10 @@ const permissionSettings = ref([
 ])
 
 // 通知设置
-const notificationSettings = reactive({
-  emailEnabled: false,
-  smtpServer: '',
-  smtpPort: 587,
-  senderEmail: '',
-  systemNotificationEnabled: true,
-  taskAssignmentNotification: true,
-  taskCompletionNotification: true,
-  workHoursNotification: false
-})
+const notificationSettings = reactive({ ...defaultNotificationSettings })
 
 // 备份历史
-const backupHistory = ref([
-  {
-    filename: 'backup_20250801_094500.sql',
-    createTime: '2025-08-01 09:45:00',
-    size: '2.5 MB'
-  },
-  {
-    filename: 'backup_20250731_183000.sql',
-    createTime: '2025-07-31 18:30:00',
-    size: '2.3 MB'
-  }
-])
+const backupHistory = ref<Array<{ filename: string; createTime: string; size: string }>>([])
 
 // 系统信息
 const systemInfo = reactive<SystemInfo>({
@@ -555,70 +560,143 @@ const handleSectionChange = (section: string) => {
   activeSection.value = section
 }
 
-const refreshSettings = () => {
-  ElMessage.success('配置已刷新')
+const applySystemSettings = (data: SystemSettingsPayload) => {
+  Object.assign(workHoursSettings, {
+    onlineTaskMinutes:
+      data.workHours.onlineTaskMinutes ?? defaultWorkHoursSettings.onlineTaskMinutes,
+    offlineTaskMinutes:
+      data.workHours.offlineTaskMinutes ?? defaultWorkHoursSettings.offlineTaskMinutes,
+    rushBonusMinutes:
+      data.workHours.rushBonusMinutes ?? defaultWorkHoursSettings.rushBonusMinutes,
+    positiveRatingBonus:
+      data.workHours.positiveReviewBonusMinutes ??
+      data.workHours.positiveRatingBonus ??
+      defaultWorkHoursSettings.positiveRatingBonus,
+    lateResponsePenalty:
+      data.workHours.lateResponsePenaltyMinutes ??
+      data.workHours.lateResponsePenalty ??
+      defaultWorkHoursSettings.lateResponsePenalty,
+    lateCompletionPenalty:
+      data.workHours.lateCompletionPenaltyMinutes ??
+      data.workHours.lateCompletionPenalty ??
+      defaultWorkHoursSettings.lateCompletionPenalty,
+    negativeRatingPenalty:
+      data.workHours.negativeReviewPenaltyMinutes ??
+      data.workHours.negativeRatingPenalty ??
+      defaultWorkHoursSettings.negativeRatingPenalty
+  })
+
+  Object.assign(notificationSettings, {
+    emailEnabled:
+      data.notifications.enableEmailNotifications ??
+      data.notifications.emailEnabled ??
+      defaultNotificationSettings.emailEnabled,
+    smtpServer:
+      data.notifications.smtpServer ?? defaultNotificationSettings.smtpServer,
+    smtpPort: data.notifications.smtpPort ?? defaultNotificationSettings.smtpPort,
+    senderEmail:
+      data.notifications.senderEmail ?? defaultNotificationSettings.senderEmail,
+    systemNotificationEnabled:
+      data.notifications.enablePushNotifications ??
+      data.notifications.systemNotificationEnabled ??
+      defaultNotificationSettings.systemNotificationEnabled,
+    taskAssignmentNotification:
+      data.notifications.taskAssignmentNotification ??
+      defaultNotificationSettings.taskAssignmentNotification,
+    taskCompletionNotification:
+      data.notifications.taskCompletionNotification ??
+      defaultNotificationSettings.taskCompletionNotification,
+    workHoursNotification:
+      data.notifications.workHoursNotification ??
+      defaultNotificationSettings.workHoursNotification
+  })
+}
+
+const refreshSettings = async () => {
+  try {
+    settingsLoading.value = true
+    await Promise.all([loadSystemInfo(), loadSystemSettings()])
+    ElMessage.success('配置已刷新')
+  } catch (error) {
+    ElMessage.error('配置刷新失败')
+  } finally {
+    settingsLoading.value = false
+  }
 }
 
 const saveBasicSettings = () => {
-  ElMessage.success('基础设置保存成功')
+  ElMessage.warning('基础设置暂未对接后端保存接口，当前不会写入服务器')
 }
 
 const resetBasicSettings = () => {
-  basicSettings.systemName = '考勤管理系统'
-  basicSettings.systemDescription = '面向高校网络维护团队的考勤管理系统'
-  basicSettings.defaultGroup = '1'
-  basicSettings.timeFormat = '24h'
+  Object.assign(basicSettings, defaultBasicSettings)
   ElMessage.info('基础设置已重置')
 }
 
-const saveWorkHoursSettings = () => {
-  ElMessage.success('工时规则保存成功')
+const saveWorkHoursSettings = async () => {
+  try {
+    await systemApi.updateSystemSettings({
+      workHours: {
+        onlineTaskMinutes: workHoursSettings.onlineTaskMinutes,
+        offlineTaskMinutes: workHoursSettings.offlineTaskMinutes,
+        rushBonusMinutes: workHoursSettings.rushBonusMinutes,
+        positiveReviewBonusMinutes: workHoursSettings.positiveRatingBonus,
+        lateResponsePenaltyMinutes: workHoursSettings.lateResponsePenalty,
+        lateCompletionPenaltyMinutes: workHoursSettings.lateCompletionPenalty,
+        negativeReviewPenaltyMinutes: workHoursSettings.negativeRatingPenalty
+      }
+    })
+    ElMessage.success('工时规则保存成功')
+    await loadSystemSettings()
+  } catch (error) {
+    console.error('保存工时规则失败:', error)
+    ElMessage.error('工时规则保存失败')
+  }
 }
 
 const resetWorkHoursSettings = () => {
-  workHoursSettings.onlineTaskMinutes = 40
-  workHoursSettings.offlineTaskMinutes = 100
-  workHoursSettings.rushBonusMinutes = 15
-  workHoursSettings.positiveRatingBonus = 30
-  workHoursSettings.lateResponsePenalty = 30
-  workHoursSettings.lateCompletionPenalty = 30
-  workHoursSettings.negativeRatingPenalty = 60
+  Object.assign(workHoursSettings, defaultWorkHoursSettings)
   ElMessage.info('工时规则已重置为默认值')
 }
 
 const savePermissionSettings = () => {
-  ElMessage.success('权限设置保存成功')
+  ElMessage.warning('权限设置暂未对接后端保存接口，当前不会写入服务器')
 }
 
 const resetPermissionSettings = () => {
   ElMessage.info('权限设置已重置为默认')
 }
 
-const saveNotificationSettings = () => {
-  ElMessage.success('通知设置保存成功')
+const saveNotificationSettings = async () => {
+  try {
+    await systemApi.updateSystemSettings({
+      notifications: {
+        enableEmailNotifications: notificationSettings.emailEnabled,
+        smtpServer: notificationSettings.smtpServer,
+        smtpPort: notificationSettings.smtpPort,
+        senderEmail: notificationSettings.senderEmail,
+        enablePushNotifications: notificationSettings.systemNotificationEnabled,
+        taskAssignmentNotification: notificationSettings.taskAssignmentNotification,
+        taskCompletionNotification: notificationSettings.taskCompletionNotification,
+        workHoursNotification: notificationSettings.workHoursNotification
+      }
+    })
+    ElMessage.success('通知设置保存成功')
+    await loadSystemSettings()
+  } catch (error) {
+    console.error('保存通知设置失败:', error)
+    ElMessage.error('通知设置保存失败')
+  }
 }
 
 const testNotification = () => {
-  ElMessage.success('测试通知已发送')
+  ElMessage.warning('测试通知暂未对接后端发送接口')
 }
 
 const createBackup = async () => {
   backupLoading.value = true
   try {
-    // 模拟备份过程
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    const now = new Date()
-    const filename = `backup_${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}.sql`
-
-    backupHistory.value.unshift({
-      filename,
-      createTime: now.toLocaleString('zh-CN'),
-      size: '2.6 MB'
-    })
-
-    ElMessage.success('备份创建成功')
-  } catch (error) {
-    ElMessage.error('备份创建失败')
+    ElMessage.warning('备份功能暂未对接后端接口')
   } finally {
     backupLoading.value = false
   }
@@ -635,7 +713,7 @@ const handleBackupFileChange = (file: any) => {
     }
   )
     .then(() => {
-      ElMessage.success(`开始恢复数据：${file.name}`)
+      ElMessage.warning(`恢复功能暂未对接后端接口：${file.name}`)
     })
     .catch(() => {
       ElMessage.info('已取消恢复操作')
@@ -643,7 +721,7 @@ const handleBackupFileChange = (file: any) => {
 }
 
 const downloadBackup = (backup: any) => {
-  ElMessage.success(`开始下载：${backup.filename}`)
+  ElMessage.warning(`下载功能暂未对接后端接口：${backup.filename}`)
 }
 
 const deleteBackup = (backup: any) => {
@@ -653,13 +731,7 @@ const deleteBackup = (backup: any) => {
     type: 'warning'
   })
     .then(() => {
-      const index = backupHistory.value.findIndex(
-        item => item.filename === backup.filename
-      )
-      if (index > -1) {
-        backupHistory.value.splice(index, 1)
-        ElMessage.success('备份文件删除成功')
-      }
+      ElMessage.warning('删除备份功能暂未对接后端接口')
     })
     .catch(() => {
       ElMessage.info('已取消删除操作')
@@ -667,11 +739,11 @@ const deleteBackup = (backup: any) => {
 }
 
 const checkSystemHealth = () => {
-  ElMessage.success('系统健康检查通过')
+  ElMessage.warning('系统健康检查暂未对接专用接口')
 }
 
 const clearCache = () => {
-  ElMessage.success('缓存清理完成')
+  ElMessage.warning('缓存清理暂未对接后端接口')
 }
 
 const restartSystem = () => {
@@ -681,7 +753,7 @@ const restartSystem = () => {
     type: 'warning'
   })
     .then(() => {
-      ElMessage.success('系统重启命令已发送')
+      ElMessage.warning('系统重启暂未对接后端接口')
     })
     .catch(() => {
       ElMessage.info('已取消重启操作')
@@ -694,12 +766,22 @@ const loadSystemInfo = async () => {
     Object.assign(systemInfo, data)
   } catch (error) {
     console.error('获取系统信息失败:', error)
-    ElMessage.error('获取系统信息失败')
+    throw error
+  }
+}
+
+const loadSystemSettings = async () => {
+  try {
+    const data = await systemApi.getSystemSettings()
+    applySystemSettings(data)
+  } catch (error) {
+    console.error('获取系统设置失败:', error)
+    throw error
   }
 }
 
 onMounted(() => {
-  loadSystemInfo()
+  refreshSettings()
 })
 </script>
 

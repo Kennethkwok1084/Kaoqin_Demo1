@@ -104,7 +104,8 @@ export const dashboardApi = {
    * 标记警告为已解决
    */
   async resolveAlert(alertId: number): Promise<void> {
-    await http.patch(`/dashboard/alerts/${alertId}/resolve`)
+    void alertId
+    throw new Error('告警处理接口暂未接入')
   },
 
   /**

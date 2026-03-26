@@ -29,28 +29,44 @@ export function setToken(token: string): void {
  * 移除token
  */
 export function removeToken(): void {
-  localStorage.removeItem(TOKEN_KEY)
+  try {
+    localStorage.removeItem(TOKEN_KEY)
+  } catch (error) {
+    // 忽略localStorage不可用的错误
+  }
 }
 
 /**
  * 移除刷新token
  */
 export function removeRefreshToken(): void {
-  localStorage.removeItem(REFRESH_TOKEN_KEY)
+  try {
+    localStorage.removeItem(REFRESH_TOKEN_KEY)
+  } catch (error) {
+    // 忽略localStorage不可用的错误
+  }
 }
 
 /**
  * 获取刷新token
  */
 export function getRefreshToken(): string | null {
-  return localStorage.getItem(REFRESH_TOKEN_KEY)
+  try {
+    return localStorage.getItem(REFRESH_TOKEN_KEY)
+  } catch (error) {
+    return null
+  }
 }
 
 /**
  * 设置刷新token
  */
 export function setRefreshToken(refreshToken: string): void {
-  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
+  try {
+    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
+  } catch (error) {
+    // 忽略localStorage不可用的错误
+  }
 }
 
 /**

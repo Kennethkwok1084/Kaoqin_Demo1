@@ -532,9 +532,8 @@ export const tasksApi = {
    * 获取任务评论列表
    */
   async getComments(taskId: number): Promise<TaskComment[]> {
-    // API暂未实现，直接返回空数组
-    console.warn('Comments API not implemented, returning empty array')
-    return []
+    void taskId
+    throw new Error('任务评论接口暂未接入')
   },
 
   /**
@@ -557,9 +556,8 @@ export const tasksApi = {
    * 获取任务工时记录
    */
   async getWorkLogs(taskId: number): Promise<TaskWorkLog[]> {
-    // API暂未实现，直接返回空数组
-    console.warn('Work logs API not implemented, returning empty array')
-    return []
+    void taskId
+    throw new Error('任务工时记录接口暂未接入')
   },
 
   /**

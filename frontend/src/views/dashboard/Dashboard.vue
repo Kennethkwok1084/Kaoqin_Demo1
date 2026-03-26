@@ -263,7 +263,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
@@ -337,32 +337,28 @@ const statsCards = [
     label: '总任务数',
     icon: Document,
     iconColor: '#409EFF',
-    className: 'stat-primary',
-    change: 8.2
+    className: 'stat-primary'
   },
   {
     key: 'completedTasks' as keyof DashboardStats,
     label: '已完成',
     icon: CircleCheck,
     iconColor: '#67C23A',
-    className: 'stat-success',
-    change: 12.5
+    className: 'stat-success'
   },
   {
     key: 'activeMembers' as keyof DashboardStats,
     label: '活跃成员',
     icon: User,
     iconColor: '#E6A23C',
-    className: 'stat-warning',
-    change: -2.1
+    className: 'stat-warning'
   },
   {
     key: 'monthlyWorkHours' as keyof DashboardStats,
     label: '本月工时',
     icon: Clock,
     iconColor: '#F56C6C',
-    className: 'stat-danger',
-    change: 15.8
+    className: 'stat-danger'
   }
 ]
 
@@ -386,7 +382,7 @@ const quickActions: Array<{
     title: '新建任务',
     icon: Plus,
     color: 'primary',
-    route: '/tasks/create'
+    route: '/tasks'
   },
   {
     id: 'view-members',
@@ -718,12 +714,8 @@ const refreshData = async () => {
 }
 
 const resolveAlert = async (alertId: number) => {
-  try {
-    alerts.value = alerts.value.filter(alert => alert.id !== alertId)
-    ElMessage.success('警告已处理')
-  } catch (error) {
-    ElMessage.error('处理警告失败')
-  }
+  void alertId
+  ElMessage.warning('告警处理接口暂未接入，当前仅支持查看告警信息')
 }
 
 const navigateToAction = (route: string) => {
@@ -731,7 +723,7 @@ const navigateToAction = (route: string) => {
 }
 
 const viewAllAlerts = () => {
-  router.push('/system/alerts')
+  ElMessage.warning('告警详情页暂未配置路由')
 }
 
 const viewAllMembers = () => {
@@ -742,15 +734,23 @@ const viewMemberDetail = (memberId: number) => {
   router.push(`/members/${memberId}`)
 }
 
+const handleWindowResize = () => {
+  workHoursChartInstance?.resize()
+  taskDistributionChartInstance?.resize()
+}
+
 // 生命周期
 onMounted(async () => {
   await refreshData()
+  window.addEventListener('resize', handleWindowResize)
+})
 
-  // 监听窗口大小变化
-  window.addEventListener('resize', () => {
-    workHoursChartInstance?.resize()
-    taskDistributionChartInstance?.resize()
-  })
+onUnmounted(() => {
+  window.removeEventListener('resize', handleWindowResize)
+  workHoursChartInstance?.dispose()
+  taskDistributionChartInstance?.dispose()
+  workHoursChartInstance = null
+  taskDistributionChartInstance = null
 })
 </script>
 
