@@ -7,10 +7,10 @@ import '../utils/prefs_provider.dart';
 final dioProvider = Provider<Dio>((ref) {
   final prefs = ref.watch(prefsProvider);
 
-  // Use environment variable, fallback to localhost for development
+  // Keep env override support, but default to the current LAN backend.
   const baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://127.0.0.1:8000/api/v1',
+    defaultValue: 'http://192.168.47.100:19991/api/v1',
   );
 
   final dio = Dio(

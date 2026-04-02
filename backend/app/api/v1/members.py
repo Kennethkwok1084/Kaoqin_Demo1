@@ -1,14 +1,23 @@
-"""
-全新的成员管理API
-完全重构后的业务逻辑和接口设计
+﻿"""
+鍏ㄦ柊鐨勬垚鍛樼鐞咥PI
+瀹屽叏閲嶆瀯鍚庣殑涓氬姟閫昏緫鍜屾帴鍙ｈ璁?
 """
 
 import logging
 import time
 from datetime import date
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
 from fastapi.responses import JSONResponse
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,6 +36,7 @@ from app.schemas.member import (
     MemberUpdate,
     PasswordChangeRequest,
 )
+from app.services.import_service import DataImportService
 
 logger = logging.getLogger(__name__)
 
@@ -35,25 +45,25 @@ router = APIRouter()
 
 @router.get("/", response_model=Dict[str, Any])
 async def get_members(
-    page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
-    search: Optional[str] = Query(None, description="搜索关键词"),
-    role: Optional[str] = Query(None, description="角色筛选"),
-    is_active: Optional[bool] = Query(None, description="状态筛选"),
-    department: Optional[str] = Query(None, description="部门筛选"),
-    class_name: Optional[str] = Query(None, description="班级筛选"),
+    page: int = Query(1, ge=1, description="椤电爜"),
+    page_size: int = Query(20, ge=1, le=100, description="姣忛〉鏁伴噺"),
+    search: Optional[str] = Query(None, description="鎼滅储鍏抽敭璇?),
+    role: Optional[str] = Query(None, description="瑙掕壊绛涢€?),
+    is_active: Optional[bool] = Query(None, description="鐘舵€佺瓫閫?),
+    department: Optional[str] = Query(None, description="閮ㄩ棬绛涢€?),
+    class_name: Optional[str] = Query(None, description="鐝骇绛涢€?),
     current_user: Member = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """
-    获取成员列表
-    支持分页、搜索和多字段筛选
+    鑾峰彇鎴愬憳鍒楄〃
+    鏀寔鍒嗛〉銆佹悳绱㈠拰澶氬瓧娈电瓫閫?
     """
     try:
-        # 构建查询条件
+        # 鏋勫缓鏌ヨ鏉′欢
         query = select(Member)
 
-        # 搜索条件
+        # 鎼滅储鏉′欢
         if search:
             search_pattern = f"%{search}%"
             query = query.where(
@@ -64,35 +74,35 @@ async def get_members(
                 )
             )
 
-        # 角色筛选
+        # 瑙掕壊绛涢€?
         if role and role in [r.value for r in UserRole]:
             query = query.where(Member.role == UserRole(role))
 
-        # 状态筛选
+        # 鐘舵€佺瓫閫?
         if is_active is not None:
             query = query.where(Member.is_active == is_active)
 
-        # 部门筛选
+        # 閮ㄩ棬绛涢€?
         if department:
             query = query.where(Member.department.ilike(f"%{department}%"))
 
-        # 班级筛选
+        # 鐝骇绛涢€?
         if class_name:
             query = query.where(Member.class_name.ilike(f"%{class_name}%"))
 
-        # 获取总数
+        # 鑾峰彇鎬绘暟
         count_query = select(func.count()).select_from(query.subquery())
         result = await db.execute(count_query)
         total = result.scalar()
 
-        # 分页查询
+        # 鍒嗛〉鏌ヨ
         offset = (page - 1) * page_size
         query = query.offset(offset).limit(page_size).order_by(Member.created_at.desc())
 
         result = await db.execute(query)
         members = result.scalars().all()
 
-        # 构建响应数据
+        # 鏋勫缓鍝嶅簲鏁版嵁
         member_list = []
         for member in members:
             if hasattr(member, "get_safe_dict"):
@@ -109,13 +119,13 @@ async def get_members(
                 "page_size": page_size,
                 "total_pages": total_pages,
             },
-            message=f"成功获取成员列表，共 {total} 条记录",
+            message=f"鎴愬姛鑾峰彇鎴愬憳鍒楄〃锛屽叡 {total} 鏉¤褰?,
         )
 
     except Exception as e:
-        logger.error(f"获取成员列表失败: {str(e)}")
+        logger.error(f"鑾峰彇鎴愬憳鍒楄〃澶辫触: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="获取成员列表失败"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="鑾峰彇鎴愬憳鍒楄〃澶辫触"
         )
 
 
@@ -126,7 +136,7 @@ async def get_member(
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """
-    获取单个成员详情
+    鑾峰彇鍗曚釜鎴愬憳璇︽儏
     """
     try:
         query = select(Member).where(Member.id == member_id)
@@ -135,23 +145,23 @@ async def get_member(
 
         if not member:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在"
+                status_code=status.HTTP_404_NOT_FOUND, detail="鎴愬憳涓嶅瓨鍦?
             )
 
-        # 权限检查：管理员和组长可查看所有，普通用户只能查看自己
+        # 鏉冮檺妫€鏌ワ細绠＄悊鍛樺拰缁勯暱鍙煡鐪嬫墍鏈夛紝鏅€氱敤鎴峰彧鑳芥煡鐪嬭嚜宸?
         if not current_user.can_manage_group and current_user.id != member_id:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="无权限查看该成员信息"
+                status_code=status.HTTP_403_FORBIDDEN, detail="鏃犳潈闄愭煡鐪嬭鎴愬憳淇℃伅"
             )
 
-        return create_response(data=member.get_safe_dict(), message="成功获取成员信息")
+        return create_response(data=member.get_safe_dict(), message="鎴愬姛鑾峰彇鎴愬憳淇℃伅")
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"获取成员详情失败: {str(e)}")
+        logger.error(f"鑾峰彇鎴愬憳璇︽儏澶辫触: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="获取成员详情失败"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="鑾峰彇鎴愬憳璇︽儏澶辫触"
         )
 
 
@@ -162,30 +172,30 @@ async def create_member(
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """
-    创建新成员
-    仅管理员可操作
+    鍒涘缓鏂版垚鍛?
+    浠呯鐞嗗憳鍙搷浣?
     """
     try:
-        # 检查用户名是否已存在
+        # 妫€鏌ョ敤鎴峰悕鏄惁宸插瓨鍦?
         query = select(Member).where(Member.username == member_data.username)
         result = await db.execute(query)
         if result.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"用户名 {member_data.username} 已存在",
+                detail=f"鐢ㄦ埛鍚?{member_data.username} 宸插瓨鍦?,
             )
 
-        # 检查学号是否已存在（仅当学号不为空时）
+        # 妫€鏌ュ鍙锋槸鍚﹀凡瀛樺湪锛堜粎褰撳鍙蜂笉涓虹┖鏃讹級
         if member_data.student_id:
             query = select(Member).where(Member.student_id == member_data.student_id)
             result = await db.execute(query)
             if result.scalar_one_or_none():
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=f"学号 {member_data.student_id} 已存在",
+                    detail=f"瀛﹀彿 {member_data.student_id} 宸插瓨鍦?,
                 )
 
-        # 创建新成员
+        # 鍒涘缓鏂版垚鍛?
         new_member = Member(
             username=member_data.username,
             name=member_data.name,
@@ -205,20 +215,20 @@ async def create_member(
         await db.commit()
         await db.refresh(new_member)
 
-        logger.info(f"新成员创建成功: {new_member.username} by {current_user.username}")
+        logger.info(f"鏂版垚鍛樺垱寤烘垚鍔? {new_member.username} by {current_user.username}")
 
         return create_response(
             data=new_member.get_safe_dict(),
-            message=f"成功创建成员：{new_member.name} ({new_member.student_id})",
+            message=f"鎴愬姛鍒涘缓鎴愬憳锛歿new_member.name} ({new_member.student_id})",
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"创建成员失败: {str(e)}")
+        logger.error(f"鍒涘缓鎴愬憳澶辫触: {str(e)}")
         await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="创建成员失败"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="鍒涘缓鎴愬憳澶辫触"
         )
 
 
@@ -230,8 +240,8 @@ async def update_member(
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """
-    更新成员信息
-    管理员可更新所有，普通用户只能更新自己的部分信息
+    鏇存柊鎴愬憳淇℃伅
+    绠＄悊鍛樺彲鏇存柊鎵€鏈夛紝鏅€氱敤鎴峰彧鑳芥洿鏂拌嚜宸辩殑閮ㄥ垎淇℃伅
     """
     try:
         query = select(Member).where(Member.id == member_id)
@@ -240,27 +250,27 @@ async def update_member(
 
         if not member:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在"
+                status_code=status.HTTP_404_NOT_FOUND, detail="鎴愬憳涓嶅瓨鍦?
             )
 
-        # 权限检查
+        # 鏉冮檺妫€鏌?
         can_update_all = current_user.can_manage_group
         is_self_update = current_user.id == member_id
 
         if not can_update_all and not is_self_update:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="无权限更新该成员信息"
+                status_code=status.HTTP_403_FORBIDDEN, detail="鏃犳潈闄愭洿鏂拌鎴愬憳淇℃伅"
             )
 
-        # 更新字段
+        # 鏇存柊瀛楁
         update_data = member_data.dict(exclude_unset=True)
 
-        # 普通用户只能更新部分字段
+        # 鏅€氱敤鎴峰彧鑳芥洿鏂伴儴鍒嗗瓧娈?
         if not can_update_all:
             allowed_fields = {"username", "phone"}
             update_data = {k: v for k, v in update_data.items() if k in allowed_fields}
 
-        # 检查用户名唯一性
+        # 妫€鏌ョ敤鎴峰悕鍞竴鎬?
         if "username" in update_data and update_data["username"] != member.username:
             query = select(Member).where(
                 and_(Member.username == update_data["username"], Member.id != member_id)
@@ -269,7 +279,7 @@ async def update_member(
             if result.scalar_one_or_none():
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=f"用户名 {update_data['username']} 已存在",
+                    detail=f"鐢ㄦ埛鍚?{update_data['username']} 宸插瓨鍦?,
                 )
 
         if "student_id" in update_data:
@@ -287,27 +297,27 @@ async def update_member(
                 if result.scalar_one_or_none():
                     raise HTTPException(
                         status_code=status.HTTP_409_CONFLICT,
-                        detail=f"学号 {student_id_value} 已存在",
+                        detail=f"瀛﹀彿 {student_id_value} 宸插瓨鍦?,
                     )
 
-        # 应用更新
+        # 搴旂敤鏇存柊
         for field, value in update_data.items():
             setattr(member, field, value)
 
         await db.commit()
         await db.refresh(member)
 
-        logger.info(f"成员信息更新: {member.username} by {current_user.username}")
+        logger.info(f"鎴愬憳淇℃伅鏇存柊: {member.username} by {current_user.username}")
 
-        return create_response(data=member.get_safe_dict(), message="成员信息更新成功")
+        return create_response(data=member.get_safe_dict(), message="鎴愬憳淇℃伅鏇存柊鎴愬姛")
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"更新成员信息失败: {str(e)}")
+        logger.error(f"鏇存柊鎴愬憳淇℃伅澶辫触: {str(e)}")
         await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="更新成员信息失败"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="鏇存柊鎴愬憳淇℃伅澶辫触"
         )
 
 
@@ -318,8 +328,8 @@ async def delete_member(
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """
-    删除成员
-    仅管理员可操作
+    鍒犻櫎鎴愬憳
+    浠呯鐞嗗憳鍙搷浣?
     """
     try:
         query = select(Member).where(Member.id == member_id)
@@ -328,13 +338,13 @@ async def delete_member(
 
         if not member:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在"
+                status_code=status.HTTP_404_NOT_FOUND, detail="鎴愬憳涓嶅瓨鍦?
             )
 
-        # 不能删除自己
+        # 涓嶈兘鍒犻櫎鑷繁
         if member.id == current_user.id:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="不能删除自己的账户"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="涓嶈兘鍒犻櫎鑷繁鐨勮处鎴?
             )
 
         member_name = member.name
@@ -343,50 +353,41 @@ async def delete_member(
         await db.delete(member)
         await db.commit()
 
-        logger.info(f"成员删除: {member_username} by {current_user.username}")
+        logger.info(f"鎴愬憳鍒犻櫎: {member_username} by {current_user.username}")
 
         return create_response(
-            data={"deleted_id": member_id}, message=f"成功删除成员：{member_name}"
+            data={"deleted_id": member_id}, message=f"鎴愬姛鍒犻櫎鎴愬憳锛歿member_name}"
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"删除成员失败: {str(e)}")
+        logger.error(f"鍒犻櫎鎴愬憳澶辫触: {str(e)}")
         await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="删除成员失败"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="鍒犻櫎鎴愬憳澶辫触"
         )
 
 
-@router.post("/import", response_model=Dict[str, Any])
-async def import_members(
+async def _import_members_from_payload(
     import_data: MemberImportRequest,
-    current_user: Member = Depends(get_current_active_admin),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession,
 ) -> Dict[str, Any]:
-    """
-    批量导入成员
-    全新的Excel处理逻辑，避免greenlet问题
-    """
-    logger.info(f"开始批量导入成员，操作者: {current_user.username}")
-
+    """Share member import execution between JSON and Excel endpoints."""
     total_processed = len(import_data.members)
     successful_imports = 0
     failed_imports = 0
     skipped_duplicates = 0
-    errors = []
+    errors: List[str] = []
 
     timestamp = int(time.time())
 
     for index, member_item in enumerate(import_data.members):
         try:
-            # 生成用户名（如果没有提供）
             username = member_item.username
             if not username:
                 username = f"user_{timestamp}_{index + 1:03d}"
 
-            # 检查重复（只有在有值的情况下才检查）
             duplicate_conditions = []
             if username:
                 duplicate_conditions.append(Member.username == username)
@@ -396,28 +397,23 @@ async def import_members(
             existing_member = None
             if duplicate_conditions:
                 duplicate_check = select(Member).where(or_(*duplicate_conditions))
-                result = await db.execute(duplicate_check)
-                existing_member = result.scalar_one_or_none()
+                duplicate_result = await db.execute(duplicate_check)
+                existing_member = duplicate_result.scalar_one_or_none()
 
             if existing_member:
                 if import_data.skip_duplicates:
                     skipped_duplicates += 1
-                    logger.info(
-                        f"跳过重复成员: {member_item.name} "
-                        f"({member_item.student_id or username})"
-                    )
-                    continue
-                else:
-                    failed_imports += 1
-                    duplicate_field = (
-                        "用户名" if existing_member.username == username else "学号"
-                    )
-                    errors.append(
-                        f"第{index + 1}行: {duplicate_field}已存在 - {member_item.name}"
-                    )
                     continue
 
-            # 角色映射
+                failed_imports += 1
+                duplicate_field = (
+                    "用户名" if existing_member.username == username else "学号"
+                )
+                errors.append(
+                    f"第 {index + 1} 行: {duplicate_field}已存在 - {member_item.name}"
+                )
+                continue
+
             role_mapping = {
                 "admin": UserRole.ADMIN,
                 "group_leader": UserRole.GROUP_LEADER,
@@ -426,73 +422,160 @@ async def import_members(
             }
             role = role_mapping.get(member_item.role or "member", UserRole.MEMBER)
 
-            # 创建新成员，确保所有必填字段都有值
-            try:
-                new_member = Member(
-                    username=username,
-                    name=member_item.name.strip(),
-                    student_id=(
-                        member_item.student_id.strip()
-                        if member_item.student_id
-                        else None
-                    ),
-                    phone=member_item.phone.strip() if member_item.phone else None,
-                    department=(member_item.department or "信息化建设处").strip(),
-                    class_name=member_item.class_name.strip(),
-                    group_id=member_item.group_id,
-                    join_date=date.today(),
-                    password_hash=get_password_hash("123456"),
-                    role=role,
-                    is_active=True,
-                    is_verified=False,
-                    profile_completed=False,
-                )
-            except Exception as create_error:
-                failed_imports += 1
-                errors.append(f"第{index + 1}行: 数据创建失败 - {str(create_error)}")
-                logger.error(f"创建成员对象失败: {str(create_error)}")
-                continue
+            new_member = Member(
+                username=username,
+                name=member_item.name.strip(),
+                student_id=member_item.student_id.strip()
+                if member_item.student_id
+                else None,
+                phone=member_item.phone.strip() if member_item.phone else None,
+                department=(member_item.department or "信息化建设处").strip(),
+                class_name=member_item.class_name.strip(),
+                group_id=member_item.group_id,
+                join_date=date.today(),
+                password_hash=get_password_hash("123456"),
+                role=role,
+                is_active=True,
+                is_verified=False,
+                profile_completed=False,
+            )
 
             db.add(new_member)
-            await db.flush()  # 获取ID但不提交
-
+            await db.flush()
             successful_imports += 1
-            logger.info(f"成功创建成员: {new_member.name} ({new_member.student_id})")
 
-        except Exception as e:
+        except Exception as exc:
             failed_imports += 1
-            error_msg = f"第{index + 1}行: {str(e)}"
-            errors.append(error_msg)
-            logger.error(f"导入第{index + 1}行失败: {str(e)}")
+            errors.append(f"第 {index + 1} 行: {str(exc)}")
+            logger.error(f"Failed to import member row {index + 1}: {str(exc)}")
 
-    # 提交事务
     if successful_imports > 0:
         try:
             await db.commit()
-            logger.info(f"批量导入提交成功: {successful_imports} 个成员")
-        except Exception as e:
+        except Exception as exc:
             await db.rollback()
-            logger.error(f"批量导入提交失败: {str(e)}")
+            logger.error(f"Commit member import failed: {str(exc)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="批量导入提交失败",
-            )
+                detail="成员批量导入提交失败",
+            ) from exc
+
+    return {
+        "total_processed": total_processed,
+        "successful_imports": successful_imports,
+        "failed_imports": failed_imports,
+        "skipped_duplicates": skipped_duplicates,
+        "errors": errors,
+    }
+
+
+@router.post("/import", response_model=Dict[str, Any])
+async def import_members(
+    import_data: MemberImportRequest,
+    current_user: Member = Depends(get_current_active_admin),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """批量导入成员（JSON 结构）。"""
+    logger.info("开始成员批量导入: operator=%s", current_user.username)
+    result = await _import_members_from_payload(import_data, db)
+    result_message = (
+        f"导入完成：成功 {result['successful_imports']} 条，"
+        f"失败 {result['failed_imports']} 条，跳过 {result['skipped_duplicates']} 条"
+    )
+    return create_response(data=result, message=result_message)
+
+
+@router.post("/import-excel", response_model=Dict[str, Any])
+async def import_members_excel(
+    file: UploadFile = File(...),
+    skip_duplicates: bool = Form(True),
+    dry_run: bool = Form(False),
+    current_user: Member = Depends(get_current_active_admin),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """通过 Excel/CSV 文件批量导入成员。"""
+    logger.info(
+        "开始 Excel 成员导入: operator=%s, filename=%s",
+        current_user.username,
+        file.filename,
+    )
+
+    import_service = DataImportService(db)
+
+    try:
+        parsed_result = await import_service.parse_member_import_file(file)
+    except ValueError as exc:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=create_response(
+                data=None,
+                message=str(exc),
+                status_code=status.HTTP_400_BAD_REQUEST,
+                success=False,
+            ),
+        )
+
+    if parsed_result["valid_rows"] == 0:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=create_response(
+                data={
+                    "total_rows": parsed_result["total_rows"],
+                    "valid_rows": 0,
+                    "invalid_rows": parsed_result["invalid_rows"],
+                    "empty_rows": parsed_result["empty_rows"],
+                    "errors": parsed_result["errors"],
+                },
+                message="导入文件校验失败，没有可导入的成员数据",
+                status_code=status.HTTP_400_BAD_REQUEST,
+                success=False,
+            ),
+        )
+
+    if dry_run:
+        return create_response(
+            data={
+                "total_rows": parsed_result["total_rows"],
+                "valid_rows": parsed_result["valid_rows"],
+                "invalid_rows": parsed_result["invalid_rows"],
+                "empty_rows": parsed_result["empty_rows"],
+                "preview_data": parsed_result["preview_data"],
+                "errors": parsed_result["errors"],
+            },
+            message="成员导入校验完成",
+        )
+
+    import_payload = MemberImportRequest(
+        members=parsed_result["members"],
+        skip_duplicates=skip_duplicates,
+    )
+    result = await _import_members_from_payload(import_payload, db)
+    result["total_processed"] += parsed_result["invalid_rows"]
+    result["failed_imports"] += parsed_result["invalid_rows"]
+    result["errors"].extend(parsed_result["errors"])
+    result["file_summary"] = {
+        "total_rows": parsed_result["total_rows"],
+        "valid_rows": parsed_result["valid_rows"],
+        "invalid_rows": parsed_result["invalid_rows"],
+        "empty_rows": parsed_result["empty_rows"],
+    }
 
     result_message = (
-        f"导入完成：成功 {successful_imports} 条，"
-        f"失败 {failed_imports} 条，跳过 {skipped_duplicates} 条"
+        f"导入完成：成功 {result['successful_imports']} 条，"
+        f"失败 {result['failed_imports']} 条，跳过 {result['skipped_duplicates']} 条"
     )
+    return create_response(data=result, message=result_message)
 
-    return create_response(
-        data={
-            "total_processed": total_processed,
-            "successful_imports": successful_imports,
-            "failed_imports": failed_imports,
-            "skipped_duplicates": skipped_duplicates,
-            "errors": errors[:10],  # 限制错误数量
-        },
-        message=result_message,
-    )
+
+@router.get("/import-template", response_model=Dict[str, Any])
+async def get_member_import_template(
+    current_user: Member = Depends(get_current_active_admin),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """获取成员导入模板元信息。"""
+    _ = current_user
+    template = await DataImportService(db).get_import_template("member_table")
+    return create_response(data=template, message="成功获取成员导入模板信息")
 
 
 @router.post("/{member_id}/change-password", response_model=Dict[str, Any])
@@ -503,8 +586,8 @@ async def change_password(
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """
-    修改密码
-    用户只能修改自己的密码，管理员可以重置任何人的密码
+    淇敼瀵嗙爜
+    鐢ㄦ埛鍙兘淇敼鑷繁鐨勫瘑鐮侊紝绠＄悊鍛樺彲浠ラ噸缃换浣曚汉鐨勫瘑鐮?
     """
     try:
         query = select(Member).where(Member.id == member_id)
@@ -513,39 +596,39 @@ async def change_password(
 
         if not member:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在"
+                status_code=status.HTTP_404_NOT_FOUND, detail="鎴愬憳涓嶅瓨鍦?
             )
 
-        # 权限检查
+        # 鏉冮檺妫€鏌?
         if current_user.id != member_id and not current_user.is_admin:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="无权限修改该成员密码"
+                status_code=status.HTTP_403_FORBIDDEN, detail="鏃犳潈闄愪慨鏀硅鎴愬憳瀵嗙爜"
             )
 
-        # 验证旧密码（仅当修改自己的密码时）
+        # 楠岃瘉鏃у瘑鐮侊紙浠呭綋淇敼鑷繁鐨勫瘑鐮佹椂锛?
         if current_user.id == member_id:
             if not verify_password(password_data.old_password, member.password_hash):
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST, detail="旧密码错误"
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="鏃у瘑鐮侀敊璇?
                 )
 
-        # 更新密码
+        # 鏇存柊瀵嗙爜
         member.password_hash = get_password_hash(password_data.new_password)
         await db.commit()
 
-        logger.info(f"密码修改成功: {member.username} by {current_user.username}")
+        logger.info(f"瀵嗙爜淇敼鎴愬姛: {member.username} by {current_user.username}")
 
         return create_response(
-            data={"updated_member_id": member_id}, message="密码修改成功"
+            data={"updated_member_id": member_id}, message="瀵嗙爜淇敼鎴愬姛"
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"修改密码失败: {str(e)}")
+        logger.error(f"淇敼瀵嗙爜澶辫触: {str(e)}")
         await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="修改密码失败"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="淇敼瀵嗙爜澶辫触"
         )
 
 
@@ -555,30 +638,30 @@ async def get_member_stats(
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """
-    获取成员统计信息
+    鑾峰彇鎴愬憳缁熻淇℃伅
     """
     try:
-        # 总成员数
+        # 鎬绘垚鍛樻暟
         total_query = select(func.count(Member.id))
         result = await db.execute(total_query)
         total_members = result.scalar()
 
-        # 在职成员数
+        # 鍦ㄨ亴鎴愬憳鏁?
         active_query = select(func.count(Member.id)).where(Member.is_active)
         result = await db.execute(active_query)
         active_members = result.scalar()
 
-        # 离职成员数
+        # 绂昏亴鎴愬憳鏁?
         inactive_members = (total_members or 0) - (active_members or 0)
 
-        # 按角色统计
+        # 鎸夎鑹茬粺璁?
         role_stats = {}
         for role in UserRole:
             role_query = select(func.count(Member.id)).where(Member.role == role)
             result = await db.execute(role_query)
             role_stats[role.value] = result.scalar()
 
-        # 按部门统计
+        # 鎸夐儴闂ㄧ粺璁?
         dept_query = select(Member.department, func.count(Member.id)).group_by(
             Member.department
         )
@@ -593,22 +676,22 @@ async def get_member_stats(
                 "role_stats": role_stats,
                 "department_stats": dept_stats,
             },
-            message="成员统计信息获取成功",
+            message="鎴愬憳缁熻淇℃伅鑾峰彇鎴愬姛",
         )
 
     except Exception as e:
-        logger.error(f"获取成员统计失败: {str(e)}")
+        logger.error(f"鑾峰彇鎴愬憳缁熻澶辫触: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="获取成员统计失败"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="鑾峰彇鎴愬憳缁熻澶辫触"
         )
 
 
 @router.get("/health", response_model=Dict[str, Any])
 async def members_health_check() -> Dict[str, Any]:
-    """成员管理模块健康检查"""
+    """鎴愬憳绠＄悊妯″潡鍋ュ悍妫€鏌?""
     return create_response(
         data={"module": "members", "status": "healthy", "version": "2.0"},
-        message="成员管理模块运行正常",
+        message="鎴愬憳绠＄悊妯″潡杩愯姝ｅ父",
     )
 
 
@@ -620,33 +703,33 @@ async def complete_profile(
     current_user: Member = Depends(get_current_active_user),
 ) -> JSONResponse:
     """
-    完善个人信息
-    用于首次登录时完善用户信息
+    瀹屽杽涓汉淇℃伅
+    鐢ㄤ簬棣栨鐧诲綍鏃跺畬鍠勭敤鎴蜂俊鎭?
     """
     logger.info(f"User {current_user.id} completing profile for member {member_id}")
 
-    # 检查权限：只能完善自己的信息或管理员可以完善任何人的信息
+    # 妫€鏌ユ潈闄愶細鍙兘瀹屽杽鑷繁鐨勪俊鎭垨绠＄悊鍛樺彲浠ュ畬鍠勪换浣曚汉鐨勪俊鎭?
     if current_user.id != member_id and current_user.role != UserRole.ADMIN:
         logger.warning(
             f"User {current_user.id} attempted to complete profile "
             f"for member {member_id}"
         )
-        raise HTTPException(status_code=403, detail="无权限完善此用户信息")
+        raise HTTPException(status_code=403, detail="鏃犳潈闄愬畬鍠勬鐢ㄦ埛淇℃伅")
 
     try:
-        # 查询成员
+        # 鏌ヨ鎴愬憳
         result = await db.execute(select(Member).where(Member.id == member_id))
         member = result.scalar_one_or_none()
 
         if not member:
-            raise HTTPException(status_code=404, detail="成员不存在")
+            raise HTTPException(status_code=404, detail="鎴愬憳涓嶅瓨鍦?)
 
-        # 更新信息
+        # 鏇存柊淇℃伅
         update_data = profile_data.dict(exclude_unset=True)
         for field, value in update_data.items():
             setattr(member, field, value)
 
-        # 标记为已完善信息
+        # 鏍囪涓哄凡瀹屽杽淇℃伅
         member.profile_completed = True
 
         await db.commit()
@@ -654,13 +737,13 @@ async def complete_profile(
 
         logger.info(f"Profile completed for member {member_id}")
 
-        # 返回更新后的成员信息
+        # 杩斿洖鏇存柊鍚庣殑鎴愬憳淇℃伅
         response_data = create_response(
             data={
                 "id": member.id,
                 "username": member.username,
                 "profile_completed": member.profile_completed,
-                "message": "个人信息完善成功",
+                "message": "涓汉淇℃伅瀹屽杽鎴愬姛",
             }
         )
         return JSONResponse(content=response_data)
@@ -670,4 +753,4 @@ async def complete_profile(
     except Exception as e:
         logger.error(f"Error completing profile for member {member_id}: {str(e)}")
         await db.rollback()
-        raise HTTPException(status_code=500, detail="完善信息失败")
+        raise HTTPException(status_code=500, detail="瀹屽杽淇℃伅澶辫触")

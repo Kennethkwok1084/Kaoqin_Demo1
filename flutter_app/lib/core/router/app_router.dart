@@ -12,6 +12,12 @@ import '../../features/reports/reports_screen.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/repositories/auth_repository.dart';
 
+class _RouterRefreshNotifier extends ChangeNotifier {
+  void refresh() {
+    notifyListeners();
+  }
+}
+
 final GlobalKey<NavigatorState> _rootNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');
 final GlobalKey<NavigatorState> _shellNavigatorDashboardKey =
@@ -26,12 +32,18 @@ final GlobalKey<NavigatorState> _shellNavigatorReportsKey =
     GlobalKey<NavigatorState>(debugLabel: 'shellReports');
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authRepository = ref.watch(authRepositoryProvider);
-  // Watch auth state to trigger rebuilds on login/logout
-  ref.watch(authStateProvider);
+  final authRepository = ref.read(authRepositoryProvider);
+  final refreshNotifier = _RouterRefreshNotifier();
 
-  return GoRouter(
+  ref.listen(authStateProvider, (_, __) {
+    refreshNotifier.refresh();
+  });
+
+  ref.onDispose(refreshNotifier.dispose);
+
+  final router = GoRouter(
     navigatorKey: _rootNavigatorKey,
+    refreshListenable: refreshNotifier,
     initialLocation: authRepository.isLoggedIn ? '/dashboard' : '/login',
     redirect: (context, state) {
       final isLoggedIn = authRepository.isLoggedIn;
@@ -105,4 +117,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  ref.onDispose(router.dispose);
+  return router;
 });

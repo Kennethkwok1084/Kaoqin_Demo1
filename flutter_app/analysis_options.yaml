@@ -1,10 +1,6 @@
-include: package:flutter_lints/flutter.yaml
-
 analyzer:
-  plugins:
-    - custom_lint
   errors:
-    invalid_annotation_target: ignore  # freezed 需要
+    invalid_annotation_target: ignore
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"

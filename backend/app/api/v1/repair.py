@@ -6,8 +6,9 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Union
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi import status as http_status
+from fastapi.responses import JSONResponse
 from sqlalchemy import and_, delete, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
@@ -34,6 +35,7 @@ from app.models.task import (
     TaskTagType,
     TaskType,
 )
+from app.services.import_service import DataImportService
 from app.schemas.task import (
     TaskAssignment,
     TaskCreate,
@@ -3736,6 +3738,18 @@ async def import_maintenance_orders(
     current_user: Member = Depends(get_current_active_group_leader),
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
+    import_service = DataImportService(db)
+    maintenance_data = import_data.get("maintenance_orders", [])
+    parsed_result = import_service.parse_maintenance_order_import_rows(maintenance_data)
+
+    return await _execute_maintenance_order_import(
+        parsed_result=parsed_result,
+        current_user=current_user,
+        import_service=import_service,
+        dry_run=bool(import_data.get("dry_run", False)),
+        skip_duplicates=bool(import_data.get("skip_duplicates", True)),
+    )
+
     """
     维修单数据导入
 
@@ -4055,6 +4069,124 @@ async def import_maintenance_orders(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="维修单导入失败",
         )
+
+
+def _build_maintenance_import_response(
+    parsed_result: Dict[str, Any],
+    import_result: Any,
+) -> Dict[str, Any]:
+    successful_imports = getattr(import_result, "created_tasks", 0) + getattr(
+        import_result, "updated_tasks", 0
+    )
+    skipped_duplicates = getattr(import_result, "skipped_rows", 0)
+    import_errors = list(getattr(import_result, "errors", []))
+
+    return {
+        "total_rows": parsed_result.get("total_rows", 0),
+        "valid_rows": parsed_result.get("valid_rows", 0),
+        "invalid_rows": parsed_result.get("invalid_rows", 0),
+        "empty_rows": parsed_result.get("empty_rows", 0),
+        "successful_imports": successful_imports,
+        "failed_imports": parsed_result.get("invalid_rows", 0) + len(import_errors),
+        "skipped_duplicates": skipped_duplicates,
+        "errors": (parsed_result.get("errors", []) + import_errors)[:20],
+        "file_summary": {
+            "total_rows": parsed_result.get("total_rows", 0),
+            "valid_rows": parsed_result.get("valid_rows", 0),
+            "invalid_rows": parsed_result.get("invalid_rows", 0),
+            "empty_rows": parsed_result.get("empty_rows", 0),
+        },
+    }
+
+
+async def _execute_maintenance_order_import(
+    parsed_result: Dict[str, Any],
+    current_user: Member,
+    import_service: DataImportService,
+    dry_run: bool,
+    skip_duplicates: bool,
+) -> Dict[str, Any]:
+    if parsed_result["valid_rows"] == 0:
+        return JSONResponse(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            content=create_response(
+                data={
+                    "total_rows": parsed_result["total_rows"],
+                    "valid_rows": 0,
+                    "invalid_rows": parsed_result["invalid_rows"],
+                    "empty_rows": parsed_result["empty_rows"],
+                    "errors": parsed_result["errors"],
+                },
+                message="瀵煎叆鏁版嵁鏍￠獙澶辫触锛屾病鏈夊彲瀵煎叆鐨勭淮淇崟鏁版嵁",
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                success=False,
+            ),
+        )
+
+    if dry_run:
+        return create_response(
+            data={
+                "total_rows": parsed_result["total_rows"],
+                "valid_rows": parsed_result["valid_rows"],
+                "invalid_rows": parsed_result["invalid_rows"],
+                "empty_rows": parsed_result["empty_rows"],
+                "preview_data": parsed_result["preview_data"],
+                "errors": parsed_result["errors"],
+            },
+            message="缁翠慨鍗曞鍏ユ牎楠屽畬鎴愩€?",
+        )
+
+    import_result = await import_service.bulk_import_tasks(
+        task_data_list=parsed_result["maintenance_orders"],
+        importer_id=current_user.id,
+        import_options={
+            "skip_duplicates": skip_duplicates,
+            "update_existing": False,
+        },
+    )
+    result = _build_maintenance_import_response(parsed_result, import_result)
+
+    return create_response(
+        data=result,
+        message=(
+            f"瀵煎叆瀹屾垚锛氭垚鍔?{result['successful_imports']} 鏉★紝"
+            f"澶辫触 {result['failed_imports']} 鏉★紝"
+            f"璺宠繃 {result['skipped_duplicates']} 鏉°€?"
+        ),
+    )
+
+
+@router.post("/maintenance-orders/import-excel", response_model=Dict[str, Any])
+async def import_maintenance_orders_excel(
+    file: UploadFile = File(...),
+    dry_run: bool = Form(False),
+    skip_duplicates: bool = Form(True),
+    current_user: Member = Depends(get_current_active_group_leader),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """通过 Excel/CSV 导入维修单。"""
+    import_service = DataImportService(db)
+
+    try:
+        parsed_result = await import_service.parse_maintenance_order_import_file(file)
+    except ValueError as exc:
+        return JSONResponse(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            content=create_response(
+                data=None,
+                message=str(exc),
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                success=False,
+            ),
+        )
+
+    return await _execute_maintenance_order_import(
+        parsed_result=parsed_result,
+        current_user=current_user,
+        import_service=import_service,
+        dry_run=dry_run,
+        skip_duplicates=skip_duplicates,
+    )
 
 
 @router.get("/maintenance-orders/template", response_model=Dict[str, Any])

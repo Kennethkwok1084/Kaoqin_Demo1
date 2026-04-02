@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'core/localization/app_locale.dart';
+import 'core/localization/app_strings.dart';
 import 'core/router/app_router.dart';
 import 'core/utils/prefs_provider.dart';
+import 'shared/theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,12 +29,23 @@ class AttendanceApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final language = ref.watch(appLanguageProvider);
+
     return MaterialApp.router(
-      title: '考勤与任务管理系统',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
+      title: AppStrings(language).appTitle,
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light(),
+      locale: language.locale,
+      supportedLocales: const [
+        Locale('zh'),
+        Locale('en'),
+      ],
+      localizationsDelegates: const [
+        AppStrings.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       routerConfig: router,
     );
   }
