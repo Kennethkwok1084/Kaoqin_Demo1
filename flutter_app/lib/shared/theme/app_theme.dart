@@ -1,5 +1,16 @@
 import 'package:flutter/material.dart';
 
+class AppTypography {
+  static const String fontFamily = 'MiSans';
+  static const List<String> fontFamilyFallback = [
+    'Microsoft YaHei UI',
+    'Microsoft YaHei',
+    'PingFang SC',
+    'Noto Sans CJK SC',
+    'Source Han Sans SC',
+  ];
+}
+
 class AppColors {
   static const Color background = Color(0xFFF2F2F7);
   static const Color backgroundStrong = Color(0xFFF8FAFF);
@@ -21,6 +32,7 @@ class AppTheme {
   static ThemeData light() {
     final base = ThemeData(
       useMaterial3: true,
+      fontFamily: AppTypography.fontFamily,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.accent,
         brightness: Brightness.light,
@@ -36,38 +48,50 @@ class AppTheme {
       textTheme: base.textTheme.copyWith(
         headlineLarge: const TextStyle(
           fontSize: 34,
+          fontFamily: AppTypography.fontFamily,
+          fontFamilyFallback: AppTypography.fontFamilyFallback,
           fontWeight: FontWeight.w700,
-          letterSpacing: -0.7,
           color: AppColors.textPrimary,
         ),
         headlineMedium: const TextStyle(
           fontSize: 28,
+          fontFamily: AppTypography.fontFamily,
+          fontFamilyFallback: AppTypography.fontFamilyFallback,
           fontWeight: FontWeight.w700,
-          letterSpacing: -0.5,
           color: AppColors.textPrimary,
         ),
         titleLarge: const TextStyle(
           fontSize: 20,
+          fontFamily: AppTypography.fontFamily,
+          fontFamilyFallback: AppTypography.fontFamilyFallback,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
         ),
         titleMedium: const TextStyle(
           fontSize: 16,
-          fontWeight: FontWeight.w600,
+          fontFamily: AppTypography.fontFamily,
+          fontFamilyFallback: AppTypography.fontFamilyFallback,
+          fontWeight: FontWeight.w500,
           color: AppColors.textPrimary,
         ),
         bodyLarge: const TextStyle(
           fontSize: 15,
+          fontFamily: AppTypography.fontFamily,
+          fontFamilyFallback: AppTypography.fontFamilyFallback,
           height: 1.45,
           color: AppColors.textPrimary,
         ),
         bodyMedium: const TextStyle(
           fontSize: 14,
+          fontFamily: AppTypography.fontFamily,
+          fontFamilyFallback: AppTypography.fontFamilyFallback,
           height: 1.45,
           color: AppColors.textPrimary,
         ),
         bodySmall: const TextStyle(
           fontSize: 12,
+          fontFamily: AppTypography.fontFamily,
+          fontFamilyFallback: AppTypography.fontFamilyFallback,
           height: 1.4,
           color: AppColors.textSecondary,
         ),

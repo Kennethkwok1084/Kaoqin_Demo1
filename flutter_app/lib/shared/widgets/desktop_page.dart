@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'glass_panel.dart';
 
-class DesktopPage extends StatelessWidget {
+class DesktopPage extends StatefulWidget {
   const DesktopPage({
     super.key,
     required this.children,
@@ -22,20 +22,43 @@ class DesktopPage extends StatelessWidget {
   final EdgeInsetsGeometry padding;
 
   @override
+  State<DesktopPage> createState() => _DesktopPageState();
+}
+
+class _DesktopPageState extends State<DesktopPage> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scrollbar(
+      controller: _scrollController,
       child: SingleChildScrollView(
-        padding: padding,
+        controller: _scrollController,
+        padding: widget.padding,
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: maxWidth),
+            constraints: BoxConstraints(maxWidth: widget.maxWidth),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (title != null || subtitle != null || actions.isNotEmpty)
+                if (widget.title != null ||
+                    widget.subtitle != null ||
+                    widget.actions.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 24),
                     child: Row(
@@ -45,12 +68,12 @@ class DesktopPage extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (title != null)
-                                Text(title!, style: theme.textTheme.headlineMedium),
-                              if (subtitle != null) ...[
+                              if (widget.title != null)
+                                Text(widget.title!, style: theme.textTheme.headlineMedium),
+                              if (widget.subtitle != null) ...[
                                 const SizedBox(height: 8),
                                 Text(
-                                  subtitle!,
+                                  widget.subtitle!,
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: AppColors.textSecondary,
                                   ),
@@ -59,18 +82,18 @@ class DesktopPage extends StatelessWidget {
                             ],
                           ),
                         ),
-                        if (actions.isNotEmpty) ...[
+                        if (widget.actions.isNotEmpty) ...[
                           const SizedBox(width: 16),
                           Wrap(
                             spacing: 12,
                             runSpacing: 12,
-                            children: actions,
+                            children: widget.actions,
                           ),
                         ],
                       ],
                     ),
                   ),
-                ...children,
+                ...widget.children,
               ],
             ),
           ),

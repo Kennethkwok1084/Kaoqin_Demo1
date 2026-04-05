@@ -318,7 +318,7 @@ class _CompactShell extends StatelessWidget {
                   language == AppLanguage.zh ? 'EN' : '中',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                       ),
                 ),
                 style: IconButton.styleFrom(
@@ -427,7 +427,9 @@ class _TopToolbar extends StatelessWidget {
               Text(
                 displayName,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+                      fontFamily: AppTypography.fontFamily,
+                      fontFamilyFallback: AppTypography.fontFamilyFallback,
+                      fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                     ),
               ),
@@ -454,8 +456,10 @@ class _TopToolbar extends StatelessWidget {
                 Text(
                   s.departmentName,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontFamily: AppTypography.fontFamily,
+                        fontFamilyFallback: AppTypography.fontFamilyFallback,
                         color: AppColors.accent,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                         letterSpacing: 0.3,
                       ),
                 ),
@@ -478,8 +482,10 @@ class _TopToolbar extends StatelessWidget {
                       icon: Text(
                         language == AppLanguage.zh ? 'EN' : '中',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontFamily: AppTypography.fontFamily,
+                              fontFamilyFallback: AppTypography.fontFamilyFallback,
                               color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w500,
                             ),
                       ),
                       style: IconButton.styleFrom(
@@ -501,9 +507,11 @@ class _TopToolbar extends StatelessWidget {
                     children: [
                       Text(
                         s.departmentName,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontFamily: AppTypography.fontFamily,
+                              fontFamilyFallback: AppTypography.fontFamilyFallback,
                               color: AppColors.accent,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w500,
                               letterSpacing: 0.3,
                             ),
                       ),
@@ -525,8 +533,10 @@ class _TopToolbar extends StatelessWidget {
                   icon: Text(
                     language == AppLanguage.zh ? 'EN' : '中',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontFamily: AppTypography.fontFamily,
+                          fontFamilyFallback: AppTypography.fontFamilyFallback,
                           color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w500,
                         ),
                   ),
                   style: IconButton.styleFrom(
@@ -580,7 +590,9 @@ class _BrandBlock extends StatelessWidget {
               Text(
                 s.appTitle,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
+                      fontFamily: AppTypography.fontFamily,
+                      fontFamilyFallback: AppTypography.fontFamilyFallback,
+                      fontWeight: FontWeight.w600,
                     ),
               ),
               const SizedBox(height: 4),
@@ -644,8 +656,10 @@ class _SidebarItem extends StatelessWidget {
                 child: Text(
                   destination.label,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontFamily: AppTypography.fontFamily,
+                        fontFamilyFallback: AppTypography.fontFamilyFallback,
                         color: selected ? Colors.white : AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                 ),
               ),
@@ -661,6 +675,8 @@ class _SidebarItem extends StatelessWidget {
                   child: Text(
                     destination.badge!,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontFamily: AppTypography.fontFamily,
+                          fontFamilyFallback: AppTypography.fontFamilyFallback,
                           color: selected ? Colors.white : AppColors.danger,
                           fontWeight: FontWeight.w700,
                         ),
@@ -705,8 +721,10 @@ class _CompactNavButton extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontFamily: AppTypography.fontFamily,
+                    fontFamilyFallback: AppTypography.fontFamilyFallback,
                     color: selected ? AppColors.accent : AppColors.textSecondary,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                   ),
             ),
           ],
@@ -743,8 +761,10 @@ class _SidebarAction extends StatelessWidget {
             Text(
               label,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontFamily: AppTypography.fontFamily,
+                    fontFamilyFallback: AppTypography.fontFamilyFallback,
                     color: foregroundColor,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
             ),
           ],

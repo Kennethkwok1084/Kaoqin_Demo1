@@ -10,7 +10,7 @@ final dioProvider = Provider<Dio>((ref) {
   // Keep env override support, but default to the current LAN backend.
   const baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.47.100:19991/api/v1',
+    defaultValue: 'http://10.0.0.105:19991/api/v1',
   );
 
   final dio = Dio(
