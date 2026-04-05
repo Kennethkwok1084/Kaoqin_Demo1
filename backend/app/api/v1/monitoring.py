@@ -6,7 +6,8 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Union
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi.responses import JSONResponse
 from fastapi import status as http_status
 from sqlalchemy import and_, delete, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -42,6 +43,7 @@ from app.schemas.task import (
     TaskUpdate,
     WorkHourCalculation,
 )
+from app.services.import_service import DataImportService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -96,6 +98,123 @@ def _derive_assistance_status_from_text(
     if start > now:
         return TaskStatus.PENDING
     return TaskStatus.IN_PROGRESS
+
+
+async def _import_assistance_tasks_from_payload(
+    assistance_tasks: List[Dict[str, Any]],
+    current_user: Member,
+    db: AsyncSession,
+) -> Dict[str, Any]:
+    """Import assistance tasks from normalized payload rows."""
+    logger.info("Starting assistance tasks import by user %s", current_user.student_id)
+
+    if not assistance_tasks:
+        raise HTTPException(status_code=400, detail="没有提供协助任务数据")
+
+    result = {
+        "success": 0,
+        "failed": 0,
+        "matched_members": 0,
+        "total_duration": 0,
+        "errors": [],
+    }
+
+    for idx, task_data in enumerate(assistance_tasks):
+        try:
+            required_fields = [
+                "assistance_date",
+                "location",
+                "task_description",
+                "duration_minutes",
+            ]
+            missing_fields = [
+                field for field in required_fields if not task_data.get(field)
+            ]
+
+            if missing_fields:
+                error_msg = f"第{idx+1}行: 缺少必填字段: {', '.join(missing_fields)}"
+                result["errors"].append(error_msg)
+                result["failed"] += 1
+                continue
+
+            assistance_date = task_data.get("assistance_date")
+            if isinstance(assistance_date, str):
+                from dateutil import parser
+
+                assistance_date = parser.parse(assistance_date)
+            elif not isinstance(assistance_date, datetime):
+                error_msg = f"第{idx+1}行: 协助日期格式不正确"
+                result["errors"].append(error_msg)
+                result["failed"] += 1
+                continue
+
+            assistance_date = _ensure_aware(assistance_date)
+
+            duration_minutes = task_data.get("duration_minutes", 0)
+            if not isinstance(duration_minutes, (int, float)) or duration_minutes <= 0:
+                error_msg = f"第{idx+1}行: 协助时长必须是大于0的数字"
+                result["errors"].append(error_msg)
+                result["failed"] += 1
+                continue
+
+            duration_minutes = int(duration_minutes)
+            end_time = assistance_date + timedelta(minutes=duration_minutes)
+
+            submitter = (task_data.get("submitter") or "").strip()
+            matched_member = None
+            if submitter:
+                member_query = select(Member).where(
+                    or_(
+                        Member.name.ilike(f"%{submitter}%"),
+                        Member.student_id.ilike(f"%{submitter}%"),
+                    )
+                )
+                member_result = await db.execute(member_query)
+                matched_member = member_result.scalar_one_or_none()
+
+                if matched_member:
+                    result["matched_members"] += 1
+
+            status_raw = str(
+                task_data.get("status") or task_data.get("assistance_status") or ""
+            )
+            status = _derive_assistance_status_from_text(
+                status_raw,
+                assistance_date,
+                end_time,
+            )
+
+            new_task = AssistanceTask(
+                title=f"协助任务 - {task_data.get('location', '未知地点')}",
+                description=task_data.get("task_description", ""),
+                member_id=matched_member.id if matched_member else current_user.id,
+                assisted_department=task_data.get("location", ""),
+                assisted_person=submitter,
+                start_time=assistance_date,
+                end_time=end_time,
+                work_minutes=duration_minutes,
+                status=status,
+            )
+
+            db.add(new_task)
+            await db.flush()
+
+            total_duration = duration_minutes
+            if task_data.get("custom_duration_minutes"):
+                total_duration += int(task_data.get("custom_duration_minutes", 0))
+
+            result["total_duration"] += total_duration
+            result["success"] += 1
+
+        except Exception as exc:
+            logger.error("Error processing assistance task %s: %s", idx + 1, str(exc))
+            result["errors"].append(f"第{idx+1}行: 处理失败 - {str(exc)}")
+            result["failed"] += 1
+            continue
+
+    await db.commit()
+    logger.info("Assistance tasks import completed: %s", result)
+    return result
 
 # ============= 通用任务 =============
 @router.get("/monitoring", response_model=Dict[str, Any])
@@ -1059,135 +1178,20 @@ async def import_assistance_tasks(
         Dict: 导入结果统计
     """
     try:
-        from datetime import datetime, timezone
-        from app.models.task import AssistanceTask, TaskStatus, TaskType
-        from app.services.work_hours_service import WorkHoursCalculationService
-
-        logger.info(f"Starting assistance tasks import by user {current_user.student_id}")
-
         assistance_tasks = import_data.get("assistance_tasks", [])
-
-        if not assistance_tasks:
-            raise HTTPException(
-                status_code=400,
-                detail="没有提供协助任务数据"
-            )
-
-        result = {
-            "success": 0,
-            "failed": 0,
-            "matched_members": 0,
-            "total_duration": 0,
-            "errors": []
-        }
-
-        work_hours_service = WorkHoursCalculationService(db)
-
-        for idx, task_data in enumerate(assistance_tasks):
-            try:
-                # 验证必填字段
-                required_fields = ["assistance_date", "location", "task_description", "duration_minutes"]
-                missing_fields = [field for field in required_fields if not task_data.get(field)]
-
-                if missing_fields:
-                    error_msg = f"第{idx+1}行: 缺少必填字段: {', '.join(missing_fields)}"
-                    result["errors"].append(error_msg)
-                    result["failed"] += 1
-                    continue
-
-                # 解析协助日期
-                assistance_date = task_data.get("assistance_date")
-                if isinstance(assistance_date, str):
-                    from dateutil import parser
-                    assistance_date = parser.parse(assistance_date)
-                elif not isinstance(assistance_date, datetime):
-                    error_msg = f"第{idx+1}行: 协助日期格式不正确"
-                    result["errors"].append(error_msg)
-                    result["failed"] += 1
-                    continue
-
-                assistance_date = _ensure_aware(assistance_date)
-
-                # 验证时长
-                duration_minutes = task_data.get("duration_minutes", 0)
-                if not isinstance(duration_minutes, (int, float)) or duration_minutes <= 0:
-                    error_msg = f"第{idx+1}行: 协助时长必须是大于0的数字"
-                    result["errors"].append(error_msg)
-                    result["failed"] += 1
-                    continue
-
-                duration_minutes = int(duration_minutes)
-                end_time = assistance_date + timedelta(minutes=duration_minutes)
-
-                # 处理提交人匹配（简化版）
-                submitter = task_data.get("submitter", "").strip()
-                matched_member = None
-                if submitter:
-                    # 尝试匹配现有成员
-                    member_query = select(Member).where(
-                        or_(
-                            Member.name.ilike(f"%{submitter}%"),
-                            Member.student_id.ilike(f"%{submitter}%")
-                        )
-                    )
-                    member_result = await db.execute(member_query)
-                    matched_member = member_result.scalar_one_or_none()
-
-                    if matched_member:
-                        result["matched_members"] += 1
-
-                status_raw = str(
-                    task_data.get("status")
-                    or task_data.get("assistance_status")
-                    or ""
-                )
-
-                status = _derive_assistance_status_from_text(
-                    status_raw,
-                    assistance_date,
-                    end_time,
-                )
-
-                # 创建协助任务
-                new_task = AssistanceTask(
-                    title=f"协助任务 - {task_data.get('location', '未知地点')}",
-                    description=task_data.get("task_description", ""),
-                    member_id=matched_member.id if matched_member else current_user.id,
-                    assisted_department=task_data.get("location", ""),
-                    assisted_person=submitter,
-                    start_time=assistance_date,
-                    end_time=end_time,
-                    work_minutes=duration_minutes,
-                    status=status,
-                )
-
-                db.add(new_task)
-                await db.flush()  # 获取任务ID
-
-                # 计算工时
-                total_duration = duration_minutes
-                if task_data.get("custom_duration_minutes"):
-                    total_duration += int(task_data.get("custom_duration_minutes", 0))
-
-                result["total_duration"] += total_duration
-                result["success"] += 1
-
-            except Exception as e:
-                logger.error(f"Error processing assistance task {idx+1}: {str(e)}")
-                result["errors"].append(f"第{idx+1}行: 处理失败 - {str(e)}")
-                result["failed"] += 1
-                continue
-
-        # 提交事务
-        await db.commit()
-
-        logger.info(f"Assistance tasks import completed: {result}")
+        result = await _import_assistance_tasks_from_payload(
+            assistance_tasks=assistance_tasks,
+            current_user=current_user,
+            db=db,
+        )
 
         return create_response(
             data=result,
             message=f"协助任务导入完成，成功{result['success']}条，失败{result['failed']}条"
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         await db.rollback()
         logger.error(f"Assistance tasks import error: {str(e)}")
@@ -1195,3 +1199,125 @@ async def import_assistance_tasks(
             status_code=500,
             detail=f"协助任务导入失败: {str(e)}"
         )
+
+
+@router.post("/assistance/import/preview", response_model=Dict[str, Any])
+async def preview_assistance_tasks_import(
+    file: UploadFile = File(...),
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """预览协助任务导入文件。"""
+    import_service = DataImportService(db)
+
+    try:
+        parsed_result = await import_service.parse_assistance_task_import_file(file)
+    except ValueError as exc:
+        return JSONResponse(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            content=create_response(
+                data=None,
+                message=str(exc),
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                success=False,
+            ),
+        )
+
+    if parsed_result["valid_rows"] == 0:
+        return JSONResponse(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            content=create_response(
+                data={
+                    "total_rows": parsed_result["total_rows"],
+                    "valid_rows": 0,
+                    "invalid_rows": parsed_result["invalid_rows"],
+                    "empty_rows": parsed_result["empty_rows"],
+                    "errors": parsed_result["errors"],
+                },
+                message="导入文件校验失败，没有可导入的协助任务数据",
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                success=False,
+            ),
+        )
+
+    return create_response(
+        data={
+            "total_rows": parsed_result["total_rows"],
+            "valid_rows": parsed_result["valid_rows"],
+            "invalid_rows": parsed_result["invalid_rows"],
+            "empty_rows": parsed_result["empty_rows"],
+            "preview_data": parsed_result["preview_data"],
+            "errors": parsed_result["errors"],
+        },
+        message="协助任务导入校验完成",
+    )
+
+
+@router.post("/assistance/import/file", response_model=Dict[str, Any])
+async def import_assistance_tasks_file(
+    file: UploadFile = File(...),
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """通过文件导入协助任务。"""
+    import_service = DataImportService(db)
+
+    try:
+        parsed_result = await import_service.parse_assistance_task_import_file(file)
+    except ValueError as exc:
+        return JSONResponse(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            content=create_response(
+                data=None,
+                message=str(exc),
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                success=False,
+            ),
+        )
+
+    if parsed_result["valid_rows"] == 0:
+        return JSONResponse(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            content=create_response(
+                data={
+                    "total_rows": parsed_result["total_rows"],
+                    "valid_rows": 0,
+                    "invalid_rows": parsed_result["invalid_rows"],
+                    "empty_rows": parsed_result["empty_rows"],
+                    "errors": parsed_result["errors"],
+                },
+                message="导入文件校验失败，没有可导入的协助任务数据",
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                success=False,
+            ),
+        )
+
+    try:
+        result = await _import_assistance_tasks_from_payload(
+            assistance_tasks=parsed_result["assistance_tasks"],
+            current_user=current_user,
+            db=db,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        await db.rollback()
+        logger.error("Assistance tasks file import error: %s", str(exc))
+        raise HTTPException(
+            status_code=500,
+            detail=f"协助任务导入失败: {str(exc)}",
+        ) from exc
+
+    result["failed"] += parsed_result["invalid_rows"]
+    result["errors"].extend(parsed_result["errors"])
+    result["file_summary"] = {
+        "total_rows": parsed_result["total_rows"],
+        "valid_rows": parsed_result["valid_rows"],
+        "invalid_rows": parsed_result["invalid_rows"],
+        "empty_rows": parsed_result["empty_rows"],
+    }
+
+    return create_response(
+        data=result,
+        message=f"协助任务导入完成，成功{result['success']}条，失败{result['failed']}条",
+    )

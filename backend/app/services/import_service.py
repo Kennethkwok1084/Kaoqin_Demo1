@@ -1570,6 +1570,122 @@ class DataImportService:
                 except Exception as exc:  # pragma: no cover
                     logger.warning(f"Failed to delete temp file: {str(exc)}")
 
+    async def parse_maintenance_order_import_files(
+        self,
+        a_table_file: UploadFile,
+        b_table_file: Optional[UploadFile] = None,
+        import_type: str = "ab_matched",
+        preview_rows: int = 10,
+    ) -> Dict[str, Any]:
+        """Parse A/B maintenance files and return the legacy JSON import structure."""
+        a_temp_file_path = None
+        b_temp_file_path = None
+
+        try:
+            self.validate_upload_file(a_table_file)
+            a_table_file.file.seek(0)
+            a_temp_file_path = await self._save_temp_file(a_table_file)
+            a_raw_data = await self._parse_excel_data(a_temp_file_path)
+
+            b_raw_data: List[Dict[str, Any]] = []
+            if b_table_file and b_table_file.filename:
+                self.validate_upload_file(b_table_file)
+                b_table_file.file.seek(0)
+                b_temp_file_path = await self._save_temp_file(b_table_file)
+                b_raw_data = await self._parse_excel_data(b_temp_file_path)
+
+            return self.parse_maintenance_order_import_tables(
+                a_raw_data=a_raw_data,
+                b_raw_data=b_raw_data,
+                import_type=import_type,
+                preview_rows=preview_rows,
+            )
+        finally:
+            for temp_file_path in (a_temp_file_path, b_temp_file_path):
+                if temp_file_path and os.path.exists(temp_file_path):
+                    try:
+                        os.unlink(temp_file_path)
+                    except Exception as exc:  # pragma: no cover
+                        logger.warning(f"Failed to delete temp file: {str(exc)}")
+
+    def parse_maintenance_order_import_tables(
+        self,
+        a_raw_data: List[Dict[str, Any]],
+        b_raw_data: Optional[List[Dict[str, Any]]] = None,
+        import_type: str = "ab_matched",
+        preview_rows: int = 10,
+    ) -> Dict[str, Any]:
+        """Convert A/B table rows into maintenance order payloads."""
+        maintenance_orders: List[Dict[str, Any]] = []
+        preview_data: List[Dict[str, Any]] = []
+        errors: List[str] = []
+        empty_rows = 0
+        matched_rows = 0
+        partial_rows = 0
+
+        b_index = self._index_maintenance_b_table_rows(b_raw_data or [])
+
+        for row_number, row in enumerate(a_raw_data, start=2):
+            normalized_row = self._normalize_maintenance_order_import_row(row)
+            normalized_row = self._enrich_maintenance_order_import_row(
+                normalized_row, row
+            )
+
+            if self._is_empty_maintenance_order_import_row(normalized_row):
+                empty_rows += 1
+                continue
+
+            if not normalized_row.get("title") or not normalized_row.get("reporter_name"):
+                errors.append(f"第 {row_number} 行: 缺少标题或报修人")
+                continue
+
+            matched_b_rows: List[Dict[str, Any]] = []
+            should_match_b_table = import_type != "online_only" and bool(b_index)
+            if should_match_b_table:
+                match_key = self._build_maintenance_file_match_key(
+                    normalized_row.get("reporter_name"),
+                    normalized_row.get("reporter_contact"),
+                )
+                matched_b_rows = b_index.get(match_key, [])
+
+            if matched_b_rows:
+                matched_rows += len(matched_b_rows)
+                for matched_b_row in matched_b_rows:
+                    merged_row = self._merge_maintenance_a_b_row(
+                        normalized_row, matched_b_row
+                    )
+                    maintenance_orders.append(merged_row)
+                    if len(preview_data) < preview_rows:
+                        preview_data.append(
+                            {**merged_row, "_match_status": "matched"}
+                        )
+            else:
+                partial_rows += 1
+                maintenance_orders.append(normalized_row)
+                if len(preview_data) < preview_rows:
+                    preview_data.append(
+                        {
+                            **normalized_row,
+                            "_match_status": (
+                                "online_only" if import_type == "online_only" else "a_only"
+                            ),
+                        }
+                    )
+
+        return {
+            "total_rows": len(a_raw_data),
+            "valid_rows": len(maintenance_orders),
+            "invalid_rows": len(errors),
+            "empty_rows": empty_rows,
+            "maintenance_orders": maintenance_orders,
+            "preview_data": preview_data,
+            "errors": errors,
+            "matched_rows": matched_rows,
+            "partial_rows": partial_rows,
+            "a_table_rows": len(a_raw_data),
+            "b_table_rows": len(b_raw_data or []),
+        }
+
     def parse_maintenance_order_import_rows(
         self, raw_data: List[Dict[str, Any]], preview_rows: int = 10
     ) -> Dict[str, Any]:
@@ -1580,6 +1696,9 @@ class DataImportService:
 
         for row_number, row in enumerate(raw_data, start=2):
             normalized_row = self._normalize_maintenance_order_import_row(row)
+            normalized_row = self._enrich_maintenance_order_import_row(
+                normalized_row, row
+            )
 
             if self._is_empty_maintenance_order_import_row(normalized_row):
                 empty_rows += 1
@@ -1601,6 +1720,76 @@ class DataImportService:
             "maintenance_orders": maintenance_orders,
             "preview_data": preview_data,
             "errors": errors,
+            "matched_rows": 0,
+            "partial_rows": len(maintenance_orders),
+            "a_table_rows": len(raw_data),
+            "b_table_rows": 0,
+        }
+
+    async def parse_assistance_task_import_file(
+        self, file: UploadFile, preview_rows: int = 10
+    ) -> Dict[str, Any]:
+        """Parse assistance task files into the existing JSON import structure."""
+        temp_file_path = None
+
+        try:
+            self.validate_upload_file(file)
+            file.file.seek(0)
+            temp_file_path = await self._save_temp_file(file)
+            raw_data = await self._parse_excel_data(temp_file_path)
+            return self.parse_assistance_task_import_rows(raw_data, preview_rows)
+        finally:
+            if temp_file_path and os.path.exists(temp_file_path):
+                try:
+                    os.unlink(temp_file_path)
+                except Exception as exc:  # pragma: no cover
+                    logger.warning(f"Failed to delete temp file: {str(exc)}")
+
+    def parse_assistance_task_import_rows(
+        self, raw_data: List[Dict[str, Any]], preview_rows: int = 10
+    ) -> Dict[str, Any]:
+        assistance_tasks: List[Dict[str, Any]] = []
+        preview_data: List[Dict[str, Any]] = []
+        errors: List[str] = []
+        empty_rows = 0
+
+        for row_number, row in enumerate(raw_data, start=2):
+            normalized_row = self._normalize_assistance_task_import_row(row)
+
+            if self._is_empty_assistance_task_import_row(normalized_row):
+                empty_rows += 1
+                continue
+
+            row_errors: List[str] = []
+            if not normalized_row.get("assistance_date"):
+                row_errors.append("缺少协助日期")
+            if not normalized_row.get("location"):
+                row_errors.append("缺少协助地点")
+            if not normalized_row.get("task_description"):
+                row_errors.append("缺少协助事项")
+            if not normalized_row.get("submitter"):
+                row_errors.append("缺少提交人")
+
+            duration_minutes = normalized_row.get("duration_minutes")
+            if duration_minutes is None or duration_minutes <= 0:
+                row_errors.append("协助任务时长必须是大于 0 的数字")
+
+            if row_errors:
+                errors.append(f"第 {row_number} 行: {', '.join(row_errors)}")
+                continue
+
+            assistance_tasks.append(normalized_row)
+            if len(preview_data) < preview_rows:
+                preview_data.append(normalized_row)
+
+        return {
+            "total_rows": len(raw_data),
+            "valid_rows": len(assistance_tasks),
+            "invalid_rows": len(errors),
+            "empty_rows": empty_rows,
+            "assistance_tasks": assistance_tasks,
+            "preview_data": preview_data,
+            "errors": errors,
         }
 
     def _normalize_maintenance_order_import_row(
@@ -1616,34 +1805,62 @@ class DataImportService:
                 "task_id",
                 "work_order_id",
             ],
-            "title": ["标题", "工单标题", "任务标题", "报修标题", "报修内容", "title"],
+            "title": [
+                "标题",
+                "工单标题",
+                "任务标题",
+                "报修标题",
+                "报修内容",
+                "对象",
+                "title",
+            ],
             "description": [
                 "问题描述",
                 "故障描述",
                 "详细描述",
                 "检修内容",
+                "描述",
+                "报修内容",
                 "description",
             ],
-            "location": ["地点", "位置", "地址", "故障地点", "location"],
-            "reporter_name": ["报修人", "申请人", "报告人", "联系人", "reporter_name"],
+            "location": ["地点", "位置", "地址", "故障地点", "报修地点", "location"],
+            "reporter_name": [
+                "报修人",
+                "申请人",
+                "报告人",
+                "联系人",
+                "报单人",
+                "报修人姓名",
+                "reporter_name",
+            ],
             "reporter_contact": [
                 "联系电话",
                 "联系方式",
                 "手机号码",
                 "手机号",
                 "电话",
+                "报单人电话",
                 "reporter_contact",
             ],
             "assignee_name": [
                 "处理人",
+                "处理人员",
                 "负责人",
                 "责任人",
+                "检修人",
                 "assignee",
                 "assignee_name",
                 "handler_name",
                 "processor_name",
             ],
-            "report_time": ["报修时间", "报告时间", "报修日期", "report_time", "report_date"],
+            "report_time": [
+                "报修时间",
+                "报告时间",
+                "报修日期",
+                "报单时间",
+                "report_time",
+                "report_date",
+            ],
             "response_time": ["响应时间", "接单时间", "开始时间", "response_time", "start_time"],
             "completion_time": [
                 "完成时间",
@@ -1653,9 +1870,23 @@ class DataImportService:
                 "end_time",
                 "finish_time",
             ],
-            "repair_form": ["检修形式", "处理方式", "维修方式", "repair_form", "maintenance_type"],
-            "work_order_status": ["状态", "工单状态", "当前状态", "status", "work_order_status", "state"],
-            "feedback": ["反馈", "用户反馈", "评价内容", "feedback"],
+            "repair_form": [
+                "检修形式",
+                "处理方式",
+                "维修方式",
+                "repair_form",
+                "maintenance_type",
+            ],
+            "work_order_status": [
+                "状态",
+                "工单状态",
+                "当前状态",
+                "完成情况",
+                "status",
+                "work_order_status",
+                "state",
+            ],
+            "feedback": ["反馈", "用户反馈", "评价内容", "检修结果", "备注", "feedback"],
             "rating": ["评分", "满意度评分", "rating"],
         }
 
@@ -1666,6 +1897,48 @@ class DataImportService:
                 field_name, raw_value
             )
 
+        return normalized
+
+    def _normalize_assistance_task_import_row(
+        self, row: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        field_aliases = {
+            "assistance_date": ["协助日期", "协助时间", "assistance_date", "date"],
+            "location": ["协助地点", "地点", "位置", "location"],
+            "task_description": [
+                "协助事项",
+                "协助内容",
+                "任务描述",
+                "事项",
+                "task_description",
+                "task",
+            ],
+            "duration_minutes": [
+                "协助任务时长",
+                "协助时长",
+                "时长",
+                "duration_minutes",
+            ],
+            "custom_duration_minutes": [
+                "协助时长-自定义时长（单位分钟）-补充内容",
+                "自定义时长",
+                "custom_duration_minutes",
+            ],
+            "supplement": ["补充", "补充内容", "supplement", "remark"],
+            "time_range": ["协助时间（24小时制）", "协助时间", "time_range"],
+            "submitter": ["提交人", "填报人", "申请人", "submitter"],
+            "submit_time": ["提交时间", "填报时间", "submit_time"],
+            "status": ["状态", "协助状态", "status"],
+        }
+
+        normalized: Dict[str, Any] = {}
+        for field_name, aliases in field_aliases.items():
+            raw_value = self._get_row_value(row, aliases)
+            normalized[field_name] = self._coerce_assistance_task_field_value(
+                field_name, raw_value
+            )
+
+        normalized["type"] = "assistance"
         return normalized
 
     def _coerce_maintenance_order_field_value(
@@ -1695,8 +1968,131 @@ class DataImportService:
 
         return text
 
+    def _coerce_assistance_task_field_value(
+        self, field_name: str, value: Any
+    ) -> Any:
+        if value is None:
+            return None
+
+        if isinstance(value, float) and value.is_integer():
+            value = int(value)
+
+        if field_name in {"duration_minutes", "custom_duration_minutes"}:
+            try:
+                number = int(float(value))
+            except (TypeError, ValueError):
+                return None
+            return number if number >= 0 else None
+
+        text = str(value).strip()
+        if not text:
+            return None
+
+        if field_name in {"assistance_date", "submit_time"}:
+            return self._clean_datetime(text)
+
+        return text
+
     def _is_empty_maintenance_order_import_row(self, row: Dict[str, Any]) -> bool:
         return not any(value not in (None, "") for value in row.values())
+
+    def _is_empty_assistance_task_import_row(self, row: Dict[str, Any]) -> bool:
+        return not any(
+            key != "type" and value not in (None, "") for key, value in row.items()
+        )
+
+    def _enrich_maintenance_order_import_row(
+        self, normalized_row: Dict[str, Any], raw_row: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        enriched_row = dict(normalized_row)
+
+        object_name = self._get_row_value(raw_row, ["对象"])
+        description = (
+            enriched_row.get("description")
+            or self._get_row_value(raw_row, ["描述", "报修内容", "问题描述"])
+        )
+        if description and not enriched_row.get("description"):
+            enriched_row["description"] = str(description).strip()
+
+        if not enriched_row.get("title"):
+            object_text = str(object_name).strip() if object_name else ""
+            description_text = str(description).strip() if description else ""
+            if object_text and description_text:
+                enriched_row["title"] = f"{object_text} - {description_text}"
+            else:
+                enriched_row["title"] = object_text or description_text or None
+
+        completion_time = self._get_row_value(raw_row, ["完工时间", "完成时间"])
+        if completion_time and not enriched_row.get("completion_time"):
+            enriched_row["completion_time"] = self._clean_datetime(
+                str(completion_time).strip()
+            )
+
+        work_order_id = self._get_row_value(raw_row, ["工单编号", "单号"])
+        if work_order_id and not enriched_row.get("work_order_id"):
+            enriched_row["work_order_id"] = str(work_order_id).strip()
+
+        return enriched_row
+
+    def _index_maintenance_b_table_rows(
+        self, b_raw_data: List[Dict[str, Any]]
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        b_index: Dict[str, List[Dict[str, Any]]] = {}
+
+        for row in b_raw_data:
+            normalized_row = self._normalize_maintenance_order_import_row(row)
+            normalized_row = self._enrich_maintenance_order_import_row(
+                normalized_row, row
+            )
+
+            if self._is_empty_maintenance_order_import_row(normalized_row):
+                continue
+
+            match_key = self._build_maintenance_file_match_key(
+                normalized_row.get("reporter_name"),
+                normalized_row.get("reporter_contact"),
+            )
+            if not match_key:
+                continue
+
+            b_index.setdefault(match_key, []).append(normalized_row)
+
+        return b_index
+
+    def _build_maintenance_file_match_key(
+        self, reporter_name: Optional[str], reporter_contact: Optional[str]
+    ) -> str:
+        clean_name = self.ab_matching_service._clean_name(reporter_name or "")
+        clean_phone = self.ab_matching_service._clean_phone(reporter_contact or "")
+
+        if not clean_name and not clean_phone:
+            return ""
+
+        return f"{clean_name}_{clean_phone}"
+
+    def _merge_maintenance_a_b_row(
+        self, a_row: Dict[str, Any], b_row: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        merged_row = dict(a_row)
+
+        for field_name in (
+            "assignee_name",
+            "repair_form",
+            "feedback",
+            "rating",
+            "response_time",
+            "completion_time",
+        ):
+            if not merged_row.get(field_name) and b_row.get(field_name):
+                merged_row[field_name] = b_row[field_name]
+
+        if not merged_row.get("description") and b_row.get("description"):
+            merged_row["description"] = b_row["description"]
+
+        if not merged_row.get("location") and b_row.get("location"):
+            merged_row["location"] = b_row["location"]
+
+        return merged_row
 
     def _normalize_member_import_row(self, row: Dict[str, Any]) -> Dict[str, Any]:
         """Normalize different member spreadsheet headers into import fields."""

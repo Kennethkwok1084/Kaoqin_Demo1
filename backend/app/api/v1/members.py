@@ -45,13 +45,13 @@ router = APIRouter()
 
 @router.get("/", response_model=Dict[str, Any])
 async def get_members(
-    page: int = Query(1, ge=1, description="椤电爜"),
-    page_size: int = Query(20, ge=1, le=100, description="姣忛〉鏁伴噺"),
-    search: Optional[str] = Query(None, description="鎼滅储鍏抽敭璇?),
-    role: Optional[str] = Query(None, description="瑙掕壊绛涢€?),
-    is_active: Optional[bool] = Query(None, description="鐘舵€佺瓫閫?),
-    department: Optional[str] = Query(None, description="閮ㄩ棬绛涢€?),
-    class_name: Optional[str] = Query(None, description="鐝骇绛涢€?),
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
+    search: Optional[str] = Query(None, description="搜索关键字"),
+    role: Optional[str] = Query(None, description="角色筛选"),
+    is_active: Optional[bool] = Query(None, description="状态筛选"),
+    department: Optional[str] = Query(None, description="部门筛选"),
+    class_name: Optional[str] = Query(None, description="班级筛选"),
     current_user: Member = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
@@ -119,13 +119,13 @@ async def get_members(
                 "page_size": page_size,
                 "total_pages": total_pages,
             },
-            message=f"鎴愬姛鑾峰彇鎴愬憳鍒楄〃锛屽叡 {total} 鏉¤褰?,
+            message=f"成功获取成员列表，共 {total} 条记录",
         )
 
     except Exception as e:
-        logger.error(f"鑾峰彇鎴愬憳鍒楄〃澶辫触: {str(e)}")
+        logger.error(f"获取成员列表失败: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="鑾峰彇鎴愬憳鍒楄〃澶辫触"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="获取成员列表失败"
         )
 
 
@@ -145,23 +145,23 @@ async def get_member(
 
         if not member:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="鎴愬憳涓嶅瓨鍦?
+                status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在"
             )
 
         # 鏉冮檺妫€鏌ワ細绠＄悊鍛樺拰缁勯暱鍙煡鐪嬫墍鏈夛紝鏅€氱敤鎴峰彧鑳芥煡鐪嬭嚜宸?
         if not current_user.can_manage_group and current_user.id != member_id:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="鏃犳潈闄愭煡鐪嬭鎴愬憳淇℃伅"
+                status_code=status.HTTP_403_FORBIDDEN, detail="无权查看该成员信息"
             )
 
-        return create_response(data=member.get_safe_dict(), message="鎴愬姛鑾峰彇鎴愬憳淇℃伅")
+        return create_response(data=member.get_safe_dict(), message="成功获取成员信息")
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"鑾峰彇鎴愬憳璇︽儏澶辫触: {str(e)}")
+        logger.error(f"获取成员详情失败: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="鑾峰彇鎴愬憳璇︽儏澶辫触"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="获取成员详情失败"
         )
 
 
@@ -182,7 +182,7 @@ async def create_member(
         if result.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"鐢ㄦ埛鍚?{member_data.username} 宸插瓨鍦?,
+                detail=f"用户名 {member_data.username} 已存在",
             )
 
         # 妫€鏌ュ鍙锋槸鍚﹀凡瀛樺湪锛堜粎褰撳鍙蜂笉涓虹┖鏃讹級
@@ -192,7 +192,7 @@ async def create_member(
             if result.scalar_one_or_none():
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=f"瀛﹀彿 {member_data.student_id} 宸插瓨鍦?,
+                    detail=f"学号 {member_data.student_id} 已存在",
                 )
 
         # 鍒涘缓鏂版垚鍛?
@@ -215,20 +215,20 @@ async def create_member(
         await db.commit()
         await db.refresh(new_member)
 
-        logger.info(f"鏂版垚鍛樺垱寤烘垚鍔? {new_member.username} by {current_user.username}")
+        logger.info(f"新成员创建成功: {new_member.username} by {current_user.username}")
 
         return create_response(
             data=new_member.get_safe_dict(),
-            message=f"鎴愬姛鍒涘缓鎴愬憳锛歿new_member.name} ({new_member.student_id})",
+            message=f"成功创建成员：{new_member.name} ({new_member.student_id})",
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"鍒涘缓鎴愬憳澶辫触: {str(e)}")
+        logger.error(f"创建成员失败: {str(e)}")
         await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="鍒涘缓鎴愬憳澶辫触"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="创建成员失败"
         )
 
 
@@ -250,7 +250,7 @@ async def update_member(
 
         if not member:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="鎴愬憳涓嶅瓨鍦?
+                status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在"
             )
 
         # 鏉冮檺妫€鏌?
@@ -259,7 +259,7 @@ async def update_member(
 
         if not can_update_all and not is_self_update:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="鏃犳潈闄愭洿鏂拌鎴愬憳淇℃伅"
+                status_code=status.HTTP_403_FORBIDDEN, detail="无权更新该成员信息"
             )
 
         # 鏇存柊瀛楁
@@ -279,7 +279,7 @@ async def update_member(
             if result.scalar_one_or_none():
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=f"鐢ㄦ埛鍚?{update_data['username']} 宸插瓨鍦?,
+                    detail=f"用户名 {update_data['username']} 已存在",
                 )
 
         if "student_id" in update_data:
@@ -297,7 +297,7 @@ async def update_member(
                 if result.scalar_one_or_none():
                     raise HTTPException(
                         status_code=status.HTTP_409_CONFLICT,
-                        detail=f"瀛﹀彿 {student_id_value} 宸插瓨鍦?,
+                        detail=f"学号 {student_id_value} 已存在",
                     )
 
         # 搴旂敤鏇存柊
@@ -307,17 +307,17 @@ async def update_member(
         await db.commit()
         await db.refresh(member)
 
-        logger.info(f"鎴愬憳淇℃伅鏇存柊: {member.username} by {current_user.username}")
+        logger.info(f"成员信息更新: {member.username} by {current_user.username}")
 
-        return create_response(data=member.get_safe_dict(), message="鎴愬憳淇℃伅鏇存柊鎴愬姛")
+        return create_response(data=member.get_safe_dict(), message="成员信息更新成功")
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"鏇存柊鎴愬憳淇℃伅澶辫触: {str(e)}")
+        logger.error(f"更新成员信息失败: {str(e)}")
         await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="鏇存柊鎴愬憳淇℃伅澶辫触"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="更新成员信息失败"
         )
 
 
@@ -338,13 +338,13 @@ async def delete_member(
 
         if not member:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="鎴愬憳涓嶅瓨鍦?
+                status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在"
             )
 
         # 涓嶈兘鍒犻櫎鑷繁
         if member.id == current_user.id:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="涓嶈兘鍒犻櫎鑷繁鐨勮处鎴?
+                status_code=status.HTTP_400_BAD_REQUEST, detail="不能删除自己的账户"
             )
 
         member_name = member.name
@@ -353,19 +353,19 @@ async def delete_member(
         await db.delete(member)
         await db.commit()
 
-        logger.info(f"鎴愬憳鍒犻櫎: {member_username} by {current_user.username}")
+        logger.info(f"成员删除: {member_username} by {current_user.username}")
 
         return create_response(
-            data={"deleted_id": member_id}, message=f"鎴愬姛鍒犻櫎鎴愬憳锛歿member_name}"
+            data={"deleted_id": member_id}, message=f"成功删除成员：{member_name}"
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"鍒犻櫎鎴愬憳澶辫触: {str(e)}")
+        logger.error(f"删除成员失败: {str(e)}")
         await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="鍒犻櫎鎴愬憳澶辫触"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="删除成员失败"
         )
 
 
@@ -567,6 +567,39 @@ async def import_members_excel(
     return create_response(data=result, message=result_message)
 
 
+@router.post("/import/preview", response_model=Dict[str, Any])
+async def preview_members_import(
+    file: UploadFile = File(...),
+    current_user: Member = Depends(get_current_active_admin),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """预览成员导入文件。"""
+    return await import_members_excel(
+        file=file,
+        skip_duplicates=True,
+        dry_run=True,
+        current_user=current_user,
+        db=db,
+    )
+
+
+@router.post("/import/file", response_model=Dict[str, Any])
+async def import_members_file(
+    file: UploadFile = File(...),
+    skip_duplicates: bool = Form(True),
+    current_user: Member = Depends(get_current_active_admin),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """通过文件批量导入成员。"""
+    return await import_members_excel(
+        file=file,
+        skip_duplicates=skip_duplicates,
+        dry_run=False,
+        current_user=current_user,
+        db=db,
+    )
+
+
 @router.get("/import-template", response_model=Dict[str, Any])
 async def get_member_import_template(
     current_user: Member = Depends(get_current_active_admin),
@@ -596,39 +629,39 @@ async def change_password(
 
         if not member:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="鎴愬憳涓嶅瓨鍦?
+                status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在"
             )
 
         # 鏉冮檺妫€鏌?
         if current_user.id != member_id and not current_user.is_admin:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="鏃犳潈闄愪慨鏀硅鎴愬憳瀵嗙爜"
+                status_code=status.HTTP_403_FORBIDDEN, detail="无权修改该成员密码"
             )
 
         # 楠岃瘉鏃у瘑鐮侊紙浠呭綋淇敼鑷繁鐨勫瘑鐮佹椂锛?
         if current_user.id == member_id:
             if not verify_password(password_data.old_password, member.password_hash):
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST, detail="鏃у瘑鐮侀敊璇?
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="旧密码错误"
                 )
 
         # 鏇存柊瀵嗙爜
         member.password_hash = get_password_hash(password_data.new_password)
         await db.commit()
 
-        logger.info(f"瀵嗙爜淇敼鎴愬姛: {member.username} by {current_user.username}")
+        logger.info(f"密码修改成功: {member.username} by {current_user.username}")
 
         return create_response(
-            data={"updated_member_id": member_id}, message="瀵嗙爜淇敼鎴愬姛"
+            data={"updated_member_id": member_id}, message="密码修改成功"
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"淇敼瀵嗙爜澶辫触: {str(e)}")
+        logger.error(f"修改密码失败: {str(e)}")
         await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="淇敼瀵嗙爜澶辫触"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="修改密码失败"
         )
 
 
@@ -676,22 +709,22 @@ async def get_member_stats(
                 "role_stats": role_stats,
                 "department_stats": dept_stats,
             },
-            message="鎴愬憳缁熻淇℃伅鑾峰彇鎴愬姛",
+            message="成员统计信息获取成功",
         )
 
     except Exception as e:
-        logger.error(f"鑾峰彇鎴愬憳缁熻澶辫触: {str(e)}")
+        logger.error(f"获取成员统计失败: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="鑾峰彇鎴愬憳缁熻澶辫触"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="获取成员统计失败"
         )
 
 
 @router.get("/health", response_model=Dict[str, Any])
 async def members_health_check() -> Dict[str, Any]:
-    """鎴愬憳绠＄悊妯″潡鍋ュ悍妫€鏌?""
+    """成员模块健康检查。"""
     return create_response(
         data={"module": "members", "status": "healthy", "version": "2.0"},
-        message="鎴愬憳绠＄悊妯″潡杩愯姝ｅ父",
+        message="成员管理模块运行正常",
     )
 
 
@@ -714,7 +747,7 @@ async def complete_profile(
             f"User {current_user.id} attempted to complete profile "
             f"for member {member_id}"
         )
-        raise HTTPException(status_code=403, detail="鏃犳潈闄愬畬鍠勬鐢ㄦ埛淇℃伅")
+        raise HTTPException(status_code=403, detail="无权完善该用户信息")
 
     try:
         # 鏌ヨ鎴愬憳
@@ -722,7 +755,7 @@ async def complete_profile(
         member = result.scalar_one_or_none()
 
         if not member:
-            raise HTTPException(status_code=404, detail="鎴愬憳涓嶅瓨鍦?)
+            raise HTTPException(status_code=404, detail="成员不存在")
 
         # 鏇存柊淇℃伅
         update_data = profile_data.dict(exclude_unset=True)
@@ -743,7 +776,7 @@ async def complete_profile(
                 "id": member.id,
                 "username": member.username,
                 "profile_completed": member.profile_completed,
-                "message": "涓汉淇℃伅瀹屽杽鎴愬姛",
+                "message": "个人信息完善成功",
             }
         )
         return JSONResponse(content=response_data)
@@ -753,4 +786,4 @@ async def complete_profile(
     except Exception as e:
         logger.error(f"Error completing profile for member {member_id}: {str(e)}")
         await db.rollback()
-        raise HTTPException(status_code=500, detail="瀹屽杽淇℃伅澶辫触")
+        raise HTTPException(status_code=500, detail="完善信息失败")
