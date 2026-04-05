@@ -7,7 +7,9 @@ import logging
 from typing import Any, AsyncGenerator, Dict, Generator, List, Optional, Union
 
 from fastapi import Depends, HTTPException, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -33,6 +35,15 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             break
     except HTTPException:
         # Preserve upstream HTTP exceptions (e.g., 401/403).
+        if session:
+            try:
+                await session.close()
+            except Exception:
+                pass
+        raise
+    except (RequestValidationError, PydanticValidationError):
+        # Preserve request/body validation failures so they remain 422 instead of
+        # being wrapped as generic database errors during dependency cleanup.
         if session:
             try:
                 await session.close()

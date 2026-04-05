@@ -223,18 +223,40 @@ async def validation_exception_handler(
     """Handle request validation errors."""
     logger.warning(f"Validation error: {exc.errors()}")
 
-    # Format validation errors
-    errors = {}
+    # Format validation errors and keep both structured details and a
+    # backward-compatible field map for existing clients.
+    error_items = []
+    field_errors: Dict[str, str] = {}
     for error in exc.errors():
-        field = ".".join(str(loc) for loc in error["loc"][1:])  # Skip 'body'
-        errors[field] = error["msg"]
+        loc = [str(loc) for loc in error.get("loc", ())]
+        field_loc = loc[1:] if loc and loc[0] in {"body", "query", "path"} else loc
+        field = ".".join(field_loc)
+        message = error.get("msg", "数据校验失败")
+
+        error_items.append(
+            {
+                "field": field or None,
+                "loc": loc,
+                "msg": message,
+            }
+        )
+        if field:
+            field_errors[field] = message
 
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
             "success": False,
-            "message": "数据验证失败",
-            "details": {"field_errors": errors},
+            "message": "提交数据校验失败",
+            "errors": error_items,
+            "detail": [
+                {
+                    "loc": item["loc"],
+                    "msg": item["msg"],
+                }
+                for item in error_items
+            ],
+            "details": {"field_errors": field_errors},
             "error_code": "ValidationError",
         },
     )

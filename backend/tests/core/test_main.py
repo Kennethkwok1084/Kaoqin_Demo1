@@ -298,7 +298,10 @@ class TestExceptionHandlers:
             assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
             content = json.loads(response.body.decode())
             assert content["success"] is False
-            assert content["message"] == "数据验证失败"
+            assert content["message"] == "提交数据校验失败"
+            assert len(content["errors"]) == 2
+            assert content["errors"][0]["field"] == "field1"
+            assert content["detail"][0]["loc"] == ["body", "field1"]
             assert "field_errors" in content["details"]
             assert content["error_code"] == "ValidationError"
 

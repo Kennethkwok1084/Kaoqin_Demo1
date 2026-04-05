@@ -271,14 +271,21 @@ async def get_tasks_stats(
         today_created = today_created_result.scalar() or 0
 
         # 今日完成任务
-        today_completed_query = select(func.count(TaskModel.id)).where(
-            and_(
-                TaskModel.completion_time >= today_start,
-                TaskModel.completion_time <= today_end,
+        completed_time_field = getattr(TaskModel, "completion_time", None)
+        if completed_time_field is None:
+            completed_time_field = getattr(TaskModel, "end_time", None)
+
+        if completed_time_field is not None:
+            today_completed_query = select(func.count(TaskModel.id)).where(
+                and_(
+                    completed_time_field >= today_start,
+                    completed_time_field <= today_end,
+                )
             )
-        )
-        today_completed_result = await db.execute(today_completed_query)
-        today_completed = today_completed_result.scalar() or 0
+            today_completed_result = await db.execute(today_completed_query)
+            today_completed = today_completed_result.scalar() or 0
+        else:
+            today_completed = 0
 
         # 我的任务统计（如果是普通用户）
         my_tasks = 0
@@ -4152,9 +4159,25 @@ async def _execute_maintenance_order_import(
         import_options={
             "skip_duplicates": skip_duplicates,
             "update_existing": False,
+            "strict_assignee_member_only": True,
         },
     )
     result = _build_maintenance_import_response(parsed_result, import_result)
+
+    if result["successful_imports"] == 0 and result["failed_imports"] > 0:
+        return JSONResponse(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            content=create_response(
+                data=result,
+                message=(
+                    f"导入失败：成功 {result['successful_imports']} 条，"
+                    f"失败 {result['failed_imports']} 条，"
+                    f"跳过 {result['skipped_duplicates']} 条"
+                ),
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                success=False,
+            ),
+        )
 
     return create_response(
         data=result,

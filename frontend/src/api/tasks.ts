@@ -702,7 +702,10 @@ export const tasksApi = {
     }
     const response = await http.post(
       '/tasks/maintenance-orders/import',
-      backendData
+      backendData,
+      {
+        timeout: 10 * 60 * 1000
+      }
     )
     return (
       response.data.data || {

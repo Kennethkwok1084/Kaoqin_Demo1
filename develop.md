@@ -1101,7 +1101,7 @@ erDiagram
 - [ ] **Docker配置**
   - `backend/Dockerfile` - 后端容器
   - `frontend/Dockerfile` - 前端容器
-  - `docker-compose.yml` - 开发环境编排
+  - `backend/docker-compose.yml` - 后端开发环境编排
   - `docker-compose.prod.yml` - 生产环境编排
 
 #### 5.2 系统优化 (优先级: 🔥 低)

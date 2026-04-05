@@ -339,6 +339,17 @@ const handlePrevStep = () => {
   currentStep.value = Math.max(0, currentStep.value - 1)
 }
 
+const triggerTemplateDownload = (blob: Blob, fileName: string) => {
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}
+
 const parseExcelFile = async (file: File) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -667,7 +678,17 @@ const handleImport = async () => {
   }
 }
 
-const downloadTemplate = () => {
+const downloadTemplate = async () => {
+  try {
+    const blob = await MembersApi.downloadImportTemplate()
+    triggerTemplateDownload(blob, '成员导入模板.xlsx')
+    ElMessage.success('模板下载成功')
+    return
+  } catch (error) {
+    console.warn('后端模板下载失败，回退到本地模板生成:', error)
+  }
+
+  // 回退到前端生成模板，避免后端临时不可用时无法下载
   // 创建模板数据
   const templateData = [
     ['姓名', '班级', '组别', '学号', '用户名', '手机号', '角色', '部门'],

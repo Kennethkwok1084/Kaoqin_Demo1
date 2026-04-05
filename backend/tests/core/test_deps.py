@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from fastapi import HTTPException, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -92,6 +93,35 @@ class TestDatabaseDependencies:
             async for session in get_db():
                 assert session == mock_session
                 break
+
+    @pytest.mark.asyncio
+    async def test_get_db_preserves_request_validation_error(self):
+        """测试请求校验异常不会被包装成数据库错误"""
+        mock_session = AsyncMock(spec=AsyncSession)
+
+        with patch("app.api.deps.get_async_session") as mock_get_async:
+
+            async def mock_generator():
+                yield mock_session
+
+            mock_get_async.return_value = mock_generator()
+
+            dependency = get_db()
+            session = await dependency.__anext__()
+            assert session == mock_session
+
+            validation_error = RequestValidationError(
+                [
+                    {
+                        "loc": ("body", "name"),
+                        "msg": "Value error, 姓名只能包含中文、字母、空格和·符号",
+                        "type": "value_error",
+                    }
+                ]
+            )
+
+            with pytest.raises(RequestValidationError):
+                await dependency.athrow(validation_error)
 
     def test_get_sync_db_success(self):
         """测试成功获取同步数据库会话"""

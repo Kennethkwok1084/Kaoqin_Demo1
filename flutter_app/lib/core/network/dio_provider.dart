@@ -17,7 +17,7 @@ final dioProvider = Provider<Dio>((ref) {
     BaseOptions(
       baseUrl: baseUrl,
       connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(minutes: 10),
       headers: {
         'Content-Type': 'application/json',
       },
@@ -55,7 +55,7 @@ final dioProvider = Provider<Dio>((ref) {
             BaseOptions(
               baseUrl: baseUrl,
               connectTimeout: const Duration(seconds: 15),
-              receiveTimeout: const Duration(seconds: 15),
+              receiveTimeout: const Duration(seconds: 30),
               headers: {
                 'Content-Type': 'application/json',
               },

@@ -168,6 +168,16 @@ export class MembersApi {
   }
 
   /**
+   * 下载成员导入模板
+   */
+  static async downloadImportTemplate(): Promise<Blob> {
+    const response = await http.get('/members/import-template', {
+      responseType: 'blob'
+    })
+    return response.data
+  }
+
+  /**
    * 修改密码
    */
   static async changePassword(
@@ -227,6 +237,7 @@ export const {
   updateMember,
   deleteMember,
   importMembers,
+  downloadImportTemplate,
   exportMembers,
   changePassword,
   getMemberStats,

@@ -6,7 +6,9 @@
 import logging
 import time
 from datetime import date
+from io import BytesIO
 from typing import Any, Dict, List, Optional
+from urllib.parse import quote
 
 from fastapi import (
     APIRouter,
@@ -18,7 +20,7 @@ from fastapi import (
     UploadFile,
     status,
 )
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -126,42 +128,6 @@ async def get_members(
         logger.error(f"获取成员列表失败: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="获取成员列表失败"
-        )
-
-
-@router.get("/{member_id}", response_model=Dict[str, Any])
-async def get_member(
-    member_id: int,
-    current_user: Member = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db),
-) -> Dict[str, Any]:
-    """
-    鑾峰彇鍗曚釜鎴愬憳璇︽儏
-    """
-    try:
-        query = select(Member).where(Member.id == member_id)
-        result = await db.execute(query)
-        member = result.scalar_one_or_none()
-
-        if not member:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在"
-            )
-
-        # 鏉冮檺妫€鏌ワ細绠＄悊鍛樺拰缁勯暱鍙煡鐪嬫墍鏈夛紝鏅€氱敤鎴峰彧鑳芥煡鐪嬭嚜宸?
-        if not current_user.can_manage_group and current_user.id != member_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="无权查看该成员信息"
-            )
-
-        return create_response(data=member.get_safe_dict(), message="成功获取成员信息")
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"获取成员详情失败: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="获取成员详情失败"
         )
 
 
@@ -422,26 +388,29 @@ async def _import_members_from_payload(
             }
             role = role_mapping.get(member_item.role or "member", UserRole.MEMBER)
 
-            new_member = Member(
-                username=username,
-                name=member_item.name.strip(),
-                student_id=member_item.student_id.strip()
-                if member_item.student_id
-                else None,
-                phone=member_item.phone.strip() if member_item.phone else None,
-                department=(member_item.department or "信息化建设处").strip(),
-                class_name=member_item.class_name.strip(),
-                group_id=member_item.group_id,
-                join_date=date.today(),
-                password_hash=get_password_hash("123456"),
-                role=role,
-                is_active=True,
-                is_verified=False,
-                profile_completed=False,
-            )
+            # Use a savepoint per row so a single bad record does not poison the
+            # whole transaction and turn a partial-success import into a 500.
+            async with db.begin_nested():
+                new_member = Member(
+                    username=username,
+                    name=member_item.name.strip(),
+                    student_id=member_item.student_id.strip()
+                    if member_item.student_id
+                    else None,
+                    phone=member_item.phone.strip() if member_item.phone else None,
+                    department=(member_item.department or "信息化建设处").strip(),
+                    class_name=member_item.class_name.strip(),
+                    group_id=member_item.group_id,
+                    join_date=date.today(),
+                    password_hash=get_password_hash("123456"),
+                    role=role,
+                    is_active=True,
+                    is_verified=False,
+                    profile_completed=False,
+                )
 
-            db.add(new_member)
-            await db.flush()
+                db.add(new_member)
+                await db.flush()
             successful_imports += 1
 
         except Exception as exc:
@@ -600,15 +569,65 @@ async def import_members_file(
     )
 
 
-@router.get("/import-template", response_model=Dict[str, Any])
+@router.get("/import-template")
 async def get_member_import_template(
     current_user: Member = Depends(get_current_active_admin),
     db: AsyncSession = Depends(get_db),
-) -> Dict[str, Any]:
-    """获取成员导入模板元信息。"""
+) -> StreamingResponse:
+    """下载成员导入模板 Excel 文件。"""
     _ = current_user
-    template = await DataImportService(db).get_import_template("member_table")
-    return create_response(data=template, message="成功获取成员导入模板信息")
+    filename, file_bytes = await DataImportService(db).generate_import_template_excel(
+        "member_table"
+    )
+    encoded_filename = quote(filename)
+    headers = {
+        "Content-Disposition": (
+            f"attachment; filename={filename}; filename*=UTF-8''{encoded_filename}"
+        )
+    }
+    return StreamingResponse(
+        BytesIO(file_bytes),
+        media_type=(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ),
+        headers=headers,
+    )
+
+
+@router.get("/{member_id}", response_model=Dict[str, Any])
+async def get_member(
+    member_id: int,
+    current_user: Member = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """
+    鑾峰彇鍗曚釜鎴愬憳璇︽儏
+    """
+    try:
+        query = select(Member).where(Member.id == member_id)
+        result = await db.execute(query)
+        member = result.scalar_one_or_none()
+
+        if not member:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="成员不存在"
+            )
+
+        # 鏉冮檺妫€鏌ワ細绠＄悊鍛樺拰缁勯暱鍙煡鐪嬫墍鏈夛紝鏅€氱敤鎴峰彧鑳芥煡鐪嬭嚜宸?
+        if not current_user.can_manage_group and current_user.id != member_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="无权查看该成员信息"
+            )
+
+        return create_response(data=member.get_safe_dict(), message="成功获取成员信息")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取成员详情失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="获取成员详情失败"
+        )
 
 
 @router.post("/{member_id}/change-password", response_model=Dict[str, Any])

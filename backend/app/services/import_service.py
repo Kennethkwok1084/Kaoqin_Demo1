@@ -7,14 +7,17 @@ import logging
 import os
 import tempfile
 from datetime import datetime, date
+from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
-from openpyxl import load_workbook
+from openpyxl import Workbook, load_workbook
+from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.utils import get_column_letter
 from fastapi import UploadFile
 from pydantic import ValidationError
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_upload_path
@@ -747,7 +750,7 @@ class DataImportService:
 
         return cleaned
 
-    def _clean_datetime(self, datetime_str: str) -> Optional[str]:
+    def _clean_datetime(self, datetime_str: str) -> Optional[datetime]:
         """清理时间字段"""
         if not datetime_str:
             return None
@@ -756,11 +759,21 @@ class DataImportService:
             # 尝试解析各种时间格式
             from dateutil import parser  # type: ignore[import-untyped]
 
-            dt = parser.parse(datetime_str)
-            return str(dt.strftime("%Y-%m-%d %H:%M:%S"))
+            return parser.parse(datetime_str)
         except Exception:
-            # 如果解析失败，返回原字符串
-            return datetime_str
+            return None
+
+    def _ensure_datetime(self, value: Any) -> Optional[datetime]:
+        """将导入值安全转换为 datetime，避免字符串直接入库。"""
+        if value is None:
+            return None
+        if isinstance(value, datetime):
+            return value
+        if isinstance(value, date):
+            return datetime.combine(value, datetime.min.time())
+        if isinstance(value, str):
+            return self._clean_datetime(value.strip())
+        return None
 
     async def _match_ab_tables(
         self, data: List[Dict[str, Any]], table_info: Dict[str, Any]
@@ -1496,6 +1509,71 @@ class DataImportService:
             "supported_file_types": [".xlsx", ".xls", ".csv"],
             "max_file_size_mb": 10,
         }
+
+    async def generate_import_template_excel(
+        self, template_type: str = "repair_task"
+    ) -> tuple[str, bytes]:
+        """生成导入模板 Excel 文件。"""
+        template = await self.get_import_template(template_type)
+        if not template:
+            raise ValueError("导入模板不存在")
+
+        workbook = Workbook()
+        worksheet = workbook.active
+        worksheet.title = "导入模板"
+
+        columns = template.get("columns", [])
+        headers = [column["name"] for column in columns]
+        example_row = [column.get("example", "") for column in columns]
+        required_row = [
+            "必填" if column.get("required") else "可选" for column in columns
+        ]
+
+        worksheet.append(headers)
+        worksheet.append(required_row)
+        worksheet.append(example_row)
+
+        header_fill = PatternFill(
+            fill_type="solid",
+            start_color="1F4E78",
+            end_color="1F4E78",
+        )
+        required_fill = PatternFill(
+            fill_type="solid",
+            start_color="E2F0D9",
+            end_color="E2F0D9",
+        )
+        header_font = Font(color="FFFFFF", bold=True)
+
+        for cell in worksheet[1]:
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+
+        for cell in worksheet[2]:
+            cell.fill = required_fill
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+
+        for cell in worksheet[3]:
+            cell.alignment = Alignment(horizontal="left", vertical="center")
+
+        worksheet.freeze_panes = "A2"
+
+        for index, column in enumerate(columns, start=1):
+            max_length = max(
+                len(str(column["name"])),
+                len(str(column.get("example", ""))),
+                len(required_row[index - 1]),
+            )
+            worksheet.column_dimensions[get_column_letter(index)].width = min(
+                max(max_length + 4, 14), 28
+            )
+
+        buffer = BytesIO()
+        workbook.save(buffer)
+        buffer.seek(0)
+
+        return template["filename"], buffer.getvalue()
 
     async def parse_member_import_file(
         self, file: UploadFile, preview_rows: int = 10
@@ -2379,6 +2457,49 @@ class DataImportService:
             logger.warning(f"Error finding member by assignee name: {str(e)}")
             return None
 
+    async def _find_import_assignee_member(
+        self, task_data: Dict[str, Any]
+    ) -> Optional[Member]:
+        """严格按导入数据中的处理人匹配已登记成员。"""
+        assigned_to = task_data.get("assigned_to")
+        assignee_name = task_data.get("assignee_name") or task_data.get("assignee")
+
+        try:
+            if isinstance(assigned_to, int):
+                query = select(Member).where(
+                    and_(Member.is_active.is_(True), Member.id == assigned_to)
+                )
+                result = await self.db.execute(query)
+                member = result.scalar_one_or_none()
+                if member:
+                    return member
+
+            if isinstance(assigned_to, str):
+                assigned_text = assigned_to.strip()
+                if assigned_text.isdigit():
+                    query = select(Member).where(
+                        and_(
+                            Member.is_active.is_(True),
+                            Member.id == int(assigned_text),
+                        )
+                    )
+                    result = await self.db.execute(query)
+                    member = result.scalar_one_or_none()
+                    if member:
+                        return member
+
+                member = await self._find_member_by_assignee_name(assigned_text)
+                if member:
+                    return member
+
+            if assignee_name:
+                return await self._find_member_by_assignee_name(str(assignee_name))
+
+            return None
+        except Exception as e:
+            logger.warning(f"Error finding import assignee member: {str(e)}")
+            return None
+
     async def _resolve_member_id(self, assigned_to: Any) -> int:
         """根据导入字段解析成员ID"""
         try:
@@ -2515,9 +2636,14 @@ class DataImportService:
                 location=import_data.get("location"),
                 work_order_id=import_data.get("work_order_id"),
                 member_id=member_id,  # 确保不为None
-                report_time=import_data.get("report_time", datetime.utcnow()),
-                response_time=import_data.get("response_time"),
-                completion_time=import_data.get("completion_time"),
+                report_time=(
+                    self._ensure_datetime(import_data.get("report_time"))
+                    or datetime.utcnow()
+                ),
+                response_time=self._ensure_datetime(import_data.get("response_time")),
+                completion_time=self._ensure_datetime(
+                    import_data.get("completion_time")
+                ),
                 reporter_name=import_data.get("reporter_name"),
                 reporter_contact=import_data.get("reporter_contact"),
                 feedback=import_data.get("feedback"),
@@ -2574,7 +2700,9 @@ class DataImportService:
         """
         try:
             # 检查是否需要添加非默认好评标签
-            if import_data.get("rating", 0) >= 4 and import_data.get("feedback"):
+            rating_value = import_data.get("rating")
+
+            if rating_value is not None and rating_value >= 4 and import_data.get("feedback"):
                 feedback = import_data["feedback"]
                 default_keywords = ["系统默认好评", "默认", "自动好评"]
                 if not any(keyword in feedback.lower() for keyword in default_keywords):
@@ -2583,7 +2711,7 @@ class DataImportService:
                         task.tags.append(tag)
 
             # 检查是否需要添加差评标签
-            if import_data.get("rating", 0) <= 2:
+            if rating_value is not None and rating_value <= 2:
                 tag = await self._get_or_create_standard_tag("差评")
                 if tag and tag not in task.tags:
                     task.tags.append(tag)
@@ -2704,9 +2832,13 @@ class DataImportService:
             if update_data.get("reporter_contact"):
                 existing_task.reporter_contact = update_data["reporter_contact"]
             if update_data.get("completion_time"):
-                existing_task.completion_time = update_data["completion_time"]
+                existing_task.completion_time = self._ensure_datetime(
+                    update_data["completion_time"]
+                )
             if update_data.get("response_time"):
-                existing_task.response_time = update_data["response_time"]
+                existing_task.response_time = self._ensure_datetime(
+                    update_data["response_time"]
+                )
             if update_data.get("feedback"):
                 existing_task.feedback = update_data["feedback"]
             if update_data.get("rating") is not None:
@@ -2776,6 +2908,9 @@ class DataImportService:
             )
 
             logger.info(f"Starting bulk import of {len(task_data_list)} tasks")
+            strict_assignee_member_only = import_options.get(
+                "strict_assignee_member_only", False
+            )
 
             for i, task_data in enumerate(task_data_list):
                 try:
@@ -2784,6 +2919,25 @@ class DataImportService:
                         result.errors.append(f"第{i+1}行：缺少必要字段（标题或报告人）")
                         result.skipped_rows += 1
                         continue
+
+                    if strict_assignee_member_only:
+                        matched_assignee = await self._find_import_assignee_member(
+                            task_data
+                        )
+                        if matched_assignee is None:
+                            assignee_display = (
+                                task_data.get("assignee_name")
+                                or task_data.get("assignee")
+                                or task_data.get("assigned_to")
+                                or "未填写"
+                            )
+                            result.errors.append(
+                                f"第{i+1}行：处理人“{assignee_display}”不在已登记成员内，已跳过导入"
+                            )
+                            result.skipped_rows += 1
+                            continue
+
+                        task_data["assigned_to"] = matched_assignee.id
 
                     # 检查是否已存在相同任务
                     work_order_id = task_data.get("work_order_id")
@@ -2815,7 +2969,7 @@ class DataImportService:
                             result.skipped_rows += 1
                     else:
                         # 创建新任务 - 确保member_id被设置
-                        if not task_data.get("assigned_to"):
+                        if not strict_assignee_member_only and not task_data.get("assigned_to"):
                             # 尝试根据reporter信息查找或创建成员
                             matched_member = None
                             if task_data.get("assignee_name"):
@@ -2845,6 +2999,7 @@ class DataImportService:
                         result.created_tasks += 1
 
                 except Exception as e:
+                    await self.db.rollback()
                     error_msg = f"第{i+1}行导入失败: {str(e)}"
                     result.errors.append(error_msg)
                     result.skipped_rows += 1

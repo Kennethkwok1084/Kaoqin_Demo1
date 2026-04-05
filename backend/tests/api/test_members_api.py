@@ -3,17 +3,19 @@
 测试所有成员相关的API端点
 """
 
-import io
 from datetime import date, datetime
-from unittest.mock import AsyncMock, MagicMock, mock_open, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from httpx import AsyncClient
-
+from app.api.v1.members import import_members as import_members_endpoint
+from app.api.deps import get_current_active_admin, get_db
 from app.main import app
 from app.models.member import Member, UserRole
 from app.core.security import create_access_token
 from app.models.task import RepairTask, TaskStatus
+from app.schemas.member import MemberImportRequest
+from app.services.import_service import DataImportService
 
 
 class TestMembersAPIBasic:
@@ -480,7 +482,6 @@ class TestUpdateMemberAPI(TestMembersAPIBasic):
             assert regular_user.name == "部分更新"
             assert regular_user.email == original_email  # 邮箱应该保持不变
 
-
 class TestDeleteMemberAPI(TestMembersAPIBasic):
     """测试删除成员API"""
 
@@ -564,80 +565,210 @@ class TestDeleteMemberAPI(TestMembersAPIBasic):
 class TestImportMembersAPI(TestMembersAPIBasic):
     """测试批量导入成员API"""
 
-    @pytest.mark.asyncio
-    async def test_import_members_basic(self, client, admin_user):
-        """测试批量导入成员基础功能"""
-        # 创建CSV文件内容
-        csv_content = """username,student_id,name,email,role
-user1,20210001,用户1,user1@test.com,member
-user2,20210002,用户2,user2@test.com,member"""
+    class _MockScalarResult:
+        def __init__(self, value):
+            self._value = value
 
-        csv_file = io.BytesIO(csv_content.encode("utf-8"))
+        def scalar_one_or_none(self):
+            return self._value
 
-        with (
-            patch("app.api.deps.get_db") as mock_get_db,
-            patch("app.api.deps.get_current_active_admin") as mock_get_admin,
-            patch("builtins.open", mock_open(read_data=csv_content)),
-            patch("tempfile.NamedTemporaryFile") as mock_temp,
-        ):
+    class _MockNestedTransaction:
+        async def __aenter__(self):
+            return self
 
-            mock_db = AsyncMock()
-            mock_get_db.return_value = mock_db
-            mock_get_admin.return_value = admin_user
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
 
-            # Mock临时文件
-            mock_temp.return_value.__enter__.return_value.name = "/tmp/test.csv"
+    class _MockImportSession:
+        def __init__(self, execute_results, flush_effects=None):
+            self._execute_results = list(execute_results)
+            self._flush_effects = list(flush_effects or [])
+            self.added_members = []
+            self.commit = AsyncMock()
 
-            # Mock导入过程
-            mock_db.add = MagicMock()
-            mock_db.commit = AsyncMock()
+        async def execute(self, _query):
+            if not self._execute_results:
+                raise AssertionError("No mock execute result configured")
+            return TestImportMembersAPI._MockScalarResult(self._execute_results.pop(0))
 
-            # Mock唯一性检查（没有重复）
-            mock_check_result = MagicMock()
-            mock_check_result.scalar_one_or_none.return_value = None
-            mock_db.execute.return_value = mock_check_result
+        def begin_nested(self):
+            return TestImportMembersAPI._MockNestedTransaction()
 
-            response = await client.post(
-                "/api/v1/members/import",
-                files={"file": ("members.csv", csv_file, "text/csv")},
-                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
-            )
+        def add(self, member):
+            self.added_members.append(member)
 
-            assert response.status_code == 200
-            data = response.json()
-            assert data["success"] is True
+        async def flush(self):
+            if not self._flush_effects:
+                return None
+
+            effect = self._flush_effects.pop(0)
+            if isinstance(effect, Exception):
+                raise effect
+            return effect
 
     @pytest.mark.asyncio
-    async def test_import_members_invalid_file(self, client, admin_user):
-        """测试导入无效文件格式"""
-        invalid_file = io.BytesIO(b"invalid file content")
+    async def test_import_members_basic(self, admin_user):
+        """测试 JSON 批量导入基础功能"""
+        mock_db = self._MockImportSession(
+            execute_results=[None, None],
+            flush_effects=[None, None],
+        )
+        payload = MemberImportRequest(
+            members=[
+                {
+                    "username": "import_user_1",
+                    "student_id": "20210091",
+                    "name": "用户甲",
+                    "class_name": "测试一班",
+                    "department": "测试部门",
+                },
+                {
+                    "username": "import_user_2",
+                    "student_id": "20210092",
+                    "name": "用户乙",
+                    "class_name": "测试二班",
+                    "department": "测试部门",
+                },
+            ],
+            skip_duplicates=True,
+        )
 
-        with patch("app.api.deps.get_current_active_admin") as mock_get_admin:
-            mock_get_admin.return_value = admin_user
+        response = await import_members_endpoint(
+            payload,
+            current_user=admin_user,
+            db=mock_db,
+        )
 
-            response = await client.post(
-                "/api/v1/members/import",
-                files={"file": ("invalid.txt", invalid_file, "text/plain")},
-                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
-            )
-
-            assert response.status_code == 400
+        assert response["success"] is True
+        assert response["data"]["successful_imports"] == 2
+        assert response["data"]["failed_imports"] == 0
+        assert response["data"]["skipped_duplicates"] == 0
+        mock_db.commit.assert_awaited_once()
+        assert len(mock_db.added_members) == 2
 
     @pytest.mark.asyncio
-    async def test_import_members_empty_file(self, client, admin_user):
-        """测试导入空文件"""
-        empty_file = io.BytesIO(b"")
+    async def test_import_members_skip_duplicates(self, admin_user):
+        """测试重复成员在 skip_duplicates 下会被跳过"""
+        existing_member = Member(
+            username="duplicate_user",
+            student_id="20210093",
+            name="已存在成员",
+            class_name="测试班级",
+            department="测试部门",
+            password_hash="hashed",
+            role=UserRole.MEMBER,
+            is_active=True,
+        )
+        mock_db = self._MockImportSession(execute_results=[existing_member])
 
-        with patch("app.api.deps.get_current_active_admin") as mock_get_admin:
-            mock_get_admin.return_value = admin_user
+        payload = MemberImportRequest(
+            members=[
+                {
+                    "username": "duplicate_user",
+                    "student_id": "20210093",
+                    "name": "重复成员",
+                    "class_name": "测试班级",
+                    "department": "测试部门",
+                }
+            ],
+            skip_duplicates=True,
+        )
 
-            response = await client.post(
-                "/api/v1/members/import",
-                files={"file": ("empty.csv", empty_file, "text/csv")},
-                headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
-            )
+        response = await import_members_endpoint(
+            payload,
+            current_user=admin_user,
+            db=mock_db,
+        )
 
-            assert response.status_code == 400
+        assert response["success"] is True
+        assert response["data"]["successful_imports"] == 0
+        assert response["data"]["failed_imports"] == 0
+        assert response["data"]["skipped_duplicates"] == 1
+        mock_db.commit.assert_not_awaited()
+        assert mock_db.added_members == []
+
+    @pytest.mark.asyncio
+    async def test_import_members_partial_failure_does_not_break_commit(
+        self, admin_user
+    ):
+        """测试单行失败不会污染整批导入事务"""
+        mock_db = self._MockImportSession(
+            execute_results=[None, None],
+            flush_effects=[None, RuntimeError("value too long for type character varying(50)")],
+        )
+        payload = MemberImportRequest(
+            members=[
+                {
+                    "username": "partial_ok_user",
+                    "student_id": "20210094",
+                    "name": "成功成员",
+                    "class_name": "测试班级",
+                    "department": "测试部门",
+                },
+                {
+                    "username": "partial_bad_user",
+                    "student_id": "20210095",
+                    "name": "失败成员",
+                    "class_name": "A" * 80,
+                    "department": "测试部门",
+                },
+            ],
+            skip_duplicates=True,
+        )
+
+        response = await import_members_endpoint(
+            payload,
+            current_user=admin_user,
+            db=mock_db,
+        )
+
+        assert response["success"] is True
+        assert response["data"]["successful_imports"] == 1
+        assert response["data"]["failed_imports"] == 1
+        assert response["data"]["skipped_duplicates"] == 0
+        assert len(response["data"]["errors"]) == 1
+        assert "value too long" in response["data"]["errors"][0]
+        mock_db.commit.assert_awaited_once()
+        assert [member.username for member in mock_db.added_members] == [
+            "partial_ok_user",
+            "partial_bad_user",
+        ]
+
+    @pytest.mark.asyncio
+    async def test_import_template_route_matches_static_endpoint(self, client, admin_user):
+        """测试导入模板路由不会被 member_id 动态路由抢先匹配"""
+
+        async def override_get_db():
+            yield AsyncMock()
+
+        app.dependency_overrides[get_current_active_admin] = lambda: admin_user
+        app.dependency_overrides[get_db] = override_get_db
+
+        try:
+            with patch.object(
+                DataImportService,
+                "generate_import_template_excel",
+                new=AsyncMock(
+                    return_value=(
+                        "member_import_template.xlsx",
+                        b"mock-excel-content",
+                    )
+                ),
+            ):
+                response = await client.get(
+                    "/api/v1/members/import-template",
+                    headers={"Authorization": f"Bearer {create_access_token(subject='1')}"},
+                )
+        finally:
+            app.dependency_overrides.clear()
+
+        assert response.status_code == 200
+        assert (
+            response.headers["content-type"]
+            == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        assert "member_import_template.xlsx" in response.headers["content-disposition"]
+        assert response.content == b"mock-excel-content"
 
 
 class TestChangePasswordAPI(TestMembersAPIBasic):

@@ -6,7 +6,7 @@
 - `frontend/`: Vue 3 + TypeScript + Vite + Element Plus UI.
 - （已废弃）`frontend-new/`：此前的备用前端已移除，不再维护。
 - `tests/`: Repository-level pytest suite and DB fixtures.
-- `scripts/`: DevOps helpers (backup, deploy, smoke tests). Docker compose services in `docker-compose.yml`.
+- `scripts/`: DevOps helpers (backup, deploy, smoke tests). Backend Docker compose lives in `backend/docker-compose.yml`.
 
 ## Build, Test, and Development Commands
 - Backend (local):
@@ -18,7 +18,7 @@
   - Coverage: `pytest --cov=app --cov-report=term-missing` (Codecov is configured; project target ~40%, patch ~50%).
 - Frontend:
 - `cd frontend && npm install && npm run dev` (tests: `npm run test:unit`).
-- Docker (full stack): `docker-compose up -d` (ensure Postgres/Redis env values; optional init SQL under `scripts/`).
+- Docker (backend stack): `cd backend && docker compose up -d` (ensure Postgres/Redis env values).
 
 ## Coding Style & Naming Conventions
 - Python: Black (88 cols), isort profile “black”, Flake8, MyPy strict. Use type hints. Modules/files snake_case; classes PascalCase; functions snake_case. Prefer explicit imports.

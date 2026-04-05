@@ -584,13 +584,21 @@ class RepairTask(BaseModel):
             # Handle case when accessing outside session context
             return False
 
-        if completion_time or not response_time:
+        if not response_time:
             return False
 
-        now = datetime.now(timezone.utc)
         response_dt = response_time
         if response_dt.tzinfo is None:
             response_dt = response_dt.replace(tzinfo=timezone.utc)
+
+        if completion_time is not None:
+            completion_dt = completion_time
+            if completion_dt.tzinfo is None:
+                completion_dt = completion_dt.replace(tzinfo=timezone.utc)
+            hours_since_response = (completion_dt - response_dt).total_seconds() / 3600
+            return bool(hours_since_response > 48)
+
+        now = datetime.now(timezone.utc)
         hours_since_response = (now - response_dt).total_seconds() / 3600
         return bool(hours_since_response > 48)
 

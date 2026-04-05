@@ -93,7 +93,7 @@ attendance-system/
 │   └── Dockerfile          # 前端容器配置
 ├── mobile/                 # Flutter移动端(后期)
 ├── docs/                   # 项目文档
-├── docker-compose.yml      # 容器编排
+├── backend/docker-compose.yml  # 后端容器编排
 └── README.md              # 项目说明
 ```
 

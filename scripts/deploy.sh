@@ -123,7 +123,7 @@ deploy_services() {
     if [[ "$ENVIRONMENT" == "production" ]]; then
         COMPOSE_FILE="docker-compose.prod.yml"
     else
-        COMPOSE_FILE="docker-compose.yml"
+        COMPOSE_FILE="backend/docker-compose.yml"
     fi
     
     # 停止旧服务
@@ -145,7 +145,7 @@ health_check() {
     while [ $attempt -le $max_attempts ]; do
         log_info "健康检查 ($attempt/$max_attempts)..."
         
-        if curl -f -s http://localhost:8000/health > /dev/null; then
+        if curl -f -s http://localhost:19991/health > /dev/null; then
             log_info "后端服务健康检查通过"
             break
         fi
@@ -179,7 +179,7 @@ deploy_notification() {
     else
         log_info "开发环境访问地址:"
         log_info "- 前端: http://localhost"
-        log_info "- API: http://localhost:8000"
+        log_info "- API: http://localhost:19991"
         log_info "- 监控: http://localhost:3000"
     fi
 }

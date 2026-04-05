@@ -378,15 +378,17 @@ async def global_exception_handler(request: Request, exc: Exception):
 ### 容器化部署
 
 ```yaml
-# docker-compose.yml
+# backend/docker-compose.yml
 version: '3.8'
 services:
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "19991:8000"
     environment:
-      - DATABASE_URL=postgresql://user:pass@db:5432/attendance
+      - DATABASE_URL=postgresql+asyncpg://user:pass@db:5432/attendance
     depends_on:
       - db
       - redis

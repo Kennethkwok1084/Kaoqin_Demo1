@@ -78,16 +78,17 @@ async def get_statistics_overview(
     权限：组长及以上可查看
     """
     try:
-        # 设置默认时间范围（最近30天）
-        if not date_to:
-            date_to = datetime.utcnow()
-        if not date_from:
-            date_from = date_to - timedelta(days=30)
+        requested_date_from = date_from
+        requested_date_to = date_to
+        effective_now = datetime.utcnow()
 
-        # 基础查询条件
-        time_filter = and_(
-            RepairTask.created_at >= date_from, RepairTask.created_at <= date_to
-        )
+        # 报修统计口径与报修列表保持一致：
+        # 未传日期时统计全部报修单；传日期时按业务报修时间 report_time 过滤。
+        task_filters = []
+        if requested_date_from:
+            task_filters.append(RepairTask.report_time >= requested_date_from)
+        if requested_date_to:
+            task_filters.append(RepairTask.report_time <= requested_date_to)
 
         # 任务统计
         task_query = select(
@@ -109,7 +110,9 @@ async def get_statistics_overview(
             func.count(case((RepairTask.task_type == TaskType.OFFLINE, 1))).label(
                 "offline_tasks"
             ),
-        ).where(time_filter)
+        )
+        if task_filters:
+            task_query = task_query.where(and_(*task_filters))
 
         task_result = await db.execute(task_query)
         task_stats = (
@@ -155,6 +158,26 @@ async def get_statistics_overview(
                     "member_count": 0,
                 },
             )()
+        )
+
+        period_query = select(
+            func.min(RepairTask.report_time).label("min_report_time"),
+            func.max(RepairTask.report_time).label("max_report_time"),
+        )
+        if task_filters:
+            period_query = period_query.where(and_(*task_filters))
+
+        period_result = await db.execute(period_query)
+        period_row = period_result.first()
+        period_from = (
+            requested_date_from
+            or (period_row.min_report_time if period_row else None)
+            or effective_now
+        )
+        period_to = (
+            requested_date_to
+            or (period_row.max_report_time if period_row else None)
+            or effective_now
         )
 
         # 考勤统计（当月）
@@ -206,20 +229,21 @@ async def get_statistics_overview(
         )()
 
         # 近期趋势（最近7天每天的任务创建数）
-        seven_days_ago = date_to - timedelta(days=7)
+        trend_end = requested_date_to or effective_now
+        seven_days_ago = trend_end - timedelta(days=7)
         trend_query = (
             select(
-                func.date(RepairTask.created_at).label("date"),
+                func.date(RepairTask.report_time).label("date"),
                 func.count().label("task_count"),
             )
             .where(
                 and_(
-                    RepairTask.created_at >= seven_days_ago,
-                    RepairTask.created_at <= date_to,
+                    RepairTask.report_time >= seven_days_ago,
+                    RepairTask.report_time <= trend_end,
                 )
             )
-            .group_by(func.date(RepairTask.created_at))
-            .order_by(func.date(RepairTask.created_at))
+            .group_by(func.date(RepairTask.report_time))
+            .order_by(func.date(RepairTask.report_time))
         )
 
         trend_result = await db.execute(trend_query)
@@ -235,10 +259,11 @@ async def get_statistics_overview(
                 func.count().label("count"),
                 func.avg(RepairTask.work_minutes).label("avg_work_minutes"),
             )
-            .where(time_filter)
             .group_by(RepairTask.category)
             .order_by(desc(func.count()))
         )
+        if task_filters:
+            category_query = category_query.where(and_(*task_filters))
 
         category_result = await db.execute(category_query)
         category_stats = [
@@ -256,7 +281,7 @@ async def get_statistics_overview(
 
         # 构建响应数据
         overview_data = {
-            "period": {"from": date_from.isoformat(), "to": date_to.isoformat()},
+            "period": {"from": period_from.isoformat(), "to": period_to.isoformat()},
             "tasks": {
                 "total": task_stats.total_tasks or 0,
                 "completed": task_stats.completed_tasks or 0,
