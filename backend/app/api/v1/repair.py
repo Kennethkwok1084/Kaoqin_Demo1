@@ -287,6 +287,74 @@ async def get_tasks_stats(
         else:
             today_completed = 0
 
+        work_minutes_query = select(func.coalesce(func.sum(TaskModel.work_minutes), 0))
+        work_minutes_result = await db.execute(work_minutes_query)
+        total_work_minutes = work_minutes_result.scalar() or 0
+        total_work_hours = round(total_work_minutes / 60.0, 2)
+        avg_work_hours = (
+            round(total_work_hours / completed_tasks, 2) if completed_tasks > 0 else 0.0
+        )
+
+        overdue_response_count = 0
+        overdue_completion_count = 0
+        overdue_tasks = 0
+        if TaskModel is RepairTask:
+            current_time = datetime.now(timezone.utc)
+            response_cutoff = current_time - timedelta(hours=24)
+            completion_cutoff = current_time - timedelta(hours=48)
+
+            overdue_response_condition = and_(
+                RepairTask.report_time.is_not(None),
+                or_(
+                    and_(
+                        RepairTask.response_time.is_(None),
+                        RepairTask.report_time < response_cutoff,
+                    ),
+                    and_(
+                        RepairTask.response_time.is_not(None),
+                        func.extract(
+                            "epoch",
+                            RepairTask.response_time - RepairTask.report_time,
+                        )
+                        > 24 * 3600,
+                    ),
+                ),
+            )
+            overdue_response_query = select(func.count(RepairTask.id)).where(
+                overdue_response_condition
+            )
+            overdue_response_result = await db.execute(overdue_response_query)
+            overdue_response_count = overdue_response_result.scalar() or 0
+
+            overdue_completion_condition = and_(
+                RepairTask.response_time.is_not(None),
+                or_(
+                    and_(
+                        RepairTask.completion_time.is_(None),
+                        RepairTask.response_time < completion_cutoff,
+                    ),
+                    and_(
+                        RepairTask.completion_time.is_not(None),
+                        func.extract(
+                            "epoch",
+                            RepairTask.completion_time - RepairTask.response_time,
+                        )
+                        > 48 * 3600,
+                    ),
+                ),
+            )
+            overdue_completion_query = select(func.count(RepairTask.id)).where(
+                overdue_completion_condition
+            )
+            overdue_completion_result = await db.execute(overdue_completion_query)
+            overdue_completion_count = overdue_completion_result.scalar() or 0
+
+            overdue_tasks_query = select(func.count(RepairTask.id)).where(
+                or_(overdue_response_condition, overdue_completion_condition)
+            )
+            overdue_tasks_result = await db.execute(overdue_tasks_query)
+            overdue_tasks = overdue_tasks_result.scalar() or 0
+
         # 我的任务统计（如果是普通用户）
         my_tasks = 0
         my_pending = 0
@@ -306,16 +374,40 @@ async def get_tasks_stats(
             my_pending_result = await db.execute(my_pending_query)
             my_pending = my_pending_result.scalar() or 0
 
+        overview_data = {
+            "total": total_tasks,
+            "pending": pending_tasks,
+            "in_progress": in_progress_tasks,
+            "completed": completed_tasks,
+            "overdue_response": overdue_response_count,
+            "overdue_response_count": overdue_response_count,
+            "overdue_completion": overdue_completion_count,
+            "overdue_completion_count": overdue_completion_count,
+            "overdue": overdue_tasks,
+            "overdue_tasks": overdue_tasks,
+            "total_work_hours": total_work_hours,
+            "total_hours": total_work_hours,
+            "avg_work_hours": avg_work_hours,
+        }
+
         return create_response(
             data={
-                "overview": {
-                    "total": total_tasks,
-                    "pending": pending_tasks,
-                    "in_progress": in_progress_tasks,
-                    "completed": completed_tasks,
-                },
+                "overview": overview_data,
                 "today": {"created": today_created, "completed": today_completed},
                 "personal": {"assigned": my_tasks, "pending": my_pending},
+                "total": total_tasks,
+                "pending": pending_tasks,
+                "in_progress": in_progress_tasks,
+                "completed": completed_tasks,
+                "overdue_response": overdue_response_count,
+                "overdue_response_count": overdue_response_count,
+                "overdue_completion": overdue_completion_count,
+                "overdue_completion_count": overdue_completion_count,
+                "overdue_tasks": overdue_tasks,
+                "total_work_minutes": total_work_minutes,
+                "total_work_hours": total_work_hours,
+                "total_hours": total_work_hours,
+                "avg_work_hours": avg_work_hours,
                 "completion_rate": (
                     (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
                 ),

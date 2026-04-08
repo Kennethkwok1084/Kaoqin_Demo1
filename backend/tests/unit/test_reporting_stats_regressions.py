@@ -37,6 +37,7 @@ async def test_get_tasks_stats_monitoring_uses_end_time():
         _scalar_result(7),   # completed_tasks
         _scalar_result(1),   # today_created
         _scalar_result(4),   # today_completed
+        _scalar_result(360),  # total_work_minutes
     ]
 
     current_user = SimpleNamespace(
@@ -54,6 +55,50 @@ async def test_get_tasks_stats_monitoring_uses_end_time():
     assert response["success"] is True
     assert response["data"]["overview"]["total"] == 12
     assert response["data"]["today"]["completed"] == 4
+    assert response["data"]["overview"]["total_work_hours"] == 6.0
+    assert response["data"]["overview"]["overdue_response_count"] == 0
+    assert response["data"]["overview"]["overdue_completion_count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_get_tasks_stats_repair_includes_overdue_and_work_hour_fields():
+    mock_db = AsyncMock()
+    mock_db.execute.side_effect = [
+        _scalar_result(20),   # total_tasks
+        _scalar_result(5),    # pending_tasks
+        _scalar_result(7),    # in_progress_tasks
+        _scalar_result(8),    # completed_tasks
+        _scalar_result(2),    # today_created
+        _scalar_result(3),    # today_completed
+        _scalar_result(750),  # total_work_minutes
+        _scalar_result(4),    # overdue_response_count
+        _scalar_result(6),    # overdue_completion_count
+        _scalar_result(9),    # overdue_tasks
+    ]
+
+    current_user = SimpleNamespace(
+        id=1,
+        role=UserRole.ADMIN,
+        student_id="ADMIN001",
+    )
+
+    response = await get_tasks_stats(
+        task_type="repair",
+        current_user=current_user,
+        db=mock_db,
+    )
+
+    assert response["success"] is True
+    assert response["data"]["overview"]["overdue_response"] == 4
+    assert response["data"]["overview"]["overdue_response_count"] == 4
+    assert response["data"]["overview"]["overdue_completion"] == 6
+    assert response["data"]["overview"]["overdue_completion_count"] == 6
+    assert response["data"]["overview"]["total_work_hours"] == 12.5
+    assert response["data"]["overview"]["total_hours"] == 12.5
+    assert response["data"]["overdue_response"] == 4
+    assert response["data"]["overdue_completion"] == 6
+    assert response["data"]["total_work_hours"] == 12.5
+    assert response["data"]["total_hours"] == 12.5
 
 
 @pytest.mark.asyncio
