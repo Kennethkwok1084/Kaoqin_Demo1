@@ -4,6 +4,7 @@
 """
 
 import logging
+from datetime import datetime, timezone
 from typing import Any, AsyncGenerator, Dict, Generator, List, Optional, Union
 
 from fastapi import Depends, HTTPException, status
@@ -16,6 +17,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_async_session, get_sync_session
 from app.core.messages import Messages, get_message
+from app.core.request_context import get_request_id
 from app.core.security import verify_token
 from app.models.member import Member
 
@@ -23,6 +25,18 @@ logger = logging.getLogger(__name__)
 
 # Security scheme
 security = HTTPBearer()
+
+_STATUS_TO_BIZ_CODE = {
+    status.HTTP_400_BAD_REQUEST: 40001,
+    status.HTTP_401_UNAUTHORIZED: 40101,
+    status.HTTP_403_FORBIDDEN: 40301,
+    status.HTTP_404_NOT_FOUND: 40401,
+    status.HTTP_409_CONFLICT: 40901,
+    status.HTTP_422_UNPROCESSABLE_ENTITY: 42201,
+    status.HTTP_429_TOO_MANY_REQUESTS: 42901,
+    status.HTTP_500_INTERNAL_SERVER_ERROR: 50000,
+    status.HTTP_503_SERVICE_UNAVAILABLE: 50301,
+}
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -437,9 +451,13 @@ def create_response(
     message: Optional[str] = None,
     message_key: Optional[str] = None,
     status_code: int = 200,
+    code: Optional[int] = None,
     success: Optional[bool] = None,
     error_code: Optional[str] = None,
+    errors: Optional[List[Dict[str, Any]]] = None,
     details: Optional[Dict[str, Any]] = None,
+    request_id: Optional[str] = None,
+    timestamp: Optional[str] = None,
     **message_kwargs: Any,
 ) -> Dict[str, Any]:
     """创建标准化API响应，支持统一消息管理"""
@@ -456,16 +474,34 @@ def create_response(
     # Use provided success value or calculate from status_code
     success_value = success if success is not None else (status_code < 400)
 
+    resolved_code = code
+    if resolved_code is None:
+        resolved_code = 0 if success_value else _STATUS_TO_BIZ_CODE.get(
+            status_code, status_code
+        )
+
+    resolved_request_id = request_id or get_request_id()
+    resolved_timestamp = timestamp or datetime.now(timezone.utc).isoformat()
+
     response = {
+        "code": resolved_code,
         "success": success_value,
         "message": final_message,
         "data": data,
+        "request_id": resolved_request_id,
+        "timestamp": resolved_timestamp,
+
+        # Backward compatible field; keep until callers are fully migrated.
         "status_code": status_code,
     }
 
     # Add error_code if provided
     if error_code is not None:
         response["error_code"] = error_code
+
+    # Add field-level errors if provided
+    if errors is not None:
+        response["errors"] = errors
 
     # Add details if provided
     if details is not None:
@@ -477,8 +513,14 @@ def create_response(
 def create_error_response(
     message: Optional[str] = None,
     message_key: Optional[str] = None,
+    data: Any = None,
     details: Optional[Dict[str, Any]] = None,
+    errors: Optional[List[Dict[str, Any]]] = None,
     status_code: int = 400,
+    code: Optional[int] = None,
+    error_code: Optional[str] = None,
+    request_id: Optional[str] = None,
+    timestamp: Optional[str] = None,
     **message_kwargs: Any,
 ) -> Dict[str, Any]:
     """创建标准化API错误响应，支持统一消息管理"""
@@ -490,12 +532,18 @@ def create_error_response(
     else:
         final_message = Messages.GENERAL_ERROR
 
-    return {
-        "success": False,
-        "message": final_message,
-        "details": details or {},
-        "status_code": status_code,
-    }
+    return create_response(
+        data=data,
+        message=final_message,
+        status_code=status_code,
+        code=code,
+        success=False,
+        error_code=error_code,
+        errors=errors,
+        details=details or {},
+        request_id=request_id,
+        timestamp=timestamp,
+    )
 
 
 def check_user_can_manage_group(user: Member) -> bool:

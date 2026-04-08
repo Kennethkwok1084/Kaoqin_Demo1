@@ -9,6 +9,7 @@ from app.models.attendance import (
     AttendanceRecord,
     MonthlyAttendanceSummary,
 )
+from app.models.auth_refresh_token import AuthRefreshToken
 from app.models.base import Base, BaseModel, TimestampMixin
 from app.models.member import Member, UserRole
 from app.models.system_config import SystemConfig
@@ -53,4 +54,6 @@ __all__ = [
     "AttendanceException",
     "AttendanceExceptionStatus",
     "MonthlyAttendanceSummary",
+    # Auth token models
+    "AuthRefreshToken",
 ]

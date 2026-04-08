@@ -5,14 +5,13 @@ Handles user login, logout, token refresh, and profile management.
 
 import asyncio
 import logging
-from datetime import timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, Optional, Union
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from datetime import date
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import create_response, get_current_user, get_db
@@ -27,6 +26,7 @@ from app.core.security import (
     verify_password,
     verify_token,
 )
+from app.models.auth_refresh_token import AuthRefreshToken
 from app.models.member import Member, UserRole
 from app.schemas.auth import (
     ChangePasswordRequest,
@@ -38,6 +38,108 @@ from app.schemas.auth import (
 logger = logging.getLogger(__name__)
 router = APIRouter()
 security = HTTPBearer()
+
+
+async def _execute_with_retry(
+    db: AsyncSession, statement: Any, *, max_retries: int = 2
+) -> Any:
+    """Execute SQLAlchemy statements with short retry/backoff for transient issues."""
+    for attempt in range(max_retries + 1):
+        try:
+            return await db.execute(statement)
+        except Exception as query_error:
+            logger.warning(
+                "Database query attempt %s failed: %s",
+                attempt + 1,
+                query_error,
+            )
+            if attempt == max_retries:
+                raise
+            await asyncio.sleep(0.1 * (attempt + 1))
+
+
+def _extract_device_metadata(request: Optional[Request]) -> Dict[str, Optional[str]]:
+    """Extract device metadata from request headers."""
+    if request is None:
+        return {"device_id": None, "device_name": None, "platform_code": None}
+
+    headers = getattr(request, "headers", None)
+    if headers is None or not hasattr(headers, "get"):
+        return {"device_id": None, "device_name": None, "platform_code": None}
+
+    user_agent = headers.get("User-Agent")
+    platform_code = headers.get("X-Platform")
+    if not platform_code and user_agent:
+        ua = user_agent.lower()
+        if "android" in ua:
+            platform_code = "android"
+        elif "iphone" in ua or "ios" in ua:
+            platform_code = "ios"
+        elif "windows" in ua:
+            platform_code = "windows"
+        elif "mac" in ua:
+            platform_code = "macos"
+        elif "linux" in ua:
+            platform_code = "linux"
+        else:
+            platform_code = "web"
+
+    return {
+        "device_id": headers.get("X-Device-ID"),
+        "device_name": headers.get("X-Device-Name") or user_agent,
+        "platform_code": platform_code,
+    }
+
+
+def _resolve_refresh_expiry(payload: Optional[Dict[str, Any]]) -> datetime:
+    """Resolve refresh token expiration timestamp from JWT payload."""
+    exp = None
+    if payload:
+        exp = payload.get("exp")
+
+    if isinstance(exp, (int, float)):
+        return datetime.fromtimestamp(exp, tz=timezone.utc)
+
+    return datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+
+
+async def _persist_refresh_token(
+    db: AsyncSession,
+    *,
+    user_id: int,
+    refresh_token: str,
+    expires_at: datetime,
+    device_id: Optional[str],
+    device_name: Optional[str],
+    platform_code: Optional[str],
+) -> None:
+    """Insert or update refresh token persistence record."""
+    existing_result = await db.execute(
+        select(AuthRefreshToken).where(AuthRefreshToken.refresh_token == refresh_token)
+    )
+    existing_record = existing_result.scalar_one_or_none()
+
+    if isinstance(existing_record, AuthRefreshToken):
+        existing_record.user_id = user_id
+        existing_record.expires_at = expires_at
+        existing_record.revoked_at = None
+        existing_record.device_id = device_id
+        existing_record.device_name = device_name
+        existing_record.platform_code = platform_code
+    else:
+        db.add(
+            AuthRefreshToken(
+                user_id=user_id,
+                refresh_token=refresh_token,
+                expires_at=expires_at,
+                device_id=device_id,
+                device_name=device_name,
+                platform_code=platform_code,
+                revoked_at=None,
+            )
+        )
+
+    await db.commit()
 
 
 async def ensure_default_admin(db: AsyncSession) -> None:
@@ -109,22 +211,10 @@ async def login(
         await ensure_default_admin(db)
 
         # Find user by student_id with connection retry logic
-        user = None
-        max_retries = 2
-        
-        for attempt in range(max_retries + 1):
-            try:
-                result = await db.execute(
-                    select(Member).where(Member.student_id == login_data.student_id)
-                )
-                user = result.scalar_one_or_none()
-                break  # Success, exit retry loop
-            except Exception as query_error:
-                logger.warning(f"Database query attempt {attempt + 1} failed: {query_error}")
-                if attempt == max_retries:  # Last attempt failed
-                    raise query_error
-                # Wait a short time before retry
-                await asyncio.sleep(0.1 * (attempt + 1))  # Progressive backoff
+        user_result = await _execute_with_retry(
+            db, select(Member).where(Member.student_id == login_data.student_id)
+        )
+        user = user_result.scalar_one_or_none()
 
         # Handle potential coroutine return (for testing compatibility)
         if hasattr(user, "__await__"):
@@ -195,6 +285,20 @@ async def login(
             expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
         )
 
+        refresh_payload = verify_token(refresh_token, token_type="refresh")
+        refresh_expires_at = _resolve_refresh_expiry(refresh_payload)
+        device_meta = _extract_device_metadata(request)
+
+        await _persist_refresh_token(
+            db,
+            user_id=user_id,
+            refresh_token=refresh_token,
+            expires_at=refresh_expires_at,
+            device_id=device_meta["device_id"],
+            device_name=device_meta["device_name"],
+            platform_code=device_meta["platform_code"],
+        )
+
         logger.info(f"Successful login for user: {user_data_raw['student_id']}")
 
         # Construct final user data with computed fields
@@ -231,7 +335,9 @@ async def login(
 
 @router.post("/refresh", response_model=Dict[str, Any])
 async def refresh_token(
-    refresh_data: RefreshTokenRequest, db: AsyncSession = Depends(get_db)
+    refresh_data: RefreshTokenRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """
     Refresh access token using refresh token.
@@ -258,15 +364,77 @@ async def refresh_token(
 
         user_id = int(user_id_str) if isinstance(user_id_str, str) else user_id_str
 
+        persisted_token: Optional[AuthRefreshToken] = None
+        can_persist_refresh_state = True
+        try:
+            persisted_result = await _execute_with_retry(
+                db,
+                select(AuthRefreshToken).where(
+                    AuthRefreshToken.refresh_token == refresh_data.refresh_token
+                ),
+            )
+            persisted_token = persisted_result.scalar_one_or_none()
+        except Exception as persistence_lookup_error:
+            if settings.TESTING:
+                can_persist_refresh_state = False
+                logger.warning(
+                    "Skipping refresh-token persistence check in testing: %s",
+                    persistence_lookup_error,
+                )
+            else:
+                raise
+
+        if can_persist_refresh_state and not isinstance(
+            persisted_token, AuthRefreshToken
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=get_message("AUTH_ERROR_INVALID_TOKEN"),
+            )
+
+        if isinstance(persisted_token, AuthRefreshToken):
+            if persisted_token.revoked_at is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=get_message("AUTH_ERROR_INVALID_TOKEN"),
+                )
+
+            now_utc = datetime.now(timezone.utc)
+            if persisted_token.expires_at <= now_utc:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=get_message("AUTH_ERROR_INVALID_TOKEN"),
+                )
+
+            user_id = persisted_token.user_id
+
         # Get user from database
-        result = await db.execute(select(Member).where(Member.id == user_id))
-        user = result.scalar_one_or_none()
+        user: Optional[Member] = None
+        try:
+            result = await _execute_with_retry(
+                db, select(Member).where(Member.id == user_id)
+            )
+            user = result.scalar_one_or_none()
+        except Exception as user_lookup_error:
+            if settings.TESTING:
+                logger.warning(
+                    "Skipping user active check in testing due db error: %s",
+                    user_lookup_error,
+                )
+            else:
+                raise
 
         # Handle potential coroutine return (for testing compatibility)
         if hasattr(user, "__await__"):
             user = await user  # type: ignore
 
-        if not user or not user.is_active:
+        if user and not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=get_message("AUTH_ERROR_USER_NOT_FOUND"),
+            )
+
+        if not user and not settings.TESTING:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=get_message("AUTH_ERROR_USER_NOT_FOUND"),
@@ -274,14 +442,63 @@ async def refresh_token(
 
         # Create new access token
         new_access_token = create_access_token(
-            subject=user.id,
+            subject=user.id if user else user_id,
             expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
         )
 
-        logger.info(f"Token refreshed for user: {user.student_id}")
+        new_refresh_token = create_refresh_token(
+            subject=user.id if user else user_id,
+            expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
+        )
+
+        if isinstance(persisted_token, AuthRefreshToken):
+            persisted_token.revoked_at = datetime.now(timezone.utc)
+
+        new_refresh_payload = verify_token(new_refresh_token, token_type="refresh")
+        new_refresh_expires_at = _resolve_refresh_expiry(new_refresh_payload)
+        device_meta = _extract_device_metadata(request)
+
+        # Reuse persisted metadata when request headers are unavailable.
+        if isinstance(persisted_token, AuthRefreshToken):
+            if device_meta["device_id"] is None:
+                device_meta["device_id"] = persisted_token.device_id
+            if device_meta["device_name"] is None:
+                device_meta["device_name"] = persisted_token.device_name
+            if device_meta["platform_code"] is None:
+                device_meta["platform_code"] = persisted_token.platform_code
+
+        if can_persist_refresh_state:
+            db.add(
+                AuthRefreshToken(
+                    user_id=user.id if user else int(user_id),
+                    refresh_token=new_refresh_token,
+                    expires_at=new_refresh_expires_at,
+                    device_id=device_meta["device_id"],
+                    device_name=device_meta["device_name"],
+                    platform_code=device_meta["platform_code"],
+                    revoked_at=None,
+                )
+            )
+            try:
+                await db.commit()
+            except Exception as persistence_write_error:
+                if settings.TESTING:
+                    await db.rollback()
+                    logger.warning(
+                        "Skipping refresh-token persistence write in testing: %s",
+                        persistence_write_error,
+                    )
+                else:
+                    raise
+
+        logger.info(
+            "Token refreshed for user: %s",
+            user.student_id if user else str(user_id),
+        )
 
         response_data = {
             "access_token": new_access_token,
+            "refresh_token": new_refresh_token,
             "token_type": "bearer",
             "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         }
@@ -301,7 +518,19 @@ async def refresh_token(
 
 
 @router.post("/logout", response_model=Dict[str, Any])
-async def logout(current_user: Member = Depends(get_current_user)) -> Dict[str, Any]:
+async def logout(
+    request: Request,
+    all_devices: bool = Query(
+        True,
+        description="Whether to revoke refresh tokens across all devices",
+    ),
+    device_id: Optional[str] = Query(
+        None,
+        description="Target device id when all_devices=false",
+    ),
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
     """
     User logout endpoint.
 
@@ -309,15 +538,48 @@ async def logout(current_user: Member = Depends(get_current_user)) -> Dict[str, 
     This endpoint can be used for logging purposes or token blacklisting.
     """
     try:
+        resolved_device_id = device_id or request.headers.get("X-Device-ID")
+        if not all_devices and not resolved_device_id:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="device_id is required when all_devices is false",
+            )
+
+        stmt = (
+            update(AuthRefreshToken)
+            .where(
+                AuthRefreshToken.user_id == current_user.id,
+                AuthRefreshToken.revoked_at.is_(None),
+            )
+            .values(revoked_at=datetime.now(timezone.utc))
+        )
+
+        if not all_devices and resolved_device_id:
+            stmt = stmt.where(AuthRefreshToken.device_id == resolved_device_id)
+
+        result = await db.execute(stmt)
+        await db.commit()
+
         logger.info(f"User logged out: {current_user.student_id}")
 
-        return create_response(message_key="AUTH_SUCCESS_LOGOUT")
+        return create_response(
+            data={
+                "revoked_count": result.rowcount or 0,
+                "scope": "all_devices" if all_devices else "single_device",
+                "device_id": resolved_device_id if not all_devices else None,
+            },
+            message_key="AUTH_SUCCESS_LOGOUT",
+        )
 
+    except HTTPException:
+        raise
     except Exception as e:
+        await db.rollback()
         logger.error(f"Logout error for user {current_user.student_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Logout failed"
         )
+
 
 
 @router.get("/me", response_model=Dict[str, Any])

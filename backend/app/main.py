@@ -3,6 +3,7 @@
 import logging
 import logging.config
 from contextlib import asynccontextmanager
+from uuid import uuid4
 from typing import Any, AsyncGenerator, Dict
 
 from fastapi import FastAPI, Request, Response, status
@@ -15,10 +16,12 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.api.v1 import attendance, auth, dashboard
 from app.api.v1 import import_api as import_router
 from app.api.v1 import assistance, members, monitoring, repair, roles, statistics, system, system_config
+from app.api.deps import create_error_response
 from app.core.cache import cleanup_cache, init_cache
 from app.core.config import get_cors_origins, get_log_config, settings
 from app.core.database import check_database_health, close_database, init_database
 from app.core.exceptions import BaseCustomException
+from app.core.request_context import get_request_id, reset_request_id, set_request_id
 from app.core.startup import initialize_app
 from app.core.openapi_config import (
     get_custom_openapi_schema,
@@ -150,6 +153,23 @@ def custom_openapi() -> Dict[str, Any]:
 app.openapi = custom_openapi  # type: ignore[method-assign]
 
 
+@app.middleware("http")
+async def add_request_id(request: Request, call_next: Any) -> Response:
+    """Attach request_id to context and response headers for traceability."""
+    incoming_request_id = request.headers.get("X-Request-ID")
+    request_id = incoming_request_id or f"req_{uuid4().hex}"
+
+    token = set_request_id(request_id)
+    request.state.request_id = request_id
+    try:
+        response: Response = await call_next(request)
+    finally:
+        reset_request_id(token)
+
+    response.headers["X-Request-ID"] = request_id
+    return response
+
+
 # Add security headers middleware
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next: Any) -> Response:
@@ -187,15 +207,15 @@ async def custom_exception_handler(
     request: Request, exc: BaseCustomException
 ) -> JSONResponse:
     """Handle custom exceptions."""
-    logger.error(f"Custom exception: {exc.message}", exc_info=exc)
+    logger.error(f"[{get_request_id()}] Custom exception: {exc.message}", exc_info=exc)
     return JSONResponse(
         status_code=exc.status_code,
-        content={
-            "success": False,
-            "message": exc.message,
-            "details": exc.details,
-            "error_code": exc.__class__.__name__,
-        },
+        content=create_error_response(
+            message=exc.message,
+            status_code=exc.status_code,
+            details=exc.details,
+            error_code=exc.__class__.__name__,
+        ),
     )
 
 
@@ -204,15 +224,17 @@ async def http_exception_handler(
     request: Request, exc: StarletteHTTPException
 ) -> JSONResponse:
     """Handle HTTP exceptions."""
-    logger.warning(f"HTTP exception: {exc.status_code} - {exc.detail}")
+    logger.warning(f"[{get_request_id()}] HTTP exception: {exc.status_code} - {exc.detail}")
+    message = exc.detail if isinstance(exc.detail, str) else "HTTP request failed"
+    details = exc.detail if isinstance(exc.detail, dict) else {}
     return JSONResponse(
         status_code=exc.status_code,
-        content={
-            "success": False,
-            "message": exc.detail,
-            "details": {},
-            "error_code": "HTTP_ERROR",
-        },
+        content=create_error_response(
+            message=message,
+            status_code=exc.status_code,
+            details=details,
+            error_code="HTTP_ERROR",
+        ),
     )
 
 
@@ -221,7 +243,7 @@ async def validation_exception_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
     """Handle request validation errors."""
-    logger.warning(f"Validation error: {exc.errors()}")
+    logger.warning(f"[{get_request_id()}] Validation error: {exc.errors()}")
 
     # Format validation errors and keep both structured details and a
     # backward-compatible field map for existing clients.
@@ -237,28 +259,29 @@ async def validation_exception_handler(
             {
                 "field": field or None,
                 "loc": loc,
+                "message": message,
                 "msg": message,
+                "code": "INVALID_PARAMETER",
             }
         )
         if field:
             field_errors[field] = message
 
+    response_content = create_error_response(
+        message="提交数据校验失败",
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        error_code="ValidationError",
+        errors=error_items,
+        details={"field_errors": field_errors},
+    )
+    # Backward compatibility for tests/clients still reading legacy "detail" key.
+    response_content["detail"] = [
+        {"loc": item["loc"], "msg": item["msg"]} for item in error_items
+    ]
+
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={
-            "success": False,
-            "message": "提交数据校验失败",
-            "errors": error_items,
-            "detail": [
-                {
-                    "loc": item["loc"],
-                    "msg": item["msg"],
-                }
-                for item in error_items
-            ],
-            "details": {"field_errors": field_errors},
-            "error_code": "ValidationError",
-        },
+        content=response_content,
     )
 
 
@@ -271,7 +294,8 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
 
     # Log the error with full context
     logger.error(
-        f"Unexpected error in {request.method} {request.url}: {str(exc)}", exc_info=exc
+        f"[{get_request_id()}] Unexpected error in {request.method} {request.url}: {str(exc)}",
+        exc_info=exc,
     )
 
     # Enhanced error categorization for better debugging
@@ -288,48 +312,48 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
         logger.error(f"Database error: {str(exc)}")
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            content={
-                "success": False,
-                "message": (
+            content=create_error_response(
+                message=(
                     "Database service temporarily unavailable"
                     if not settings.DEBUG
                     else str(exc)
                 ),
-                "details": (
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                details=(
                     error_context if settings.DEBUG else {"error_type": "database"}
                 ),
-                "error_code": "DatabaseError",
-            },
+                error_code="DatabaseError",
+            ),
         )
     elif "Event loop is closed" in str(exc) or "RuntimeError" in str(exc):
         # Event loop / async context errors (common in tests/CI)
         logger.error(f"Event loop error: {str(exc)}")
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={
-                "success": False,
-                "message": "Async operation failed" if not settings.DEBUG else str(exc),
-                "details": error_context if settings.DEBUG else {"error_type": "async"},
-                "error_code": "AsyncError",
-            },
+            content=create_error_response(
+                message="Async operation failed" if not settings.DEBUG else str(exc),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                details=error_context if settings.DEBUG else {"error_type": "async"},
+                error_code="AsyncError",
+            ),
         )
     elif "connection" in str(exc).lower() or "timeout" in str(exc).lower():
         # Connection/timeout related errors
         logger.error(f"Connection error: {str(exc)}")
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            content={
-                "success": False,
-                "message": (
+            content=create_error_response(
+                message=(
                     "Service temporarily unavailable"
                     if not settings.DEBUG
                     else str(exc)
                 ),
-                "details": (
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                details=(
                     error_context if settings.DEBUG else {"error_type": "connection"}
                 ),
-                "error_code": "ConnectionError",
-            },
+                error_code="ConnectionError",
+            ),
         )
 
     # Generic exception handling
@@ -337,30 +361,26 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
         # In debug/testing mode, return detailed error info
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={
-                "success": False,
-                "message": str(exc),
-                "details": {
+            content=create_error_response(
+                message=str(exc),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                details={
                     **error_context,
-                    "traceback": traceback.format_exc().split("\n")[
-                        -20:
-                    ],  # Last 20 lines
+                    "traceback": traceback.format_exc().split("\n")[-20:],
                 },
-                "error_code": exc.__class__.__name__,
-            },
+                error_code=exc.__class__.__name__,
+            ),
         )
     else:
         # In production, return generic error
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={
-                "success": False,
-                "message": "Internal server error",
-                "details": {
-                    "error_id": hash(str(exc)) % 1000000
-                },  # Error ID for support
-                "error_code": "InternalServerError",
-            },
+            content=create_error_response(
+                message="Internal server error",
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                details={"error_id": hash(str(exc)) % 1000000},
+                error_code="InternalServerError",
+            ),
         )
 
 

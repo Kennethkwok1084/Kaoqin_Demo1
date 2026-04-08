@@ -3,6 +3,7 @@ Unit tests for Authentication API endpoints.
 Tests login, refresh token, profile management and password change functionality.
 """
 
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -16,6 +17,7 @@ from app.api.v1.auth import (
     update_user_profile,
 )
 from app.models.member import Member, UserRole
+from app.models.auth_refresh_token import AuthRefreshToken
 from app.schemas.auth import (
     ChangePasswordRequest,
     LoginRequest,
@@ -177,6 +179,8 @@ class TestAuthAPI:
     async def test_refresh_token_success(self):
         """Test successful token refresh."""
         mock_db = AsyncMock()
+        mock_request = Mock()
+        mock_request.headers = {}
 
         mock_user = Member(
             id=1,
@@ -187,10 +191,22 @@ class TestAuthAPI:
             is_active=True,
         )
 
-        # Mock database query result
-        mock_result = AsyncMock()
-        mock_result.scalar_one_or_none.return_value = mock_user
-        mock_db.execute = AsyncMock(return_value=mock_result)
+        # Mock persisted refresh token result
+        mock_persisted_result = Mock()
+        mock_persisted_result.scalar_one_or_none.return_value = AuthRefreshToken(
+            user_id=1,
+            refresh_token="valid_refresh_token",
+            expires_at=datetime.now(timezone.utc) + timedelta(days=1),
+            revoked_at=None,
+        )
+
+        # Mock user query result
+        mock_user_result = Mock()
+        mock_user_result.scalar_one_or_none.return_value = mock_user
+
+        mock_db.execute = AsyncMock(
+            side_effect=[mock_persisted_result, mock_user_result]
+        )
 
         # Mock token verification and user retrieval
         with (
@@ -201,7 +217,9 @@ class TestAuthAPI:
         ):
             refresh_data = RefreshTokenRequest(refresh_token="valid_refresh_token")
 
-            result = await refresh_token(refresh_data=refresh_data, db=mock_db)
+            result = await refresh_token(
+                refresh_data=refresh_data, request=mock_request, db=mock_db
+            )
 
             assert result["success"] is True
             assert result["data"]["access_token"] == "new_access_token"
@@ -212,6 +230,8 @@ class TestAuthAPI:
     async def test_refresh_token_invalid(self):
         """Test token refresh with invalid token."""
         mock_db = AsyncMock()
+        mock_request = Mock()
+        mock_request.headers = {}
 
         # Mock token verification failure
         with patch(
@@ -223,7 +243,9 @@ class TestAuthAPI:
             refresh_data = RefreshTokenRequest(refresh_token="invalid_token")
 
             with pytest.raises(HTTPException) as exc_info:
-                await refresh_token(refresh_data=refresh_data, db=mock_db)
+                await refresh_token(
+                    refresh_data=refresh_data, request=mock_request, db=mock_db
+                )
 
             assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
 
