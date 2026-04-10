@@ -364,6 +364,14 @@ class DataImportService:
                 matched_data = await self._match_ab_tables(cleaned_data, table_info)
                 result.matched_data = matched_data["matched"]
                 result.unmatched_data = matched_data["unmatched"]
+
+                if matched_data.get("degraded"):
+                    fallback_reason = str(
+                        matched_data.get("fallback_reason") or "unknown"
+                    )
+                    result.warnings.append(
+                        f"A/B匹配已降级为简单匹配: {fallback_reason}"
+                    )
             else:
                 result.matched_data = cleaned_data
 
@@ -384,6 +392,17 @@ class DataImportService:
                 result.created_tasks = creation_result["created"]
                 result.updated_tasks = creation_result["updated"]
                 result.skipped_rows = creation_result["skipped"]
+                creation_errors = creation_result.get("errors", [])
+                for error_item in creation_errors:
+                    if isinstance(error_item, dict):
+                        row_index = error_item.get("row_index")
+                        error_type = error_item.get("error_type", "UnknownError")
+                        message = error_item.get("message", "未知错误")
+                        result.errors.append(
+                            f"任务创建失败(row={row_index}, type={error_type}): {message}"
+                        )
+                    else:
+                        result.errors.append(f"任务创建失败: {error_item}")
 
             result.processed_rows = len(result.matched_data)
             result.success = True
@@ -393,7 +412,7 @@ class DataImportService:
 
         except Exception as e:
             logger.error(f"Import failed: {str(e)}")
-            result.errors.append(f"导入失败: {str(e)}")
+            result.errors.append(f"导入失败({e.__class__.__name__}): {str(e)}")
             return result
 
         finally:
@@ -777,7 +796,7 @@ class DataImportService:
 
     async def _match_ab_tables(
         self, data: List[Dict[str, Any]], table_info: Dict[str, Any]
-    ) -> Dict[str, List[Dict[str, Any]]]:
+    ) -> Dict[str, Any]:
         """A/B表智能匹配算法（重构版）"""
         logger.info("Starting intelligent A/B table matching...")
 
@@ -853,16 +872,21 @@ class DataImportService:
             return {
                 "matched": matched_data,
                 "unmatched": unmatched_data,
+                "degraded": False,
+                "fallback_reason": None,
             }
 
         except Exception as e:
             logger.error(f"Intelligent A/B table matching error: {str(e)}")
             # 降级到简单匹配
-            return await self._fallback_simple_matching(data, table_info)
+            fallback_result = await self._fallback_simple_matching(data, table_info)
+            fallback_result["degraded"] = True
+            fallback_result["fallback_reason"] = str(e)
+            return fallback_result
 
     async def _fallback_simple_matching(
         self, data: List[Dict[str, Any]], table_info: Dict[str, Any]
-    ) -> Dict[str, List[Dict[str, Any]]]:
+    ) -> Dict[str, Any]:
         """降级简单匹配算法"""
         logger.info("Using fallback simple matching...")
 
@@ -934,11 +958,27 @@ class DataImportService:
                 f"{len(unmatched_data)} unmatched"
             )
 
-            return {"matched": matched_data, "unmatched": unmatched_data}
+            return {
+                "matched": matched_data,
+                "unmatched": unmatched_data,
+                "degraded": False,
+                "fallback_reason": None,
+            }
 
         except Exception as e:
             logger.error(f"Fallback matching error: {str(e)}")
-            return {"matched": [], "unmatched": data}
+            return {
+                "matched": [],
+                "unmatched": [
+                    {
+                        **row,
+                        "_match_reason": f"降级匹配失败: {str(e)}",
+                    }
+                    for row in data
+                ],
+                "degraded": True,
+                "fallback_reason": str(e),
+            }
 
     def _extract_field_value(
         self, row: Dict[str, Any], field_type: str, table_info: Dict[str, Any]
@@ -1043,8 +1083,12 @@ class DataImportService:
                 from dateutil import parser
 
                 report_time = parser.parse(report_time_str)
-            except Exception:
-                pass
+            except Exception as parse_error:
+                logger.warning(
+                    "Failed to parse report_time '%s', fallback to current time: %s",
+                    report_time_str,
+                    parse_error,
+                )
 
         # 根据B表检修形式判断任务类型（重构逻辑）
         task_type = self._determine_task_type_by_repair_form(
@@ -1268,15 +1312,16 @@ class DataImportService:
 
     async def _create_tasks_from_import(
         self, validated_data: List[Dict[str, Any]], options: Dict[str, Any]
-    ) -> Dict[str, int]:
+    ) -> Dict[str, Any]:
         """从导入数据创建任务"""
         created_count = 0
         updated_count = 0
         skipped_count = 0
+        errors: List[Dict[str, Any]] = []
 
         creator_id = options.get("creator_id", 1)  # 默认创建者ID
 
-        for row in validated_data:
+        for row_index, row in enumerate(validated_data, start=1):
             try:
                 # 检查是否已存在相同的任务（基于标题和报告人）
                 existing_query = select(RepairTask).where(
@@ -1311,17 +1356,23 @@ class DataImportService:
                         if matched_member:
                             row["assigned_to"] = matched_member.id
                         else:
-                            # 获取或创建默认成员
-                            default_member = await self._get_or_create_default_member()
-                            row["assigned_to"] = (
-                                default_member.id if default_member else 1
-                            )
+                            # 允许降级：匹配不到成员时回退到系统默认成员。
+                            row["assigned_to"] = await self._resolve_default_member_id()
 
                     _ = await self._create_repair_task_from_import_data(row, creator_id)
                     created_count += 1
 
             except Exception as e:
                 logger.error(f"Error creating task from import data: {str(e)}")
+                errors.append(
+                    {
+                        "row_index": row_index,
+                        "error_type": e.__class__.__name__,
+                        "message": str(e),
+                        "title": row.get("title"),
+                        "reporter_name": row.get("reporter_name"),
+                    }
+                )
                 skipped_count += 1
 
         await self.db.commit()
@@ -1330,6 +1381,7 @@ class DataImportService:
             "created": created_count,
             "updated": updated_count,
             "skipped": skipped_count,
+            "errors": errors,
         }
 
     async def _save_temp_file(self, file: UploadFile) -> str:
@@ -1357,8 +1409,8 @@ class DataImportService:
             # 清理文件描述符
             try:
                 os.close(temp_fd)
-            except OSError:
-                pass
+            except OSError as close_error:
+                logger.debug("Failed to close temp file descriptor: %s", close_error)
             raise e
         finally:
             await file.seek(0)
@@ -2374,8 +2426,8 @@ class DataImportService:
             count = result.scalar()
             return bool(count and count > 0)
         except Exception as e:
-            logger.warning(f"Error checking task existence: {str(e)}")
-            return False
+            logger.error(f"Error checking task existence: {str(e)}")
+            raise RuntimeError("检查任务是否存在失败") from e
 
     async def _get_task_by_task_id(self, task_id: str) -> Optional[RepairTask]:
         """根据任务ID获取任务"""
@@ -2387,8 +2439,8 @@ class DataImportService:
             result = await self.db.execute(task_query)
             return result.scalar_one_or_none()
         except Exception as e:
-            logger.warning(f"Error getting task by ID: {str(e)}")
-            return None
+            logger.error(f"Error getting task by ID: {str(e)}")
+            raise RuntimeError("根据任务编号查询任务失败") from e
 
     async def _find_member_by_reporter_info(
         self, reporter_name: Optional[str], reporter_contact: Optional[str]
@@ -2502,10 +2554,10 @@ class DataImportService:
 
     async def _resolve_member_id(self, assigned_to: Any) -> int:
         """根据导入字段解析成员ID"""
-        try:
-            if isinstance(assigned_to, int):
-                return assigned_to
+        if isinstance(assigned_to, int):
+            return assigned_to
 
+        try:
             if isinstance(assigned_to, str):
                 # 纯数字字符串直接作为ID处理
                 if assigned_to.isdigit():
@@ -2531,14 +2583,22 @@ class DataImportService:
                     member = result.scalar_one_or_none()
                     if member:
                         return member.id
-
         except Exception as e:  # pragma: no cover
-            logger.warning(f"Error resolving member ID: {str(e)}")
+            logger.error(f"Error resolving member ID: {str(e)}")
+            raise RuntimeError("解析成员ID失败") from e
 
+        # 允许降级：成员无法解析时回退到系统默认成员。
+        logger.info("Member id unresolved for '%s', fallback to system_default", assigned_to)
+        return await self._resolve_default_member_id()
+
+    async def _resolve_default_member_id(self) -> int:
+        """获取默认成员ID；若默认成员不可用则必须失败。"""
         default_member = await self._get_or_create_default_member()
-        return default_member.id if default_member else 1
+        if default_member.id is None:
+            raise RuntimeError("系统默认成员缺少有效ID")
+        return default_member.id
 
-    async def _get_or_create_default_member(self) -> Optional[Member]:
+    async def _get_or_create_default_member(self) -> Member:
         """获取或创建默认成员"""
         try:
             # 查找现有的系统默认成员
@@ -2571,7 +2631,7 @@ class DataImportService:
 
         except Exception as e:
             logger.error(f"Error getting or creating default member: {str(e)}")
-            return None
+            raise RuntimeError("获取或创建默认成员失败") from e
 
     async def preview_import_data(
         self, file: UploadFile, preview_rows: int = 10
@@ -2984,13 +3044,8 @@ class DataImportService:
                             if matched_member:
                                 task_data["assigned_to"] = matched_member.id
                             else:
-                                # 获取或创建默认成员
-                                default_member = (
-                                    await self._get_or_create_default_member()
-                                )
-                                task_data["assigned_to"] = (
-                                    default_member.id if default_member else 1
-                                )
+                                # 允许降级：匹配不到成员时回退到系统默认成员。
+                                task_data["assigned_to"] = await self._resolve_default_member_id()
 
                         task_data["import_batch_id"] = batch_id
                         await self._create_repair_task_from_import_data(

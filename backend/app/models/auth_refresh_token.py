@@ -15,7 +15,7 @@ class AuthRefreshToken(BaseModel):
     __tablename__ = "auth_refresh_token"
 
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("members.id", ondelete="CASCADE"),
+        ForeignKey("app_user.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
         comment="User id",

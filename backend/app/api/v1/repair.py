@@ -24,6 +24,7 @@ from app.api.deps import (
     get_db,
 )
 from app.models.member import Member, UserRole
+from app.models.repair_ticket import RepairTicket
 from app.models.task import (
     AssistanceTask,
     MonitoringTask,
@@ -35,7 +36,20 @@ from app.models.task import (
     TaskTagType,
     TaskType,
 )
+from app.models.workhour_rule import WorkhourRule
+from app.models.workhour_tag import WorkhourTag
 from app.services.import_service import DataImportService
+from app.services.inspection_sampling_workhour_service import (
+    InspectionSamplingWorkhourService,
+)
+from app.services.repair_workhour_service import RepairWorkhourService
+from app.schemas.repair_workhour import (
+    BizReviewSubmitRequest,
+    RepairReviewActionRequest,
+    RepairReviewSubmitRequest,
+    WorkhourEntryQueryRequest,
+    WorkhourMonthlySettlementRequest,
+)
 from app.schemas.task import (
     TaskAssignment,
     TaskCreate,
@@ -3690,8 +3704,6 @@ async def batch_mark_rush_tasks(
     权限：仅管理员可标记爆单任务
     """
     try:
-        pass
-
         from app.services.work_hours_service import RushTaskMarkingService
 
         rush_service = RushTaskMarkingService(db)
@@ -4800,6 +4812,623 @@ async def get_pending_work_hours_review(
         )
 
 
+# ============= Repair/Workhour V2 审批与结算闭环 =============
+
+
+def _can_review_repair_v2(user: Member) -> bool:
+    return bool(user.is_admin or user.role in [UserRole.ADMIN, UserRole.GROUP_LEADER])
+
+
+def _is_supported_workhour_biz(biz_type: str) -> bool:
+    return biz_type in {"repair", "inspection", "sampling"}
+
+
+@router.post("/repair-v2/{ticket_id}/submit-review", response_model=Dict[str, Any])
+async def submit_repair_v2_review(
+    ticket_id: int,
+    payload: RepairReviewSubmitRequest,
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """提交新报修单到审核队列。"""
+    try:
+        service = RepairWorkhourService(db)
+        result = await service.submit_review(
+            ticket_id=ticket_id,
+            operator_id=current_user.id,
+            payload=payload,
+        )
+        return create_response(data=result, message="报修单已提交审核")
+    except ValueError as e:
+        detail = str(e)
+        status_code = (
+            http_status.HTTP_404_NOT_FOUND
+            if "不存在" in detail
+            else http_status.HTTP_400_BAD_REQUEST
+        )
+        raise HTTPException(status_code=status_code, detail=detail)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Submit repair v2 review error: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="提交审核失败",
+        )
+
+
+@router.post("/repair-v2/{ticket_id}/review", response_model=Dict[str, Any])
+async def review_repair_v2_application(
+    ticket_id: int,
+    payload: RepairReviewActionRequest,
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """审批新报修单审核申请（通过/驳回）。"""
+    if not _can_review_repair_v2(current_user):
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="无权限执行审核操作",
+        )
+
+    try:
+        service = RepairWorkhourService(db)
+        result = await service.review_application(
+            ticket_id=ticket_id,
+            reviewer_id=current_user.id,
+            payload=payload,
+        )
+        return create_response(data=result, message="审核处理完成")
+    except ValueError as e:
+        detail = str(e)
+        status_code = (
+            http_status.HTTP_404_NOT_FOUND
+            if "不存在" in detail
+            else http_status.HTTP_400_BAD_REQUEST
+        )
+        raise HTTPException(status_code=status_code, detail=detail)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Review repair v2 application error: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="审核处理失败",
+        )
+
+
+@router.get("/repair-v2/pending-review", response_model=Dict[str, Any])
+async def get_repair_v2_pending_review(
+    page: int = Query(1, ge=1, description="页码"),
+    pageSize: int = Query(20, ge=1, le=200, description="每页数量"),
+    current_user: Member = Depends(get_current_active_group_leader),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """获取新报修体系待审核列表。"""
+    try:
+        service = RepairWorkhourService(db)
+        data = await service.list_pending_reviews(page=page, page_size=pageSize)
+        return create_response(data=data, message="获取待审核列表成功")
+    except Exception as e:
+        logger.error(f"Get repair v2 pending review error: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取待审核列表失败",
+        )
+
+
+@router.post("/inspection-v2/{record_id}/submit-review", response_model=Dict[str, Any])
+async def submit_inspection_v2_review(
+    record_id: int,
+    payload: BizReviewSubmitRequest,
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """提交巡检记录到审核队列。"""
+    try:
+        service = InspectionSamplingWorkhourService(db)
+        result = await service.submit_review(
+            biz_type="inspection",
+            record_id=record_id,
+            operator_id=current_user.id,
+            payload=payload,
+        )
+        return create_response(data=result, message="巡检记录已提交审核")
+    except ValueError as e:
+        detail = str(e)
+        status_code = (
+            http_status.HTTP_404_NOT_FOUND
+            if "不存在" in detail
+            else http_status.HTTP_400_BAD_REQUEST
+        )
+        raise HTTPException(status_code=status_code, detail=detail)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Submit inspection v2 review error: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="提交巡检审核失败",
+        )
+
+
+@router.post("/inspection-v2/{record_id}/review", response_model=Dict[str, Any])
+async def review_inspection_v2_application(
+    record_id: int,
+    payload: RepairReviewActionRequest,
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """审批巡检审核申请（通过/驳回）。"""
+    if not _can_review_repair_v2(current_user):
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="无权限执行审核操作",
+        )
+
+    try:
+        service = InspectionSamplingWorkhourService(db)
+        result = await service.review_application(
+            biz_type="inspection",
+            record_id=record_id,
+            reviewer_id=current_user.id,
+            payload=payload,
+        )
+        return create_response(data=result, message="巡检审核处理完成")
+    except ValueError as e:
+        detail = str(e)
+        status_code = (
+            http_status.HTTP_404_NOT_FOUND
+            if "不存在" in detail
+            else http_status.HTTP_400_BAD_REQUEST
+        )
+        raise HTTPException(status_code=status_code, detail=detail)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Review inspection v2 application error: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="巡检审核处理失败",
+        )
+
+
+@router.get("/inspection-v2/pending-review", response_model=Dict[str, Any])
+async def get_inspection_v2_pending_review(
+    page: int = Query(1, ge=1, description="页码"),
+    pageSize: int = Query(20, ge=1, le=200, description="每页数量"),
+    current_user: Member = Depends(get_current_active_group_leader),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """获取巡检体系待审核列表。"""
+    try:
+        service = InspectionSamplingWorkhourService(db)
+        data = await service.list_pending_reviews(
+            biz_type="inspection", page=page, page_size=pageSize
+        )
+        return create_response(data=data, message="获取巡检待审核列表成功")
+    except Exception as e:
+        logger.error(f"Get inspection v2 pending review error: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取巡检待审核列表失败",
+        )
+
+
+@router.post("/sampling-v2/{record_id}/submit-review", response_model=Dict[str, Any])
+async def submit_sampling_v2_review(
+    record_id: int,
+    payload: BizReviewSubmitRequest,
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """提交抽检记录到审核队列。"""
+    try:
+        service = InspectionSamplingWorkhourService(db)
+        result = await service.submit_review(
+            biz_type="sampling",
+            record_id=record_id,
+            operator_id=current_user.id,
+            payload=payload,
+        )
+        return create_response(data=result, message="抽检记录已提交审核")
+    except ValueError as e:
+        detail = str(e)
+        status_code = (
+            http_status.HTTP_404_NOT_FOUND
+            if "不存在" in detail
+            else http_status.HTTP_400_BAD_REQUEST
+        )
+        raise HTTPException(status_code=status_code, detail=detail)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Submit sampling v2 review error: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="提交抽检审核失败",
+        )
+
+
+@router.post("/sampling-v2/{record_id}/review", response_model=Dict[str, Any])
+async def review_sampling_v2_application(
+    record_id: int,
+    payload: RepairReviewActionRequest,
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """审批抽检审核申请（通过/驳回）。"""
+    if not _can_review_repair_v2(current_user):
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="无权限执行审核操作",
+        )
+
+    try:
+        service = InspectionSamplingWorkhourService(db)
+        result = await service.review_application(
+            biz_type="sampling",
+            record_id=record_id,
+            reviewer_id=current_user.id,
+            payload=payload,
+        )
+        return create_response(data=result, message="抽检审核处理完成")
+    except ValueError as e:
+        detail = str(e)
+        status_code = (
+            http_status.HTTP_404_NOT_FOUND
+            if "不存在" in detail
+            else http_status.HTTP_400_BAD_REQUEST
+        )
+        raise HTTPException(status_code=status_code, detail=detail)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Review sampling v2 application error: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="抽检审核处理失败",
+        )
+
+
+@router.get("/sampling-v2/pending-review", response_model=Dict[str, Any])
+async def get_sampling_v2_pending_review(
+    page: int = Query(1, ge=1, description="页码"),
+    pageSize: int = Query(20, ge=1, le=200, description="每页数量"),
+    current_user: Member = Depends(get_current_active_group_leader),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """获取抽检体系待审核列表。"""
+    try:
+        service = InspectionSamplingWorkhourService(db)
+        data = await service.list_pending_reviews(
+            biz_type="sampling", page=page, page_size=pageSize
+        )
+        return create_response(data=data, message="获取抽检待审核列表成功")
+    except Exception as e:
+        logger.error(f"Get sampling v2 pending review error: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取抽检待审核列表失败",
+        )
+
+
+@router.post("/workhour-v2/settlement/monthly", response_model=Dict[str, Any])
+async def run_workhour_v2_monthly_settlement(
+    payload: WorkhourMonthlySettlementRequest,
+    current_user: Member = Depends(get_current_active_admin),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """执行 repair/inspection/sampling 业务月度工时结算。"""
+    try:
+        if not _is_supported_workhour_biz(payload.biz_type):
+            raise HTTPException(
+                status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="不支持的业务类型",
+            )
+
+        if payload.biz_type == "repair":
+            service = RepairWorkhourService(db)
+            result = await service.run_monthly_settlement(
+                year=payload.year,
+                month=payload.month,
+                operator_id=current_user.id,
+                user_id=payload.user_id,
+                dry_run=payload.dry_run,
+            )
+        else:
+            service = InspectionSamplingWorkhourService(db)
+            result = await service.run_monthly_settlement(
+                biz_type=payload.biz_type,
+                year=payload.year,
+                month=payload.month,
+                operator_id=current_user.id,
+                user_id=payload.user_id,
+                dry_run=payload.dry_run,
+            )
+
+        message = (
+            f"{payload.biz_type} 月度结算预演完成"
+            if payload.dry_run
+            else f"{payload.biz_type} 月度结算执行完成"
+        )
+        return create_response(data=result, message=message)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Run workhour v2 monthly settlement error: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="月度结算失败",
+        )
+
+
+@router.get("/workhour-v2/rules", response_model=Dict[str, Any])
+async def get_workhour_v2_rules(
+    biz_type: str = Query("repair", description="业务类型"),
+    enabled_only: bool = Query(True, description="仅返回启用规则"),
+    current_user: Member = Depends(get_current_active_group_leader),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """查询工时规则配置。"""
+    try:
+        stmt = select(WorkhourRule).where(WorkhourRule.biz_type == biz_type)
+        if enabled_only:
+            stmt = stmt.where(WorkhourRule.is_enabled.is_(True))
+        stmt = stmt.order_by(WorkhourRule.id)
+        result = await db.execute(stmt)
+        rules = result.scalars().all()
+        items = [
+            {
+                "id": item.id,
+                "rule_code": item.rule_code,
+                "rule_name": item.rule_name,
+                "biz_type": item.biz_type,
+                "formula_desc": item.formula_desc,
+                "formula_json": item.formula_json,
+                "is_enabled": item.is_enabled,
+            }
+            for item in rules
+        ]
+        return create_response(
+            data={"items": items, "total": len(items)},
+            message="工时规则获取成功",
+        )
+    except Exception as e:
+        logger.error(f"Get workhour v2 rules error: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取工时规则失败",
+        )
+
+
+@router.get("/workhour-v2/tags", response_model=Dict[str, Any])
+async def get_workhour_v2_tags(
+    enabled_only: bool = Query(True, description="仅返回启用标签"),
+    tag_type: str | None = Query(None, description="标签类型"),
+    current_user: Member = Depends(get_current_active_group_leader),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """查询工时标签配置。"""
+    try:
+        stmt = select(WorkhourTag)
+        if enabled_only:
+            stmt = stmt.where(WorkhourTag.is_enabled.is_(True))
+        if tag_type:
+            stmt = stmt.where(WorkhourTag.tag_type == tag_type)
+        stmt = stmt.order_by(WorkhourTag.id)
+        result = await db.execute(stmt)
+        tags = result.scalars().all()
+        items = [
+            {
+                "id": item.id,
+                "tag_code": item.tag_code,
+                "tag_name": item.tag_name,
+                "tag_type": item.tag_type,
+                "bonus_mode": item.bonus_mode,
+                "bonus_value": float(item.bonus_value),
+                "is_enabled": item.is_enabled,
+            }
+            for item in tags
+        ]
+        return create_response(
+            data={"items": items, "total": len(items)},
+            message="工时标签获取成功",
+        )
+    except Exception as e:
+        logger.error(f"Get workhour v2 tags error: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取工时标签失败",
+        )
+
+
+@router.get("/workhour-v2/entries", response_model=Dict[str, Any])
+async def get_workhour_v2_entries(
+    year: int = Query(..., ge=2000, le=2100, description="年份"),
+    month: int = Query(..., ge=1, le=12, description="月份"),
+    bizType: str = "repair",
+    user_id: int | None = Query(None, ge=1, description="按用户筛选"),
+    page: int = Query(1, ge=1, description="页码"),
+    pageSize: int = Query(20, ge=1, le=200, description="每页大小"),
+    current_user: Member = Depends(get_current_active_group_leader),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """查询 repair/inspection/sampling 业务工时明细。"""
+    try:
+        query_request = WorkhourEntryQueryRequest(
+            year=year,
+            month=month,
+            biz_type=bizType,
+            user_id=user_id,
+            page=page,
+            page_size=pageSize,
+        )
+        if not _is_supported_workhour_biz(query_request.biz_type):
+            raise HTTPException(
+                status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="不支持的业务类型",
+            )
+
+        if query_request.biz_type == "repair":
+            service = RepairWorkhourService(db)
+            result = await service.list_workhour_entries(
+                year=query_request.year,
+                month=query_request.month,
+                user_id=query_request.user_id,
+                page=query_request.page,
+                page_size=query_request.page_size,
+            )
+        else:
+            service = InspectionSamplingWorkhourService(db)
+            result = await service.list_workhour_entries(
+                biz_type=query_request.biz_type,
+                year=query_request.year,
+                month=query_request.month,
+                user_id=query_request.user_id,
+                page=query_request.page,
+                page_size=query_request.page_size,
+            )
+
+        return create_response(data=result, message="工时明细获取成功")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get workhour v2 entries error: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取工时明细失败",
+        )
+
+
+async def _ensure_v2_ticket_for_legacy_task(
+    task_id: int,
+    operator_id: int,
+    db: AsyncSession,
+) -> RepairTicket:
+    """Map legacy repair task into repair_ticket for bridge endpoints."""
+    task_stmt = select(RepairTask).where(RepairTask.id == task_id)
+    task_result = await db.execute(task_stmt)
+    task = task_result.scalar_one_or_none()
+    if task is None:
+        raise HTTPException(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            detail="维修任务不存在",
+        )
+
+    ticket_stmt = select(RepairTicket).where(RepairTicket.repair_no == task.task_id)
+    ticket_result = await db.execute(ticket_stmt)
+    ticket = ticket_result.scalar_one_or_none()
+    if ticket is not None:
+        return ticket
+
+    if task.status == TaskStatus.COMPLETED:
+        solve_status = 2
+    elif task.status == TaskStatus.IN_PROGRESS:
+        solve_status = 1
+    else:
+        solve_status = 0
+
+    ticket_source = "offline" if task.task_type == TaskType.OFFLINE else "online"
+    ticket = RepairTicket(
+        repair_no=task.task_id,
+        ticket_source=ticket_source,
+        title=task.title,
+        report_user_name=task.reporter_name,
+        report_phone=task.reporter_contact,
+        issue_content=task.description,
+        solution_desc=task.feedback,
+        solve_status=solve_status,
+        match_status=0,
+        created_by=task.member_id or operator_id,
+    )
+    db.add(ticket)
+    await db.flush()
+    return ticket
+
+
+@router.post("/repair/{task_id}/submit-review", response_model=Dict[str, Any])
+async def bridge_legacy_repair_submit_review(
+    task_id: int,
+    payload: RepairReviewSubmitRequest,
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """Legacy bridge: submit old repair task into new review workflow."""
+    try:
+        ticket = await _ensure_v2_ticket_for_legacy_task(
+            task_id=task_id,
+            operator_id=current_user.id,
+            db=db,
+        )
+        service = RepairWorkhourService(db)
+        result = await service.submit_review(
+            ticket_id=ticket.id,
+            operator_id=current_user.id,
+            payload=payload,
+        )
+        result["legacy_task_id"] = task_id
+        return create_response(data=result, message="已桥接提交至新审核流程")
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        logger.error(f"Bridge legacy submit review error: {str(e)}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="桥接提交审核失败",
+        )
+
+
+@router.post("/repair/{task_id}/review", response_model=Dict[str, Any])
+async def bridge_legacy_repair_review(
+    task_id: int,
+    payload: RepairReviewActionRequest,
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """Legacy bridge: review old repair task with new review workflow."""
+    if not _can_review_repair_v2(current_user):
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="无权限执行审核操作",
+        )
+
+    try:
+        ticket = await _ensure_v2_ticket_for_legacy_task(
+            task_id=task_id,
+            operator_id=current_user.id,
+            db=db,
+        )
+        service = RepairWorkhourService(db)
+        result = await service.review_application(
+            ticket_id=ticket.id,
+            reviewer_id=current_user.id,
+            payload=payload,
+        )
+        result["legacy_task_id"] = task_id
+        return create_response(data=result, message="已桥接完成审核")
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        logger.error(f"Bridge legacy review error: {str(e)}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="桥接审核失败",
+        )
+
+
 @router.put("/work-hours/{task_id}/adjust", response_model=Dict[str, Any])
 async def adjust_task_work_hours(
     task_id: int,
@@ -5445,8 +6074,6 @@ async def bulk_recalculate_work_hours_enhanced(
     权限：仅管理员可批量重算工时
     """
     try:
-        pass
-
         from app.services.work_hours_service import RushTaskMarkingService
 
         rush_service = RushTaskMarkingService(db)

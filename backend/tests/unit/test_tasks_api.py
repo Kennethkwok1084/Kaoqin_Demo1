@@ -44,7 +44,7 @@ class TestTasksAPI:
             task_type=TaskType.OFFLINE,
             status=TaskStatus.COMPLETED,
             location="测试地点",
-            member_id=test_user.id,
+            member_id=mock_user.id,
             work_minutes=100,  # 添加work_minutes字段
             report_time=datetime.utcnow() - timedelta(hours=2),
             response_time=datetime.utcnow() - timedelta(hours=1),
@@ -115,7 +115,7 @@ class TestTasksAPI:
         # Mock task belonging to different user
         mock_task = RepairTask(
             id=1,
-            member_id=test_user.id,  # Different from current_user.id
+            member_id=1,  # Different from current_user.id
             status=TaskStatus.COMPLETED,
         )
 

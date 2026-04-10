@@ -14,7 +14,9 @@ from app.models.task import RepairTask
 from app.services.import_service import DataImportService, ImportResult
 
 
-@pytest.mark.asyncio
+pytestmark = pytest.mark.asyncio(loop_scope="session")
+
+
 class TestDataImportService:
     """Comprehensive DataImportService tests for improved coverage"""
 

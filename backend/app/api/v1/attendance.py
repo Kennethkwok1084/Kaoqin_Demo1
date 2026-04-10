@@ -5,10 +5,10 @@
 """
 
 import logging
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, status
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,6 +26,241 @@ router = APIRouter()
 
 
 # 工时管理API - 基于任务完成的工时统计和展示
+
+
+def _parse_request_datetime(value: Any, field_name: str) -> Optional[datetime]:
+    """解析请求体中的时间字段，支持ISO字符串与datetime对象。"""
+    if value is None:
+        return None
+
+    if isinstance(value, datetime):
+        if value.tzinfo is not None:
+            return value.astimezone(timezone.utc).replace(tzinfo=None)
+        return value
+
+    if isinstance(value, str):
+        raw = value.strip()
+        if raw.endswith("Z"):
+            raw = raw[:-1] + "+00:00"
+        try:
+            parsed = datetime.fromisoformat(raw)
+            if parsed.tzinfo is not None:
+                return parsed.astimezone(timezone.utc).replace(tzinfo=None)
+            return parsed
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"{field_name} 格式错误，请使用 ISO8601 时间格式",
+            ) from exc
+
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail=f"{field_name} 类型错误",
+    )
+
+
+@router.post("/check-in", response_model=Dict[str, Any], summary="用户签到")
+async def check_in(
+    request_data: Dict[str, Any] = Body(default_factory=dict),
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """用户签到，按“成员 + 自然日”更新考勤记录。"""
+    try:
+        from sqlalchemy import select
+
+        from app.models.attendance import AttendanceRecord
+
+        checkin_time = _parse_request_datetime(
+            request_data.get("checkinTime") or request_data.get("checkin_time"),
+            "checkinTime",
+        ) or datetime.now()
+        attendance_date = checkin_time.date()
+
+        query = select(AttendanceRecord).where(
+            AttendanceRecord.member_id == current_user.id,
+            AttendanceRecord.attendance_date == attendance_date,
+        )
+        result = await db.execute(query)
+        record = result.scalar_one_or_none()
+
+        if record is None:
+            record = AttendanceRecord(
+                member_id=current_user.id,
+                attendance_date=attendance_date,
+            )
+            db.add(record)
+
+        record.checkin_time = checkin_time
+
+        location = request_data.get("location")
+        device_info = request_data.get("deviceInfo") or request_data.get("device_info")
+        notes = request_data.get("notes")
+
+        if location:
+            record.location = str(location)
+
+        note_parts: List[str] = []
+        if notes:
+            note_parts.append(str(notes))
+        if device_info:
+            note_parts.append(f"设备: {device_info}")
+        if note_parts:
+            merged_notes = "；".join(note_parts)
+            record.notes = (
+                f"{record.notes}\n{merged_notes}" if record.notes else merged_notes
+            )
+
+        if record.checkout_time and record.checkout_time >= record.checkin_time:
+            duration_hours = (
+                record.checkout_time - record.checkin_time
+            ).total_seconds() / 3600
+            record.work_hours = round(duration_hours, 2)
+            record.status = "已签退"
+        else:
+            record.status = "已签到"
+
+        await db.commit()
+        await db.refresh(record)
+
+        return {
+            "success": True,
+            "message": "签到成功",
+            "data": {
+                "record_id": record.id,
+                "member_id": record.member_id,
+                "attendance_date": str(record.attendance_date),
+                "checkin_time": (
+                    record.checkin_time.isoformat() if record.checkin_time else None
+                ),
+                "location": record.location,
+                "status": record.status,
+            },
+            "status_code": 200,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"签到失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="签到失败",
+        )
+
+
+@router.post("/check-out", response_model=Dict[str, Any], summary="用户签退")
+async def check_out(
+    request_data: Dict[str, Any] = Body(default_factory=dict),
+    current_user: Member = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """用户签退，计算当日工时。"""
+    try:
+        from sqlalchemy import desc, select
+
+        from app.models.attendance import AttendanceRecord
+
+        checkout_time = _parse_request_datetime(
+            request_data.get("checkoutTime") or request_data.get("checkout_time"),
+            "checkoutTime",
+        ) or datetime.now()
+
+        attendance_date = checkout_time.date()
+        query = select(AttendanceRecord).where(
+            AttendanceRecord.member_id == current_user.id,
+            AttendanceRecord.attendance_date == attendance_date,
+        )
+        result = await db.execute(query)
+        record = result.scalar_one_or_none()
+
+        # 兼容跨天签退：兜底取最近一条未签退记录
+        if record is None:
+            fallback_query = (
+                select(AttendanceRecord)
+                .where(
+                    AttendanceRecord.member_id == current_user.id,
+                    AttendanceRecord.checkout_time.is_(None),
+                )
+                .order_by(desc(AttendanceRecord.attendance_date))
+                .limit(1)
+            )
+            fallback_result = await db.execute(fallback_query)
+            record = fallback_result.scalar_one_or_none()
+
+        if record is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="今日尚未签到，无法签退",
+            )
+
+        if record.checkin_time and checkout_time < record.checkin_time:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="签退时间不能早于签到时间",
+            )
+
+        record.checkout_time = checkout_time
+
+        location = request_data.get("location")
+        work_summary = request_data.get("workSummary") or request_data.get(
+            "work_summary"
+        )
+        notes = request_data.get("notes")
+
+        if location:
+            record.location = str(location)
+
+        note_parts: List[str] = []
+        if work_summary:
+            note_parts.append(f"工作总结: {work_summary}")
+        if notes:
+            note_parts.append(str(notes))
+        if note_parts:
+            merged_notes = "；".join(note_parts)
+            record.notes = (
+                f"{record.notes}\n{merged_notes}" if record.notes else merged_notes
+            )
+
+        if record.checkin_time:
+            duration_hours = (record.checkout_time - record.checkin_time).total_seconds() / 3600
+            record.work_hours = round(max(duration_hours, 0.0), 2)
+
+        record.status = "已签退"
+
+        await db.commit()
+        await db.refresh(record)
+
+        return {
+            "success": True,
+            "message": "签退成功",
+            "data": {
+                "record_id": record.id,
+                "member_id": record.member_id,
+                "attendance_date": str(record.attendance_date),
+                "checkin_time": (
+                    record.checkin_time.isoformat() if record.checkin_time else None
+                ),
+                "checkout_time": (
+                    record.checkout_time.isoformat() if record.checkout_time else None
+                ),
+                "work_hours": float(record.work_hours or 0),
+                "location": record.location,
+                "status": record.status,
+            },
+            "status_code": 200,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"签退失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="签退失败",
+        )
 
 
 def _resolve_cycle_period(
@@ -566,6 +801,11 @@ async def download_attendance_export(filename: str) -> FileResponse:
         filename=filename,
         media_type=("text/csv" if filename.endswith(".csv") else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
     )
+
+
+@router.get(
+    "/summary/{month}", response_model=Dict[str, Any], summary="获取月度工时汇总"
+)
 async def get_monthly_work_hours_summary(
     month: str = Path(..., description="月份，格式：YYYY-MM"),
     member_id: Optional[int] = Query(
@@ -1503,8 +1743,6 @@ async def get_work_hours_chart_data(
     获取工时图表数据，支持按日、周、月聚合
     """
     try:
-        pass
-
         from sqlalchemy import String, func, select
 
         from app.models.task import RepairTask

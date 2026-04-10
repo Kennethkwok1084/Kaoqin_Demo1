@@ -32,15 +32,22 @@ class StartupService:
         """
         try:
             async with async_engine.begin() as conn:
-                # 检查关键表是否存在
+                # 兼容双轨迁移：旧核心表集与新核心表集任一完整即视为可用。
                 result = await conn.execute(text("""
-                    SELECT COUNT(*)
+                    SELECT
+                        SUM(CASE WHEN table_name IN ('members', 'repair_tasks', 'assistance_tasks', 'monitoring_tasks') THEN 1 ELSE 0 END) AS legacy_count,
+                        SUM(CASE WHEN table_name IN ('app_user', 'auth_refresh_token', 'building', 'dorm_room') THEN 1 ELSE 0 END) AS baseline_count
                     FROM information_schema.tables
                     WHERE table_schema = 'public'
-                    AND table_name IN ('members', 'repair_tasks', 'assistance_tasks', 'monitoring_tasks')
+                    AND table_name IN (
+                        'members', 'repair_tasks', 'assistance_tasks', 'monitoring_tasks',
+                        'app_user', 'auth_refresh_token', 'building', 'dorm_room'
+                    )
                 """))
-                table_count = result.scalar()
-                return table_count >= 4  # 至少需要4个核心表
+                row = result.one()
+                legacy_count = int(row.legacy_count or 0)
+                baseline_count = int(row.baseline_count or 0)
+                return legacy_count >= 4 or baseline_count >= 4
         except Exception as e:
             logger.error(f"检查数据库表失败: {e}")
             return False

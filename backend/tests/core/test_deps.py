@@ -35,8 +35,11 @@ from app.api.deps import (
     get_query_params,
     get_sync_db,
     get_task_query_params,
+    get_auth_dual_read_metrics,
+    reset_auth_dual_read_metrics,
 )
 from app.core.config import settings
+from app.models.app_user import AppUser, AppUserStatus
 from app.models.member import Member, UserRole
 
 
@@ -365,6 +368,203 @@ class TestAuthenticationDependencies:
             user = await get_current_user(mock_credentials, mock_db)
 
             assert user == mock_user
+
+    @pytest.mark.asyncio
+    async def test_get_current_user_app_user_read_first_success(
+        self, mock_credentials, mock_user
+    ):
+        """测试开启双读时优先读取app_user后返回member。"""
+        mock_db = AsyncMock()
+        app_user = AppUser(
+            id=1,
+            student_no="20210001",
+            password_hash="hash",
+            real_name="测试用户",
+            status=int(AppUserStatus.ENABLED),
+        )
+
+        app_user_result = MagicMock()
+        app_user_result.scalar_one_or_none.return_value = app_user
+        member_result = MagicMock()
+        member_result.scalar_one_or_none.return_value = mock_user
+
+        with (
+            patch("app.api.deps.verify_token", return_value={"sub": "1"}),
+            patch.object(settings, "AUTH_APP_USER_READ_FIRST", True),
+        ):
+            mock_db.execute = AsyncMock(side_effect=[app_user_result, member_result])
+
+            user = await get_current_user(mock_credentials, mock_db)
+
+            assert user == mock_user
+            assert mock_db.execute.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_get_current_user_app_user_read_first_inactive(self, mock_credentials):
+        """测试开启双读时app_user非启用状态会被拒绝。"""
+        mock_db = AsyncMock()
+        app_user = AppUser(
+            id=1,
+            student_no="20210001",
+            password_hash="hash",
+            real_name="测试用户",
+            status=int(AppUserStatus.DISABLED),
+        )
+
+        app_user_result = MagicMock()
+        app_user_result.scalar_one_or_none.return_value = app_user
+
+        with (
+            patch("app.api.deps.verify_token", return_value={"sub": "1"}),
+            patch.object(settings, "AUTH_APP_USER_READ_FIRST", True),
+        ):
+            mock_db.execute = AsyncMock(return_value=app_user_result)
+
+            with pytest.raises(HTTPException) as exc_info:
+                await get_current_user(mock_credentials, mock_db)
+
+            assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
+
+    @pytest.mark.asyncio
+    async def test_get_current_user_app_user_missing_fallback_member(
+        self, mock_credentials, mock_user
+    ):
+        """测试开启双读时app_user不存在会回退members。"""
+        mock_db = AsyncMock()
+
+        app_user_result = MagicMock()
+        app_user_result.scalar_one_or_none.return_value = None
+        member_result = MagicMock()
+        member_result.scalar_one_or_none.return_value = mock_user
+
+        with (
+            patch("app.api.deps.verify_token", return_value={"sub": "1"}),
+            patch.object(settings, "AUTH_APP_USER_READ_FIRST", True),
+        ):
+            mock_db.execute = AsyncMock(side_effect=[app_user_result, member_result])
+
+            user = await get_current_user(mock_credentials, mock_db)
+
+            assert user == mock_user
+            assert mock_db.execute.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_get_current_user_app_user_query_error_fallback_member(
+        self, mock_credentials, mock_user
+    ):
+        """测试app_user查询异常时仍可回退members。"""
+        mock_db = AsyncMock()
+
+        member_result = MagicMock()
+        member_result.scalar_one_or_none.return_value = mock_user
+
+        with (
+            patch("app.api.deps.verify_token", return_value={"sub": "1"}),
+            patch.object(settings, "AUTH_APP_USER_READ_FIRST", True),
+        ):
+            mock_db.execute = AsyncMock(
+                side_effect=[SQLAlchemyError("app_user missing"), member_result]
+            )
+
+            user = await get_current_user(mock_credentials, mock_db)
+
+            assert user == mock_user
+            assert mock_db.execute.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_get_current_user_dual_read_metrics_updated(
+        self, mock_credentials, mock_user
+    ):
+        """测试双读计数指标会按路径更新。"""
+        mock_db = AsyncMock()
+        app_user = AppUser(
+            id=1,
+            student_no="20210001",
+            password_hash="hash",
+            real_name="测试用户",
+            status=int(AppUserStatus.ENABLED),
+        )
+
+        app_user_result = MagicMock()
+        app_user_result.scalar_one_or_none.return_value = app_user
+        member_result = MagicMock()
+        member_result.scalar_one_or_none.return_value = mock_user
+
+        reset_auth_dual_read_metrics()
+
+        with (
+            patch("app.api.deps.verify_token", return_value={"sub": "1"}),
+            patch.object(settings, "AUTH_APP_USER_READ_FIRST", True),
+        ):
+            mock_db.execute = AsyncMock(side_effect=[app_user_result, member_result])
+
+            user = await get_current_user(mock_credentials, mock_db)
+
+            assert user == mock_user
+
+        metrics = get_auth_dual_read_metrics()
+        assert metrics["app_user_hit"] >= 1
+        assert metrics["member_fallback_by_id_hit"] >= 1
+
+    @pytest.mark.asyncio
+    async def test_get_current_user_rollout_percent_100_uses_app_user(
+        self, mock_credentials, mock_user
+    ):
+        """测试按比例灰度100%时会走app_user优先路径。"""
+        mock_db = AsyncMock()
+        app_user = AppUser(
+            id=1,
+            student_no="20210001",
+            password_hash="hash",
+            real_name="测试用户",
+            status=int(AppUserStatus.ENABLED),
+        )
+
+        app_user_result = MagicMock()
+        app_user_result.scalar_one_or_none.return_value = app_user
+        member_result = MagicMock()
+        member_result.scalar_one_or_none.return_value = mock_user
+
+        reset_auth_dual_read_metrics()
+
+        with (
+            patch("app.api.deps.verify_token", return_value={"sub": "1"}),
+            patch.object(settings, "AUTH_APP_USER_READ_FIRST", False),
+            patch.object(settings, "AUTH_APP_USER_READ_PERCENT", 100),
+        ):
+            mock_db.execute = AsyncMock(side_effect=[app_user_result, member_result])
+            user = await get_current_user(mock_credentials, mock_db)
+            assert user == mock_user
+
+        metrics = get_auth_dual_read_metrics()
+        assert metrics["app_user_rollout_selected"] >= 1
+        assert metrics["app_user_hit"] >= 1
+
+    @pytest.mark.asyncio
+    async def test_get_current_user_rollout_percent_0_skips_app_user(
+        self, mock_credentials, mock_user
+    ):
+        """测试按比例灰度0%时不会走app_user优先路径。"""
+        mock_db = AsyncMock()
+        member_result = MagicMock()
+        member_result.scalar_one_or_none.return_value = mock_user
+
+        reset_auth_dual_read_metrics()
+
+        with (
+            patch("app.api.deps.verify_token", return_value={"sub": "1"}),
+            patch.object(settings, "AUTH_APP_USER_READ_FIRST", False),
+            patch.object(settings, "AUTH_APP_USER_READ_PERCENT", 0),
+        ):
+            mock_db.execute = AsyncMock(return_value=member_result)
+            user = await get_current_user(mock_credentials, mock_db)
+            assert user == mock_user
+            mock_db.execute.assert_called_once()
+
+        metrics = get_auth_dual_read_metrics()
+        assert metrics["app_user_rollout_selected"] == 0
+        assert metrics["app_user_rollout_skipped"] == 0
+        assert metrics["member_direct_hit"] >= 1
 
     @pytest.mark.asyncio
     async def test_get_current_active_user(self, mock_user):
@@ -710,6 +910,48 @@ class TestResponseHelpers:
         )
 
         assert response["success"] is False  # 使用显式值
+
+    def test_create_response_with_camelcase_aliases(self, monkeypatch):
+        """测试响应数据自动补充camelCase字段别名"""
+        monkeypatch.setattr(settings, "API_RESPONSE_CAMELCASE_ALIAS_ENABLED", True)
+
+        response = create_response(
+            data={
+                "created_at": "2026-04-09T00:00:00Z",
+                "nested_data": {
+                    "member_id": 1,
+                    "alreadyCamel": "kept",
+                },
+                "items": [
+                    {"task_id": 10, "task_name": "巡检"},
+                    {"task_id": 11, "task_name": "维修"},
+                ],
+            }
+        )
+
+        data = response["data"]
+        assert data["created_at"] == "2026-04-09T00:00:00Z"
+        assert data["createdAt"] == "2026-04-09T00:00:00Z"
+        assert data["nested_data"]["member_id"] == 1
+        assert data["nestedData"]["memberId"] == 1
+        assert data["nestedData"]["alreadyCamel"] == "kept"
+        assert data["items"][0]["task_id"] == 10
+        assert data["items"][0]["taskId"] == 10
+
+    def test_create_response_without_camelcase_aliases(self, monkeypatch):
+        """测试关闭camelCase别名开关时保持原始字段"""
+        monkeypatch.setattr(settings, "API_RESPONSE_CAMELCASE_ALIAS_ENABLED", False)
+
+        response = create_response(
+            data={
+                "created_at": "2026-04-09T00:00:00Z",
+                "member_id": 2,
+            }
+        )
+
+        assert response["data"]["created_at"] == "2026-04-09T00:00:00Z"
+        assert "createdAt" not in response["data"]
+        assert "memberId" not in response["data"]
 
     def test_create_error_response_basic(self):
         """测试基本错误响应创建"""

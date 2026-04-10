@@ -281,6 +281,31 @@ class TestExceptionHandlers:
             mock_logger.warning.assert_called_once()
 
     @pytest.mark.asyncio
+    async def test_http_exception_handler_structured_detail(self):
+        """Test HTTP exception handler preserves structured error_code."""
+        mock_request = MagicMock()
+        exc = StarletteHTTPException(
+            status_code=401,
+            detail={
+                "message": "访问令牌已过期",
+                "error_code": "TOKEN_EXPIRED",
+                "reason": "exp_too_old",
+            },
+        )
+
+        with patch("app.main.logger") as mock_logger:
+            response = await http_exception_handler(mock_request, exc)
+
+            assert response.status_code == 401
+            content = json.loads(response.body.decode())
+            assert content["success"] is False
+            assert content["message"] == "访问令牌已过期"
+            assert content["error_code"] == "TOKEN_EXPIRED"
+            assert content["details"] == {"reason": "exp_too_old"}
+
+            mock_logger.warning.assert_called_once()
+
+    @pytest.mark.asyncio
     async def test_validation_exception_handler(self):
         """Test request validation exception handler"""
         mock_request = MagicMock()

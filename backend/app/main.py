@@ -15,6 +15,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v1 import attendance, auth, dashboard
 from app.api.v1 import import_api as import_router
+from app.api.v1 import doc_compat
 from app.api.v1 import assistance, members, monitoring, repair, roles, statistics, system, system_config
 from app.api.deps import create_error_response
 from app.core.cache import cleanup_cache, init_cache
@@ -227,13 +228,25 @@ async def http_exception_handler(
     logger.warning(f"[{get_request_id()}] HTTP exception: {exc.status_code} - {exc.detail}")
     message = exc.detail if isinstance(exc.detail, str) else "HTTP request failed"
     details = exc.detail if isinstance(exc.detail, dict) else {}
+    error_code = "HTTP_ERROR"
+
+    if isinstance(exc.detail, dict):
+        detail_dict = exc.detail
+        message = str(detail_dict.get("message", "HTTP request failed"))
+        error_code = str(detail_dict.get("error_code", "HTTP_ERROR"))
+        details = {
+            key: value
+            for key, value in detail_dict.items()
+            if key not in {"message", "error_code"}
+        }
+
     return JSONResponse(
         status_code=exc.status_code,
         content=create_error_response(
             message=message,
             status_code=exc.status_code,
             details=details,
-            error_code="HTTP_ERROR",
+            error_code=error_code,
         ),
     )
 
@@ -433,6 +446,7 @@ app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Dashboar
 app.include_router(attendance.router, prefix="/api/v1/attendance", tags=["Attendance"])
 app.include_router(statistics.router, prefix="/api/v1/statistics", tags=["Statistics"])
 app.include_router(import_router.router, prefix="/api/v1/import", tags=["Import"])
+app.include_router(doc_compat.router, prefix="/api/v1", tags=["Doc Compatibility"])
 app.include_router(
     system_config.router, prefix="/api/v1/system-config", tags=["System Config"]
 )

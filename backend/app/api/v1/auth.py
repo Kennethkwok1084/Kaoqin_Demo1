@@ -34,10 +34,94 @@ from app.schemas.auth import (
     RefreshTokenRequest,
     UserProfileUpdate,
 )
+from app.services.user_sync_service import UserSyncService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 security = HTTPBearer()
+
+
+def _raise_auth_http_exception(
+    *,
+    status_code: int,
+    message_key: str,
+    error_code: str,
+    **message_kwargs: Any,
+) -> None:
+    """Raise HTTPException with contract-friendly auth error payload."""
+    raise HTTPException(
+        status_code=status_code,
+        detail={
+            "message": get_message(message_key, **message_kwargs),
+            "error_code": error_code,
+        },
+    )
+
+
+def _build_token_response_data(
+    *,
+    access_token: str,
+    refresh_token: str,
+    expires_in: int,
+    user: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Build token payload with snake_case and camelCase compatibility keys."""
+    payload: Dict[str, Any] = {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "expires_in": expires_in,
+        # camelCase compatibility for M5 frontend contract convergence.
+        "accessToken": access_token,
+        "refreshToken": refresh_token,
+        "tokenType": "bearer",
+        "expiresIn": expires_in,
+    }
+    if user is not None:
+        payload["user"] = user
+    return payload
+
+
+def _with_user_compat_aliases(user_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Add camelCase aliases for user payload while preserving snake_case fields."""
+    alias_map = {
+        "student_id": "studentId",
+        "class_name": "className",
+        "group_id": "groupId",
+        "group_name": "groupName",
+        "join_date": "joinDate",
+        "is_active": "isActive",
+        "profile_completed": "profileCompleted",
+        "needs_profile_completion": "needsProfileCompletion",
+        "status_display": "statusDisplay",
+        "is_verified": "isVerified",
+        "last_login": "lastLogin",
+        "login_count": "loginCount",
+        "created_at": "createdAt",
+        "updated_at": "updatedAt",
+        "department": "departmentName",
+    }
+    result = dict(user_data)
+    for snake, camel in alias_map.items():
+        if snake in result and camel not in result:
+            result[camel] = result[snake]
+    return result
+
+
+def _with_permission_compat_aliases(permission_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Add camelCase aliases for permission payload."""
+    alias_map = {
+        "is_admin": "isAdmin",
+        "is_group_leader": "isGroupLeader",
+        "can_manage_group": "canManageGroup",
+        "can_import_data": "canImportData",
+        "can_mark_rush_tasks": "canMarkRushTasks",
+    }
+    result = dict(permission_data)
+    for snake, camel in alias_map.items():
+        if snake in result and camel not in result:
+            result[camel] = result[snake]
+    return result
 
 
 async def _execute_with_retry(
@@ -188,8 +272,8 @@ async def ensure_default_admin(db: AsyncSession) -> None:
         logger.error(f"Failed to ensure default admin: {e}")
         try:
             await db.rollback()
-        except Exception:
-            pass
+        except Exception as rollback_error:
+            logger.debug("Rollback failed after ensure_default_admin error: %s", rollback_error)
 
 
 @router.post("/login", response_model=Dict[str, Any])
@@ -272,8 +356,11 @@ async def login(
             # Rollback and continue - login info update is not critical
             try:
                 await db.rollback()
-            except:
-                pass  # Ignore rollback errors
+            except Exception as rollback_error:
+                logger.debug(
+                    "Rollback failed after login info update error: %s",
+                    rollback_error,
+                )
 
         # Create tokens using the collected user ID
         access_token = create_access_token(
@@ -289,6 +376,19 @@ async def login(
         refresh_expires_at = _resolve_refresh_expiry(refresh_payload)
         device_meta = _extract_device_metadata(request)
 
+        try:
+            await UserSyncService(db).sync_member(user, commit=False)
+        except Exception as sync_error:
+            logger.warning(
+                "Best-effort app_user sync failed during login for %s: %s",
+                user.student_id,
+                sync_error,
+            )
+            try:
+                await db.rollback()
+            except Exception:
+                pass
+
         await _persist_refresh_token(
             db,
             user_id=user_id,
@@ -302,19 +402,18 @@ async def login(
         logger.info(f"Successful login for user: {user_data_raw['student_id']}")
 
         # Construct final user data with computed fields
-        user_data = {
+        user_data = _with_user_compat_aliases({
             **user_data_raw,
             "needs_profile_completion": not user_data_raw["profile_completed"],
             "status_display": "在职" if user_data_raw["is_active"] else "离职",
-        }
+        })
 
-        response_data = {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "bearer",
-            "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            "user": user_data,
-        }
+        response_data = _build_token_response_data(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            user=user_data,
+        )
 
         return create_response(data=response_data, message_key="AUTH_SUCCESS_LOGIN")
 
@@ -350,16 +449,18 @@ async def refresh_token(
             refresh_data.refresh_token, token_type="refresh"
         )
         if not payload:
-            raise HTTPException(
+            _raise_auth_http_exception(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=get_message("AUTH_ERROR_INVALID_TOKEN"),
+                message_key="AUTH_ERROR_INVALID_TOKEN",
+                error_code="TOKEN_INVALID",
             )
 
         user_id_str: Optional[Union[str, int]] = payload.get("sub")
         if not user_id_str:
-            raise HTTPException(
+            _raise_auth_http_exception(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=get_message("AUTH_ERROR_INVALID_TOKEN_PAYLOAD"),
+                message_key="AUTH_ERROR_INVALID_TOKEN_PAYLOAD",
+                error_code="TOKEN_INVALID",
             )
 
         user_id = int(user_id_str) if isinstance(user_id_str, str) else user_id_str
@@ -387,23 +488,26 @@ async def refresh_token(
         if can_persist_refresh_state and not isinstance(
             persisted_token, AuthRefreshToken
         ):
-            raise HTTPException(
+            _raise_auth_http_exception(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=get_message("AUTH_ERROR_INVALID_TOKEN"),
+                message_key="AUTH_ERROR_INVALID_TOKEN",
+                error_code="TOKEN_INVALID",
             )
 
         if isinstance(persisted_token, AuthRefreshToken):
             if persisted_token.revoked_at is not None:
-                raise HTTPException(
+                _raise_auth_http_exception(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail=get_message("AUTH_ERROR_INVALID_TOKEN"),
+                    message_key="AUTH_ERROR_INVALID_TOKEN",
+                    error_code="TOKEN_REVOKED",
                 )
 
             now_utc = datetime.now(timezone.utc)
             if persisted_token.expires_at <= now_utc:
-                raise HTTPException(
+                _raise_auth_http_exception(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail=get_message("AUTH_ERROR_INVALID_TOKEN"),
+                    message_key="AUTH_ERROR_EXPIRED_TOKEN",
+                    error_code="TOKEN_EXPIRED",
                 )
 
             user_id = persisted_token.user_id
@@ -429,15 +533,17 @@ async def refresh_token(
             user = await user  # type: ignore
 
         if user and not user.is_active:
-            raise HTTPException(
+            _raise_auth_http_exception(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=get_message("AUTH_ERROR_USER_NOT_FOUND"),
+                message_key="AUTH_ERROR_USER_NOT_FOUND",
+                error_code="TOKEN_INVALID",
             )
 
         if not user and not settings.TESTING:
-            raise HTTPException(
+            _raise_auth_http_exception(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=get_message("AUTH_ERROR_USER_NOT_FOUND"),
+                message_key="AUTH_ERROR_USER_NOT_FOUND",
+                error_code="TOKEN_INVALID",
             )
 
         # Create new access token
@@ -496,12 +602,11 @@ async def refresh_token(
             user.student_id if user else str(user_id),
         )
 
-        response_data = {
-            "access_token": new_access_token,
-            "refresh_token": new_refresh_token,
-            "token_type": "bearer",
-            "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        }
+        response_data = _build_token_response_data(
+            access_token=new_access_token,
+            refresh_token=new_refresh_token,
+            expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        )
 
         return create_response(
             data=response_data, message_key="AUTH_SUCCESS_REFRESH_TOKEN"
@@ -520,8 +625,8 @@ async def refresh_token(
 @router.post("/logout", response_model=Dict[str, Any])
 async def logout(
     request: Request,
-    all_devices: bool = Query(
-        True,
+    all_devices: Optional[bool] = Query(
+        None,
         description="Whether to revoke refresh tokens across all devices",
     ),
     device_id: Optional[str] = Query(
@@ -538,11 +643,22 @@ async def logout(
     This endpoint can be used for logging purposes or token blacklisting.
     """
     try:
+        resolved_all_devices = (
+            all_devices
+            if all_devices is not None
+            else settings.AUTH_LOGOUT_ALL_DEVICES_DEFAULT
+        )
         resolved_device_id = device_id or request.headers.get("X-Device-ID")
-        if not all_devices and not resolved_device_id:
-            raise HTTPException(
+        if (
+            not resolved_all_devices
+            and settings.AUTH_LOGOUT_REQUIRE_DEVICE_ID_WHEN_SINGLE
+            and not resolved_device_id
+        ):
+            _raise_auth_http_exception(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="device_id is required when all_devices is false",
+                message_key="VALIDATION_ERROR_FIELD_REQUIRED",
+                error_code="DEVICE_ID_REQUIRED",
+                field="device_id",
             )
 
         stmt = (
@@ -554,7 +670,7 @@ async def logout(
             .values(revoked_at=datetime.now(timezone.utc))
         )
 
-        if not all_devices and resolved_device_id:
+        if not resolved_all_devices and resolved_device_id:
             stmt = stmt.where(AuthRefreshToken.device_id == resolved_device_id)
 
         result = await db.execute(stmt)
@@ -565,8 +681,14 @@ async def logout(
         return create_response(
             data={
                 "revoked_count": result.rowcount or 0,
-                "scope": "all_devices" if all_devices else "single_device",
-                "device_id": resolved_device_id if not all_devices else None,
+                "scope": "all_devices" if resolved_all_devices else "single_device",
+                "device_id": resolved_device_id if not resolved_all_devices else None,
+                "policy": {
+                    "default_all_devices": settings.AUTH_LOGOUT_ALL_DEVICES_DEFAULT,
+                    "require_device_id_when_single": (
+                        settings.AUTH_LOGOUT_REQUIRE_DEVICE_ID_WHEN_SINGLE
+                    ),
+                },
             },
             message_key="AUTH_SUCCESS_LOGOUT",
         )
@@ -576,8 +698,10 @@ async def logout(
     except Exception as e:
         await db.rollback()
         logger.error(f"Logout error for user {current_user.student_id}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Logout failed"
+        _raise_auth_http_exception(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            message_key="AUTH_ERROR_LOGOUT_FAILED",
+            error_code="LOGOUT_FAILED",
         )
 
 
@@ -593,15 +717,19 @@ async def get_current_user_profile(
     """
     try:
         # Create detailed profile response
-        profile_data = {
-            **current_user.get_safe_dict(),
-            "permissions": {
+        permissions = _with_permission_compat_aliases(
+            {
                 "is_admin": current_user.is_admin,
                 "is_group_leader": current_user.is_group_leader,
                 "can_manage_group": current_user.can_manage_group,
                 "can_import_data": current_user.can_import_data,
                 "can_mark_rush_tasks": current_user.can_mark_rush_tasks,
-            },
+            }
+        )
+
+        profile_data = {
+            **_with_user_compat_aliases(current_user.get_safe_dict()),
+            "permissions": permissions,
         }
 
         return create_response(
@@ -663,6 +791,23 @@ async def update_user_profile(
             if hasattr(current_user, field):
                 setattr(current_user, field, value)
 
+        try:
+            await UserSyncService(db).sync_member(current_user, commit=False)
+        except Exception as sync_error:
+            logger.warning(
+                "Best-effort app_user sync failed during profile update for %s: %s",
+                current_user.student_id,
+                sync_error,
+            )
+            try:
+                await db.rollback()
+            except Exception as rollback_error:
+                logger.debug(
+                    "Rollback failed after profile sync error for %s: %s",
+                    current_user.student_id,
+                    rollback_error,
+                )
+
         await db.commit()
         await db.refresh(current_user)
 
@@ -671,7 +816,8 @@ async def update_user_profile(
         from app.core.messages import success_response
 
         return success_response(
-            "AUTH_SUCCESS_PROFILE_UPDATE", data=current_user.get_safe_dict()
+            "AUTH_SUCCESS_PROFILE_UPDATE",
+            data=_with_user_compat_aliases(current_user.get_safe_dict()),
         )
 
     except HTTPException:
@@ -734,6 +880,24 @@ async def change_password(
 
         # Update password
         current_user.password_hash = get_password_hash(password_data.new_password)
+
+        try:
+            await UserSyncService(db).sync_member(current_user, commit=False)
+        except Exception as sync_error:
+            logger.warning(
+                "Best-effort app_user sync failed during password change for %s: %s",
+                current_user.student_id,
+                sync_error,
+            )
+            try:
+                await db.rollback()
+            except Exception as rollback_error:
+                logger.debug(
+                    "Rollback failed after password sync error for %s: %s",
+                    current_user.student_id,
+                    rollback_error,
+                )
+
         await db.commit()
 
         logger.info(f"Password changed for user: {current_user.student_id}")
@@ -802,8 +966,10 @@ async def verify_user_token(
             data={
                 "valid": True,
                 "user_id": user.id,
+                "userId": user.id,
                 "expires_at": exp_timestamp,
-                "user": user.get_safe_dict(),
+                "expiresAt": exp_timestamp,
+                "user": _with_user_compat_aliases(user.get_safe_dict()),
             },
             message_key="AUTH_INFO_TOKEN_VALID",
         )

@@ -59,6 +59,11 @@ class DatabaseTestConfig:
     async def setup_test_database(self, engine):
         """设置测试数据库"""
         async with engine.begin() as conn:
+            # 在共享或脏库场景下，历史迁移残留的外键可能与当前 metadata 不一致，
+            # 会导致 drop_all 不能正确排序。先清理关键依赖表以提升稳定性。
+            if engine.dialect.name == "postgresql":
+                await conn.execute(text("DROP TABLE IF EXISTS auth_refresh_token CASCADE"))
+
             # 删除所有表
             await conn.run_sync(Base.metadata.drop_all)
 

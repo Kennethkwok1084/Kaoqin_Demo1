@@ -4,6 +4,7 @@
 """
 
 import logging
+import hashlib
 from datetime import datetime, timezone
 from typing import Any, AsyncGenerator, Dict, Generator, List, Optional, Union
 
@@ -37,6 +38,94 @@ _STATUS_TO_BIZ_CODE = {
     status.HTTP_500_INTERNAL_SERVER_ERROR: 50000,
     status.HTTP_503_SERVICE_UNAVAILABLE: 50301,
 }
+
+_AUTH_DUAL_READ_METRICS: Dict[str, int] = {
+    "app_user_hit": 0,
+    "app_user_inactive_reject": 0,
+    "app_user_miss": 0,
+    "app_user_query_error": 0,
+    "app_user_rollout_selected": 0,
+    "app_user_rollout_skipped": 0,
+    "member_fallback_by_id_hit": 0,
+    "member_fallback_by_student_no_hit": 0,
+    "member_direct_hit": 0,
+    "member_not_found": 0,
+}
+
+
+def _record_auth_dual_read_metric(event: str, user_id: Union[int, str], **extra: Any) -> None:
+    """Record dual-read auth metrics and structured logs."""
+    _AUTH_DUAL_READ_METRICS[event] = _AUTH_DUAL_READ_METRICS.get(event, 0) + 1
+    logger.info(
+        "AUTH_DUAL_READ event=%s user_id=%s extra=%s",
+        event,
+        user_id,
+        extra,
+    )
+
+
+def _snake_to_camel(name: str) -> str:
+    """Convert snake_case name to camelCase."""
+    parts = name.split("_")
+    if len(parts) <= 1:
+        return name
+    return parts[0] + "".join(part[:1].upper() + part[1:] for part in parts[1:])
+
+
+def _with_camelcase_aliases(value: Any) -> Any:
+    """Recursively add camelCase aliases for snake_case keys."""
+    if isinstance(value, dict):
+        transformed: Dict[str, Any] = {}
+        for key, raw_val in value.items():
+            converted_val = _with_camelcase_aliases(raw_val)
+            transformed[key] = converted_val
+
+            if isinstance(key, str) and "_" in key:
+                camel_key = _snake_to_camel(key)
+                if camel_key not in transformed:
+                    transformed[camel_key] = converted_val
+        return transformed
+
+    if isinstance(value, list):
+        return [_with_camelcase_aliases(item) for item in value]
+
+    if isinstance(value, tuple):
+        return tuple(_with_camelcase_aliases(item) for item in value)
+
+    return value
+
+
+def get_auth_dual_read_metrics() -> Dict[str, int]:
+    """Get current auth dual-read metrics snapshot."""
+    return dict(_AUTH_DUAL_READ_METRICS)
+
+
+def reset_auth_dual_read_metrics() -> None:
+    """Reset auth dual-read metrics (mainly for tests)."""
+    for key in _AUTH_DUAL_READ_METRICS:
+        _AUTH_DUAL_READ_METRICS[key] = 0
+
+
+def _stable_rollout_bucket(user_id: Union[int, str]) -> int:
+    """Compute deterministic bucket [0,99] for rollout selection."""
+    digest = hashlib.sha1(str(user_id).encode("utf-8")).hexdigest()
+    return int(digest[:8], 16) % 100
+
+
+def _should_use_app_user_read_first(user_id: Union[int, str]) -> bool:
+    """Determine if current request should use app_user-first auth read path."""
+    if settings.AUTH_APP_USER_READ_FIRST:
+        return True
+
+    rollout_percent = int(getattr(settings, "AUTH_APP_USER_READ_PERCENT", 0) or 0)
+    rollout_percent = max(0, min(100, rollout_percent))
+
+    if rollout_percent <= 0:
+        return False
+    if rollout_percent >= 100:
+        return True
+
+    return _stable_rollout_bucket(user_id) < rollout_percent
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -139,10 +228,89 @@ async def get_current_user(
         from sqlalchemy import select
         from sqlalchemy.exc import SQLAlchemyError
 
-        result = await db.execute(select(Member).where(Member.id == user_id))
-        user = result.scalar_one_or_none()
+        user = None
+
+        use_app_user_read_first = _should_use_app_user_read_first(user_id)
+        rollout_percent = int(getattr(settings, "AUTH_APP_USER_READ_PERCENT", 0) or 0)
+        rollout_percent = max(0, min(100, rollout_percent))
+
+        if not settings.AUTH_APP_USER_READ_FIRST and rollout_percent > 0:
+            _record_auth_dual_read_metric(
+                "app_user_rollout_selected"
+                if use_app_user_read_first
+                else "app_user_rollout_skipped",
+                user_id,
+                rollout_percent=rollout_percent,
+            )
+
+        if use_app_user_read_first:
+            from app.models.app_user import AppUser, AppUserStatus
+
+            app_user = None
+            try:
+                app_user_result = await db.execute(
+                    select(AppUser).where(AppUser.id == user_id)
+                )
+                app_user = app_user_result.scalar_one_or_none()
+            except SQLAlchemyError as app_user_error:
+                # Keep auth path available during migration windows.
+                _record_auth_dual_read_metric(
+                    "app_user_query_error",
+                    user_id,
+                    error_type=app_user_error.__class__.__name__,
+                )
+                logger.warning(
+                    "app_user read failed for user_id %s, fallback to members: %s",
+                    user_id,
+                    app_user_error,
+                )
+
+            if app_user is not None:
+                _record_auth_dual_read_metric("app_user_hit", user_id)
+                if int(getattr(app_user, "status", AppUserStatus.DISABLED)) != int(
+                    AppUserStatus.ENABLED
+                ):
+                    _record_auth_dual_read_metric("app_user_inactive_reject", user_id)
+                    logger.warning(
+                        "Inactive app_user attempted access: user_id=%s status=%s",
+                        user_id,
+                        getattr(app_user, "status", None),
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=get_message("AUTH_ERROR_INACTIVE_USER"),
+                    )
+
+                member_result = await db.execute(
+                    select(Member).where(Member.id == user_id)
+                )
+                user = member_result.scalar_one_or_none()
+                if user is not None:
+                    _record_auth_dual_read_metric("member_fallback_by_id_hit", user_id)
+
+                # Compatibility fallback for historical id mismatch windows.
+                if user is None and getattr(app_user, "student_no", None):
+                    member_by_student_no_result = await db.execute(
+                        select(Member).where(Member.student_id == app_user.student_no)
+                    )
+                    user = member_by_student_no_result.scalar_one_or_none()
+                    if user is not None:
+                        _record_auth_dual_read_metric(
+                            "member_fallback_by_student_no_hit",
+                            user_id,
+                            student_no=app_user.student_no,
+                        )
+            else:
+                _record_auth_dual_read_metric("app_user_miss", user_id)
 
         if user is None:
+            result = await db.execute(select(Member).where(Member.id == user_id))
+            user = result.scalar_one_or_none()
+            if user is not None:
+                _record_auth_dual_read_metric("member_direct_hit", user_id)
+
+        if user is None:
+            _record_auth_dual_read_metric("member_not_found", user_id)
             logger.warning(f"User not found for ID: {user_id}")
             raise credentials_exception
 
@@ -483,11 +651,15 @@ def create_response(
     resolved_request_id = request_id or get_request_id()
     resolved_timestamp = timestamp or datetime.now(timezone.utc).isoformat()
 
+    response_data = data
+    if settings.API_RESPONSE_CAMELCASE_ALIAS_ENABLED and data is not None:
+        response_data = _with_camelcase_aliases(data)
+
     response = {
         "code": resolved_code,
         "success": success_value,
         "message": final_message,
-        "data": data,
+        "data": response_data,
         "request_id": resolved_request_id,
         "timestamp": resolved_timestamp,
 
