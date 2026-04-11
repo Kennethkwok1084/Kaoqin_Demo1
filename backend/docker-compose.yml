@@ -58,7 +58,7 @@ services:
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost,http://127.0.0.1}
       - TRUSTED_HOSTS=${TRUSTED_HOSTS:-localhost,127.0.0.1}
     ports:
-      - "${BACKEND_PORT:-19991}:8000"
+      - "${BACKEND_PORT:-19900}:8000"
     depends_on:
       postgres:
         condition: service_healthy
