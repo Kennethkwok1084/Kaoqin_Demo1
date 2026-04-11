@@ -12,9 +12,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "${POSTGRES_BIND_IP:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
     networks:
-      - attendance-backend-network
+      - attendance-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-kwok}"]
       interval: 10s
@@ -27,11 +27,11 @@ services:
     image: redis:7-alpine
     container_name: attendance-redis
     ports:
-      - "6379:6379"
+      - "${REDIS_BIND_IP:-127.0.0.1}:${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     networks:
-      - attendance-backend-network
+      - attendance-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -47,20 +47,28 @@ services:
     container_name: attendance-backend
     environment:
       - DATABASE_URL=postgresql+asyncpg://${DB_USER:-kwok}:${DB_PASSWORD:-Onjuju1084}@postgres:5432/${DB_NAME:-attendence_dev}
+      - DATABASE_URL_SYNC=postgresql://${DB_USER:-kwok}:${DB_PASSWORD:-Onjuju1084}@postgres:5432/${DB_NAME:-attendence_dev}
       - REDIS_URL=redis://redis:6379/0
-      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - ENVIRONMENT=${ENVIRONMENT:-testing}
+      - DEBUG=${DEBUG:-False}
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
       - ALGORITHM=${ALGORITHM:-HS256}
       - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      - REFRESH_TOKEN_EXPIRE_DAYS=${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost,http://127.0.0.1}
+      - TRUSTED_HOSTS=${TRUSTED_HOSTS:-localhost,127.0.0.1}
     ports:
-      - "19991:8000"
+      - "${BACKEND_PORT:-19991}:8000"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     networks:
-      - attendance-backend-network
+      - attendance-network
+    volumes:
+      - ../backend/logs:/app/logs
+      - ../backend/uploads:/app/uploads
     # 启动时先运行数据库迁移，然后启动应用
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     healthcheck:
@@ -70,10 +78,33 @@ services:
       retries: 3
     restart: unless-stopped
 
+  # 前端服务（含 nginx，默认代理 /api 到 backend）
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
+        VITE_APP_TITLE: ${VITE_APP_TITLE:-考勤管理系统}
+    container_name: attendance-frontend
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - attendance-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
 networks:
-  attendance-backend-network:
+  attendance-network:
     driver: bridge
-    name: attendance-backend-network
+    name: attendance-network
 
 volumes:
   postgres_data:
