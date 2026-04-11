@@ -417,7 +417,7 @@ npm run test:component
 ```bash
 cd backend
 
-# 启动整套服务（postgres + redis + backend + frontend）
+# 启动后端测试栈（postgres + redis + backend）
 docker compose up -d --build
 
 # 查看状态
