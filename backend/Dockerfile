@@ -1,5 +1,6 @@
 # 多阶段构建 - 生产环境 FastAPI 应用
-FROM python:3.12-slim as builder
+ARG PYTHON_BASE_IMAGE=python:3.12-slim
+FROM ${PYTHON_BASE_IMAGE} AS builder
 
 # 设置构建参数
 ARG VERSION=dev
@@ -22,7 +23,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # 生产运行阶段
-FROM python:3.12-slim as runtime
+FROM ${PYTHON_BASE_IMAGE} AS runtime
 
 # 设置元数据标签
 LABEL version="${VERSION}" \
