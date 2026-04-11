@@ -2214,10 +2214,10 @@ async def get_offline_marked_tasks(
 async def export_comprehensive_data(
     export_type: str = Query(
         "all",
-        regex="^(all|repair|assistance|monitoring|offline)$",
+        pattern="^(all|repair|assistance|monitoring|offline)$",
         description="导出数据类型",
     ),
-    format: str = Query("excel", regex="^(excel|csv|json)$", description="导出格式"),
+    format: str = Query("excel", pattern="^(excel|csv|json)$", description="导出格式"),
     date_from: Optional[datetime] = Query(None, description="开始时间"),
     date_to: Optional[datetime] = Query(None, description="结束时间"),
     member_ids: Optional[List[int]] = Query(None, description="成员筛选"),
@@ -2613,7 +2613,7 @@ async def export_comprehensive_data(
 @router.get("/export/template", response_model=Dict[str, Any])
 async def get_export_template(
     template_type: str = Query(
-        "repair", regex="^(repair|assistance|monitoring)$", description="模板类型"
+        "repair", pattern="^(repair|assistance|monitoring)$", description="模板类型"
     ),
     current_user: Member = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -3042,7 +3042,7 @@ async def apply_group_penalty(
     task_id: int,
     penalty_type: str = Query(
         ...,
-        regex="^(late_response|late_completion|negative_review)$",
+        pattern="^(late_response|late_completion|negative_review)$",
         description="惩罚类型",
     ),
     current_user: Member = Depends(get_current_active_admin),
@@ -3090,7 +3090,7 @@ async def batch_apply_group_penalty(
     task_ids: List[int],
     penalty_type: str = Query(
         ...,
-        regex="^(late_response|late_completion|negative_review)$",
+        pattern="^(late_response|late_completion|negative_review)$",
         description="惩罚类型",
     ),
     current_user: Member = Depends(get_current_active_admin),
@@ -3139,7 +3139,7 @@ async def preview_group_penalty(
     task_id: int,
     penalty_type: str = Query(
         ...,
-        regex="^(late_response|late_completion|negative_review)$",
+        pattern="^(late_response|late_completion|negative_review)$",
         description="惩罚类型",
     ),
     current_user: Member = Depends(get_current_active_group_leader),
@@ -3193,10 +3193,10 @@ async def get_group_penalty_history(
     date_to: Optional[datetime] = Query(None, description="结束时间"),
     penalty_type: Optional[str] = Query(
         None,
-        regex="^(late_response|late_completion|negative_review)$",
+        pattern="^(late_response|late_completion|negative_review)$",
         description="惩罚类型筛选",
     ),
-    member_id: Optional[int] = Query(None, description="成员筛选"),
+    group_by: str = Query("day", pattern="^(day|week|month)$", description="分组方式"),
     page: int = Query(1, ge=1, description="页码"),
     size: int = Query(20, ge=1, le=100, description="每页数量"),
     current_user: Member = Depends(get_current_active_group_leader),

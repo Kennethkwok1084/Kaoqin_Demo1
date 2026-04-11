@@ -177,9 +177,10 @@ class StartupService:
                     await db_session.rollback()
                     logger.error(f"创建管理员用户时发生错误: {e}")
                     return False
-                finally:
-                    await db_session.close()
-                    break  # 只需要第一个会话
+
+            # 正常情况下 get_async_session 会产出一个会话；若未产出则视为失败
+            logger.error("未能获取数据库会话，默认管理员创建失败")
+            return False
 
         except Exception as e:
             logger.error(f"创建管理员用户失败: {e}")

@@ -363,7 +363,7 @@ async def get_efficiency_analysis(
     date_to: Optional[datetime] = Query(None, description="分析结束时间"),
     member_id: Optional[int] = Query(None, description="指定成员分析"),
     group_by: str = Query(
-        "member", regex="^(member|day|week|month)$", description="分组方式"
+        "member", pattern="^(member|day|week|month)$", description="分组方式"
     ),
     current_user: Member = Depends(get_current_active_group_leader),
     db: AsyncSession = Depends(get_db),
@@ -848,9 +848,9 @@ async def get_monthly_report(
 @router.get("/export", response_model=Dict[str, Any])
 async def export_statistics_data(
     export_type: str = Query(
-        ..., regex="^(overview|efficiency|monthly|attendance)$", description="导出类型"
+        ..., pattern="^(overview|efficiency|monthly|attendance)$", description="导出类型"
     ),
-    format: str = Query("excel", regex="^(excel|csv|json)$", description="导出格式"),
+    format: str = Query("excel", pattern="^(excel|csv|json)$", description="导出格式"),
     date_from: Optional[datetime] = Query(None, description="开始时间"),
     date_to: Optional[datetime] = Query(None, description="结束时间"),
     member_id: Optional[int] = Query(None, description="成员筛选"),
@@ -1237,7 +1237,7 @@ async def get_work_hours_analysis(
     month: int = Query(..., ge=1, le=12, description="月份"),
     analysis_type: str = Query(
         "breakdown",
-        regex="^(breakdown|penalty|bonus|comparison)$",
+        pattern="^(breakdown|penalty|bonus|comparison)$",
         description="分析类型",
     ),
     current_user: Member = Depends(get_current_active_group_leader),
