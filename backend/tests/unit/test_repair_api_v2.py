@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -11,7 +12,10 @@ from fastapi import HTTPException
 from app.api.v1.repair import (
     bridge_legacy_repair_review,
     bridge_legacy_repair_submit_review,
+    execute_ab_table_matching,
+    enhanced_import_with_ab_matching,
     get_repair_v2_pending_review,
+    import_maintenance_orders,
     get_workhour_v2_entries,
     get_workhour_v2_rules,
     get_workhour_v2_tags,
@@ -374,6 +378,188 @@ class TestRepairApiV2:
                 )
 
         assert exc_info.value.status_code == 400
+
+    async def test_enhanced_import_with_ab_matching_executes_real_import_flow(self):
+        db = AsyncMock()
+        current_user = self._member(user_id=31, role=UserRole.GROUP_LEADER)
+
+        parsed_result = {
+            "total_rows": 1,
+            "valid_rows": 1,
+            "invalid_rows": 0,
+            "errors": [],
+            "maintenance_orders": [
+                {
+                    "title": "宿舍网络故障",
+                    "reporter_name": "张三",
+                    "reporter_contact": "13800001111",
+                }
+            ],
+        }
+        import_result = SimpleNamespace(created_tasks=1, updated_tasks=0, errors=[])
+
+        match_result = SimpleNamespace(
+            is_matched=True,
+            member=SimpleNamespace(id=88, name="处理人A"),
+            confidence=0.93,
+            confidence_level=SimpleNamespace(value="high"),
+            strategy_used=SimpleNamespace(value="exact"),
+            failure_reason=None,
+        )
+
+        with (
+            patch("app.api.v1.repair.DataImportService") as mock_import_service_cls,
+            patch(
+                "app.services.ab_table_matching_service.ABTableMatchingService"
+            ) as mock_match_service_cls,
+        ):
+            mock_import_service = mock_import_service_cls.return_value
+            mock_import_service.parse_maintenance_order_import_rows.return_value = parsed_result
+            mock_import_service.bulk_import_tasks = AsyncMock(return_value=import_result)
+
+            mock_match_service = mock_match_service_cls.return_value
+            mock_match_service.match_ab_tables = AsyncMock(return_value=[match_result])
+
+            resp = await enhanced_import_with_ab_matching(
+                request_data={
+                    "a_table_data": [{"标题": "宿舍网络故障", "报修人": "张三"}],
+                    "import_batch_id": "batch-001",
+                },
+                current_user=current_user,
+                db=db,
+            )
+
+        assert resp["success"] is True
+        assert resp["data"]["import_summary"]["successful_imports"] == 1
+        assert resp["data"]["import_summary"]["matched_records"] == 1
+        assert resp["data"]["batch_id"] == "batch-001"
+
+        bulk_kwargs = mock_import_service.bulk_import_tasks.await_args.kwargs
+        assert bulk_kwargs["import_batch_id"] == "batch-001"
+        assert bulk_kwargs["task_data_list"][0]["assigned_to"] == 88
+        assert bulk_kwargs["task_data_list"][0]["assignee_name"] == "处理人A"
+
+    async def test_enhanced_import_with_ab_matching_dry_run_skips_import(self):
+        db = AsyncMock()
+        current_user = self._member(user_id=32, role=UserRole.GROUP_LEADER)
+
+        parsed_result = {
+            "total_rows": 1,
+            "valid_rows": 1,
+            "invalid_rows": 0,
+            "errors": [],
+            "maintenance_orders": [
+                {
+                    "title": "教室断网",
+                    "reporter_name": "李四",
+                    "reporter_contact": "13900002222",
+                }
+            ],
+        }
+
+        with patch("app.api.v1.repair.DataImportService") as mock_import_service_cls:
+            mock_import_service = mock_import_service_cls.return_value
+            mock_import_service.parse_maintenance_order_import_rows.return_value = parsed_result
+            mock_import_service.bulk_import_tasks = AsyncMock()
+
+            resp = await enhanced_import_with_ab_matching(
+                request_data={
+                    "a_table_data": [{"标题": "教室断网", "报修人": "李四"}],
+                    "dry_run": True,
+                    "enable_ab_matching": False,
+                },
+                current_user=current_user,
+                db=db,
+            )
+
+        assert resp["success"] is True
+        assert resp["message"] == "增强版导入校验完成"
+        assert resp["data"]["import_summary"]["successful_imports"] == 1
+        mock_import_service.bulk_import_tasks.assert_not_awaited()
+
+    async def test_enhanced_import_with_ab_matching_rejects_invalid_b_table_data(self):
+        db = AsyncMock()
+        current_user = self._member(user_id=33, role=UserRole.GROUP_LEADER)
+
+        with pytest.raises(HTTPException) as exc_info:
+            await enhanced_import_with_ab_matching(
+                request_data={
+                    "a_table_data": [{"标题": "教室断网", "报修人": "李四"}],
+                    "b_table_data": {"invalid": True},
+                },
+                current_user=current_user,
+                db=db,
+            )
+
+        assert exc_info.value.status_code == 500
+        assert "增强版数据导入失败" in str(exc_info.value.detail)
+
+    async def test_execute_ab_table_matching_success(self):
+        db = AsyncMock()
+        current_user = self._member(user_id=34, role=UserRole.GROUP_LEADER)
+
+        match_result = SimpleNamespace(
+            a_record={"报修人": "张三"},
+            member=SimpleNamespace(id=11, name="处理人A", student_id="S001", department="网维"),
+            confidence=0.92,
+            confidence_level=SimpleNamespace(value="high"),
+            strategy_used=SimpleNamespace(value="exact"),
+            is_matched=True,
+            failure_reason=None,
+            match_details={"name": "exact"},
+        )
+
+        with patch("app.services.ab_table_matching_service.ABTableMatchingService") as mock_service_cls:
+            mock_service = mock_service_cls.return_value
+            mock_service.match_ab_tables = AsyncMock(return_value=[match_result])
+
+            resp = await execute_ab_table_matching(
+                request_data={
+                    "a_table_data": [{"报修人": "张三"}],
+                    "b_table_data": [],
+                    "strategies": ["exact"],
+                },
+                current_user=current_user,
+                db=db,
+            )
+
+        assert resp["success"] is True
+        assert resp["data"]["statistics"]["total_records"] == 1
+        assert resp["data"]["statistics"]["matched_records"] == 1
+
+    async def test_import_maintenance_orders_dry_run_success(self):
+        db = AsyncMock()
+        current_user = self._member(user_id=35, role=UserRole.GROUP_LEADER)
+
+        parsed_result = {
+            "total_rows": 1,
+            "valid_rows": 1,
+            "invalid_rows": 0,
+            "empty_rows": 0,
+            "errors": [],
+            "preview_data": [{"title": "测试任务", "reporter_name": "张三"}],
+            "matched_rows": 0,
+            "partial_rows": 1,
+            "a_table_rows": 1,
+            "b_table_rows": 0,
+            "maintenance_orders": [{"title": "测试任务", "reporter_name": "张三"}],
+        }
+
+        with patch("app.api.v1.repair.DataImportService") as mock_service_cls:
+            mock_service = mock_service_cls.return_value
+            mock_service.parse_maintenance_order_import_rows.return_value = parsed_result
+
+            resp = await import_maintenance_orders(
+                import_data={
+                    "maintenance_orders": [{"标题": "测试任务", "报修人": "张三"}],
+                    "dry_run": True,
+                },
+                current_user=current_user,
+                db=db,
+            )
+
+        assert resp["success"] is True
+        assert resp["data"]["valid_rows"] == 1
 
     async def test_bridge_legacy_repair_review_http_exception_passthrough(self):
         db = AsyncMock()

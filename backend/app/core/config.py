@@ -118,7 +118,7 @@ class Settings(BaseSettings):
     AUTH_APP_USER_READ_PERCENT: int = 0
     AUTH_LOGOUT_ALL_DEVICES_DEFAULT: bool = True
     AUTH_LOGOUT_REQUIRE_DEVICE_ID_WHEN_SINGLE: bool = True
-    API_RESPONSE_CAMELCASE_ALIAS_ENABLED: bool = True
+    API_RESPONSE_CAMELCASE_ALIAS_ENABLED: bool = False
 
     # Password Configuration
     PWD_CONTEXT_SCHEMES: List[str] = ["bcrypt"]

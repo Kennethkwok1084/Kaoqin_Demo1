@@ -13,6 +13,7 @@ Rules:
 1. Any new table/model introduced in stage 3+ must map to this SQL baseline first.
 2. If implementation deviates from baseline, add a "Deviation" section with reason and rollback strategy.
 3. Migration scripts must include upgrade and downgrade paths.
+4. Deviation tracking source of truth: `backend/docs/V2_IMPLEMENTATION_DEVIATION_LIST.md`.
 
 ## Decision 2: API Response Baseline
 The only API response baseline is:
@@ -26,6 +27,9 @@ Current enforced top-level fields:
 - request_id
 - timestamp
 - errors (optional)
+
+Deviation register:
+- `backend/docs/V2_IMPLEMENTATION_DEVIATION_LIST.md`
 
 Backward-compatible fields currently retained:
 - status_code

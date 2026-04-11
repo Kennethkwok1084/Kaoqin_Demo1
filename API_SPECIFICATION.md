@@ -4,31 +4,44 @@
 
 本文档是基于后端代码分析生成的完整API规范，定义了所有前端开发所需的接口标准。遵循此规范，**前端可以完全移除 `fieldMapping` 层**，实现真正的最小化架构。
 
+## 📌 V2口径声明
+
+对外联调与评审时，唯一外部基线如下：
+
+- `docs/校园网部门综合运维工时平台_PostgreSQL建表SQL_V2.sql`
+- `docs/校园网部门综合运维工时平台_接口返回规范_V2.docx`
+
+若其他文档出现 Flask/MySQL 等历史描述，统一按“历史参考”处理，不作为当前实现依据。
+
 ## 🎯 核心设计原则
 
 ### 1. 统一响应格式
 所有API返回统一的JSON结构：
 ```json
 {
+  "code": number,
   "success": boolean,
   "message": string,
-  "data": any
+  "data": any,
+  "request_id": string,
+  "timestamp": string,
+  "errors": object
 }
 ```
 
 ### 2. 统一字段命名规范
-**全部采用 camelCase 命名法**：
-- ✅ `taskId`, `memberId`, `createdAt`
-- ❌ `task_id`, `member_id`, `created_at`
+**后端接口字段采用 snake_case 命名法（与数据库字段保持一致）**：
+- ✅ `task_id`, `member_id`, `created_at`
+- ❌ `taskId`, `memberId`, `createdAt`
 
 ### 3. 统一错误处理
 ```json
 {
   "success": false,
   "message": "错误描述",
-  "errorCode": "ERROR_CODE",
+  "error_code": "ERROR_CODE",
   "details": {
-    "fieldErrors": {}
+    "field_errors": {}
   }
 }
 ```
@@ -318,6 +331,60 @@ GET /api/v1/tasks?page=1&pageSize=20&search=维修&taskStatus=pending&type=repai
 ```
 
 #### 2. 创建任务
+
+## 📱 协助任务二维码（task_qrcode）生命周期接口
+
+### Base URL: `/api/v1`
+
+#### 1. 管理端生成二维码令牌
+```http
+POST /api/v1/admin/tasks/{taskId}/qrcode/generate
+```
+
+**响应示例:**
+```json
+{
+  "success": true,
+  "message": "二维码生成成功",
+  "data": {
+    "task_id": 101,
+    "qr_token": "28511872.a1b2c3d4e5f67890",
+    "qr_token_legacy": "e2f34ab6c8d1f901",
+    "expires_in": 60
+  }
+}
+```
+
+#### 2. 用户端获取当前二维码令牌
+```http
+GET /api/v1/tasks/{taskId}/qrcode/current
+```
+
+**响应字段说明:**
+- `qr_token`: HMAC 签名令牌（主口径）
+- `qr_token_legacy`: 历史兼容令牌（灰度迁移）
+- `expires_in`: 当前时间桶秒数
+
+#### 3. 签到校验（二维码参与）
+```http
+POST /api/v1/tasks/{taskId}/sign-in
+```
+
+**请求参数（二维码场景）:**
+```json
+{
+  "slot_id": 1,
+  "sign_in_type": "qr",
+  "qr_token": "28511872.a1b2c3d4e5f67890",
+  "device_id": "device-abc-001"
+}
+```
+
+**校验规则:**
+1. `sign_in_type` 为 `qr` 或 `hybrid` 时必须携带 `qr_token`。
+2. 服务端校验窗口为“当前时间桶 + 上一时间桶”。
+3. 可通过系统配置 `checkin_qr_allow_legacy_token` 控制是否接受 `qr_token_legacy`。
+4. 采用无状态动态令牌，不引入独立 task_qrcode 持久化实体。
 ```http
 POST /api/v1/tasks/repair
 ```

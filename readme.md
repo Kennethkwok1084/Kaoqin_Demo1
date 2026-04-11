@@ -12,6 +12,33 @@
 
 **技术架构**：采用前后端分离架构，后端使用 **Python + FastAPI + PostgreSQL**，前端使用 **Vue 3 + Capacitor** 构建跨平台应用，后期将混搭 **Flutter** 实现更丰富的移动端体验。
 
+## V2口径基线声明
+
+对外评审与联调时，统一以下两份文档为唯一外部基线：
+
+- `docs/校园网部门综合运维工时平台_PostgreSQL建表SQL_V2.sql`
+- `docs/校园网部门综合运维工时平台_接口返回规范_V2.docx`
+
+以下资料中若存在 Flask/MySQL 或其他历史描述，均视为历史参考，不作为当前实现依据：
+
+- `docs/old/` 下全部历史文档
+- `docs/校园网部门综合运维工时平台_数据库表结构设计_接口清单_V2.docx` 中与当前代码不一致的历史段落
+
+当前运行时口径以 FastAPI + PostgreSQL 实际代码为准。
+
+## 协助任务二维码机制（task_qrcode）
+
+- 管理端生成：`POST /api/v1/admin/tasks/{task_id}/qrcode/generate`
+- 用户端获取当前：`GET /api/v1/tasks/{task_id}/qrcode/current`
+- 签到校验入口：`POST /api/v1/tasks/{task_id}/sign-in`（`sign_in_type=qr/hybrid`）
+
+生命周期与兼容策略：
+
+1. 二维码令牌按时间桶动态生成，过期时间由系统配置 `checkin_qrcode_refresh_seconds`（兼容键：`task_qrcode_refresh_seconds`、`qrcode_refresh_seconds`）控制。
+2. 服务端同时返回签名令牌 `qr_token` 与兼容令牌 `qr_token_legacy`，用于平滑迁移。
+3. 校验窗口为“当前时间桶 + 上一时间桶”，降低客户端时钟与网络抖动带来的误拒。
+4. 默认不落独立 task_qrcode 实体，采用无状态动态令牌；签到成功后仅在签到记录中保存实际使用令牌。
+
 ## 核心功能
 
 ### 📋 任务管理

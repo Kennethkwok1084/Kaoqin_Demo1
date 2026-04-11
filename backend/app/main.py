@@ -2,7 +2,9 @@
 
 import logging
 import logging.config
+import os
 from contextlib import asynccontextmanager
+from urllib.parse import urlparse
 from uuid import uuid4
 from typing import Any, AsyncGenerator, Dict
 
@@ -15,8 +17,10 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v1 import attendance, auth, dashboard
 from app.api.v1 import import_api as import_router
+from app.api.v1 import campus_rooms, config_workhour, ops_stats, user_admin
 from app.api.v1 import doc_compat
-from app.api.v1 import assistance, members, monitoring, repair, roles, statistics, system, system_config
+from app.api.v1 import assistance, coop, inspection_sampling, members, monitoring, repair, roles, statistics, system, system_config
+from app.api.v1 import media, repair_orders, task_lifecycle
 from app.api.deps import create_error_response
 from app.core.cache import cleanup_cache, init_cache
 from app.core.config import get_cors_origins, get_log_config, settings
@@ -196,9 +200,21 @@ app.add_middleware(
 
 # Add trusted host middleware for production
 if not settings.DEBUG:
+    trusted_hosts_env = os.getenv("TRUSTED_HOSTS", "")
+    trusted_hosts = [x.strip() for x in trusted_hosts_env.split(",") if x.strip()]
+    if not trusted_hosts:
+        inferred_hosts: list[str] = []
+        for origin in get_cors_origins():
+            host = urlparse(origin).hostname
+            if host:
+                inferred_hosts.append(host)
+        trusted_hosts = sorted(set(inferred_hosts))
+    if not trusted_hosts:
+        trusted_hosts = ["localhost", "127.0.0.1"]
+
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=["*"],
+        allowed_hosts=trusted_hosts,
     )
 
 
@@ -442,6 +458,15 @@ app.include_router(members.router, prefix="/api/v1/members", tags=["Members"])
 app.include_router(repair.router, prefix="/api/v1/tasks", tags=["Tasks"])
 app.include_router(monitoring.router, prefix="/api/v1/tasks", tags=["Tasks"])
 app.include_router(assistance.router, prefix="/api/v1/tasks", tags=["Tasks"])
+app.include_router(coop.router, prefix="/api/v1", tags=["Coop Workflows"])
+app.include_router(inspection_sampling.router, prefix="/api/v1", tags=["Inspection Sampling Workflows"])
+app.include_router(task_lifecycle.router, prefix="/api/v1", tags=["Task Lifecycle"])
+app.include_router(repair_orders.router, prefix="/api/v1", tags=["Repair Orders"])
+app.include_router(media.router, prefix="/api/v1", tags=["Media"])
+app.include_router(user_admin.router, prefix="/api/v1", tags=["User Admin"])
+app.include_router(config_workhour.router, prefix="/api/v1", tags=["Config Workhour"])
+app.include_router(campus_rooms.router, prefix="/api/v1", tags=["Campus Rooms"])
+app.include_router(ops_stats.router, prefix="/api/v1", tags=["Ops Stats"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Dashboard"])
 app.include_router(attendance.router, prefix="/api/v1/attendance", tags=["Attendance"])
 app.include_router(statistics.router, prefix="/api/v1/statistics", tags=["Statistics"])

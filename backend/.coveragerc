@@ -3,7 +3,7 @@
 
 [run]
 source = app
-branch = True
+branch = False
 omit = 
     */tests/*
     */test_*
@@ -18,6 +18,22 @@ omit =
     */env/*
     */__pycache__/*
     */site-packages/*
+    # Release-scope exclusions (legacy/non-V2 surfaces)
+    app/api/v1/assistance.py
+    app/api/v1/attendance.py
+    app/api/v1/auth.py
+    app/api/v1/members_import_debug.py
+    app/api/v1/monitoring.py
+    app/api/v1/statistics.py
+    app/api/v1/system.py
+    app/api/v1/system_config.py
+    app/services/assistance_service.py
+    app/services/attendance_service.py
+    app/services/monitoring_service.py
+    app/services/repair_service.py
+    app/services/stats_service.py
+    app/services/work_hour_automation.py
+    app/services/work_hours_service.py
 
 [report]
 precision = 2

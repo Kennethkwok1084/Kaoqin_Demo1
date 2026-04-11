@@ -5825,42 +5825,146 @@ async def enhanced_import_with_ab_matching(
     权限：组长及以上可执行增强导入
     """
     try:
+        def _as_bool(value: Any, default: bool = False) -> bool:
+            if value is None:
+                return default
+            if isinstance(value, bool):
+                return value
+            return str(value).strip().lower() in {"1", "true", "yes", "on", "y"}
+
         # 解析请求数据
         a_table_data = request_data.get("a_table_data", [])
+        b_table_data = request_data.get("b_table_data", [])
+        strategies = request_data.get("strategies", ["exact", "fuzzy", "multi_field"])
+        dry_run = _as_bool(request_data.get("dry_run"), False)
+        skip_duplicates = _as_bool(request_data.get("skip_duplicates"), True)
+        update_existing = _as_bool(request_data.get("update_existing"), False)
+        enable_ab_matching = _as_bool(request_data.get("enable_ab_matching"), True)
+        strict_assignee_member_only = _as_bool(
+            request_data.get("strict_assignee_member_only"), False
+        )
 
-        if not a_table_data:
+        if not isinstance(a_table_data, list) or not a_table_data:
             raise HTTPException(
                 status_code=http_status.HTTP_400_BAD_REQUEST, detail="A表数据不能为空"
             )
+        if b_table_data is None:
+            b_table_data = []
+        if not isinstance(b_table_data, list):
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="b_table_data 必须为数组",
+            )
 
-        # 执行增强导入
-        # Note: This method doesn't exist yet, using placeholder logic
-        import_result = {
-            "successful_imports": 0,
-            "failed_imports": 0,
-            "errors": [],
-        }
+        import_service = DataImportService(db)
+        parsed_result = import_service.parse_maintenance_order_import_rows(a_table_data)
+        maintenance_orders = parsed_result.get("maintenance_orders", [])
 
-        # 统计结果
+        detailed_results: List[Dict[str, Any]] = []
+        matched_records = 0
+
+        if enable_ab_matching and maintenance_orders:
+            from app.services.ab_table_matching_service import (
+                ABTableMatchingService,
+                MatchingStrategy,
+            )
+
+            matching_service = ABTableMatchingService(db)
+            strategy_enums: List[MatchingStrategy] = []
+            for strategy in strategies if isinstance(strategies, list) else []:
+                try:
+                    strategy_enums.append(MatchingStrategy(str(strategy)))
+                except ValueError:
+                    continue
+            if not strategy_enums:
+                strategy_enums = [
+                    MatchingStrategy.EXACT,
+                    MatchingStrategy.FUZZY,
+                    MatchingStrategy.MULTI_FIELD,
+                ]
+
+            match_results = await matching_service.match_ab_tables(
+                a_table_data=maintenance_orders,
+                b_table_data=b_table_data,
+                strategies=strategy_enums,
+            )
+
+            for idx, result in enumerate(match_results):
+                if idx >= len(maintenance_orders):
+                    break
+                row = maintenance_orders[idx]
+                if result.is_matched and result.member:
+                    row["assignee_name"] = result.member.name
+                    row["assigned_to"] = result.member.id
+                    matched_records += 1
+
+                detailed_results.append(
+                    {
+                        "row_index": idx + 1,
+                        "is_matched": bool(result.is_matched),
+                        "confidence": round(float(result.confidence or 0.0), 4),
+                        "confidence_level": result.confidence_level.value,
+                        "strategy_used": result.strategy_used.value,
+                        "failure_reason": result.failure_reason,
+                        "matched_member": (
+                            {
+                                "id": result.member.id,
+                                "name": result.member.name,
+                            }
+                            if result.member
+                            else None
+                        ),
+                    }
+                )
+
         total_records = len(a_table_data)
-        successful_imports = import_result["successful_imports"]
-        failed_imports = import_result["failed_imports"]
-        matched_records = import_result.get("matched_records", 0)
+        if dry_run:
+            valid_rows = parsed_result.get("valid_rows", 0)
+            failed_imports = parsed_result.get("invalid_rows", 0)
+            success_rate = float(valid_rows) / total_records if total_records > 0 else 0.0
+            match_rate = (
+                float(matched_records) / valid_rows if valid_rows > 0 else 0.0
+            )
+            response_data = {
+                "import_summary": {
+                    "total_records": total_records,
+                    "successful_imports": valid_rows,
+                    "failed_imports": failed_imports,
+                    "matched_records": matched_records,
+                    "success_rate": round(success_rate, 4),
+                    "match_rate": round(match_rate, 4),
+                },
+                "detailed_results": detailed_results,
+                "errors": parsed_result.get("errors", []),
+                "batch_id": request_data.get("import_batch_id"),
+            }
+            return create_response(data=response_data, message="增强版导入校验完成")
 
-        successful_imports_count = (
-            successful_imports if isinstance(successful_imports, (int, float)) else 0
+        import_result = await import_service.bulk_import_tasks(
+            task_data_list=maintenance_orders,
+            import_batch_id=request_data.get("import_batch_id"),
+            importer_id=current_user.id,
+            import_options={
+                "skip_duplicates": skip_duplicates,
+                "update_existing": update_existing,
+                "strict_assignee_member_only": strict_assignee_member_only,
+            },
         )
-        matched_records_count = (
-            matched_records if isinstance(matched_records, (int, float)) else 0
+
+        successful_imports = getattr(import_result, "created_tasks", 0) + getattr(
+            import_result, "updated_tasks", 0
+        )
+        failed_imports = parsed_result.get("invalid_rows", 0) + len(
+            getattr(import_result, "errors", [])
         )
 
         success_rate = (
-            float(successful_imports_count) / total_records
-            if total_records > 0
-            else 0.0
+            float(successful_imports) / total_records if total_records > 0 else 0.0
         )
         match_rate = (
-            float(matched_records_count) / total_records if total_records > 0 else 0.0
+            float(matched_records) / max(parsed_result.get("valid_rows", 0), 1)
+            if parsed_result.get("valid_rows", 0) > 0
+            else 0.0
         )
 
         response_data = {
@@ -5872,9 +5976,11 @@ async def enhanced_import_with_ab_matching(
                 "success_rate": round(success_rate, 4),
                 "match_rate": round(match_rate, 4),
             },
-            "detailed_results": import_result.get("detailed_results", []),
-            "errors": import_result["errors"],
-            "batch_id": import_result.get("batch_id"),
+            "detailed_results": detailed_results,
+            "errors": (
+                parsed_result.get("errors", []) + list(getattr(import_result, "errors", []))
+            )[:50],
+            "batch_id": request_data.get("import_batch_id"),
         }
 
         logger.info(

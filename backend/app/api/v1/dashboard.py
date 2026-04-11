@@ -11,7 +11,7 @@ from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import get_current_user, get_db
+from app.api.deps import create_response, get_current_user, get_db
 from app.models.member import Member
 from app.models.task import RepairTask, TaskPriority, TaskStatus
 from app.schemas.base import TypedResponse
@@ -449,18 +449,21 @@ async def get_stats(
         attendance_rate = 0.92
         completion_rate = completed_tasks / total_tasks if total_tasks > 0 else 0
 
-        return {
-            "totalTasks": total_tasks,
-            "completedTasks": completed_tasks,
-            "pendingTasks": pending_tasks,
-            "overdueTasks": overdue_tasks,
-            "totalMembers": total_members,
-            "activeMembers": active_members,
-            "totalWorkHours": total_work_hours,
-            "monthlyWorkHours": monthly_work_hours,
-            "attendanceRate": attendance_rate,
-            "completionRate": completion_rate
-        }
+        return create_response(
+            data={
+                "total_tasks": total_tasks,
+                "completed_tasks": completed_tasks,
+                "pending_tasks": pending_tasks,
+                "overdue_tasks": overdue_tasks,
+                "total_members": total_members,
+                "active_members": active_members,
+                "total_work_hours": total_work_hours,
+                "monthly_work_hours": monthly_work_hours,
+                "attendance_rate": attendance_rate,
+                "completion_rate": completion_rate,
+            },
+            message="获取统计数据成功",
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取统计数据失败: {str(e)}")
 
@@ -476,11 +479,14 @@ async def get_task_distribution(
         repair_count_result = await db.execute(select(func.count(RepairTask.id)))
         repair_count = repair_count_result.scalar() or 0
 
-        return {
-            "repair": repair_count,
-            "monitoring": 0,  # 监控任务暂无数据
-            "assistance": 0   # 协助任务暂无数据
-        }
+        return create_response(
+            data={
+                "repair": repair_count,
+                "monitoring": 0,
+                "assistance": 0,
+            },
+            message="获取任务分布成功",
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取任务分布失败: {str(e)}")
 
@@ -578,7 +584,7 @@ async def get_member_performance(
         raise HTTPException(status_code=500, detail=f"获取成员绩效失败: {str(e)}")
 
 
-@router.get("/recent-activities")
+@router.get("/recent-activities/simple")
 async def get_recent_activities_simple(
     limit: int = Query(20, ge=1, le=50),
     current_user: Member = Depends(get_current_user),

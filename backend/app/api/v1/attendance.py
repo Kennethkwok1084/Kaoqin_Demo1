@@ -13,6 +13,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
+    create_response,
     get_current_user,
     get_db,
     get_current_active_group_leader,
@@ -123,10 +124,8 @@ async def check_in(
         await db.commit()
         await db.refresh(record)
 
-        return {
-            "success": True,
-            "message": "签到成功",
-            "data": {
+        return create_response(
+            data={
                 "record_id": record.id,
                 "member_id": record.member_id,
                 "attendance_date": str(record.attendance_date),
@@ -136,8 +135,8 @@ async def check_in(
                 "location": record.location,
                 "status": record.status,
             },
-            "status_code": 200,
-        }
+            message="签到成功",
+        )
 
     except HTTPException:
         raise
@@ -232,10 +231,8 @@ async def check_out(
         await db.commit()
         await db.refresh(record)
 
-        return {
-            "success": True,
-            "message": "签退成功",
-            "data": {
+        return create_response(
+            data={
                 "record_id": record.id,
                 "member_id": record.member_id,
                 "attendance_date": str(record.attendance_date),
@@ -249,8 +246,8 @@ async def check_out(
                 "location": record.location,
                 "status": record.status,
             },
-            "status_code": 200,
-        }
+            message="签退成功",
+        )
 
     except HTTPException:
         raise

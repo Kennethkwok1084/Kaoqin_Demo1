@@ -92,8 +92,8 @@ npx @openapitools/openapi-generator-cli generate \\
 ```
 
 ### 📋 API使用规范
-- 所有API返回统一格式: `{success: boolean, message: string, data: any}`
-- 字段命名采用camelCase格式 (自动转换)
+- 所有API返回统一格式: `{code: number, success: boolean, message: string, data: any, request_id: string, timestamp: string}`
+- 后端字段命名采用snake_case（与数据库字段保持一致）
 - 认证头格式: `Authorization: Bearer <token>`
 - 分页参数: `page` (页码), `pageSize` (每页大小)
 - 时间格式: ISO 8601 (YYYY-MM-DDTHH:mm:ssZ)
